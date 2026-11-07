@@ -13,9 +13,10 @@ Updated: November 7, 2026 (America/New_York).
 - Built a complete static portfolio in web/: editorial hero, original SVG orbital sculpture and project covers, dark about section, draggable perspective gallery, project dialogs, approach section, and GitHub contact footer.
 - Project content covers Barking Village, Work Helper, and VoiceLab with broad source-backed descriptions. No employment, degree, or availability claims were invented.
 - Sites project ID is persisted in .openai/hosting.json. Published owner-private. Do not recreate the Site.
-- Current owner-private preview URL: https://cesar-tortolero.cesartortolero.chatgpt.site. The slug was changed to cesar-tortolero; updated name copy is being packaged for publication.
-- Deployed application source commit: 71be6f14155928068e5adf439c2175d0ddbe5605. Later handoff-only commits do not change the deployed application.
-- Successful deployment: appgdep_6aefa57918f48191822be9700c96a9e0. Saved version: appgprj_6aefa2cbe6f48191b090628a5e61b07e~appgver_cee20ee8005081918e9b8e8484fab29f.
+- Verified owner-private preview: https://cesar-tortolero.cesartortolero.chatgpt.site. Branding, biography, footer, page/social titles, and metadata now use the confirmed name. The author metadata records the full name.
+- Deployed application source commit: 3a741478a9ef1bf46b1fdf5d2200f47c814e6b0e. Later handoff-only commits do not change the deployed application.
+- Successful name-update deployment: appgdep_6aefa6a25a448191a2b7f632c473318e. Saved version: appgprj_6aefa2cbe6f48191b090628a5e61b07e~appgver_8dd2a9d23ae081919dc2bbd03a2971c6.
+- Full/short name preference is also saved in global Codex AGENTS.md, workspace AGENTS.md, shared USER-PREFERENCES.md, and this project's instructions and brief. Technical paths and historical notes retain their existing identifiers.
 - Source was pushed to both the Sites source repository and GitHub branch feat/reference-portfolio. GitHub main retains the setup baseline pending review.
 
 ## Verification and blockers
