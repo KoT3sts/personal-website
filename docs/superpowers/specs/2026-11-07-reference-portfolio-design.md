@@ -1,5 +1,7 @@
 # Cesar Tortolero's personal website
 
+> Historical first-draft design. The owner's clarified ultimate goal is a close visual and motion match to the video. [SPECIFICATION.md](../../../SPECIFICATION.md) is the authoritative target and supersedes conflicting adaptations described here.
+
 ## Intent
 
 Build the personal website now, as requested on November 7, using the supplied Instagram reel. The owner confirmed the display name Cesar. This document records implementation choices made to fulfill that request.

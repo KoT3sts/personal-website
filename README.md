@@ -6,6 +6,8 @@ Full name: Cesar Alejandro Tortolero Trujillo. Preferred short/display name: Ces
 
 Status: first working version deployed privately and checked.
 
+**Ultimate goal: make the site look and move like the supplied reference video.** The current version is a functional draft; visual parity is not complete. See [SPECIFICATION.md](SPECIFICATION.md) for the authoritative target, scene requirements, current gaps, assets, and acceptance checklist.
+
 [Open the owner-private preview](https://cesar-tortolero.cesartortolero.chatgpt.site). Sign in with the owning ChatGPT account if prompted.
 
 ## Project brief
@@ -13,6 +15,7 @@ Status: first working version deployed privately and checked.
 Create a personal website using the supplied visual reference and the owner's background. The owner will provide more details after repository creation.
 
 - [Project brief](docs/project-brief.md)
+- [Website specification and visual target](SPECIFICATION.md)
 - [Visual reference](docs/reference.md)
 - [Current handoff](HANDOFF.md)
 

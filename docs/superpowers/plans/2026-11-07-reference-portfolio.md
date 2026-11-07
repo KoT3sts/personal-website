@@ -1,5 +1,7 @@
 # Reference Portfolio Implementation Plan
 
+> Historical plan for the completed first draft. Future fidelity work must follow [SPECIFICATION.md](../../../SPECIFICATION.md); the checked steps below do not establish that the ultimate visual goal has been achieved.
+
 > **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
 **Goal:** Build and privately publish Cesar Tortolero's personal website from the inspected reel.

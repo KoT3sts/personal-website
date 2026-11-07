@@ -9,6 +9,9 @@ Updated: November 7, 2026 (America/New_York).
 - Local source: C:\Users\lucen\OneDrive\Documents\Playground\Personal Website.
 - An existing ChatGPT project named Personal website was found. A local app project with that name is now also listed at C:\Users\lucen\OneDrive\Documents\ChatGPT\Personal website. The requested conversation move is pending; do not assume it succeeded or that the separate app folder contains the repository.
 - Implementation branch: feat/reference-portfolio.
+- Ultimate goal clarified by the owner: make the website look and move like the reference video. Root SPECIFICATION.md is now the authoritative visual target. Earlier design and plan files are marked historical where their first-draft adaptations conflict.
+- Specification maps nine reference scenes, separates observed facts from proposed values, lists missing assets and draft gaps, and requires screenshots, a motion walkthrough, and owner visual sign-off. Current visual parity remains incomplete/unverified.
+- Independent specification review checked implementability and evidence limits. Its discoverability and reproducibility recommendations are addressed by required startup links and portable checkpoint extraction/fallback instructions in docs/reference.md.
 - The reel was successfully retrieved through its public embed and visually inspected. See docs/reference.md.
 - Built a complete static portfolio in web/: editorial hero, original SVG orbital sculpture and project covers, dark about section, draggable perspective gallery, project dialogs, approach section, and GitHub contact footer.
 - Project content covers Barking Village, Work Helper, and VoiceLab with broad source-backed descriptions. No employment, degree, or availability claims were invented.
@@ -30,6 +33,8 @@ Updated: November 7, 2026 (America/New_York).
 - Local browser access is disabled in Work settings. No desktop/mobile screenshot QA was possible; responsive layout needs a real-device look.
 
 ## Next action
+
+Follow SPECIFICATION.md for fidelity work: obtain the owner's portrait and approved content/assets, match static scene compositions, then implement the missing transition, cinematic/experience scenes, true ribbon gallery, and separate circular/stacked explorer. Compare each scene in a real browser before claiming a match. The specification-only update did not change or redeploy the application.
 
 Review the private preview on the owner's phone and refine content or add a supplied portrait. A draft GitHub PR preserves the implementation for review before merging into main. Native Escape/focus trapping and visual overflow still need real-device verification. The browser panel handoff was queued by the app; it is not evidence that the owner viewed it.
 

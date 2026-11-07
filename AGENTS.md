@@ -2,7 +2,8 @@
 
 - Full name: Cesar Alejandro Tortolero Trujillo. Preferred short/display name: Cesar Tortolero. Address the owner as Cesar. Do not use Lucena or Lucen as his name.
 
-- Read README.md, docs/project-brief.md, docs/reference.md, and HANDOFF.md before substantial work.
+- Read SPECIFICATION.md, README.md, docs/project-brief.md, docs/reference.md, and HANDOFF.md before substantial work.
+- The ultimate goal is visual and motion fidelity to the reference video. SPECIFICATION.md is authoritative for that target and supersedes conflicting first-draft visual choices. The current site is a functional baseline, not verified visual parity.
 - This is a separate repository. Keep changes scoped to this project.
 - Treat content candidates as drafts until the owner confirms factual details.
 - Never copy credentials, private customer information, or unrelated project internals into site content or documentation.

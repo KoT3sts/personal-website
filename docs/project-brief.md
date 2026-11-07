@@ -1,5 +1,9 @@
 # Project brief
 
+## Ultimate goal
+
+The owner explicitly confirmed that making the website look like the supplied video is the ultimate goal. [SPECIFICATION.md](../SPECIFICATION.md) defines the visual and motion requirements, scene sequence, gaps, and completion criteria. The existing deployed site is a functional first draft; its adaptations are not the final visual target.
+
 ## Confirmed request — November 7, 2026
 
 - Create a personal website.
