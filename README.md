@@ -31,3 +31,9 @@ npm run build
 Open the printed local URL. Source lives in `web/`; the build copies it into `dist/`. Sites hosting configuration is in `.openai/hosting.json`.
 
 The design includes original SVG artwork, a draggable perspective gallery with keyboard and button controls, project dialogs, reduced motion support, and inline fallbacks. Project covers are illustrations; biography and copy remain open to owner review.
+
+## Collaborating
+
+This repository is public. The current website implementation is on [`feat/reference-portfolio`](https://github.com/KoT3sts/personal-website/tree/feat/reference-portfolio), with [draft PR #1](https://github.com/KoT3sts/personal-website/pull/1) open against main.
+
+Other accounts can fork the repository and propose changes. Until the initial PR is merged, base website improvements on `feat/reference-portfolio`. The hosted preview requires the owner's ChatGPT account.

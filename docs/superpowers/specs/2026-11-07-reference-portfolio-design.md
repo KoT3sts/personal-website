@@ -21,7 +21,7 @@ Use static HTML, CSS, and JavaScript modules. This presentation site does not ne
 - Display name: Cesar Tortolero. Full name: Cesar Alejandro Tortolero Trujillo.
 - Warm paper (#eeede8), ink (#171716), and deep charcoal (#101114); restrained muted green accents.
 - Static source in web/, built output in dist/.
-- Maintain the private GitHub repository and publish an owner-private Sites preview.
+- GitHub repository is public per the owner's later November 7 instruction; Sites preview remains owner-private.
 - Decorative assets are original code-native SVGs; borrowed video and downloaded metadata stay outside the repository.
 - Mobile navigation, focus behavior, overflow, and reduced motion must be checked.
 - Public biography and a portrait can be added after owner review; the deployed draft remains private.

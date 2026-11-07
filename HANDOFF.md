@@ -5,7 +5,7 @@ Updated: November 7, 2026 (America/New_York).
 ## Confirmed state
 
 - Owner confirmed full name Cesar Alejandro Tortolero Trujillo and preferred short/display name Cesar Tortolero. Conversational name: Cesar. This supersedes prior inferred names.
-- Created and pushed the private repository: https://github.com/KoT3sts/personal-website (default branch main).
+- Public repository: https://github.com/KoT3sts/personal-website (default branch main). Owner explicitly requested public visibility on November 7, 2026 so another account can help improve it.
 - Local source: C:\Users\lucen\OneDrive\Documents\Playground\Personal Website.
 - An existing ChatGPT project named Personal website was found. A local app project with that name is now also listed at C:\Users\lucen\OneDrive\Documents\ChatGPT\Personal website. The requested conversation move is pending; do not assume it succeeded or that the separate app folder contains the repository.
 - Implementation branch: feat/reference-portfolio.
@@ -22,7 +22,7 @@ Updated: November 7, 2026 (America/New_York).
 ## Verification and blockers
 
 - GitHub CLI authentication succeeded for KoT3sts outside the network sandbox.
-- GitHub metadata confirms isPrivate=true and default branch main. The initial local commit and remote main both matched 8cf0d7e545f62c1c443d2ec6e32b2c03b325da7f.
+- GitHub metadata now confirms visibility=PUBLIC and default branch main. A pre-publication scan covered 42 blob versions across all local Git history and found no credential patterns or sensitive filenames.
 - npm test: 10/10 pass, including wraparound, pointer/keyboard controls, focus leaving inactive cards, dialog content and return focus, reduced motion, internal destinations, and asset existence.
 - npm run check, npm run build, and git diff --check pass. Local page, JavaScript, and SVG requests return HTTP 200.
 - Independent review found a swipe/focus bug. A regression test failed first, then passed after moving focus before hiding the outgoing panel.
@@ -32,3 +32,5 @@ Updated: November 7, 2026 (America/New_York).
 ## Next action
 
 Review the private preview on the owner's phone and refine content or add a supplied portrait. A draft GitHub PR preserves the implementation for review before merging into main. Native Escape/focus trapping and visual overflow still need real-device verification. The browser panel handoff was queued by the app; it is not evidence that the owner viewed it.
+
+Another account can read/fork the public repository and propose changes. Current code: feat/reference-portfolio; draft PR: https://github.com/KoT3sts/personal-website/pull/1. Direct collaborator access has not been granted because no account username was supplied. Website hosting remains owner-private.

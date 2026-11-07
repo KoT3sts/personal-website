@@ -14,7 +14,7 @@
 
 - Display name: Cesar Tortolero.
 - Static source in web/, built output in dist/.
-- Maintain the private GitHub repository and publish an owner-private Sites preview.
+- GitHub repository is public per the owner's later November 7 instruction; Sites preview remains owner-private.
 - No invented personal details or private operational information.
 - Mobile navigation, focus behavior, overflow, and reduced motion must be checked.
 
