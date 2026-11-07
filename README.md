@@ -1,10 +1,12 @@
-# Personal Website
+# Cesar Tortolero — Personal Website
 
-Cesar's personal website: code, curiosity, and selected projects.
+Cesar Tortolero's personal website: code, curiosity, and selected projects.
+
+Full name: Cesar Alejandro Tortolero Trujillo. Preferred short/display name: Cesar Tortolero.
 
 Status: first working version deployed privately and checked.
 
-[Open the owner-private preview](https://lucen-personal-website.cesartortolero.chatgpt.site). Sign in with the owning ChatGPT account if prompted.
+[Open the owner-private preview](https://cesar-tortolero.cesartortolero.chatgpt.site). Sign in with the owning ChatGPT account if prompted.
 
 ## Project brief
 

@@ -33,7 +33,9 @@
 @layer layout {
   .site-header { position: fixed; top: 24px; left: var(--gutter); right: var(--gutter); z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 20px; pointer-events: none; }
   .site-header > * { pointer-events: auto; }
-  .wordmark { display: inline-flex; gap: 5px; align-items: center; font-size: 22px; letter-spacing: -.065em; font-weight: 800; padding: 10px 0; }
+  .wordmark { display: inline-flex; flex-direction: column; gap: 1px; align-items: flex-start; font-size: 22px; letter-spacing: -.065em; font-weight: 800; padding: 7px 0; }
+  .wordmark-first { display: inline-flex; gap: 5px; align-items: center; }
+  .wordmark-last { font-size: 8px; letter-spacing: .11em; font-weight: 500; }
   .brand-dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; margin-top: 2px; }
   .main-nav { display: flex; gap: 3px; padding: 5px; background: #eeede8e8; backdrop-filter: blur(16px); border: 1px solid #b9b9b14d; border-radius: 50px; box-shadow: 0 3px 15px #00000003; }
   .main-nav a { padding: 10px 20px; border-radius: 40px; color: #66675f; font-size: 10px; text-transform: uppercase; letter-spacing: .035em; }

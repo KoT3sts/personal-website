@@ -2,7 +2,7 @@
 
 > **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
-**Goal:** Build and privately publish Cesar's personal website from the inspected reel.
+**Goal:** Build and privately publish Cesar Tortolero's personal website from the inspected reel.
 
 **Architecture:** Static progressive enhancement with semantic HTML, original SVG artwork, and a CSS perspective gallery. Keep state logic separate from DOM wiring; a small Node script copies source assets into dist.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Display name: Cesar.
+- Display name: Cesar Tortolero.
 - Static source in web/, built output in dist/.
 - Maintain the private GitHub repository and publish an owner-private Sites preview.
 - No invented personal details or private operational information.

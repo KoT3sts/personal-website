@@ -4,7 +4,7 @@ Updated: November 7, 2026 (America/New_York).
 
 ## Confirmed state
 
-- Owner confirmed display name Cesar and requested building from the supplied reel.
+- Owner confirmed full name Cesar Alejandro Tortolero Trujillo and preferred short/display name Cesar Tortolero. Conversational name: Cesar. This supersedes prior inferred names.
 - Created and pushed the private repository: https://github.com/KoT3sts/personal-website (default branch main).
 - Local source: C:\Users\lucen\OneDrive\Documents\Playground\Personal Website.
 - An existing ChatGPT project named Personal website was found. A local app project with that name is now also listed at C:\Users\lucen\OneDrive\Documents\ChatGPT\Personal website. The requested conversation move is pending; do not assume it succeeded or that the separate app folder contains the repository.
@@ -13,7 +13,7 @@ Updated: November 7, 2026 (America/New_York).
 - Built a complete static portfolio in web/: editorial hero, original SVG orbital sculpture and project covers, dark about section, draggable perspective gallery, project dialogs, approach section, and GitHub contact footer.
 - Project content covers Barking Village, Work Helper, and VoiceLab with broad source-backed descriptions. No employment, degree, or availability claims were invented.
 - Sites project ID is persisted in .openai/hosting.json. Published owner-private. Do not recreate the Site.
-- Verified live preview: https://lucen-personal-website.cesartortolero.chatgpt.site.
+- Current owner-private preview URL: https://cesar-tortolero.cesartortolero.chatgpt.site. The slug was changed to cesar-tortolero; updated name copy is being packaged for publication.
 - Deployed application source commit: 71be6f14155928068e5adf439c2175d0ddbe5605. Later handoff-only commits do not change the deployed application.
 - Successful deployment: appgdep_6aefa57918f48191822be9700c96a9e0. Saved version: appgprj_6aefa2cbe6f48191b090628a5e61b07e~appgver_cee20ee8005081918e9b8e8484fab29f.
 - Source was pushed to both the Sites source repository and GitHub branch feat/reference-portfolio. GitHub main retains the setup baseline pending review.

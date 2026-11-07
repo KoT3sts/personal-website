@@ -1,4 +1,4 @@
-# Cesar's personal website
+# Cesar Tortolero's personal website
 
 ## Intent
 
@@ -18,7 +18,7 @@ Use static HTML, CSS, and JavaScript modules. This presentation site does not ne
 
 ## Constraints and defaults
 
-- Display name: Cesar.
+- Display name: Cesar Tortolero. Full name: Cesar Alejandro Tortolero Trujillo.
 - Warm paper (#eeede8), ink (#171716), and deep charcoal (#101114); restrained muted green accents.
 - Static source in web/, built output in dist/.
 - Maintain the private GitHub repository and publish an owner-private Sites preview.
