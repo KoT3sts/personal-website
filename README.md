@@ -2,7 +2,9 @@
 
 Cesar's personal website: code, curiosity, and selected projects.
 
-Status: first working version implemented and checked; private preview publication is next.
+Status: first working version deployed privately and checked.
+
+[Open the owner-private preview](https://lucen-personal-website.cesartortolero.chatgpt.site). Sign in with the owning ChatGPT account if prompted.
 
 ## Project brief
 

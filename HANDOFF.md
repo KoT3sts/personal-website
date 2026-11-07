@@ -12,7 +12,11 @@ Updated: November 7, 2026 (America/New_York).
 - The reel was successfully retrieved through its public embed and visually inspected. See docs/reference.md.
 - Built a complete static portfolio in web/: editorial hero, original SVG orbital sculpture and project covers, dark about section, draggable perspective gallery, project dialogs, approach section, and GitHub contact footer.
 - Project content covers Barking Village, Work Helper, and VoiceLab with broad source-backed descriptions. No employment, degree, or availability claims were invented.
-- Sites project ID is persisted in .openai/hosting.json. Created owner-private; publication is next. Do not recreate the Site.
+- Sites project ID is persisted in .openai/hosting.json. Published owner-private. Do not recreate the Site.
+- Verified live preview: https://lucen-personal-website.cesartortolero.chatgpt.site.
+- Deployed application source commit: 71be6f14155928068e5adf439c2175d0ddbe5605. Later handoff-only commits do not change the deployed application.
+- Successful deployment: appgdep_6aefa57918f48191822be9700c96a9e0. Saved version: appgprj_6aefa2cbe6f48191b090628a5e61b07e~appgver_cee20ee8005081918e9b8e8484fab29f.
+- Source was pushed to both the Sites source repository and GitHub branch feat/reference-portfolio. GitHub main retains the setup baseline pending review.
 
 ## Verification and blockers
 
@@ -26,4 +30,4 @@ Updated: November 7, 2026 (America/New_York).
 
 ## Next action
 
-Finish exact-source Sites packaging and owner-private publication, verify the returned deployment state, and push the implementation branch. Then review the private preview on the owner's phone and refine content or add a supplied portrait.
+Review the private preview on the owner's phone and refine content or add a supplied portrait. A draft GitHub PR preserves the implementation for review before merging into main. Native Escape/focus trapping and visual overflow still need real-device verification. The browser panel handoff was queued by the app; it is not evidence that the owner viewed it.
