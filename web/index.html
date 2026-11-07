@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eeede8">
+  <meta name="description" content="Cesar's personal corner of the internet. Explore software projects, applied AI, and the curiosity behind the work.">
+  <meta property="og:title" content="Cesar — Code & Curiosity">
+  <meta property="og:description" content="Useful software. Thoughtful experiments. A few things I'm building.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lucen-personal-website.cesartortolero.chatgpt.site/">
+  <title>Cesar — Code & Curiosity</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="preload" href="./assets/sculpture.svg" as="image" type="image/svg+xml">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="wordmark" href="#home" aria-label="Cesar home">CESAR<span class="brand-dot"></span></a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="#home" aria-current="location">Home</a>
+      <a href="#about">About</a>
+      <a href="#work">Work</a>
+      <a href="#approach">Approach</a>
+    </nav>
+    <a class="header-contact" href="#contact">Let's connect <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main id="main">
+    <section id="home" class="hero" aria-labelledby="hero-title">
+      <div class="hero-kicker mono"><span class="status-dot" aria-hidden="true"></span> A PERSONAL SPACE FOR CODE & CURIOSITY</div>
+      <h1 id="hero-title">EXPLORE MY<span>PORTFOLIO</span></h1>
+      <div class="hero-art" aria-hidden="true">
+        <div class="orbit-label orbit-label-top mono">IMAGINE / BUILD / REPEAT</div>
+        <img class="sculpture" src="./assets/sculpture.svg" alt="" width="760" height="660" fetchpriority="high">
+        <div class="art-coordinate mono">C — 01</div>
+      </div>
+      <div class="hero-bottom">
+        <div class="hero-intro"><span class="mono small-label">HELLO, I'M CESAR</span><p>Developer.<br>Curious by default.</p></div>
+        <a class="scroll-cue" href="#about" aria-label="Explore the about section"><span aria-hidden="true">↘</span></a>
+        <p class="hero-note mono">BUILDING USEFUL SOFTWARE.<br>EXPLORING WHAT COMES NEXT.<br>ALWAYS A WORK IN PROGRESS.</p>
+      </div>
+      <div class="hero-rule mono"><span>THINK DEEPLY. MAKE SOMETHING.</span><span>SCROLL TO EXPLORE ↓</span></div>
+    </section>
+
+    <section id="about" class="about dark-section" aria-labelledby="about-title">
+      <div class="section-top mono"><span>01 / A LITTLE CONTEXT</span><span>THE PERSON BEHIND THE PROJECTS</span></div>
+      <div class="about-layout">
+        <div class="about-copy">
+          <h2 id="about-title">Good software<br>starts with a<br><span>better question.</span></h2>
+          <p>I'm Cesar. I like turning messy, everyday problems into software that makes things a little clearer.</p>
+          <p>My projects move between operations, opportunity discovery, and experiments with language. Different problems. The same curiosity.</p>
+          <a class="text-link light-link" href="#work">A few things I'm building <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="orbital-panel" aria-hidden="true">
+          <div class="beam"></div>
+          <div class="orbital-orbit orbit-one"></div><div class="orbital-orbit orbit-two"></div><div class="orbital-orbit orbit-three"></div>
+          <div class="orbital-center">C<span>●</span></div>
+          <span class="orbital-caption mono">A LITTLE CURIOSITY GOES A LONG WAY.</span>
+          <span class="orbital-cross cross-one">+</span><span class="orbital-cross cross-two">+</span>
+        </div>
+      </div>
+      <div class="about-bottom mono"><span>SOFTWARE / APPLIED AI / EXPERIMENTS</span><span>IDEAS ARE A STARTING POINT, NOT A FINISH LINE.</span></div>
+    </section>
+
+    <section id="work" class="work" aria-labelledby="work-title">
+      <div class="section-top mono"><span>02 / SELECTED PROJECTS</span><span>A SMALL COLLECTION OF ONGOING WORK</span></div>
+      <div class="work-heading"><h2 id="work-title">LESS TALK.<br>MORE <span>MAKING.</span></h2><p>Tools for real workflows.<br>Experiments worth following.<br>Each one starts with a question.</p></div>
+      <div class="gallery" aria-roledescription="carousel" aria-label="Selected projects">
+        <div class="gallery-stage" tabindex="0" aria-label="Project gallery. Use left and right arrow keys to browse.">
+          <div class="gallery-track">
+            <article class="project-card" data-project="barking">
+              <a class="project-image-link" href="#project-barking" data-open="project-barking" aria-label="Explore Barking Village"><img src="./assets/barking-village.svg" alt="Original interface illustration for Barking Village, with a green staff sidebar and care planning panels" width="900" height="620" loading="lazy" draggable="false"></a>
+              <div class="project-card-bottom"><div><span class="mono">01 / OPERATIONS SOFTWARE</span><h3>Barking Village</h3></div><a href="#project-barking" class="project-open" data-open="project-barking" aria-label="Read about Barking Village">↗</a></div>
+            </article>
+            <article class="project-card" data-project="work-helper">
+              <a class="project-image-link" href="#project-work-helper" data-open="project-work-helper" aria-label="Explore Work Helper"><img src="./assets/work-helper.svg" alt="Original interface illustration for Work Helper, showing opportunity discovery and three steps for a job search" width="900" height="620" loading="lazy" draggable="false"></a>
+              <div class="project-card-bottom"><div><span class="mono">02 / OPPORTUNITY DISCOVERY</span><h3>Work Helper</h3></div><a href="#project-work-helper" class="project-open" data-open="project-work-helper" aria-label="Read about Work Helper">↗</a></div>
+            </article>
+            <article class="project-card" data-project="voicelab">
+              <a class="project-image-link" href="#project-voicelab" data-open="project-voicelab" aria-label="Explore VoiceLab"><img src="./assets/voicelab.svg" alt="Original interface illustration for VoiceLab, showing writing passages beside a language signal visualization" width="900" height="620" loading="lazy" draggable="false"></a>
+              <div class="project-card-bottom"><div><span class="mono">03 / LANGUAGE EXPERIMENTS</span><h3>VoiceLab</h3></div><a href="#project-voicelab" class="project-open" data-open="project-voicelab" aria-label="Read about VoiceLab">↗</a></div>
+            </article>
+          </div>
+          <div class="gallery-ground" aria-hidden="true"></div>
+        </div>
+        <div class="gallery-controls" hidden>
+          <button class="circle-button gallery-prev" aria-label="Previous project">←</button>
+          <span class="gallery-count mono" aria-live="polite" aria-atomic="true">01 / 03 — Barking Village</span>
+          <button class="circle-button gallery-next" aria-label="Next project">→</button>
+        </div>
+        <div class="project-selectors" aria-label="Choose a project" hidden>
+          <button data-select="0" aria-pressed="true">Barking Village</button><button data-select="1" aria-pressed="false">Work Helper</button><button data-select="2" aria-pressed="false">VoiceLab</button>
+        </div>
+        <p class="gallery-instruction mono" hidden>DRAG TO EXPLORE <span aria-hidden="true">↔</span> OR USE THE ARROWS</p>
+      </div>
+      <div class="project-stories">
+        <section id="project-barking" class="project-story" aria-labelledby="barking-title"><span class="mono story-category">OPERATIONS SOFTWARE</span><h3 id="barking-title">Barking Village</h3><p class="story-lead">Less friction behind the scenes. More room for care.</p><p>A full-stack dog-care operations project bringing staff workflows into one place: care sessions, daily planning, room status, and dog records.</p><dl><div><dt>Focus</dt><dd>Everyday operational workflows</dd></div><div><dt>Exploring</dt><dd>Clear interfaces for complex, connected tasks</dd></div></dl><p class="story-footnote">The project cover is an original illustration. No customer or operational data is shown.</p></section>
+        <section id="project-work-helper" class="project-story" aria-labelledby="work-helper-title"><span class="mono story-category">OPPORTUNITY DISCOVERY</span><h3 id="work-helper-title">Work Helper</h3><p class="story-lead">A more intentional way to approach what's next.</p><p>A project exploring how software can help people discover job opportunities and take the next step. The current work includes a local onboarding prototype.</p><dl><div><dt>Focus</dt><dd>Making opportunity discovery more approachable</dd></div><div><dt>Stage</dt><dd>In development</dd></div></dl><p class="story-footnote">The project cover is an original interface illustration, not a screenshot of a launched service.</p></section>
+        <section id="project-voicelab" class="project-story" aria-labelledby="voicelab-title"><span class="mono story-category">LANGUAGE EXPERIMENTS</span><h3 id="voicelab-title">VoiceLab</h3><p class="story-lead">Understand the signals. Keep the meaning.</p><p>A local prototype for explainable writing-signal analysis and meaning-preserving revision. It explores patterns in language while keeping text on the local device.</p><dl><div><dt>Focus</dt><dd>Explainable analysis and thoughtful revision</dd></div><div><dt>Stage</dt><dd>Local prototype</dd></div></dl><p class="story-footnote">This experiment does not establish authorship. The cover is an original illustration.</p></section>
+      </div>
+      <div class="work-end mono"><span>SMALL QUESTIONS. REAL PROJECTS.</span><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">MORE ON GITHUB ↗</a></div>
+    </section>
+
+    <section id="approach" class="approach dark-section" aria-labelledby="approach-title">
+      <div class="section-top mono"><span>03 / THE APPROACH</span><span>HOW I THINK ABOUT BUILDING</span></div>
+      <div class="approach-heading"><h2 id="approach-title">MAKE IT WORK.<br><span>MAKE IT MATTER.</span></h2><p>The interesting part is connecting the idea to the person who will actually use it.</p></div>
+      <div class="approach-list">
+        <details open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>Understand the workflow before adding another feature. What's confusing? What's repetitive? What would make someone's day a little easier?</p></details>
+        <details><summary><span class="mono approach-number">02</span><span>Build something tangible.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>A working version makes an idea easier to question. Keep the first step focused, then learn from how it behaves in practice.</p></details>
+        <details><summary><span class="mono approach-number">03</span><span>Stay curious. Keep refining.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>Test assumptions, look closely at the rough edges, and make the next version clearer. The details are part of the work.</p></details>
+      </div>
+    </section>
+
+    <section id="notes" class="closing-note" aria-label="Personal note"><span class="mono">SOMEWHERE BETWEEN LOGIC & POSSIBILITY</span><p>Still learning.<br>Still <em>making.</em></p><div class="note-orbit" aria-hidden="true"><span>C</span><i></i></div></section>
+
+    <footer id="contact" class="contact dark-section" aria-labelledby="contact-title">
+      <div class="section-top mono"><span>04 / SAY HELLO</span><a href="#home">BACK TO THE TOP ↑</a></div>
+      <p class="contact-intro">Have a question, an idea, or a project in mind?</p>
+      <h2 id="contact-title">LET'S <span>CONNECT.</span></h2>
+      <a class="contact-button" href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">Find me on GitHub <span aria-hidden="true">↗</span></a>
+      <div class="footer-bottom mono"><span>© <span data-year>2026</span> CESAR</span><span>CODE. CURIOSITY. A LITTLE BIT OF BOTH.</span><span>MADE TO BE EXPLORED.</span></div>
+    </footer>
+  </main>
+  <dialog class="project-dialog" aria-label="Project details"><button class="dialog-close" autofocus aria-label="Close project details">Close <span aria-hidden="true">×</span></button><div class="dialog-content"></div></dialog>
+</body>
+</html>

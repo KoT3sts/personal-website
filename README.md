@@ -1,8 +1,8 @@
 # Personal Website
 
-Lucen's personal website project.
+Cesar's personal website: code, curiosity, and selected projects.
 
-Status: repository and project brief prepared; website design and implementation are next.
+Status: first working version implemented and checked; private preview publication is next.
 
 ## Project brief
 
@@ -12,4 +12,18 @@ Create a personal website using the supplied visual reference and the owner's ba
 - [Visual reference](docs/reference.md)
 - [Current handoff](HANDOFF.md)
 
-No application framework or deployment target has been selected yet.
+## Run locally
+
+Use Node.js 20 or newer. Runtime assets have no third-party dependencies; JSDOM is a development-only test dependency.
+
+```sh
+npm ci
+npm run dev
+npm test
+npm run check
+npm run build
+```
+
+Open the printed local URL. Source lives in `web/`; the build copies it into `dist/`. Sites hosting configuration is in `.openai/hosting.json`.
+
+The design includes original SVG artwork, a draggable perspective gallery with keyboard and button controls, project dialogs, reduced motion support, and inline fallbacks. Project covers are illustrations; biography and copy remain open to owner review.

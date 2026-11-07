@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620">
+ <rect width="900" height="620" fill="#b9b6c8"/>
+ <g fill="none" stroke="#d5d0e2" stroke-width="1"><circle cx="450" cy="310" r="295"/><circle cx="450" cy="310" r="255"/><circle cx="450" cy="310" r="215"/></g>
+ <g transform="translate(72 73)">
+  <rect width="756" height="474" rx="13" fill="#17171f"/>
+  <text x="30" y="44" font-family="Arial" font-size="22" font-weight="700" fill="#f2eff9">voice<tspan fill="#aaa3c3">lab</tspan><tspan font-size="10" font-weight="400" dx="15" fill="#787585">A LOCAL WRITING EXPERIMENT</tspan></text>
+  <path d="M28 66h700" stroke="#383442"/>
+  <text x="30" y="109" fill="#e5e0ee" font-size="28" font-family="Arial" font-weight="700">A closer look at language.</text>
+  <rect x="29" y="136" width="423" height="297" rx="8" fill="#22212c"/>
+  <text x="49" y="168" fill="#9e97af" font-family="Arial" font-size="10" letter-spacing="1">YOUR WORDS, WITH CONTEXT</text>
+  <g stroke="#575160" stroke-width="5" stroke-linecap="round"><path d="M51 200h346M51 220h312M51 240h339M51 260h276M51 300h346M51 320h319M51 340h284"/></g>
+  <path d="M51 243h183M242 323h124" stroke="#b7a2dc" stroke-width="2"/>
+  <rect x="49" y="376" width="135" height="35" rx="18" fill="#c5b7e0"/><text x="69" y="398" fill="#292330" font-family="Arial" font-size="11">Explore the signals ↗</text>
+  <rect x="473" y="136" width="254" height="297" rx="8" fill="#292633"/>
+  <g fill="none" stroke="#a395bb" stroke-width="2"><path d="M501 270q12-55 24 0t24 0 24 0 24 0 24 0 24 0 24 0 24 0"/><circle cx="600" cy="250" r="80" stroke-opacity=".25"/><circle cx="600" cy="250" r="56" stroke-opacity=".2"/></g>
+  <text x="500" y="362" fill="#d5cce3" font-size="13" font-family="Arial">Language has patterns.</text><text x="500" y="385" fill="#9388a4" font-size="11" font-family="Arial">Understanding comes first.</text>
+ </g>
+</svg>

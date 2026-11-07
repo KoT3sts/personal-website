@@ -4,19 +4,26 @@ Updated: November 7, 2026 (America/New_York).
 
 ## Confirmed state
 
-- Created the project brief, reference record, contributor instructions, and basic ignore rules.
+- Owner confirmed display name Cesar and requested building from the supplied reel.
 - Created and pushed the private repository: https://github.com/KoT3sts/personal-website (default branch main).
 - Local source: C:\Users\lucen\OneDrive\Documents\Playground\Personal Website.
 - An existing ChatGPT project named Personal website was found. A local app project with that name is now also listed at C:\Users\lucen\OneDrive\Documents\ChatGPT\Personal website. The requested conversation move is pending; do not assume it succeeded or that the separate app folder contains the repository.
-- No product code, framework, hosting, or deployment has been created.
+- Implementation branch: feat/reference-portfolio.
+- The reel was successfully retrieved through its public embed and visually inspected. See docs/reference.md.
+- Built a complete static portfolio in web/: editorial hero, original SVG orbital sculpture and project covers, dark about section, draggable perspective gallery, project dialogs, approach section, and GitHub contact footer.
+- Project content covers Barking Village, Work Helper, and VoiceLab with broad source-backed descriptions. No employment, degree, or availability claims were invented.
+- Sites project ID is persisted in .openai/hosting.json. Created owner-private; publication is next. Do not recreate the Site.
 
 ## Verification and blockers
 
 - GitHub CLI authentication succeeded for KoT3sts outside the network sandbox.
 - GitHub metadata confirms isPrivate=true and default branch main. The initial local commit and remote main both matched 8cf0d7e545f62c1c443d2ec6e32b2c03b325da7f.
-- Initial staged diff passed git diff --cached --check; the working tree was clean after the first push. This setup contains documentation only, so no application tests apply.
-- Instagram reference retrieval failed; its visual design remains unknown.
+- npm test: 10/10 pass, including wraparound, pointer/keyboard controls, focus leaving inactive cards, dialog content and return focus, reduced motion, internal destinations, and asset existence.
+- npm run check, npm run build, and git diff --check pass. Local page, JavaScript, and SVG requests return HTTP 200.
+- Independent review found a swipe/focus bug. A regression test failed first, then passed after moving focus before hiding the outgoing panel.
+- DOM tests use JSDOM 26.1.0. The modal test models missing native open/close methods; browser-native Escape and focus trapping are not verified by it.
+- Local browser access is disabled in Work settings. No desktop/mobile screenshot QA was possible; responsive layout needs a real-device look.
 
 ## Next action
 
-Confirm the pending app project move, then gather the owner's additional details and an accessible view of the reference to propose the website design. The repository-first setup is ready; the website itself remains to be designed and built.
+Finish exact-source Sites packaging and owner-private publication, verify the returned deployment state, and push the implementation branch. Then review the private preview on the owner's phone and refine content or add a supplied portrait.
