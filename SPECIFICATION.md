@@ -187,3 +187,36 @@ Existing source is in `web/`; static builds go to `dist/`. Contributors should s
 - [ ] Screenshots and recording identify commit, viewport, browser, and device; review evidence is linked in the handoff/PR without customer data.
 - [ ] Existing automated tests, syntax checks, build, and diff checks pass; relevant new interaction behavior has meaningful coverage.
 - [ ] Cesar has reviewed the comparison and agreed that the site captures the video closely enough. Passing tests or publishing a URL alone does not satisfy this goal.
+
+## 11. New enhancement — first-visit entrance
+
+**Owner intent:** Keep the portfolio experience specified above and add a special entrance when someone opens the website for the first time, inspired by [this second Instagram reel](https://www.instagram.com/reel/DfWWldaTQTz/).
+
+**Evidence status:** The public post metadata identifies creator `sahirveerancheri`, caption "Agentic Build", and a 57.213-second video. Only its cover has been visually inspected: a dark canvas with several groups of colored cursor-like markers. Instagram's embed marks the video blocked and does not expose playable media. The full animation, interaction, and reveal sequence have not been observed. Do not claim this effect is understood or faithfully implemented from the cover alone.
+
+### Relationship to the existing design
+
+- This is an entrance into the same portfolio, not a replacement for its reference-based layout, portrait, project galleries, or content.
+- The exact new animation must be specified after an accessible clip, owner screen recording, or adequate frame sequence is inspected.
+- Avoid two consecutive loading experiences. Integrate the original V01 orbital brand moment into the new entrance or transition directly from the new entrance to V02; settle this after seeing the complete second reference.
+- A possible interpretation is a staged, agent/cursor-themed assembly of the portfolio. This is a proposal inferred from the cover/caption, not a verified description of the reel or an approved storyboard.
+
+### Proposed first-visit behavior
+
+- On a normal first visit to the home page, offer/run the entrance once, then reveal the working portfolio.
+- Record successful completion or deliberate skip locally in that browser. Returning visits go directly to the portfolio. This is browser/device-local behavior, not cross-device identity tracking.
+- Provide a visible **Skip intro** control immediately and a discoverable **Replay intro** control after arrival. Exact labels can be refined with Cesar.
+- Honor direct section links and navigation history: do not move someone away from the section they requested to force the intro.
+- Reduced-motion preference bypasses the elaborate movement and reveals an equivalent stable state. Failed assets, unsupported rendering, or unavailable local storage must never prevent access to the site.
+- Load actual portfolio content independently of the entrance. Do not put a real AI/code-generation dependency, account login, or external API key into this presentation effect.
+- Recommended architecture is deterministic visual choreography over prebuilt content. Genuine live AI agents would be a separate product scope, not assumed from the reference's caption.
+- Duration, scene timing, mobile treatment, and pointer participation remain open until the full reel is inspected. Do not invent timing requirements from its total video length.
+
+### Additional acceptance gates
+
+- [ ] Obtain and inspect the complete second reference; create an observed storyboard with timestamps and distinguish proposed changes.
+- [ ] Confirm the entrance-to-portfolio transition and its relationship to V01 without duplicate loaders.
+- [ ] Demonstrate first visit, returning visit, skip, replay, deep link, reduced motion, failed asset, and unavailable-storage paths.
+- [ ] Compare the entrance in desktop and phone recordings against the second reference and obtain Cesar's visual sign-off.
+
+Status: feature intent recorded; exact storyboard and implementation remain pending reference access. No entrance code has been added by this specification update.

@@ -34,6 +34,8 @@ Updated: November 7, 2026 (America/New_York).
 
 ## Next action
 
+New owner request: preserve the reference-based portfolio and add a first-visit entrance inspired by https://www.instagram.com/reel/DfWWldaTQTz/. Recorded in SPECIFICATION.md section 11 and docs/reference.md. Only the cover and public metadata were accessible; the exact animation is unverified. Obtain a full clip/screen recording before finalizing its storyboard. Proposed once-per-browser, skip/replay, deep-link, reduced-motion, and failure behavior is documented. This turn adds specification context, not entrance implementation or a deployment.
+
 Follow SPECIFICATION.md for fidelity work: obtain the owner's portrait and approved content/assets, match static scene compositions, then implement the missing transition, cinematic/experience scenes, true ribbon gallery, and separate circular/stacked explorer. Compare each scene in a real browser before claiming a match. The specification-only update did not change or redeploy the application.
 
 Review the private preview on the owner's phone and refine content or add a supplied portrait. A draft GitHub PR preserves the implementation for review before merging into main. Native Escape/focus trapping and visual overflow still need real-device verification. The browser panel handoff was queued by the app; it is not evidence that the owner viewed it.

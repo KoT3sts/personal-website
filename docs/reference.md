@@ -31,3 +31,13 @@ ffmpeg -ss 20.5 -i reference.mp4 -frames:v 1 work-explorer-reference.png
 5. If Instagram or the media response is unavailable, request the reel/screen recording or checkpoint screenshots from Cesar. Use the storyboard in SPECIFICATION.md to organize the work, but mark visual verification blocked until the relevant scenes can actually be compared. Temporary files on the original developer's computer are not a portable dependency.
 
 Do not republish the full reel as a website asset. Any durable comparison images committed for review must have appropriate usage rights, source attribution, scene/timestamp labels, and no private data.
+
+## Supplemental reference: first-visit entrance
+
+- URL: https://www.instagram.com/reel/DfWWldaTQTz/?vrfl=dWQyb2d2dDB1dm9r
+- Canonical: https://www.instagram.com/reel/DfWWldaTQTz/
+- Creator reported by public metadata: sahirveerancheri. Caption: Agentic Build. Metadata duration: 57.213 seconds.
+- Purpose: a special first-visit entrance before the existing portfolio; the first reel remains the main portfolio design target.
+- Inspection: cover image only, showing a dark canvas and groups of colored cursor-like markers. The public embed reports the video blocked and supplies no playable video URL. Search did not reveal an accessible matching copy.
+- Required next evidence: an accessible full clip, an owner screen recording, or sufficient sequential screenshots. Do not infer the complete animation from the cover.
+- See SPECIFICATION.md section 11 for the recorded intent and proposed visit/skip/replay behavior. No live feature has been implemented yet.
