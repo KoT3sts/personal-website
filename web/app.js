@@ -1,6 +1,6 @@
 import { createGalleryState, wrapOffset, cardPose, dragOffset, releaseSteps } from './gallery-state.js';
 import { initAgenticEntrance } from './entrance.js';
-import { initMotion } from './motion.js';
+import { initMotion, sectionAtLine } from './motion.js';
 
 const SETTLE = { one: '.82s', many: '1s' };
 
@@ -33,6 +33,7 @@ export function initPortfolio(document, window) {
       card.style.setProperty('--distance', pose.distance);
       card.style.setProperty('--card-z', pose.z);
       card.style.setProperty('--card-opacity', pose.opacity);
+      card.style.setProperty('--card-shade', pose.shade);
       // Keep the incumbent three-card arc: second neighbours fade out, and cards
       // that wrap around the back are hidden so they never sweep across the stage.
       card.toggleAttribute('data-far', pose.far);
@@ -198,19 +199,35 @@ export function initPortfolio(document, window) {
 
   const header = document.querySelector('.site-header');
   const navLinks = [...document.querySelectorAll('.main-nav a')];
+  const pageSections = [...document.querySelectorAll('main > section[id], footer[id]')];
+  // Header tone follows the section actually behind the header (its centre
+  // line), not the reading band used for navigation, so the light wordmark
+  // never sits on a light section, including at the very bottom of the page.
+  let toneFrame = 0;
+  function paintHeaderTone() {
+    toneFrame = 0;
+    const bounds = header.getBoundingClientRect();
+    const index = sectionAtLine(pageSections.map(section => section.getBoundingClientRect()), bounds.top + bounds.height / 2);
+    header.classList.toggle('is-dark', index >= 0 && pageSections[index].classList.contains('dark-section'));
+  }
+  const queueHeaderTone = () => {
+    if (!raf) paintHeaderTone();
+    else if (!toneFrame) toneFrame = raf(paintHeaderTone);
+  };
+  ['scroll', 'resize', 'load', 'pageshow'].forEach(type => window.addEventListener(type, queueHeaderTone, { passive: true }));
   if (window.IntersectionObserver) {
     const navObserver = new window.IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;
-        header.classList.toggle('is-dark', entry.target.classList.contains('dark-section'));
         navLinks.forEach(link => {
           if (link.hash === `#${entry.target.dataset.navSection || entry.target.id}`) link.setAttribute('aria-current', 'location');
           else link.removeAttribute('aria-current');
         });
       });
     }, { rootMargin: '-12% 0px -70% 0px', threshold: 0 });
-    document.querySelectorAll('main > section[id], footer[id]').forEach(section => navObserver.observe(section));
+    pageSections.forEach(section => navObserver.observe(section));
   }
+  paintHeaderTone();
   const art = document.querySelector('.hero-art');
   let tiltFrame = 0;
   let tilt = 0;

@@ -60,7 +60,7 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 /* ---- Dock: live crew count, current section, progress, Skip tour. ----
    Bottom centre, above the home indicator; lifted by JS clear of résumé and
    contact controls. Collapses to a small pill after the tour. */
-.agentic-dock { --agentic-mono: "Courier New", Courier, monospace; position: fixed; z-index: 62; left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px) + 8px) + var(--agentic-dock-lift, 0px)); translate: -50% 0; display: flex; align-items: center; max-width: calc(100vw - 20px); min-height: 46px; box-sizing: border-box; padding: 0 1px 0 16px; border: 1px solid rgb(230 237 218 / .2); border-radius: 30px; background: rgb(23 26 22 / .94); color: #eef2e6; font: 11px/1.3 var(--agentic-mono); letter-spacing: .01em; white-space: nowrap; box-shadow: 0 12px 30px -14px rgb(16 17 20 / .6); animation: agentic-dock-in .45s cubic-bezier(.33,1,.68,1) both; }
+.agentic-dock { --agentic-mono: "Courier New", Courier, monospace; position: fixed; z-index: 62; left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px) + 8px) + var(--agentic-dock-lift, 0px)); translate: -50% 0; display: flex; align-items: center; max-width: calc(100vw - 20px); min-height: 46px; box-sizing: border-box; padding: 0 1px; border: 1px solid rgb(230 237 218 / .2); border-radius: 30px; background: rgb(23 26 22 / .94); color: #eef2e6; font: 11px/1.3 var(--agentic-mono); letter-spacing: .01em; white-space: nowrap; box-shadow: 0 12px 30px -14px rgb(16 17 20 / .6); animation: agentic-dock-in .45s cubic-bezier(.33,1,.68,1) both; }
 @supports (backdrop-filter: blur(1px)) { .agentic-dock { background: rgb(23 26 22 / .86); backdrop-filter: blur(10px) saturate(1.2); } }
 .agentic-dock[hidden] { display: none; }
 .agentic-dock-live { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -82,12 +82,46 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-dock button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; box-sizing: border-box; margin: 0; padding: 0 16px; border: 0; border-radius: 30px; background: none; color: #eef2e6; font: inherit; letter-spacing: inherit; cursor: pointer; transition: background-color .2s; }
 .agentic-dock button:hover { background: rgb(238 242 230 / .1); }
 .agentic-dock button:focus-visible { outline: 2px solid #d7e8b9; outline-offset: -3px; }
+.agentic-dock-skip-more { white-space: pre; }
 .agentic-dock-skip { margin-left: 12px !important; border-left: 1px solid rgb(230 237 218 / .16) !important; border-radius: 0 30px 30px 0 !important; text-decoration: underline; text-underline-offset: 3px; }
 .agentic-dock-replay, .agentic-dock-close { display: none !important; }
 .agentic-dock-close { padding: 0 !important; font-size: 16px !important; color: #b9c5ab !important; }
 
+/* Plan toggle (left), speed toggle (right of the status). */
+.agentic-dock .agentic-dock-plan { gap: 7px; margin-right: 8px; padding: 0 12px 0 15px; border-radius: 30px 0 0 30px; border-right: 1px solid rgb(230 237 218 / .16); color: #d7e8b9; }
+.agentic-plan-icon { position: relative; width: 11px; height: 9px; border-block: 1.5px solid currentColor; box-sizing: border-box; }
+.agentic-plan-icon::after { content: ""; position: absolute; left: 0; right: 0; top: 2.25px; border-top: 1.5px solid currentColor; }
+.agentic-dock.is-plan-open .agentic-dock-plan { background: rgb(238 242 230 / .12); }
+.agentic-dock .agentic-dock-speed { margin-left: 8px; padding: 0 10px; font-weight: 700; font-variant-numeric: tabular-nums; color: #b9c5ab; }
+.agentic-dock .agentic-dock-speed[aria-pressed="true"] { color: #12130f; background: #d7e8b9; }
+.agentic-dock .agentic-dock-speed[aria-pressed="true"]:hover { background: #e6f1d2; }
+
+/* The orchestrator's task list, opened above the dock. */
+.agentic-plan { position: absolute; left: 50%; bottom: calc(100% + 10px); translate: -50% 0; width: min(330px, calc(100vw - 20px)); max-height: min(60vh, 380px); overflow: auto; box-sizing: border-box; padding: 12px 14px 10px; border: 1px solid rgb(230 237 218 / .2); border-radius: 14px; background: rgb(23 26 22 / .96); color: #eef2e6; white-space: normal; box-shadow: 0 16px 34px -16px rgb(16 17 20 / .7); animation: agentic-plan-in .26s cubic-bezier(.16,1,.3,1) both; }
+.agentic-plan[hidden] { display: none; }
+.agentic-plan-title { margin: 0 0 8px; color: #9aa68e; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.agentic-plan-list { margin: 0; padding: 0; list-style: none; }
+.agentic-plan-item { display: grid; grid-template-columns: 14px 1fr auto; align-items: baseline; gap: 8px; padding: 5px 0; border-top: 1px solid rgb(230 237 218 / .08); }
+.agentic-plan-item:first-child { border-top: 0; }
+.agentic-plan-mark { color: #7d8873; text-align: center; }
+.agentic-plan-state { color: #9aa68e; font-variant-numeric: tabular-nums; text-align: right; }
+.agentic-plan-item[data-state="building"] .agentic-plan-mark, .agentic-plan-item[data-state="building"] .agentic-plan-state { color: #f6f9ef; }
+.agentic-plan-item[data-state="building"] .agentic-plan-name { color: #f6f9ef; font-weight: 700; }
+.agentic-plan-item[data-state="done"] .agentic-plan-mark { color: #9fd38a; }
+.agentic-plan-item[data-state="done"] .agentic-plan-name { color: #b9c5ab; }
+
+/* Handoff note: a short decorative line beside the dock, one at a time. */
+.agentic-note { position: absolute; left: calc(100% + 10px); top: 50%; margin: 0; padding: 6px 10px 5px; border-radius: 20px; background: rgb(23 26 22 / .9); color: #d7e8b9; font-size: 10.5px; white-space: nowrap; pointer-events: none; opacity: 0; translate: -6px -50%; transition: opacity .3s ease, translate .4s cubic-bezier(.16,1,.3,1); }
+.agentic-note.is-on { opacity: 1; translate: 0 -50%; }
+.agentic-dock.is-plan-open .agentic-note, .agentic-dock[data-state="pill"] .agentic-note { display: none; }
+@media (max-width: 1099px) {
+  .agentic-note { left: 50%; top: auto; bottom: calc(100% + 8px); translate: -50% 4px; }
+  .agentic-note.is-on { translate: -50% 0; }
+}
+
 /* Pill: what remains after the tour; the count returns only during a pass. */
-.agentic-dock[data-state="pill"] { padding-left: 16px; }
+.agentic-dock[data-state="pill"] { padding-left: 1px; }
+.agentic-dock[data-state="pill"] .agentic-dock-speed { display: none; }
 .agentic-dock[data-state="pill"] .agentic-dock-skip { display: none; }
 .agentic-dock[data-state="pill"] .agentic-dock-replay, .agentic-dock[data-state="pill"] .agentic-dock-close { display: inline-flex !important; }
 .agentic-dock[data-state="pill"] .agentic-dock-replay { margin-left: 6px; padding: 0 12px; text-decoration: underline; text-underline-offset: 3px; }
@@ -100,6 +134,16 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-target[data-build-kind="art"][data-build-state="pending"] { translate: 0 14px; scale: .93; }
 .agentic-target[data-build-state="placing"] { opacity: 1; translate: none; scale: none; transition: opacity var(--agentic-d, .4s) cubic-bezier(.33,1,.68,1), translate var(--agentic-d, .4s) cubic-bezier(.16,1,.3,1), scale var(--agentic-d, .4s) cubic-bezier(.16,1,.3,1); }
 .agentic-target[data-build-state="typing"] { opacity: 1; translate: none; }
+/* Per-item placement: the item pops in with a slight settle when its agent
+   drops it; its tags cascade in after it; its sub line is written. Pending
+   items are only transparent (no transform), so their bounds stay exact. */
+.agentic-target[data-build-kind="pop"][data-build-state="pending"],
+.agentic-target[data-build-kind="kid"][data-build-state="pending"],
+.agentic-target[data-build-kind="text"][data-build-state="pending"] { opacity: 0; translate: none; }
+.agentic-target[data-build-kind="pop"][data-build-state="placing"] { transition: opacity calc(var(--agentic-d, .38s) * .6) ease-out; animation: agentic-pop var(--agentic-d, .38s) cubic-bezier(.33,1,.68,1) both; }
+.agentic-target[data-build-kind="kid"][data-build-state="placing"] { transition: opacity calc(var(--agentic-d, .26s) * .6) ease-out; animation: agentic-pop-kid var(--agentic-d, .26s) cubic-bezier(.33,1,.68,1) both; }
+/* Gallery cards keep their own depth opacity once placed. */
+.project-card.agentic-target[data-build-state="placing"] { opacity: var(--card-opacity, 1); }
 
 /* Replay sits inside the footer's small mono row without changing its height. */
 .agentic-replay { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -16px; padding: 0; color: inherit; font: inherit; text-transform: uppercase; letter-spacing: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
@@ -110,24 +154,32 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 @keyframes agentic-blink { 50% { opacity: 0; } }
 @keyframes agentic-dispatch { 0% { scale: 0 1; opacity: .95; } 40% { scale: 1 1; opacity: .9; } 100% { scale: 1 1; opacity: 0; } }
 @keyframes agentic-dock-in { from { opacity: 0; } }
+@keyframes agentic-pop { 0% { scale: .92; translate: 0 6px; } 65% { scale: 1.012; translate: 0 -1px; } 100% { scale: 1; translate: none; } }
+@keyframes agentic-pop-kid { 0% { scale: .8; translate: 0 3px; } 65% { scale: 1.04; } 100% { scale: 1; translate: none; } }
+@keyframes agentic-plan-in { from { opacity: 0; translate: -50% 6px; } }
 
 @media (max-width: 760px) {
   .footer-bottom > .agentic-replay { order: 4; margin-block: -12px -14px; }
 }
 @media (max-width: 639px) {
-  .agentic-dock { padding-left: 13px; font-size: 10px; }
+  .agentic-dock { font-size: 10px; }
+  .agentic-dock .agentic-dock-plan { margin-right: 6px; padding: 0 10px 0 13px; }
+  .agentic-plan-word, .agentic-dock-where, .agentic-dock-skip-more { display: none; }
+  .agentic-dock .agentic-dock-speed { margin-left: 4px; padding: 0 8px; }
+  /* A small sheet above the dock. */
+  .agentic-plan { width: calc(100vw - 20px); max-height: 52vh; border-radius: 14px 14px 10px 10px; }
   .agentic-dock-face { gap: 9px; }
   .agentic-dock-dots { gap: 3px; }
   .agentic-dot { width: 5px; height: 5px; }
   .agentic-dock-status { gap: 5px; }
   .agentic-dock-agents { display: none; }
   .agentic-dock-progress { padding-left: 2px; }
-  .agentic-dock-skip { margin-left: 9px !important; padding: 0 13px !important; }
+  .agentic-dock-skip { margin-left: 4px !important; padding: 0 13px !important; }
   .agentic-role { font-size: 10px; top: 18px; padding: 3px 6px 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .agentic-stage, .agentic-dock { display: none; }
-  .agentic-target[data-build-state] { opacity: 1 !important; translate: none !important; scale: none !important; clip-path: none !important; }
+  .agentic-target[data-build-state] { opacity: 1 !important; translate: none !important; scale: none !important; clip-path: none !important; animation: none !important; }
 }
 
 /* Ride-along agents carry over between tour stops without re-animating in. */

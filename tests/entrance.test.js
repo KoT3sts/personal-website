@@ -7,6 +7,7 @@ import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, TOUR_STOPS
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 const entranceCSS = await readFile(new URL('../web/entrance.css', import.meta.url), 'utf8');
 const storageKey = 'cesar:portfolio:agentic-intro:v1';
+const speedKey = 'cesar:portfolio:agentic-tour-speed:v1';
 const fast = { heroDuration: 60, buildDuration: 30, sectionDuration: 30, scrollDuration: 20, handoffDuration: 20 };
 
 // A manual animation-frame queue: lets tests count pending loops and step time.
@@ -44,6 +45,9 @@ function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = f
     disconnect() {}
   };
   if (seen) window.localStorage.setItem(storageKey, 'seen');
+  // Tours start at 1x unless a test opts in; the speed setting is shared storage.
+  if (!storageBlocked) window.localStorage.removeItem(speedKey);
+  t.after(() => { try { window.localStorage.removeItem(speedKey); } catch { /* closed */ } });
   if (storageBlocked) Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage denied'); } });
   const clock = frames ? manualFrames(window) : null;
   // Manual frames use the real production timing; real frames use tiny durations.
@@ -64,6 +68,9 @@ const until = async (condition, ms = 4000) => {
   return condition();
 };
 const dockOf = document => document.querySelector('.agentic-dock');
+const visibleCursors = document => [...document.querySelectorAll('.agentic-cursor.is-in:not(.is-docked)')];
+const cursorPoint = cursor => { const m = /translate3d\(([-\d.]+)px,\s*([-\d.]+)px/.exec(cursor.style.transform || ''); return m ? { x: +m[1], y: +m[2] } : null; };
+const planItems = document => [...dockOf(document).querySelectorAll('.agentic-plan-item')].map(item => [item.querySelector('.agentic-plan-name').textContent, item.querySelector('.agentic-plan-state').textContent]);
 const stopNames = document => TOUR_STOPS.filter(stop => document.querySelector(stop.sel)).map(stop => stop.name);
 const measurable = document => document.querySelector('#about').getBoundingClientRect().height > 0;
 
@@ -115,11 +122,15 @@ test('the first visit tours every section in order, then hands off and collapses
   assertNoResidue(document);
   const dock = dockOf(document);
   assert.equal(dock.dataset.state, 'pill');
-  assert.equal(dock.querySelector('.agentic-dock-summary').textContent, '18 agents built this page');
+  // The pill reports the distinct agents that worked and the measured time.
+  const summary = dock.querySelector('.agentic-dock-summary').textContent;
+  const [, agents, seconds] = /^Built by (\d+) agents in (\d+) s$/.exec(summary) || [];
+  assert.ok(agents && +agents >= 10 && +agents <= crewSize(1280), summary);
+  assert.equal(+seconds, Math.round(clock.now() / 1000), 'measured tour time');
   assert.ok(dock.querySelector('[data-agentic-dock-replay]'));
   assert.equal(document.querySelector('[data-agentic-replay]').hidden, false);
   assert.ok(heroEnded >= 7000 && heroEnded <= 9000, `hero took ${heroEnded}ms`);
-  assert.ok(clock.now() <= 41000, `tour took ${clock.now()}ms`);
+  assert.ok(clock.now() >= 30000 && clock.now() <= 47000, `tour took ${clock.now()}ms`);
   if (measurable(document) && document.documentElement.scrollHeight > window.innerHeight + 10) {
     assert.ok(window.scrollY > 0, 'the tour ends at the contact section, not back at the top');
   }
@@ -144,7 +155,8 @@ test('the dock count is the number of agents at work and changes between section
   const hero = maxByStop.get('Hero');
   const lower = [...maxByStop].filter(([name]) => name !== 'Hero').map(([, max]) => max);
   assert.ok(hero >= 10, `hero crew peaked at ${hero}`);
-  assert.ok(lower.every(max => max >= 1 && max < hero), `lower crews ${lower}`);
+  assert.ok(lower.every(max => max >= 1), `lower crews ${lower}`);
+  assert.ok(lower.some(max => max >= 10), `some sections are busy: ${[...maxByStop]}`);
   assert.ok(new Set(lower).size >= 2, `crew sizes differ between sections: ${[...maxByStop]}`);
   // Phones keep a small crew.
   const phone = setup(t, { width: 375, frames: true });
@@ -229,6 +241,13 @@ test('Skip tour is a real control in a labelled region from the first frame, wit
   assert.ok(parseFloat(window.getComputedStyle(skip).minHeight) >= 44);
   assert.equal(dock.querySelector('.agentic-dock-face').getAttribute('aria-hidden'), 'true');
   assert.equal(dock.querySelector('.agentic-dock-live').getAttribute('aria-live'), 'polite');
+  for (const selector of ['[data-agentic-plan]', '[data-agentic-speed]']) {
+    const control = dock.querySelector(selector);
+    assert.equal(control.tagName, 'BUTTON', selector);
+    assert.equal(control.closest('[aria-hidden]'), null, selector);
+    assert.ok(parseFloat(window.getComputedStyle(control).minHeight) >= 44, selector);
+    assert.ok(control.getAttribute('aria-label'), selector);
+  }
   controller.skip();
   for (const selector of ['[data-agentic-dock-replay]', '.agentic-dock-close', '[data-agentic-replay]']) {
     const control = document.querySelector(selector);
@@ -327,10 +346,10 @@ test('after a cancelled first-visit tour, manual passes trace with small crews a
   assert.equal(document.querySelector('.agentic-stage'), null);
 });
 
-test('crew size scales with the viewport: one orchestrator plus 18, 9 or 5 subagents', t => {
+test('crew size scales with the viewport: one orchestrator plus 20, 9 or 5 subagents', t => {
   assert.deepEqual([1440, 1280, 1100, 1024, 768, 640, 390, 375, 360].map(crewTier),
     ['desktop', 'desktop', 'desktop', 'tablet', 'tablet', 'tablet', 'phone', 'phone', 'phone']);
-  for (const [width, subagents] of [[1280, 18], [768, 9], [375, 5]]) {
+  for (const [width, subagents] of [[1280, 20], [768, 9], [375, 5]]) {
     assert.equal(crewSize(width), subagents);
     const { document, controller } = setup(t, { width });
     assert.equal(controller.crewSize, subagents);
@@ -377,7 +396,7 @@ test('one controller drives one animation-frame loop across stops, replay and sk
   controller.replay();
   assert.equal(document.querySelectorAll('.agentic-stage').length, 1);
   assert.equal(document.querySelectorAll('.agentic-dock').length, 1);
-  assert.equal(document.querySelectorAll('.agentic-cursor').length, 19);
+  assert.equal(document.querySelectorAll('.agentic-cursor').length, crewSize(1280) + 1);
   assert.equal(clock.pending.size, 1);
   controller.skip();
   assert.equal(clock.pending.size, 0);
@@ -474,4 +493,190 @@ test('with fast timing the whole first visit completes without residue', async t
   assert.equal(controller.phase, 'ready');
   assert.equal(window.localStorage.getItem(storageKey), 'seen');
   assertNoResidue(document);
+});
+
+test('a ride-along crew carries over between stops, so cursors never all vanish', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true });
+  assert.ok(visibleCursors(document).length >= 1, 'the orchestrator is on screen from the first frame');
+  let index = 0;
+  let previous = [];
+  let carried = 0;
+  let transitions = 0;
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    const shown = visibleCursors(document);
+    assert.ok(shown.length >= 1, `no cursor on screen at ${clock.now()}ms (${controller.tour.name})`);
+    if (controller.tour.index !== index) {
+      index = controller.tour.index;
+      transitions++;
+      // Carried cursors appear where they were a frame ago.
+      const near = shown.filter(cursor => {
+        const p = cursorPoint(cursor);
+        return p && previous.some(q => Math.hypot(p.x - q.x, p.y - q.y) < 40);
+      });
+      assert.ok(near.length >= 2, `${controller.tour.name}: ${near.length} carried cursors`);
+      assert.ok(document.querySelector('.agentic-cursor.is-orchestrator.is-in:not(.is-docked)'), 'the orchestrator leads the crew');
+      carried += near.length;
+    }
+    previous = shown.map(cursorPoint).filter(Boolean);
+  }
+  assert.equal(transitions, stopNames(document).length - 1);
+  assert.ok(carried >= transitions * 2);
+  assertNoResidue(document);
+});
+
+test('sections are placed item by item by a big crew on desktop and a small one on phones', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true });
+  let peak = 0;
+  let capabilityJobs = 0;
+  let tagKids = 0;
+  let bulletJobs = 0;
+  const labels = new Set();
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    peak = Math.max(peak, visibleCursors(document).length);
+    capabilityJobs = Math.max(capabilityJobs, document.querySelectorAll('#capabilities .capability[data-agentic-job="place"]').length);
+    tagKids = Math.max(tagKids, document.querySelectorAll('#capabilities .tag-list li[data-build-kind="kid"]').length);
+    bulletJobs = Math.max(bulletJobs, document.querySelectorAll('#experience .role-points > li[data-agentic-job]').length);
+    if (controller.touring && controller.tour.index > 0) document.querySelectorAll('.agentic-cursor.is-working .agentic-role').forEach(label => labels.add(label.textContent));
+  }
+  if (measurable(document)) {
+    assert.ok(capabilityJobs >= 3, `${capabilityJobs} capability cards got their own job`);
+    assert.ok(tagKids >= 3, `${tagKids} tags cascade after their card`);
+    assert.ok(bulletJobs >= 3, `${bulletJobs} experience bullets placed one at a time`);
+    assert.ok([...labels].some(text => /^(copy|type|links|qa)·?\d? · placing '.+'$/.test(text)), 'item labels name the item');
+  }
+  assert.ok(peak >= 15, `desktop peak of ${peak} visible cursors`);
+  // Short labels: role, action and at most a 30-character item name.
+  // (Quoted item names are real page content; the actions are presentation only.)
+  const actions = [...labels].map(text => text.replace(/'.*'/, ''));
+  assert.ok(actions.every(text => !/token|model|api\b|latency|\bms\b|passed|failed/i.test(text)), actions.filter(text => /token|model|api\b|latency|\bms\b|passed|failed/i.test(text)).join(' | '));
+  assert.ok([...labels].every(text => (/'(.*)'/.exec(text)?.[1] || '').length <= 30), 'names are truncated');
+  assertNoResidue(document);
+  // Phones: a handful of cursors at most.
+  const phone = setup(t, { width: 375, frames: true });
+  let phonePeak = 0;
+  while (phone.controller.touring && phone.clock.now() < 90000) { phone.clock.step(16); phonePeak = Math.max(phonePeak, visibleCursors(phone.document).length); }
+  assert.ok(phonePeak >= 3 && phonePeak <= 7, `phone peak of ${phonePeak} visible cursors`);
+});
+
+test('the dock task list follows the plan, opens without cancelling, and Escape only closes it', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
+  const dock = dockOf(document);
+  const toggle = dock.querySelector('[data-agentic-plan]');
+  const list = document.getElementById(toggle.getAttribute('aria-controls'));
+  assert.ok(list && dock.contains(list));
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(list.hidden, true);
+  toggle.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  toggle.focus();
+  toggle.click();
+  assert.equal(controller.touring, true, 'opening the plan does not cancel the tour');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(list.hidden, false);
+  assert.equal(document.activeElement, toggle, 'focus stays on the toggle');
+  const names = stopNames(document);
+  assert.deepEqual(planItems(document).map(([name]) => name), names.map(name => `Build ${name === 'Hero' ? 'hero' : name}`));
+  clock.step(16);
+  stepTo(controller, clock, 0, 2000);
+  let items = planItems(document);
+  assert.match(items[0][1], /^building · \d+ agents?$/);
+  assert.ok(items.slice(1).every(([, state]) => state === 'planned'), JSON.stringify(items));
+  stepTo(controller, clock, 2, 1500);
+  items = planItems(document);
+  assert.deepEqual(items.slice(0, 2).map(([, state]) => state), ['done', 'done']);
+  assert.match(items[2][1], /^building · \d+ agents?$/);
+  assert.equal(items[2][1], `building · ${controller.stats.working} ${controller.stats.working === 1 ? 'agent' : 'agents'}`, 'live agent count');
+  // Escape closes the list; the tour goes on and focus returns to the toggle.
+  document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(controller.touring, true);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(list.hidden, true);
+  assert.equal(document.activeElement, toggle);
+  // Tabbing between the dock's own controls does not end the tour either.
+  const tab = new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
+  toggle.dispatchEvent(tab);
+  assert.equal(controller.touring, true);
+  toggle.click();
+  stepTo(controller, clock, 99);
+  assert.equal(controller.touring, false);
+  // The finished plan stays viewable from the pill.
+  assert.equal(dock.dataset.state, 'pill');
+  assert.ok(dock.contains(toggle) && window.getComputedStyle(toggle).display !== 'none');
+  assert.ok(planItems(document).every(([, state]) => state === 'done'));
+  assert.ok(!/test|pass/i.test(list.textContent), 'planned / building / done only');
+  // Escape closes the list in the pill too.
+  document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(list.hidden, true);
+});
+
+test('2x speed finishes the tour faster without cancelling it, and is remembered separately', t => {
+  const normal = setup(t, { width: 1280, frames: true });
+  stepTo(normal.controller, normal.clock, 99);
+  const slow = normal.clock.now();
+  const fast2 = setup(t, { width: 1280, frames: true });
+  const { document, window, controller, clock } = fast2;
+  stepTo(controller, clock, 0, 1000);
+  const button = dockOf(document).querySelector('[data-agentic-speed]');
+  assert.equal(button.textContent, '1×');
+  button.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  button.click();
+  assert.equal(controller.touring, true, 'pressing it does not cancel');
+  assert.equal(controller.speed, 2);
+  assert.equal(button.textContent, '2×');
+  assert.equal(button.getAttribute('aria-pressed'), 'true');
+  assert.equal(window.localStorage.getItem(speedKey), '2');
+  assert.equal(window.localStorage.getItem(storageKey), null, 'separate from the visit flag');
+  let y = window.scrollY;
+  let jump = 0;
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    jump = Math.max(jump, Math.abs(window.scrollY - y));
+    y = window.scrollY;
+  }
+  const quick = clock.now();
+  assert.ok(quick < slow * 0.62, `2x took ${quick}ms vs ${slow}ms`);
+  assert.match(dockOf(document).querySelector('.agentic-dock-summary').textContent, /^Built by \d+ agents in \d+ s$/, 'finished, not cancelled');
+  assert.ok(jump < 200, `scroll moved at most ${jump}px per frame`);
+  assertNoResidue(document);
+});
+
+test('the summary pill reports measured time without hidden-tab pauses, and cancel keeps the old wording', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
+  let hidden = false;
+  Object.defineProperty(document, 'hidden', { get: () => hidden, configurable: true });
+  stepTo(controller, clock, 2, 500);
+  hidden = true;
+  document.dispatchEvent(new window.Event('visibilitychange'));
+  clock.step(120000);
+  hidden = false;
+  document.dispatchEvent(new window.Event('visibilitychange'));
+  stepTo(controller, clock, 99);
+  const seconds = Math.round((clock.now() - 120000) / 1000);
+  assert.match(dockOf(document).querySelector('.agentic-dock-summary').textContent, new RegExp(`^Built by \\d+ agents in ${seconds} s$`));
+  const cancelled = setup(t, { width: 1280, frames: true });
+  stepTo(cancelled.controller, cancelled.clock, 1, 200);
+  cancelled.document.querySelector('#main').dispatchEvent(new cancelled.window.WheelEvent('wheel', { bubbles: true, deltaY: 100 }));
+  assert.equal(dockOf(cancelled.document).querySelector('.agentic-dock-summary').textContent, `${crewSize(1280)} agents built this page`);
+});
+
+test('handoff notes appear one at a time, beside the dock, hidden from assistive technology', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true });
+  const texts = new Set();
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    const on = document.querySelectorAll('.agentic-note.is-on');
+    assert.ok(on.length <= 1, 'at most one note');
+    on.forEach(note => {
+      assert.equal(note.getAttribute('aria-hidden'), 'true');
+      assert.equal(note.closest('[aria-live]'), null);
+      texts.add(note.textContent);
+    });
+  }
+  assert.equal(document.querySelectorAll('.agentic-note').length <= 1, true);
+  assert.ok(texts.size >= 5, `${texts.size} notes`);
+  assert.ok([...texts].every(text => /^[a-z0-9]+ → [a-z0-9]+ · [a-z ]+$/.test(text)), [...texts].join(' | '));
+  assert.ok([...texts].every(text => !/token|model|api|latency|test|pass|fail/i.test(text)));
+  assert.equal(document.querySelectorAll('.agentic-note.is-on').length, 0, 'none left on the pill');
 });

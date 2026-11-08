@@ -41,13 +41,34 @@ test('rejects invalid gallery size and invalid selection without losing state', 
 test('card poses keep the incumbent arc at rest and interpolate while dragging', async () => {
   const { cardPose, wrapOffset } = await import('../web/gallery-state.js');
   assert.deepEqual([0, 1, 2, 3, 4, 5].map(index => wrapOffset(index, 0, 6)), [0, 1, 2, 3, -2, -1]);
-  assert.deepEqual(cardPose(0, 6), { distance: 0, opacity: 1, z: 6, far: false });
-  assert.deepEqual(cardPose(-1, 6), { distance: 1, opacity: 0.65, z: 5, far: false });
-  assert.deepEqual(cardPose(2, 6), { distance: 2, opacity: 0, z: 4, far: false });
+  assert.deepEqual(cardPose(0, 6), { distance: 0, opacity: 1, shade: 0, z: 6, far: false });
+  assert.deepEqual(cardPose(-1, 6), { distance: 1, opacity: 1, shade: 0.35, z: 5, far: false });
+  assert.deepEqual(cardPose(2, 6), { distance: 2, opacity: 0, shade: 0.35, z: 4, far: false });
   assert.equal(cardPose(3, 6).far, true);
   const between = cardPose(0.5, 6);
-  assert.ok(between.opacity < 1 && between.opacity > 0.65, 'a half-dragged card sits between active and neighbour');
+  assert.ok(between.shade > 0 && between.shade < 0.35, 'a half-dragged card sits between active and neighbour');
   assert.equal(Object.is(cardPose(-0, 6).distance, -0), false);
+});
+
+// Regression: neighbours used to be 65% opaque, so mid-drag and mid-transition
+// the card behind showed through the card in front of it.
+test('cards that can overlap a nearer card stay opaque; only cards behind the neighbours fade', async () => {
+  const { cardPose, NEIGHBOUR_SHADE } = await import('../web/gallery-state.js');
+  for (let step = 0; step <= 100; step += 1) {
+    const position = step / 100;
+    assert.equal(cardPose(position, 6).opacity, 1, `card at ${position} must be opaque`);
+    assert.equal(cardPose(-position, 6).opacity, 1, `card at ${-position} must be opaque`);
+  }
+  // The card's share of the final colour on the paper background is unchanged
+  // from the old opacity curve, so the arc looks the same at rest.
+  const share = position => { const pose = cardPose(position, 6); return Math.round((1 - pose.shade) * pose.opacity * 1000) / 1000; };
+  assert.equal(share(0), 1);
+  assert.equal(share(1), 1 - NEIGHBOUR_SHADE);
+  assert.equal(share(1.5), Math.round(0.65 * 0.5 * 1000) / 1000);
+  assert.equal(share(2), 0);
+  // Depth still increases monotonically while a card travels back.
+  const shares = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map(share);
+  shares.slice(1).forEach((value, index) => assert.ok(value <= shares[index], 'cards recede smoothly'));
 });
 
 test('drag offset follows the pointer one-to-one, then resists past one card', async () => {

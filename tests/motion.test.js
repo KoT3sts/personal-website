@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { ENTRANCE_TRACED, REVEAL_GROUPS, initMotion, isEntranceTracing, shouldHold, staggerDelay } from '../web/motion.js';
+import { ENTRANCE_TRACED, REVEAL_GROUPS, initMotion, isEntranceTracing, sectionAtLine, shouldHold, staggerDelay } from '../web/motion.js';
 import { SECTION_TARGETS } from '../web/entrance.js';
 
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -150,4 +150,19 @@ test('markup ships without hidden reveal states, and CSS only hides what JS mark
   }
   assert.match(css, /prefers-reduced-motion: reduce\)\s*\{\s*\[data-reveal\][^}]*opacity: 1 !important/);
   for (const [selector] of REVEAL_GROUPS) assert.ok(selector.length > 0);
+});
+
+// Regression: header tone used to come from a reading band 12–30% down the
+// viewport, below the header itself. At the bottom of the page the dark footer
+// reached that band while the light closing note was still behind the header.
+test('header tone samples the section that contains the header line, including at the page bottom', () => {
+  const headerLine = 50;
+  // Bottom of a 1280x800 page: closing note behind the header, footer starts at 125px.
+  const bottom = [{ top: -2000, bottom: -400 }, { top: -400, bottom: 125 }, { top: 125, bottom: 800 }];
+  assert.equal(sectionAtLine(bottom, headerLine), 1, 'the light closing note, not the footer below it');
+  // Once the footer slides under the header line it takes over.
+  assert.equal(sectionAtLine([{ top: -900, bottom: 40 }, { top: 40, bottom: 715 }], headerLine), 1);
+  assert.equal(sectionAtLine([{ top: -900, bottom: 50 }, { top: 50, bottom: 715 }], headerLine), 1, 'at a shared edge the lower section wins');
+  assert.equal(sectionAtLine([{ top: 100, bottom: 400 }], headerLine), -1, 'nothing behind the header');
+  assert.equal(sectionAtLine([], headerLine), -1);
 });

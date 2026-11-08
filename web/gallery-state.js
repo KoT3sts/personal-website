@@ -27,12 +27,20 @@ export function wrapOffset(index, active, count) {
 }
 
 // Pose for a card at a (possibly fractional, while dragging) arc position.
-// Whole positions keep the incumbent arc: neighbours at .65, second
-// neighbours faded out, anything further hidden behind the stage.
+// Whole positions keep the incumbent arc: neighbours washed back to .65,
+// second neighbours faded out, anything further hidden behind the stage.
+// Cards that can overlap a nearer card stay opaque (opacity 1 up to one card
+// away) and recede through `shade`, a paper-coloured wash painted on top of
+// the card, so nothing behind them bleeds through. Only cards travelling
+// behind the neighbours (distance 1 to 2) fade with real opacity. The visible
+// result on the paper background matches the old .65 opacity:
+// (1 - shade) * opacity is the card's share of the final colour.
+export const NEIGHBOUR_SHADE = 0.35;
 export function cardPose(position, count) {
   const distance = Math.abs(position);
-  const opacity = distance <= 1 ? 1 - 0.35 * distance : distance <= 2 ? 0.65 * (2 - distance) : 0;
-  return { distance: round(distance), opacity: round(opacity), z: count - Math.round(distance), far: distance > 2 };
+  const opacity = distance <= 1 ? 1 : distance <= 2 ? 2 - distance : 0;
+  const shade = NEIGHBOUR_SHADE * Math.min(distance, 1);
+  return { distance: round(distance), opacity: round(opacity), shade: round(shade), z: count - Math.round(distance), far: distance > 2 };
 }
 
 // Rubber-banded drag, measured in cards.

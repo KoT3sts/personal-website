@@ -33,6 +33,16 @@ export function staggerDelay(batchIndex) {
   return Math.min(Math.max(batchIndex, 0), MAX_STAGGER_STEPS) * STAGGER;
 }
 
+// Index of the section whose box contains a horizontal line (viewport y), or
+// -1. Sections are contiguous, so at a shared edge the lower one wins.
+export function sectionAtLine(rects, line) {
+  for (let index = rects.length - 1; index >= 0; index -= 1) {
+    const rect = rects[index];
+    if (rect && rect.top <= line && rect.bottom > line) return index;
+  }
+  return -1;
+}
+
 export function isEntranceTracing(entrance, root) {
   if (root?.classList?.contains('agentic-running') || root?.classList?.contains('agentic-touring')) return true;
   return Boolean(entrance && (entrance.touring || entrance.sectionsEligible || (entrance.phase && entrance.phase !== 'ready')));

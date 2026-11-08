@@ -16,21 +16,41 @@ test('About navigation covers both scenes while header colors follow the actual 
     constructor(callback) { onIntersection = callback; }
     observe(element) { observed.push(element); }
   };
-  const { document } = window;
-  initPortfolio(document, window);
+  const { document, Event } = window;
+  // JSDOM has no layout: stub the boxes. The header's centre line is y = 50.
   const header = document.querySelector('.site-header');
+  header.getBoundingClientRect = () => ({ top: 24, bottom: 76, height: 52 });
+  const sections = [...document.querySelectorAll('main > section[id], footer[id]')];
+  function layout(boxes) {
+    sections.forEach(section => { section.getBoundingClientRect = () => boxes[section.id] || { top: -5000, bottom: -4000 }; });
+    window.dispatchEvent(new Event('scroll'));
+  }
+  layout({ home: { top: 0, bottom: 800 }, about: { top: 800, bottom: 1700 } });
+  initPortfolio(document, window);
   const nav = () => document.querySelector('.main-nav [aria-current]')?.hash;
   const enter = id => onIntersection([{ target: document.getElementById(id), isIntersecting: true }]);
   assert.ok(observed.includes(document.querySelector('#introduction')));
+  assert.equal(header.classList.contains('is-dark'), false, 'light hero behind the header');
   enter('about');
   assert.equal(nav(), '#about');
+  assert.equal(header.classList.contains('is-dark'), false, 'the nav band alone never changes the header tone');
+  layout({ about: { top: -200, bottom: 700 } });
   assert.ok(header.classList.contains('is-dark'));
   enter('introduction');
   assert.equal(nav(), '#about', 'cinematic introduction belongs to About');
+  layout({ introduction: { top: -10, bottom: 900 } });
   assert.ok(header.classList.contains('is-dark'));
   enter('work');
   assert.equal(nav(), '#work');
+  layout({ work: { top: -300, bottom: 600 } });
   assert.equal(header.classList.contains('is-dark'), false);
+  // Regression: at the very bottom the dark footer filled the nav band while the
+  // light closing note was still behind the header, so the wordmark vanished.
+  enter('contact');
+  layout({ approach: { top: -900, bottom: -400 }, notes: { top: -400, bottom: 125 }, contact: { top: 125, bottom: 800 } });
+  assert.equal(header.classList.contains('is-dark'), false, 'light closing note behind the header at the page bottom');
+  layout({ notes: { top: -500, bottom: 30 }, contact: { top: 30, bottom: 705 } });
+  assert.ok(header.classList.contains('is-dark'), 'dark once the footer is behind the header');
 });
 
 function setup(reducedMotion = false, withDialog = false) {
@@ -89,10 +109,13 @@ test('every project card has a matching selector, story, and only the nearest ne
     assert.ok(story, `missing story for ${title}`);
     assert.equal(story.querySelector('h3').textContent, title);
   });
-  // Index 0 is active: cards 1 and 5 are neighbours, 2 and 4 fade out, 3 wraps behind and is hidden.
+  // Index 0 is active: cards 1 and 5 are neighbours (opaque, washed back), 2 and 4 fade out, 3 wraps behind and is hidden.
   assert.equal(cards[0].style.getPropertyValue('--card-opacity'), '1');
-  assert.equal(cards[1].style.getPropertyValue('--card-opacity'), '0.65');
-  assert.equal(cards[5].style.getPropertyValue('--card-opacity'), '0.65');
+  assert.equal(cards[0].style.getPropertyValue('--card-shade'), '0');
+  assert.equal(cards[1].style.getPropertyValue('--card-opacity'), '1');
+  assert.equal(cards[1].style.getPropertyValue('--card-shade'), '0.35');
+  assert.equal(cards[5].style.getPropertyValue('--card-opacity'), '1');
+  assert.equal(cards[5].style.getPropertyValue('--card-shade'), '0.35');
   assert.equal(cards[2].style.getPropertyValue('--card-opacity'), '0');
   assert.equal(cards[3].hasAttribute('data-far'), true);
   assert.equal(cards.filter(card => card.hasAttribute('data-far')).length, 1);
@@ -246,10 +269,13 @@ test('dragging moves the cards with the pointer, and a short drag settles back o
   dispatch(stage, 'pointermove', { pointerId: 7, clientX: 270, clientY: 121 });
   assert.ok(stage.classList.contains('is-dragging'));
   assert.ok(Number(cards[0].style.getPropertyValue('--offset')) < 0, 'active card follows the pointer left');
-  assert.ok(Number(cards[1].style.getPropertyValue('--card-opacity')) > 0.65, 'next card brightens as it approaches');
+  assert.ok(Number(cards[1].style.getPropertyValue('--card-shade')) < 0.35, 'next card brightens as it approaches');
+  // The active card and the approaching neighbour overlap mid-drag: both stay opaque.
+  for (const card of [cards[0], cards[1]]) assert.equal(card.style.getPropertyValue('--card-opacity'), '1', 'overlapping cards stay opaque mid-drag');
+  assert.ok(Number(cards[5].style.getPropertyValue('--card-opacity')) < 1, 'only the card moving behind the neighbours fades');
   dispatch(stage, 'pointerup', { pointerId: 7, clientX: 270, clientY: 121 });
   assert.equal(state.index, 0);
   assert.equal(stage.classList.contains('is-dragging'), false);
   assert.equal(cards[0].style.getPropertyValue('--offset'), '0');
-  assert.equal(cards[1].style.getPropertyValue('--card-opacity'), '0.65');
+  assert.equal(cards[1].style.getPropertyValue('--card-shade'), '0.35');
 });
