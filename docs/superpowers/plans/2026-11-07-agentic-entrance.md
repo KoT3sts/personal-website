@@ -21,4 +21,4 @@
 - [x] Add web/entrance.js controller and web/entrance.css; connect bootstrap and stylesheet.
 - [x] Test first visit, completion, skip/Escape/navigation, returning visit, replay, deep links, reduced motion, and unavailable storage.
 - [x] Run full tests, syntax checks, build, and diff checks; obtain an independent implementation review and fix material issues.
-- [ ] Package exact source, publish owner-private, push the existing GitHub branch, and save the handoff/evidence limits.
+- [x] Package exact source, publish owner-private, push the existing GitHub branch, and save the handoff/evidence limits.
