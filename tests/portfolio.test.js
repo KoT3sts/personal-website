@@ -178,3 +178,17 @@ test('the first heading states the role and the page keeps one h1 with ordered s
     previous = level;
   }
 });
+
+test('capabilities sit between About and Experience, each with a proof line, plus a Currently note', () => {
+  const { document } = new JSDOM(html).window;
+  const order = [...document.querySelectorAll('main > section[id]')].map(section => section.id);
+  assert.deepEqual(order.slice(0, 4), ['home', 'about', 'capabilities', 'experience']);
+  const items = [...document.querySelectorAll('#capabilities .capability')];
+  assert.equal(items.length, 8);
+  for (const item of items) {
+    assert.ok(item.querySelector('h3')?.textContent.trim(), 'capability needs a title');
+    assert.ok(item.querySelector('.capability-proof')?.textContent.replace('PROOF', '').trim(), 'capability needs a proof line');
+  }
+  assert.match(document.querySelector('.currently').textContent, /Pursuing an M\.S\. in Computer Science \(Machine Learning\) at Georgia Tech, part-time, while working full-time\./);
+  assert.doesNotMatch(document.body.textContent, /open to work|looking for (a|new) (job|role)|available for hire/i);
+});

@@ -29,6 +29,15 @@ Updated: November 7, 2026 (America/New_York), recruiter-ready pass.
 - DOM tests use JSDOM 26.1.0. The modal test models missing native open/close methods; browser-native Escape and focus trapping are not verified by it.
 - Local browser access is disabled in Work settings. No desktop/mobile screenshot QA was possible; responsive layout needs a real-device look.
 
+## Capabilities follow-up (on top of 0c3787c, uncommitted) — November 7, 2026
+
+- New dark section "What I can do" (`#capabilities`) between About and Experience: eight capabilities from the owner's list, each with a one-line proof and tool tags (no tags on "Teach and unblock developers" and "Work across English and Spanish"). Ruled two-column list on desktop, one column on mobile. Not added to the nav: the 375px nav is already full.
+- About: the Georgia Tech sentence became a separate "Currently" row: "Pursuing an M.S. in Computer Science (Machine Learning) at Georgia Tech, part-time, while working full-time." The About link now points to `#capabilities` ("What I can do").
+- Section numbers shifted (Experience 03 … Say hello 07).
+- `tests/portfolio.test.js`: new test for section order, eight capabilities with proof lines, the Currently text, and no "open to work" wording (not executed here; jsdom unavailable). A browser-side replica passed 37/37.
+- Checks: `npm run check`, `npm run build`, `git diff --check`, `node --test tests/gallery-state.test.js` (4/4) pass. Browser at 375 and 1280: no horizontal overflow, no console errors, new text contrast 5.9:1 to 16:1. Screenshots `caps-*.png` in `~/Documents/Work/Screenshots/personal-website/`.
+- Owner to confirm wording: "teams I helped train" (brief said "teams he trained"; he co-delivered the workshops), "Eight things I can take on, each backed by work I've done", and "Fluent in both" as the proof for languages.
+
 ## Recruiter-ready update (branch feat/recruiter-ready) — November 7, 2026
 
 Uncommitted working-tree changes on `feat/recruiter-ready`, branched from `feat/reference-portfolio`. Nothing was committed, pushed, or deployed. The established design system (warm paper/charcoal, oversized type, pill nav, mono labels, orbital sculpture, perspective gallery, dark contact footer) was kept; this is a content and polish pass, not a redesign.
