@@ -19,7 +19,7 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-cursor-body { position: relative; opacity: 0; scale: .55; transform-origin: 2px 2px; transition: opacity .26s ease, scale .36s cubic-bezier(.16,1,.3,1); }
 .agentic-cursor.is-in .agentic-cursor-body { opacity: 1; scale: 1; }
 .agentic-cursor.is-docked .agentic-cursor-body { opacity: 0; scale: .3; transition-duration: .22s, .24s; }
-.agentic-cursor svg { display: block; filter: drop-shadow(0 1.5px 1.5px rgb(16 17 20 / .28)); }
+.agentic-cursor svg { display: block; rotate: var(--tilt, 0deg); transform-origin: 2px 2px; filter: drop-shadow(0 1.5px 1.5px rgb(16 17 20 / .28)); }
 .agentic-cursor path { fill: currentColor; stroke: #121310; stroke-width: 1.25; stroke-linejoin: round; }
 .agentic-cursor.is-orchestrator { color: var(--agentic-ink); }
 .agentic-cursor.is-orchestrator path { stroke: var(--agentic-paper); stroke-width: 1.4; }

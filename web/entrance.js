@@ -240,6 +240,31 @@ const easeOut = p => 1 - Math.pow(1 - p, 4);
 const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
 const positive = (value, fallback) => (Number.isFinite(value) && value > 0 ? value : fallback);
 
+// ---- swarm motion for idle cursors -----------------------------------------
+// Each agent loops on its own path (seeded by its label, so it carries over
+// between tour stops without a jump) while the whole crew shares a slow flock
+// drift, like birds or bees hanging around a spot. `amp` scales it down for
+// cursors that should stay closer to their spot.
+const seedCache = new Map();
+function seedOf(label) {
+  let seed = seedCache.get(label);
+  if (seed) return seed;
+  let h = 2166136261;
+  for (let i = 0; i < label.length; i++) h = Math.imul(h ^ label.charCodeAt(i), 16777619);
+  const u = k => (((h >>> (k * 5)) & 1023) / 1023);
+  seed = { phase: u(0) * Math.PI * 2, fx: 0.00105 + u(1) * 0.0005, fy: 0.0013 + u(2) * 0.0005, ax: 26 + u(3) * 18, ay: 15 + u(4) * 10 };
+  seedCache.set(label, seed);
+  return seed;
+}
+export function swarm(anchor, g, agent, amp = 1) {
+  const k = seedOf(agent.label || agent.role || 'agent');
+  const ox = Math.sin(g * k.fx + k.phase) * k.ax + Math.sin(g * k.fx * 2.3 + k.phase * 1.7) * k.ax * 0.35;
+  const oy = Math.cos(g * k.fy + k.phase * 0.8) * k.ay + Math.sin(g * k.fy * 1.9 + k.phase) * k.ay * 0.4;
+  const flockX = Math.sin(g * 0.00042) * 40 + Math.sin(g * 0.00093 + 1.3) * 12;
+  const flockY = Math.cos(g * 0.00056) * 16 + Math.sin(g * 0.0011 + 0.4) * 6;
+  return { x: anchor.x + (ox + flockX) * amp, y: anchor.y + (oy + flockY) * amp };
+}
+
 export function shouldPlayEntrance({ seen, reducedMotion, storageAvailable, hash, navigationType }) {
   return !seen && !reducedMotion && storageAvailable && (!hash || hash === '#home') && navigationType !== 'back_forward';
 }
@@ -989,11 +1014,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   // A slow idle drift around an anchor, on the tour clock, so it carries on
   // seamlessly into the next run.
   function drifting(current, agent, anchor) {
-    return () => {
-      const a = anchor();
-      const g = current.t0 + current.now;
-      return { x: a.x + Math.sin(g * 0.0009 + agent.phase) * 9, y: a.y + Math.cos(g * 0.0007 + agent.phase) * 6 };
-    };
+    return () => swarm(anchor(), current.t0 + current.now, agent, 1);
   }
   function idleSeg(current, agent, at, anchor) {
     const point = drifting(current, agent, anchor);
@@ -1796,18 +1817,19 @@ export function initAgenticEntrance(document, window, config = {}) {
   }
 
   // ---- cursors ------------------------------------------------------------
-  function segPoint(agent, t) {
+  function segPoint(agent, t, current) {
     const segs = agent.segs;
     while (agent.si < segs.length - 1 && t >= segs[agent.si + 1].t0) agent.si++;
     const seg = segs[agent.si];
     const p = clamp01((t - seg.t0) / Math.max(1e-6, seg.t1 - seg.t0));
     const point = seg.point(p);
     if (seg.kind === 'work' || seg.kind === 'drift' || (seg.kind === 'travel' && p < 1)) return point;
-    return { x: point.x + Math.sin(t * 0.0042 + agent.phase) * 1.4, y: point.y + Math.cos(t * 0.0037 + agent.phase) * 1.2 };
+    // Waiting (not working): keep moving a little, like the rest of the swarm.
+    return swarm(point, current ? (current.t0 || 0) + t : t, agent, 0.3);
   }
 
   function placeAgent(current, agent, t) {
-    const point = segPoint(agent, t);
+    const point = segPoint(agent, t, current);
     agent.position = point;
     const seg = agent.segs[agent.si];
     agent.anchor = seg && seg.kind === 'drift' && t >= seg.t0 ? seg.anchor() : null;
@@ -1816,6 +1838,12 @@ export function initAgenticEntrance(document, window, config = {}) {
     const x = Math.max(2, Math.min(current.vw - 14, point.x));
     const y = Math.max(2, Math.min(current.vh - 20, point.y));
     if (agent.x !== undefined && Math.abs(agent.x - x) < 0.05 && Math.abs(agent.y - y) < 0.05) return;
+    if (agent.x !== undefined) {
+      // Lean into the direction of travel (smoothed), so cursors feel alive.
+      agent.vx = (agent.vx || 0) * 0.82 + (x - agent.x) * 0.18;
+      const tilt = Math.max(-14, Math.min(14, agent.vx * 2.4));
+      if (Math.abs(tilt - (agent.tilt || 0)) > 0.3) { agent.tilt = tilt; agent.cursor.style.setProperty('--tilt', `${tilt.toFixed(1)}deg`); }
+    }
     agent.x = x;
     agent.y = y;
     // Flip the label to the cursor's left when it would overflow on the right
