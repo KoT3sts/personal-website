@@ -44,3 +44,5 @@ The design includes original SVG artwork, a draggable perspective gallery with k
 This repository is public. The current website implementation is on [`feat/reference-portfolio`](https://github.com/KoT3sts/personal-website/tree/feat/reference-portfolio), with [draft PR #1](https://github.com/KoT3sts/personal-website/pull/1) open against main.
 
 Other accounts can fork the repository and propose changes. Until the initial PR is merged, base website improvements on `feat/reference-portfolio`. The hosted preview requires the owner's ChatGPT account.
+
+For the first-visit agent cursor effect, use the [swarm cursor contributor handoff](docs/swarm-cursor-handoff.md). It specifies the design goal, current behavior, file ownership, acceptance checks, and a patch-based return path for accounts that cannot push here.
