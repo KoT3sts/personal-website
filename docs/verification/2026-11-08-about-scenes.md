@@ -2,6 +2,8 @@
 
 Scope: SPECIFICATION.md V03/V04, plus existing navigation and first-visit entrance integration. This is a bounded milestone, not acceptance of the complete nine-scene design.
 
+Application commit: `02348d8157cf9638ae30b39f08fb5f9df3f254ff`. Exact source packaged and privately deployed successfully on November 8; see HANDOFF.md for deployment/version IDs. Later documentation commits do not alter the reviewed app code.
+
 ## Automated evidence
 
 - `npm test`: 21 tests passed. The two new regressions failed before their corresponding navigation/entrance changes and passed afterward.

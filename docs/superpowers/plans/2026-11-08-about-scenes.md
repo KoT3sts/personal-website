@@ -30,11 +30,11 @@
 
 **Files:** `web/index.html`, `web/about-scenes.css`, `web/assets/about-flow.svg`, `web/assets/light-sculpture.svg`, `docs/assets.md`.
 
-**Interfaces:** `#about` precedes `#introduction`; the second scene uses `data-nav-section="about"`. Existing `.about-copy` text and `#work` links survive. Decorative art is excluded from the accessibility tree.
+**Interfaces:** `#about` precedes `#introduction`; the second scene uses `data-nav-section="about"`. Existing biography text and `#work` links survive in `.cinematic-copy`. Decorative art is excluded from the accessibility tree.
 
-- [ ] Replace the two-column monogram scene with the original swirling field and tall dark ABOUT ME panel, followed by an inset near-black light-shaft scene with edge-aligned copy and pill actions.
-- [ ] Add responsive sizing, a static fallback, and reduced-motion-safe optional scroll choreography.
-- [ ] Document source/provenance and gaps; check asset XML and syntax/build. No implementation-shaped tests for decorative styling.
+- [x] Replace the two-column monogram scene with the original swirling field and tall dark ABOUT ME panel, followed by an inset near-black light-shaft scene with edge-aligned copy and pill actions.
+- [x] Add responsive sizing, a static fallback, and reduced-motion-safe optional scroll choreography.
+- [x] Document source/provenance and gaps; check asset XML and syntax/build. No implementation-shaped tests for decorative styling.
 
 ### Task 2: Integrate navigation and entrance; verify and publish
 
@@ -42,10 +42,10 @@
 
 **Interfaces:** nav observer resolves `data-nav-section` before element ID; scene tracing includes the new stage and copy without adding visibility prerequisites.
 
-- [ ] Add failing tests for both scenes mapping to About while the header follows the scene's actual dark/light treatment; run and observe failure.
-- [ ] Implement navigation mapping; add a new-scene entrance regression proving existing content stays visible through tracing/cancellation.
-- [ ] Run tests/check/build/diff; independently review the whole change and fix material issues.
-- [ ] Commit and push the existing feature branch, update the draft PR and private preview, save a durable handoff.
+- [x] Add failing tests for both scenes mapping to About while the header follows the scene's actual dark/light treatment; run and observe failure.
+- [x] Implement navigation mapping; add a new-scene entrance regression proving existing content stays visible through tracing/cancellation.
+- [x] Run tests/check/build/diff; independently review the whole change and fix material issues.
+- [x] Commit and push the existing feature branch, update the draft PR and private preview, save a durable handoff.
 
 ## Execution notes
 
