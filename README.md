@@ -6,6 +6,8 @@ Full name: Cesar Alejandro Tortolero Trujillo. Preferred short/display name: Ces
 
 Status: first working version deployed privately and checked.
 
+The first-visit agentic entrance now has a working implementation: role-labelled cursors and selection frames assemble the hero, then briefly trace sections as you scroll. It includes immediate Skip, a footer Replay intro control, returning-visit persistence, reduced motion, and keyboard/deep-link fallbacks. This is a first pass for visual review, not a claim of complete reference parity.
+
 **Ultimate goal: make the site look and move like the supplied reference video.** The current version is a functional draft; visual parity is not complete. See [SPECIFICATION.md](SPECIFICATION.md) for the authoritative target, scene requirements, current gaps, assets, and acceptance checklist.
 
 [Open the owner-private preview](https://cesar-tortolero.cesartortolero.chatgpt.site). Sign in with the owning ChatGPT account if prompted.

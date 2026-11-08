@@ -1,6 +1,6 @@
 # Personal Website handoff
 
-Updated: November 7, 2026 (America/New_York).
+Updated: November 8, 2026 (America/New_York).
 
 ## Confirmed state
 
@@ -15,6 +15,7 @@ Updated: November 7, 2026 (America/New_York).
 - The reel was successfully retrieved through its public embed and visually inspected. See docs/reference.md.
 - Built a complete static portfolio in web/: editorial hero, original SVG orbital sculpture and project covers, dark about section, draggable perspective gallery, project dialogs, approach section, and GitHub contact footer.
 - Project content covers Barking Village, Work Helper, and VoiceLab with broad source-backed descriptions. No employment, degree, or availability claims were invented.
+- First working agentic entrance is implemented in web/entrance.js and web/entrance.css: role-labelled cursor crew, temporary selection bounds, staged hero assembly, brief visible-section tracing, Skip, footer Replay intro, first-visit persistence, and accessibility/navigation fallbacks. Private publication is the next step; the overall video-fidelity goal is not complete.
 - Sites project ID is persisted in .openai/hosting.json. Published owner-private. Do not recreate the Site.
 - Verified owner-private preview: https://cesar-tortolero.cesartortolero.chatgpt.site. Branding, biography, footer, page/social titles, and metadata now use the confirmed name. The author metadata records the full name.
 - Deployed application source commit: 3a741478a9ef1bf46b1fdf5d2200f47c814e6b0e. Later handoff-only commits do not change the deployed application.
@@ -24,17 +25,20 @@ Updated: November 7, 2026 (America/New_York).
 
 ## Verification and blockers
 
+- November 8 resume: reran all 19 tests, syntax checks, build, and diff checks successfully before the entrance implementation commit. Previous publication stopped because automatic approval review hit a usage limit; no entrance deployment had occurred. The old waiting source-helper process was cancelled safely and a new publication attempt will use fresh credentials.
+
 - GitHub CLI authentication succeeded for KoT3sts outside the network sandbox.
 - GitHub metadata now confirms visibility=PUBLIC and default branch main. A pre-publication scan covered 42 blob versions across all local Git history and found no credential patterns or sensitive filenames.
-- npm test: 10/10 pass, including wraparound, pointer/keyboard controls, focus leaving inactive cards, dialog content and return focus, reduced motion, internal destinations, and asset existence.
+- npm test: 19/19 pass. Nine entrance tests cover eligibility, persistence, cleanup, skip/Escape/Tab/navigation, replay, deep links, reduced motion, storage failure, bfcache, lower-section tracing, and control hit areas. The original ten portfolio tests also pass.
 - npm run check, npm run build, and git diff --check pass. Local page, JavaScript, and SVG requests return HTTP 200.
 - Independent review found a swipe/focus bug. A regression test failed first, then passed after moving focus before hiding the outgoing panel.
+- Entrance review found already visible section text being hidden and small mobile controls. Both were reproduced with failing tests, then fixed. A separately reproduced bfcache replay issue was also fixed. Section passes now trace without hiding content; Skip and Replay have 44px minimum hit areas.
 - DOM tests use JSDOM 26.1.0. The modal test models missing native open/close methods; browser-native Escape and focus trapping are not verified by it.
 - Local browser access is disabled in Work settings. No desktop/mobile screenshot QA was possible; responsive layout needs a real-device look.
 
 ## Next action
 
-New owner request: preserve the reference-based portfolio and add a first-visit entrance inspired by https://www.instagram.com/reel/DfWWldaTQTz/. Recorded in SPECIFICATION.md section 11 and docs/reference.md. Only the cover and public metadata were accessible; the exact animation is unverified. Obtain a full clip/screen recording before finalizing its storyboard. Proposed once-per-browser, skip/replay, deep-link, reduced-motion, and failure behavior is documented. This turn adds specification context, not entrance implementation or a deployment.
+Publish the implemented first-pass entrance privately and verify the deployment, then have Cesar review it on a phone. The supplied 16.23-second recording unblocked the visible cursor/selection/typing sequence; its original full ending remains unknown. The first pass preserves the existing draft's final design and does not resolve the portrait, cinematic, experience, ribbon, and ring-gallery gaps in SPECIFICATION.md.
 
 Follow SPECIFICATION.md for fidelity work: obtain the owner's portrait and approved content/assets, match static scene compositions, then implement the missing transition, cinematic/experience scenes, true ribbon gallery, and separate circular/stacked explorer. Compare each scene in a real browser before claiming a match. The specification-only update did not change or redeploy the application.
 

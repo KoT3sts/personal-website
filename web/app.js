@@ -1,4 +1,5 @@
 import { createGalleryState } from './gallery-state.js';
+import { initAgenticEntrance } from './entrance.js';
 
 export function initPortfolio(document, window) {
   const gallery = document.querySelector('.gallery');
@@ -155,4 +156,7 @@ export function initPortfolio(document, window) {
   return { state };
 }
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined') initPortfolio(document, window);
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  initPortfolio(document, window);
+  initAgenticEntrance(document, window);
+}

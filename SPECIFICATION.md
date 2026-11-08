@@ -60,6 +60,7 @@ Desktop composition is the primary fidelity target. Use 1440×900 and 1280×800 
 
 ### V01 — Orbital opening
 
+- When the agentic entrance in section 11 is active, integrate this brand moment into it. Do not run two separate intros. Returning visitors may go straight to the hero.
 - Begin with a near-black stage containing Cesar's short brand, a thin irregular/wavy closed outline, a bright moving point, and restrained bloom.
 - The outline and point should read as a coordinated orbit, not a generic circular loading spinner. The wordmark remains the visual center.
 - Reveal the light hero smoothly. Proposed duration: roughly 1.2–1.8 seconds; never hold ready content behind a fake loading delay. Provide an immediate skip path and bypass the effect for reduced motion or failed animation assets.
@@ -188,35 +189,83 @@ Existing source is in `web/`; static builds go to `dist/`. Contributors should s
 - [ ] Existing automated tests, syntax checks, build, and diff checks pass; relevant new interaction behavior has meaningful coverage.
 - [ ] Cesar has reviewed the comparison and agreed that the site captures the video closely enough. Passing tests or publishing a URL alone does not satisfy this goal.
 
-## 11. New enhancement — first-visit entrance
+## 11. Agentic first-visit entrance
 
-**Owner intent:** Keep the portfolio experience specified above and add a special entrance when someone opens the website for the first time, inspired by [this second Instagram reel](https://www.instagram.com/reel/DfWWldaTQTz/).
+**Owner intent:** Keep the original reference-based portfolio and add a first-visit experience where agent-like cursors appear to assemble it, inspired by [this second reel](https://www.instagram.com/reel/DfWWldaTQTz/). Cesar supplied a screen recording and reiterated that the agentic treatment fits the project.
 
-**Evidence status:** The public post metadata identifies creator `sahirveerancheri`, caption "Agentic Build", and a 57.213-second video. Only its cover has been visually inspected: a dark canvas with several groups of colored cursor-like markers. Instagram's embed marks the video blocked and does not expose playable media. The full animation, interaction, and reveal sequence have not been observed. Do not claim this effect is understood or faithfully implemented from the cover alone.
+**Evidence status:** The supplied recording has now been inspected at one-second intervals and at exact opening checkpoints. It is a 16.23-second excerpt of the original post, whose public metadata reports 57.213 seconds. The excerpt shows the opening and continued construction as the page scrolls through the introduction, About, and start of Projects. It does not show the original effect's final completion/exit. The storyboard below separates those observations from our proposed adaptation.
 
-### Relationship to the existing design
+### Observed storyboard — supplied recording timestamps
 
-- This is an entrance into the same portfolio, not a replacement for its reference-based layout, portrait, project galleries, or content.
-- The exact new animation must be specified after an accessible clip, owner screen recording, or adequate frame sequence is inspected.
-- Avoid two consecutive loading experiences. Integrate the original V01 orbital brand moment into the new entrance or transition directly from the new entrance to V02; settle this after seeing the complete second reference.
-- A possible interpretation is a staged, agent/cursor-themed assembly of the portfolio. This is a proposal inferred from the cover/caption, not a verified description of the reel or an approved storyboard.
+| Time | Visible behavior | What to reproduce |
+| --- | --- | --- |
+| 0.0s | Many colored arrow cursors cluster on a nearly empty dark workspace; a compact bottom status strip is visible | A coordinated crew arriving before page assembly |
+| 0.5s | Cursors spread to distinct page positions; small crosses and coordinate/size-like badges appear | Purposeful movement toward actual layout anchors |
+| 1.0s | Multiple translucent rectangles, cyan outlines, corner handles, and text insertion markers appear at once | An editor-like construction layer over page elements |
+| 1.5–3.0s | Large heading, name, navigation, copy, buttons, and portrait appear in parallel, with text progressively filling selected regions | Agents visibly composing distinct parts of the real page |
+| 3.0–5.0s | The hero becomes largely readable while remaining regions are adjusted; cursors and selections keep moving | A smooth handoff from construction to a usable hero |
+| 5.0–11.0s | The demonstrated viewport moves down; About headings and body copy are selected/revealed while agents remain active | Further sections assembling on first exposure |
+| 12.0–16.23s | The About content is readable; the project-section heading and first project regions begin assembling | The effect extends beyond a generic loading spinner |
 
-### Proposed first-visit behavior
+The recording proves an assembly presentation, not that live AI inference or editing is occurring. It also does not establish whether the observed scrolling is manual or automated. Our adaptation must not auto-scroll a visitor through the page.
 
-- On a normal first visit to the home page, offer/run the entrance once, then reveal the working portfolio.
-- Record successful completion or deliberate skip locally in that browser. Returning visits go directly to the portfolio. This is browser/device-local behavior, not cross-device identity tracking.
-- Provide a visible **Skip intro** control immediately and a discoverable **Replay intro** control after arrival. Exact labels can be refined with Cesar.
-- Honor direct section links and navigation history: do not move someone away from the section they requested to force the intro.
-- Reduced-motion preference bypasses the elaborate movement and reveals an equivalent stable state. Failed assets, unsupported rendering, or unavailable local storage must never prevent access to the site.
-- Load actual portfolio content independently of the entrance. Do not put a real AI/code-generation dependency, account login, or external API key into this presentation effect.
-- Recommended architecture is deterministic visual choreography over prebuilt content. Genuine live AI agents would be a separate product scope, not assumed from the reference's caption.
-- Duration, scene timing, mobile treatment, and pointer participation remain open until the full reel is inspected. Do not invent timing requirements from its total video length.
+### Adaptation: the same portfolio, assembled in front of the visitor
+
+- Use the first reel's final design: warm paper hero, Cesar's portrait, monochrome typography, cinematic sections, and both gallery compositions. Do not adopt the second creator's red/black site, portrait, biography, project claims, or metrics.
+- The first home visit builds the hero; as the visitor scrolls naturally during that visit, each newly encountered section can receive one brief assembly pass. Never force a guided full-page tour.
+- Give agents recognizable visual roles. Proposed roles: **Layout**, **Content**, **Projects**, **Motion**, and **QA**. Names are animation characters, not a claim that five actual models are connected to each visit.
+- Layout frames navigation and major regions; Content fills the approved name/headline/intro; Projects places approved images and cards; Motion aligns the signature graphic; QA performs a final visual alignment sweep.
+- Show purposeful cursor paths, temporary selection outlines, corner handles, short role badges, and staggered text/image reveals. Avoid random cursor confetti or a static screenshot/video of the effect.
+- Use a compact optional status strip for the current assembly stage. Any progress count must correspond to actual animated targets; do not fabricate API calls, token usage, network activity, security checks, or real test results.
+- One control can complete the remaining sequence immediately. When complete or skipped, remove all decorative cursors, frames, badges, and temporary status UI. The result must be the normal portfolio with no animation residue.
+- Integrate the original V01 orbital brand moment into the crew's arrival if it fits. Do not add a second loader after the crew finishes.
+
+### Proposed production timing — tunable, not measurements of the original
+
+| Stage | Initial target | Visible result |
+| --- | --- | --- |
+| Arrival | 0–0.6s | A small cursor crew gathers around the brand and moves toward hero anchors |
+| Layout pass | 0.4–1.3s | Temporary bounds frame the actual navigation, title, portrait, and side labels; the paper hero background settles in |
+| Parallel assembly | 0.9–3.5s | Headline, approved copy, portrait, and controls appear in staggered parallel groups |
+| Alignment / release | 3.5–4.5s | Brief final adjustment, decorative frames dissolve, and the hero is fully usable |
+| First exposure of lower sections | About 0.5–1.2s each | A shorter local assembly pass triggered by natural scrolling; no repeated full intro |
+
+Target approximately 4–5 seconds for the automatic hero entrance. Keep **Skip intro** visible from the first frame; do not impose an unskippable minimum duration or wait artificially for an animation when the visitor wants the content. On phones, reduce the crew and visual density before lengthening timing or covering content.
+
+### Visit, interaction, and accessibility contract
+
+- Decide eligibility once at page initialization. On the normal first home visit, run the hero entrance and allow one reveal per section during that page visit. Returning visits show all content immediately.
+- Persist hero completion or deliberate skip locally in the browser. Keep first-visit section eligibility in the current page controller so persistence does not prematurely disable lower-section reveals during that same visit. Do not track identity across devices.
+- Skip, Escape, keyboard Tab navigation, or deliberate navigation ends the active animation, reveals all content immediately, and disables every remaining automatic section pass for that visit.
+- Expose **Replay intro** after arrival. Replay restarts the hero only, follows an explicit action, does not erase the saved preference, and does not renew lower-section eligibility or automatic intros on future visits.
+- Respect deep links, back/forward navigation, and the visitor's scroll position. A section link must open its destination without an intro detour. Scrolling away cancels/settles the local effect instead of pulling the visitor back.
+- Reduced motion bypasses pointer travel, simulated typing, parallax, and bounds animation. JavaScript/rendering errors, unavailable storage, or failed assets must reveal readable content. If persistence cannot be used reliably, bypass the automatic intro and retain explicit replay.
+- Decorative overlays use `pointer-events: none` and are hidden from assistive technology. Skip/replay remain real keyboard-operable controls. Never move the visitor's actual mouse cursor or intercept unrelated typing.
+- Keep the real final text in the accessibility tree; do not announce each animated character, cursor, or stage. Avoid duplicating headings/text in the live DOM for assistive technology.
+- The effect must not reduce readability of already revealed content or conceal essential controls. Reuse stable reserved dimensions for imagery/text so construction does not cause disruptive layout shifts.
+
+### Implementation boundaries
+
+- Recommended architecture is deterministic client-side choreography over prebuilt, source-backed portfolio content. No visitor-triggered agent API calls, editor permissions, or model credentials are needed for this visual experience.
+- Animate against actual element bounds after layout/font readiness. Update geometry on viewport changes, section movement, and orientation changes; do not hard-code desktop recording coordinates.
+- Drive assembly stages and cleanup through one controller. Cancel timers/animation frames on skip, page exit, and replay; prevent multiple concurrent controllers or duplicate DOM overlays.
+- Pause work offscreen or while the tab is hidden. Use fewer simultaneous cursors on mobile; validate the actual performance and legibility rather than copying the demo's agent count.
+- The original excerpt continues building beyond 16 seconds. Compressing its hero to 4–5 seconds, defining cursor roles, using scroll-triggered section reveals, and clearing the crew are our proposed product choices. They require visual review; they are not observed facts about the original.
 
 ### Additional acceptance gates
 
-- [ ] Obtain and inspect the complete second reference; create an observed storyboard with timestamps and distinguish proposed changes.
-- [ ] Confirm the entrance-to-portfolio transition and its relationship to V01 without duplicate loaders.
-- [ ] Demonstrate first visit, returning visit, skip, replay, deep link, reduced motion, failed asset, and unavailable-storage paths.
-- [ ] Compare the entrance in desktop and phone recordings against the second reference and obtain Cesar's visual sign-off.
+- [x] Inspect the supplied recording and capture a timestamped storyboard for its visible opening/scroll segment. The original reel's ending remains unknown, but it is not necessary to invent one for this adaptation.
+- [ ] Demonstrate the crew assembling Cesar's actual hero, a lower section, a project image/card, and the clean final handoff.
+- [ ] Verify first visit, returning visit, skip, Escape, replay, section deep link, back/forward, scrolling away, reduced motion, failed assets, and unavailable-storage behavior.
+- [ ] Verify on desktop and phone that cursor bounds follow the correct elements, real links stay usable, assistive technology gets stable content, and no decoration remains after completion.
+- [ ] Record the adaptation, compare it against the supplied excerpt, and obtain Cesar's visual sign-off.
 
-Status: feature intent recorded; exact storyboard and implementation remain pending reference access. No entrance code has been added by this specification update.
+### First working implementation
+
+`web/entrance.js` and `web/entrance.css` implement the 4.5-second hero entrance and 0.9-second section passes. The bootstrap is separate from the portfolio's gallery controller. Returning visits bypass automatic motion; the footer offers hero-only replay.
+
+Lower-section passes currently trace visible content with cursors and selection frames; they do not hide/retype text already on screen. This prevents the reference effect from making readable content disappear. Further progressive section construction must be prepared before exposure if pursued.
+
+Automated tests cover visit eligibility, completion/persistence, skip/Escape/Tab/navigation, replay, deep links, reduced motion, blocked storage, history-cache restoration, section tracing/cancellation, and minimum control hit areas. An independent code review found and prompted fixes for visible section text disappearing and undersized controls; regression tests reproduce both.
+
+Status: first working animation implemented and automated checks passing. Real-browser motion/geometry/performance comparison and owner visual sign-off remain outstanding; overall portfolio reference parity is still incomplete.

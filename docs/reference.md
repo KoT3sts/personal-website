@@ -38,6 +38,8 @@ Do not republish the full reel as a website asset. Any durable comparison images
 - Canonical: https://www.instagram.com/reel/DfWWldaTQTz/
 - Creator reported by public metadata: sahirveerancheri. Caption: Agentic Build. Metadata duration: 57.213 seconds.
 - Purpose: a special first-visit entrance before the existing portfolio; the first reel remains the main portfolio design target.
-- Inspection: cover image only, showing a dark canvas and groups of colored cursor-like markers. The public embed reports the video blocked and supplies no playable video URL. Search did not reveal an accessible matching copy.
-- Required next evidence: an accessible full clip, an owner screen recording, or sufficient sequential screenshots. Do not infer the complete animation from the cover.
-- See SPECIFICATION.md section 11 for the recorded intent and proposed visit/skip/replay behavior. No live feature has been implemented yet.
+- Inspection update: Cesar supplied `Screen_Recording_20261107_185119_Instagram.mp4`. The 16.23-second, 1080×2340 recording was sampled at one-second intervals and exact opening checkpoints. It shows colored cursors arriving, selection bounds/handles and typing markers, parallel assembly of headline/navigation/copy/portrait, and continued section construction as the viewport moves through About and into Projects.
+- The original embed remains blocked, but reference access is no longer a blocker for specifying the visible entrance. The supplied recording is an excerpt; the original 57.213-second reel's final exit has not been observed.
+- Recording SHA-256: `322c3abbd11e6b9c4f7edc66c28bc72da9f7c9605f1520ff0d8bb26b07b96787`. Keep the uploaded phone recording and extracted frames in local/private evidence storage; do not add the raw recording, phone UI, or notifications to the public repository.
+- Reproduction: obtain the owner-supplied file, use the FFmpeg still-extraction command above with recording-relative times 0.0, 0.5, 1.0, 1.5, 3.0, 5.0, 8.0, 12.0, and 15.5 seconds, and crop to the filmed website when comparing.
+- See SPECIFICATION.md section 11 for the observed storyboard, proposed adaptation, and first working controller in web/entrance.js and web/entrance.css. It awaits real-browser visual comparison and owner sign-off; the supplied recording and phone UI remain outside the public repository.
