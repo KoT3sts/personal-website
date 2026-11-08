@@ -1,32 +1,38 @@
-/* First-visit agent crew. Everything here is decorative (aria-hidden,
-   pointer-events: none) except the Skip and Replay controls. Per-frame motion
-   is written by entrance.js as transforms; CSS only handles state fades. */
+/* First-visit agent crew and guided build tour. Everything here is decorative
+   (aria-hidden, pointer-events: none) except the dock's buttons and the footer
+   Replay. Per-frame motion is written by entrance.js as transforms; CSS only
+   handles state fades. */
 html.agentic-running { scroll-behavior: auto; }
+/* The tour scrolls the page itself; content shifting above must not move it. */
+html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 
 .agentic-stage { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; contain: layout style; --agentic-ink: #1d1e1b; --agentic-paper: #f3f2ec; --agentic-mono: "Courier New", Courier, monospace; }
 .agentic-decoration, .agentic-layer, .agentic-cursors { position: absolute; inset: 0; }
-.agentic-veil { position: absolute; inset: 0; background: #101114; transition: opacity .5s cubic-bezier(.16,1,.3,1); }
+.agentic-veil { position: absolute; inset: 0; background: #101114; transition: opacity .9s cubic-bezier(.16,1,.3,1); }
 .agentic-stage.is-assembling .agentic-veil { opacity: 0; }
-.agentic-stage.is-section .agentic-veil { display: none; }
+.agentic-stage.is-leaving .agentic-layer > * { opacity: 0; transition: opacity .2s ease; }
+/* Fallback launch row when the dock was dismissed: measured, never seen. */
+.agentic-home { position: absolute; left: 50%; bottom: 30px; display: flex; gap: 4px; translate: -50% 0; opacity: 0; }
 
 /* Cursors: position via transform from JS; pop-in and docking on the body. */
 .agentic-cursor { position: absolute; left: 0; top: 0; color: var(--agent-color); will-change: transform; }
-.agentic-cursor-body { position: relative; opacity: 0; scale: .55; transform-origin: 2px 2px; transition: opacity .2s ease, scale .28s cubic-bezier(.16,1,.3,1); }
+.agentic-cursor-body { position: relative; opacity: 0; scale: .55; transform-origin: 2px 2px; transition: opacity .26s ease, scale .36s cubic-bezier(.16,1,.3,1); }
 .agentic-cursor.is-in .agentic-cursor-body { opacity: 1; scale: 1; }
-.agentic-cursor.is-docked .agentic-cursor-body { opacity: 0; scale: .3; transition-duration: .16s, .18s; }
+.agentic-cursor.is-docked .agentic-cursor-body { opacity: 0; scale: .3; transition-duration: .22s, .24s; }
 .agentic-cursor svg { display: block; filter: drop-shadow(0 1.5px 1.5px rgb(16 17 20 / .28)); }
 .agentic-cursor path { fill: currentColor; stroke: #121310; stroke-width: 1.25; stroke-linejoin: round; }
 .agentic-cursor.is-orchestrator { color: var(--agentic-ink); }
 .agentic-cursor.is-orchestrator path { stroke: var(--agentic-paper); stroke-width: 1.4; }
-.agentic-role { position: absolute; left: 13px; top: 18px; padding: 3px 5px 2px; border-radius: 3px; background: var(--agent-color); color: #12130f; font: 700 10px/1.1 var(--agentic-mono); letter-spacing: .01em; white-space: nowrap; box-shadow: 0 2px 6px -2px rgb(16 17 20 / .35); }
-.agentic-role { opacity: 0; scale: .8; transform-origin: 0 0; transition: opacity .16s ease, scale .2s cubic-bezier(.16,1,.3,1); }
+/* Action label: "copy · writing intro". Shown while the agent is out working. */
+.agentic-role { position: absolute; left: 14px; top: 19px; padding: 4px 7px 3px; border-radius: 4px; background: var(--agent-color); color: #12130f; font: 700 11px/1.15 var(--agentic-mono); letter-spacing: 0; white-space: nowrap; box-shadow: 0 3px 10px -3px rgb(16 17 20 / .42); }
+.agentic-role { opacity: 0; scale: .85; transform-origin: 0 0; transition: opacity .2s ease, scale .26s cubic-bezier(.16,1,.3,1); }
 .agentic-cursor.is-working .agentic-role { opacity: 1; scale: 1; }
-.agentic-cursor.is-flip .agentic-role { left: auto; right: 15px; transform-origin: 100% 0; }
-.agentic-cursor.is-orchestrator .agentic-role { background: var(--agentic-ink); color: var(--agentic-paper); box-shadow: 0 0 0 1px rgb(243 242 236 / .22), 0 2px 6px -2px rgb(16 17 20 / .4); }
+.agentic-cursor.is-flip .agentic-role { left: auto; right: 16px; transform-origin: 100% 0; }
+.agentic-cursor.is-orchestrator .agentic-role { background: var(--agentic-ink); color: var(--agentic-paper); box-shadow: 0 0 0 1px rgb(243 242 236 / .28), 0 3px 10px -3px rgb(16 17 20 / .45); }
 
 /* Selection frames, measured from real element bounds. */
-.agentic-frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid var(--agent-color); background: color-mix(in srgb, var(--agent-color) 7%, transparent); transform-origin: 0 0; transition: opacity .22s ease; }
-.agentic-frame.is-set:not(.is-drag) { animation: agentic-frame-in .18s cubic-bezier(.16,1,.3,1) both; }
+.agentic-frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid var(--agent-color); background: color-mix(in srgb, var(--agent-color) 7%, transparent); transform-origin: 0 0; transition: opacity .3s ease; }
+.agentic-frame.is-set:not(.is-drag) { animation: agentic-frame-in .24s cubic-bezier(.16,1,.3,1) both; }
 .agentic-frame.is-out { opacity: 0; }
 .agentic-frame.is-review { border-style: dashed; background: none; }
 .agentic-frame.is-text { background: none; border-color: color-mix(in srgb, var(--agent-color) 70%, transparent); }
@@ -37,7 +43,7 @@ html.agentic-running { scroll-behavior: auto; }
 .agentic-frame i:nth-child(3) { bottom: -3.5px; left: -3.5px; }
 .agentic-frame i:nth-child(4) { bottom: -3.5px; right: -3.5px; }
 .agentic-frame.is-set:not(.is-review):not(.is-orbit) i { opacity: 1; }
-.agentic-size { position: absolute; left: 50%; top: 100%; translate: -50% 6px; padding: 2px 5px 1px; border-radius: 3px; background: var(--agent-color); color: #12130f; font: 700 9px/1.2 var(--agentic-mono); white-space: nowrap; opacity: 0; transition: opacity .15s; }
+.agentic-size { position: absolute; left: 50%; top: 100%; translate: -50% 6px; padding: 2px 5px 1px; border-radius: 3px; background: var(--agent-color); color: #12130f; font: 700 9.5px/1.2 var(--agentic-mono); white-space: nowrap; opacity: 0; transition: opacity .15s; }
 .agentic-frame.is-drag.is-set .agentic-size, .agentic-frame.has-size.is-set .agentic-size, .agentic-frame.is-coord .agentic-size { opacity: 1; }
 .agentic-frame.is-coord .agentic-size { top: 50%; translate: 9px 9px; }
 .agentic-cross { position: absolute; left: 50%; top: 50%; width: 11px; height: 11px; translate: -50% -50%; opacity: 0; transition: opacity .15s; }
@@ -49,26 +55,47 @@ html.agentic-running { scroll-behavior: auto; }
 /* Text caret and dispatch lines. */
 .agentic-caret { position: absolute; left: 0; top: 0; width: 2px; border-radius: 1px; background: var(--agent-color); }
 .agentic-caret.is-idle { animation: agentic-blink .9s steps(1, end) infinite; }
-.agentic-dispatch { position: absolute; left: 0; top: 0; height: 1px; transform-origin: 0 50%; background: linear-gradient(90deg, color-mix(in srgb, var(--agent-color) 15%, transparent), var(--agent-color)); animation: agentic-dispatch .56s cubic-bezier(.16,1,.3,1) both; }
+.agentic-dispatch { position: absolute; left: 0; top: 0; height: 1px; transform-origin: 0 50%; background: linear-gradient(90deg, color-mix(in srgb, var(--agent-color) 15%, transparent), var(--agent-color)); animation: agentic-dispatch .7s cubic-bezier(.16,1,.3,1) both; }
 
-/* Orchestrator log and Skip. Bottom on wide screens, under the header on phones. */
-.agentic-status, .agentic-skip { position: absolute; bottom: 24px; min-height: 44px; box-sizing: border-box; border: 1px solid rgb(230 237 218 / .19); border-radius: 30px; background: rgb(23 26 22 / .93); color: #eef2e6; font: 10px/1.4 var(--agentic-mono); letter-spacing: .02em; box-shadow: 0 6px 22px -8px rgb(16 17 20 / .45); transition: opacity .24s ease, translate .24s ease; }
-.agentic-status { left: var(--gutter, 25px); display: flex; align-items: center; gap: 12px; padding: 0 16px 0 14px; white-space: nowrap; }
-.agentic-dots { display: flex; gap: 4px; }
-.agentic-dot { width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--agent-color) 34%, #2b2f28); transition: background-color .2s, box-shadow .2s, scale .2s; }
-.agentic-dot.is-active { background: var(--agent-color); box-shadow: 0 0 6px color-mix(in srgb, var(--agent-color) 70%, transparent); }
-.agentic-dot.is-done { background: var(--agent-color); scale: 1.2; }
+/* ---- Dock: live crew count, current section, progress, Skip tour. ----
+   Bottom centre, above the home indicator; lifted by JS clear of résumé and
+   contact controls. Collapses to a small pill after the tour. */
+.agentic-dock { --agentic-mono: "Courier New", Courier, monospace; position: fixed; z-index: 62; left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px) + 8px) + var(--agentic-dock-lift, 0px)); translate: -50% 0; display: flex; align-items: center; max-width: calc(100vw - 20px); min-height: 46px; box-sizing: border-box; padding: 0 1px 0 16px; border: 1px solid rgb(230 237 218 / .2); border-radius: 30px; background: rgb(23 26 22 / .94); color: #eef2e6; font: 11px/1.3 var(--agentic-mono); letter-spacing: .01em; white-space: nowrap; box-shadow: 0 12px 30px -14px rgb(16 17 20 / .6); animation: agentic-dock-in .45s cubic-bezier(.33,1,.68,1) both; }
+@supports (backdrop-filter: blur(1px)) { .agentic-dock { background: rgb(23 26 22 / .86); backdrop-filter: blur(10px) saturate(1.2); } }
+.agentic-dock[hidden] { display: none; }
+.agentic-dock-live { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.agentic-dock-face { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.agentic-dock-dots { display: flex; align-items: center; gap: 4px; }
+.agentic-dock-dots:empty { display: none; }
+.agentic-dot { width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--agent-color) 30%, #2b2f28); transition: background-color .25s, box-shadow .25s, scale .25s cubic-bezier(.16,1,.3,1); }
+.agentic-dot.is-active { background: var(--agent-color); box-shadow: 0 0 7px color-mix(in srgb, var(--agent-color) 75%, transparent); scale: 1.25; }
+.agentic-dot.is-done { background: color-mix(in srgb, var(--agent-color) 70%, #2b2f28); }
 .agentic-dot.is-orchestrator { box-sizing: border-box; background: none; border: 1.5px solid #eef2e6; }
 .agentic-dot.is-orchestrator.is-done { background: #eef2e6; }
-.agentic-log { color: #bac7ac; }
-.agentic-log-agents, .agentic-log-done { color: #eef2e6; }
-.agentic-skip { right: var(--gutter, 25px); min-width: 44px; padding: 0 18px; pointer-events: auto; cursor: pointer; }
-.agentic-skip:hover { background: #333c2c; }
-.agentic-skip:focus-visible { outline: 2px solid #d7e8b9; outline-offset: 4px; }
-.agentic-stage.is-leaving .agentic-status { opacity: 0; translate: 0 6px; }
-.agentic-stage.is-leaving .agentic-skip { opacity: 0; }
+.agentic-dock-status { display: flex; align-items: baseline; gap: 7px; color: #b9c5ab; }
+.agentic-dock-count { display: inline-block; min-width: 2ch; color: #f6f9ef; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.agentic-dock-unit { color: #eef2e6; }
+.agentic-dock-sep { color: #7d8873; }
+.agentic-dock-where { color: #f6f9ef; }
+.agentic-dock-progress { padding-left: 4px; color: #9aa68e; font-variant-numeric: tabular-nums; }
+.agentic-dock-summary { display: none; color: #eef2e6; }
+.agentic-dock button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; box-sizing: border-box; margin: 0; padding: 0 16px; border: 0; border-radius: 30px; background: none; color: #eef2e6; font: inherit; letter-spacing: inherit; cursor: pointer; transition: background-color .2s; }
+.agentic-dock button:hover { background: rgb(238 242 230 / .1); }
+.agentic-dock button:focus-visible { outline: 2px solid #d7e8b9; outline-offset: -3px; }
+.agentic-dock-skip { margin-left: 12px !important; border-left: 1px solid rgb(230 237 218 / .16) !important; border-radius: 0 30px 30px 0 !important; text-decoration: underline; text-underline-offset: 3px; }
+.agentic-dock-replay, .agentic-dock-close { display: none !important; }
+.agentic-dock-close { padding: 0 !important; font-size: 16px !important; color: #b9c5ab !important; }
 
-/* Targets: hidden only while a job is pending, never in section passes. */
+/* Pill: what remains after the tour; the count returns only during a pass. */
+.agentic-dock[data-state="pill"] { padding-left: 16px; }
+.agentic-dock[data-state="pill"] .agentic-dock-skip { display: none; }
+.agentic-dock[data-state="pill"] .agentic-dock-replay, .agentic-dock[data-state="pill"] .agentic-dock-close { display: inline-flex !important; }
+.agentic-dock[data-state="pill"] .agentic-dock-replay { margin-left: 6px; padding: 0 12px; text-decoration: underline; text-underline-offset: 3px; }
+.agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-status, .agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-dots { display: none; }
+.agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-summary { display: inline; }
+.agentic-dock[data-state="pill"] .agentic-dock-progress { display: none; }
+
+/* Targets: hidden only while a job is pending, never content already seen. */
 .agentic-target[data-build-state="pending"] { opacity: 0; translate: 0 .35em; }
 .agentic-target[data-build-kind="art"][data-build-state="pending"] { translate: 0 14px; scale: .93; }
 .agentic-target[data-build-state="placing"] { opacity: 1; translate: none; scale: none; transition: opacity var(--agentic-d, .4s) cubic-bezier(.33,1,.68,1), translate var(--agentic-d, .4s) cubic-bezier(.16,1,.3,1), scale var(--agentic-d, .4s) cubic-bezier(.16,1,.3,1); }
@@ -81,23 +108,24 @@ html.agentic-running { scroll-behavior: auto; }
 
 @keyframes agentic-frame-in { from { opacity: 0; scale: .985; } }
 @keyframes agentic-blink { 50% { opacity: 0; } }
-@keyframes agentic-dispatch { 0% { scale: 0 1; opacity: .95; } 45% { scale: 1 1; opacity: .85; } 100% { scale: 1 1; opacity: 0; } }
+@keyframes agentic-dispatch { 0% { scale: 0 1; opacity: .95; } 40% { scale: 1 1; opacity: .9; } 100% { scale: 1 1; opacity: 0; } }
+@keyframes agentic-dock-in { from { opacity: 0; } }
 
 @media (max-width: 760px) {
   .footer-bottom > .agentic-replay { order: 4; margin-block: -12px -14px; }
 }
-@media (max-width: 1099px) {
-  .agentic-log-stage { display: none; }
-}
 @media (max-width: 639px) {
-  .agentic-status, .agentic-skip { top: var(--agentic-dock-top, 70px); bottom: auto; font-size: 9px; }
-  .agentic-status { left: var(--gutter, 22px); gap: 9px; padding: 0 13px 0 12px; }
-  .agentic-skip { right: var(--gutter, 22px); padding: 0 14px; }
-  .agentic-log-orch, .agentic-log-scope { display: none; }
-  .agentic-role { font-size: 9px; top: 17px; }
-  .agentic-stage.is-leaving .agentic-status { translate: 0 -6px; }
+  .agentic-dock { padding-left: 13px; font-size: 10px; }
+  .agentic-dock-face { gap: 9px; }
+  .agentic-dock-dots { gap: 3px; }
+  .agentic-dot { width: 5px; height: 5px; }
+  .agentic-dock-status { gap: 5px; }
+  .agentic-dock-agents { display: none; }
+  .agentic-dock-progress { padding-left: 2px; }
+  .agentic-dock-skip { margin-left: 9px !important; padding: 0 13px !important; }
+  .agentic-role { font-size: 10px; top: 18px; padding: 3px 6px 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .agentic-stage { display: none; }
+  .agentic-stage, .agentic-dock { display: none; }
   .agentic-target[data-build-state] { opacity: 1 !important; translate: none !important; scale: none !important; clip-path: none !important; }
 }

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { ENTRANCE_TRACED, REVEAL_GROUPS, initMotion, isEntranceTracing, shouldHold, staggerDelay } from '../web/motion.js';
+import { SECTION_TARGETS } from '../web/entrance.js';
 
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -115,15 +116,26 @@ test('reduced motion holds nothing, and focus reveals held content immediately',
   assert.equal(focused.dataset.reveal, undefined);
 });
 
-test('the traced-selector mirror covers every section target in entrance.js', async t => {
-  const source = await read('../web/entrance.js');
-  const match = source.match(/querySelectorAll\('([^']*\.section-top[^']*)'\)/);
-  if (!match) { t.skip('entrance section selector moved; re-check ENTRANCE_TRACED by hand'); return; }
-  const mine = ENTRANCE_TRACED.split(',').map(part => part.trim());
-  for (const selector of match[1].split(',').map(part => part.trim())) {
-    const covered = mine.includes(selector) || (selector.startsWith('h2') && mine.includes('h2'));
-    assert.ok(covered, `ENTRANCE_TRACED is missing ${selector}`);
+test('the traced selectors come from entrance.js, so they cannot drift', () => {
+  assert.equal(ENTRANCE_TRACED, SECTION_TARGETS);
+  for (const selector of ['.section-top', '.cinematic-art', '.cinematic-copy', '.scene-actions', '.contact-button']) {
+    assert.ok(ENTRANCE_TRACED.includes(selector), `ENTRANCE_TRACED is missing ${selector}`);
   }
+});
+
+test('while the guided tour runs, motion marks nothing and settles once the tour ends', () => {
+  const below = fakeElement(1200);
+  const callbacks = [];
+  const entrance = { touring: true, phase: 'hero', sectionsEligible: false, whenTourEnds: callback => callbacks.push(callback) };
+  setup({ groups: { '.capability': [below] }, entrance });
+  assert.equal(below.dataset.reveal, undefined, 'the tour owns section assembly');
+  assert.equal(callbacks.length, 1);
+  assert.equal(isEntranceTracing(entrance, null), true);
+  // The visitor took over: the tour ended and content below the fold may now reveal.
+  Object.assign(entrance, { touring: false, phase: 'ready' });
+  callbacks[0]();
+  assert.equal(below.dataset.reveal, 'pending');
+  assert.equal(isEntranceTracing(undefined, { classList: { contains: name => name === 'agentic-touring' } }), true);
 });
 
 test('markup ships without hidden reveal states, and CSS only hides what JS marked', async () => {

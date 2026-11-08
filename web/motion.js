@@ -1,11 +1,12 @@
 // Section reveals and idle-loop control. Progressive enhancement only:
 // content is complete and visible without this file, and nothing the visitor
 // can already see is ever hidden.
+import { SECTION_TARGETS } from './entrance.js';
 
-// Elements the first-visit entrance traces with cursor frames (mirrors the
-// selector in entrance.js). While it may still trace sections, these elements
-// and their ancestors keep a stable position so frames stay aligned.
-export const ENTRANCE_TRACED = '.section-top, h2, .cinematic-art, .cinematic-copy, .scene-actions, .project-image-link, .approach-heading > p, details, .contact-button';
+// Elements the first-visit entrance may trace with cursor frames after a
+// cancelled tour. While it may still trace sections, these elements and their
+// ancestors keep a stable position so frames stay aligned.
+export const ENTRANCE_TRACED = SECTION_TARGETS;
 
 // [selector, variant]. Variants differ only in travel distance and scale.
 export const REVEAL_GROUPS = [
@@ -33,8 +34,8 @@ export function staggerDelay(batchIndex) {
 }
 
 export function isEntranceTracing(entrance, root) {
-  if (root?.classList?.contains('agentic-running')) return true;
-  return Boolean(entrance && (entrance.sectionsEligible || (entrance.phase && entrance.phase !== 'ready')));
+  if (root?.classList?.contains('agentic-running') || root?.classList?.contains('agentic-touring')) return true;
+  return Boolean(entrance && (entrance.touring || entrance.sectionsEligible || (entrance.phase && entrance.phase !== 'ready')));
 }
 
 export function initMotion(document, window, { entrance } = {}) {
@@ -146,6 +147,12 @@ export function initMotion(document, window, { entrance } = {}) {
   const onBeforePrint = () => revealAll();
 
   function settle() {
+    // The guided tour owns section assembly while it runs; reveals start
+    // once it ends or the visitor takes over.
+    if (entrance?.touring && typeof entrance.whenTourEnds === 'function') {
+      entrance.whenTourEnds(() => raf(settle));
+      return;
+    }
     try { markReveals(); markScenes(); }
     catch { revealAll(); }
   }
