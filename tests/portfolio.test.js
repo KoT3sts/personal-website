@@ -64,14 +64,38 @@ test('gallery next, previous, and named selectors update the displayed project a
   const { document, dispatch, state } = setup();
   dispatch(document.querySelector('.gallery-next'), 'click');
   assert.equal(state.index, 1);
-  assert.match(document.querySelector('.gallery-count').textContent, /02 \/ 03 — Work Helper/);
+  assert.match(document.querySelector('.gallery-count').textContent, /02 \/ 06 — Thoughts-to-Text BCI/);
   assert.equal(document.querySelector('[data-select="1"]').getAttribute('aria-pressed'), 'true');
   assert.equal(document.querySelectorAll('.project-card[aria-hidden="false"]').length, 1);
   document.querySelectorAll('.project-card[aria-hidden="true"] a').forEach(link => assert.equal(link.getAttribute('tabindex'), '-1'));
   dispatch(document.querySelector('.gallery-prev'), 'click');
   assert.equal(state.index, 0);
-  dispatch(document.querySelector('[data-select="2"]'), 'click');
-  assert.match(document.querySelector('.gallery-count').textContent, /VoiceLab/);
+  dispatch(document.querySelector('[data-select="3"]'), 'click');
+  assert.match(document.querySelector('.gallery-count').textContent, /04 \/ 06 — VoiceLab/);
+  dispatch(document.querySelector('[data-select="5"]'), 'click');
+  assert.match(document.querySelector('.gallery-count').textContent, /06 \/ 06 — Barking Village/);
+});
+
+test('every project card has a matching selector, story, and only the nearest neighbours stay visible', () => {
+  const { document } = setup();
+  const cards = [...document.querySelectorAll('.project-card')];
+  const selectors = [...document.querySelectorAll('[data-select]')];
+  assert.equal(cards.length, 6);
+  assert.equal(selectors.length, cards.length);
+  cards.forEach((card, index) => {
+    const title = card.querySelector('h3').textContent;
+    assert.equal(selectors[index].textContent, title);
+    const story = document.getElementById(card.querySelector('[data-open]').dataset.open);
+    assert.ok(story, `missing story for ${title}`);
+    assert.equal(story.querySelector('h3').textContent, title);
+  });
+  // Index 0 is active: cards 1 and 5 are neighbours, 2 and 4 fade out, 3 wraps behind and is hidden.
+  assert.equal(cards[0].style.getPropertyValue('--card-opacity'), '1');
+  assert.equal(cards[1].style.getPropertyValue('--card-opacity'), '0.65');
+  assert.equal(cards[5].style.getPropertyValue('--card-opacity'), '0.65');
+  assert.equal(cards[2].style.getPropertyValue('--card-opacity'), '0');
+  assert.equal(cards[3].hasAttribute('data-far'), true);
+  assert.equal(cards.filter(card => card.hasAttribute('data-far')).length, 1);
 });
 
 test('gallery keyboard arrows and horizontal swipes browse while vertical swipes scroll the page', () => {
@@ -79,7 +103,7 @@ test('gallery keyboard arrows and horizontal swipes browse while vertical swipes
   const stage = document.querySelector('.gallery-stage');
   const key = dispatch(stage, 'keydown', { key: 'ArrowLeft' });
   assert.equal(key.defaultPrevented, true);
-  assert.equal(state.index, 2);
+  assert.equal(state.index, 5);
   dispatch(stage, 'pointerdown', { button: 0, pointerId: 1, clientX: 160, clientY: 120 });
   dispatch(stage, 'pointermove', { pointerId: 1, clientX: 70, clientY: 123 });
   dispatch(stage, 'pointerup', { pointerId: 1, clientX: 70, clientY: 123 });
@@ -117,12 +141,12 @@ test('swiping a focused project moves focus outside the outgoing hidden panel', 
 test('project dialog uses the chosen project content and restores the opener on close', () => {
   const { document, dispatch } = setup(false, true);
   const opener = document.querySelector('.project-card a');
-  const source = document.querySelector('#project-barking');
+  const source = document.querySelector('#project-agents');
   const dialog = document.querySelector('.project-dialog');
   opener.focus();
   const click = dispatch(opener, 'click', { button: 0 });
   assert.equal(click.defaultPrevented, true);
-  assert.equal(dialog.querySelector('h3').textContent, 'Barking Village');
+  assert.equal(dialog.querySelector('h3').textContent, 'Multi-Agent Workflow');
   assert.equal(dialog.querySelector('.story-lead').textContent, source.querySelector('.story-lead').textContent);
   assert.equal(document.querySelectorAll('#dialog-project-title').length, 1);
   assert.equal(document.body.classList.contains('dialog-open'), true);
@@ -138,12 +162,78 @@ test('reduced motion avoids pointer-driven sculpture movement', () => {
   assert.equal(document.querySelector('.hero-art').style.getPropertyValue('--art-rotate'), '');
 });
 
-test('every internal navigation target and local image points to a real destination', async () => {
+test('every internal navigation target, local image, and local download points to a real destination', async () => {
   const { document } = new JSDOM(html).window;
   for (const link of document.querySelectorAll('a[href^="#"]')) assert.ok(document.getElementById(link.getAttribute('href').slice(1)));
   for (const image of document.querySelectorAll('img[src]')) {
     const data = await readFile(new URL(`../web/${image.getAttribute('src')}`, import.meta.url));
     assert.ok(data.byteLength > 0);
     assert.ok(image.hasAttribute('alt'));
+  }
+  for (const link of document.querySelectorAll('a[href^="./"]')) {
+    const data = await readFile(new URL(`../web/${link.getAttribute('href')}`, import.meta.url));
+    assert.ok(data.byteLength > 0);
+  }
+});
+
+test('contact paths cover email, LinkedIn, GitHub, and the résumé without publishing a phone number', () => {
+  const { document } = new JSDOM(html).window;
+  const hrefs = [...document.querySelectorAll('#contact a')].map(link => link.getAttribute('href'));
+  assert.ok(hrefs.includes('mailto:Lucenatrujillo.cesar@gmail.com'));
+  assert.ok(hrefs.includes('https://www.linkedin.com/in/cesar-tortolero'));
+  assert.ok(hrefs.includes('https://github.com/KoT3sts'));
+  assert.ok(hrefs.includes('./assets/Cesar_Tortolero_Resume.pdf'));
+  const heroActions = [...document.querySelectorAll('.hero-actions a')].map(link => link.getAttribute('href'));
+  assert.ok(heroActions.includes('./assets/Cesar_Tortolero_Resume.pdf'));
+  assert.ok(heroActions.includes('https://www.linkedin.com/in/cesar-tortolero'));
+  for (const link of document.querySelectorAll('a[target="_blank"]')) assert.match(link.getAttribute('rel'), /noopener/);
+  assert.doesNotMatch(html, /\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/);
+  assert.doesNotMatch(html, /tel:/i);
+});
+
+test('the first heading states the role and the page keeps one h1 with ordered section headings', () => {
+  const { document } = new JSDOM(html).window;
+  assert.equal(document.querySelectorAll('h1').length, 1);
+  assert.match(document.querySelector('h1').textContent, /Cesar Tortolero, Machine Learning Engineer/);
+  assert.match(document.title, /Machine Learning Engineer/);
+  assert.match(document.querySelector('meta[name="description"]').content, /Machine Learning Engineer/);
+  for (const id of ['about', 'experience', 'work', 'skills', 'contact']) assert.ok(document.querySelector(`.main-nav a[href="#${id}"]`), `nav link for ${id}`);
+  let previous = 1;
+  for (const heading of document.querySelectorAll('main h1, main h2, main h3, main h4')) {
+    const level = Number(heading.tagName[1]);
+    assert.ok(level <= previous + 1, `heading level jumps to ${heading.tagName}: ${heading.textContent}`);
+    previous = level;
+  }
+});
+
+test('About scenes lead into capabilities, then experience, work, skills and approach, with the Currently note in the scene', () => {
+  const { document } = new JSDOM(html).window;
+  const order = [...document.querySelectorAll('main > section[id]')].map(section => section.id);
+  assert.deepEqual(order, ['home', 'about', 'introduction', 'capabilities', 'experience', 'work', 'skills', 'approach', 'notes']);
+  assert.ok(document.querySelector('footer#contact'));
+  assert.equal(document.querySelector('#introduction').dataset.navSection, 'about');
+  const sceneLinks = [...document.querySelectorAll('#introduction .scene-pill')].map(link => link.getAttribute('href'));
+  assert.deepEqual(sceneLinks, ['#capabilities', '#experience']);
+  assert.ok(document.querySelector('#introduction .scene-pill-primary[href="#capabilities"]'));
+  assert.match(document.querySelector('#introduction-title').textContent, /AI agents/);
+  assert.match(document.querySelector('#introduction .cinematic-copy').textContent, /Machine Learning Engineer at ADP/);
+  const labels = [...document.querySelectorAll('.about-transition-meta > :first-child, .section-top > :first-child')].map(label => label.textContent.match(/^(\d{2}) \//)?.[1]).filter(Boolean);
+  assert.deepEqual(labels, ['01', '02', '03', '04', '05', '06', '07'], 'mono section labels count up in page order');
+  const items = [...document.querySelectorAll('#capabilities .capability')];
+  assert.equal(items.length, 8);
+  for (const item of items) {
+    assert.ok(item.querySelector('h3')?.textContent.trim(), 'capability needs a title');
+    assert.ok(item.querySelector('.capability-proof')?.textContent.replace('PROOF', '').trim(), 'capability needs a proof line');
+  }
+  assert.equal(document.querySelectorAll('.currently').length, 1);
+  assert.ok(document.querySelector('#introduction .currently'));
+  assert.match(document.querySelector('.currently').textContent, /Pursuing an M\.S\. in Computer Science \(Machine Learning\) at Georgia Tech, part-time, while working full-time\./);
+  assert.doesNotMatch(document.body.textContent, /open to work|looking for (a|new) (job|role)|available for hire/i);
+});
+
+test('every anchor the first-visit entrance targets still exists in the markup', () => {
+  const { document } = new JSDOM(html).window;
+  for (const selector of ['.wordmark', '.main-nav', '.hero-kicker', '#hero-title', '.hero-art', '.hero-intro', '.hero-note', '.scroll-cue', '#introduction .cinematic-art', '#introduction .cinematic-copy', '#introduction .scene-actions', '.project-image-link', '.footer-bottom']) {
+    assert.ok(document.querySelector(selector), `entrance anchor ${selector}`);
   }
 });

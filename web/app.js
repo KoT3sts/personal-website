@@ -23,10 +23,14 @@ export function initPortfolio(document, window) {
     cards.forEach((card, index) => {
       let offset = (index - state.index + cards.length) % cards.length;
       if (offset > cards.length / 2) offset -= cards.length;
+      const distance = Math.abs(offset);
       card.style.setProperty('--offset', offset);
-      card.style.setProperty('--distance', Math.abs(offset));
-      card.style.setProperty('--card-z', cards.length - Math.abs(offset));
-      card.style.setProperty('--card-opacity', offset === 0 ? 1 : .65);
+      card.style.setProperty('--distance', distance);
+      card.style.setProperty('--card-z', cards.length - distance);
+      card.style.setProperty('--card-opacity', [1, .65][distance] ?? 0);
+      // Keep the incumbent three-card arc: second neighbours fade out, and cards
+      // that wrap around the back are hidden so they never sweep across the stage.
+      card.toggleAttribute('data-far', distance > 2);
       card.setAttribute('aria-hidden', String(index !== state.index));
       card.querySelectorAll('a, button').forEach(link => { link.tabIndex = index === state.index ? 0 : -1; });
     });

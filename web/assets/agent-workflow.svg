@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620">
+ <rect width="900" height="620" fill="#aeb7b8"/>
+ <path d="M0 110H900M0 230H900M0 350H900M0 470H900M0 590H900M120 0V620M300 0V620M480 0V620M660 0V620M840 0V620" stroke="#bcc4c4" stroke-width="2"/>
+ <g transform="translate(72 73)">
+  <rect width="756" height="474" rx="13" fill="#15181a"/>
+  <text x="30" y="44" font-family="Arial" font-size="22" font-weight="700" fill="#eef1ef">agent<tspan fill="#9fb0ae">workflow</tspan><tspan font-size="10" font-weight="400" dx="15" fill="#77807e">IMPLEMENT · REVIEW · VERIFY</tspan></text>
+  <path d="M28 66h700" stroke="#30373a"/>
+  <g font-family="Arial">
+   <rect x="29" y="92" width="250" height="78" rx="8" fill="#22282b"/><rect x="29" y="196" width="250" height="78" rx="8" fill="#22282b"/><rect x="29" y="300" width="250" height="78" rx="8" fill="#22282b"/>
+   <g fill="#c7d2a8"><circle cx="57" cy="131" r="6"/><circle cx="57" cy="235" r="6"/><circle cx="57" cy="339" r="6"/></g>
+   <g fill="#e6ebe8" font-size="16" font-weight="700"><text x="79" y="129">Implement</text><text x="79" y="233">Review</text><text x="79" y="337">Verify</text></g>
+   <g fill="#7f8a88" font-size="10" letter-spacing="1"><text x="79" y="149">WRITES THE CHANGE</text><text x="79" y="253">READS THE DIFF</text><text x="79" y="357">RUNS THE CHECKS</text></g>
+   <path d="M154 170v26M154 274v26" stroke="#56615f" stroke-width="2" stroke-dasharray="4 4"/>
+   <rect x="309" y="92" width="418" height="182" rx="8" fill="#1d2225" stroke="#33393c"/>
+   <text x="331" y="122" fill="#9fb0ae" font-size="10" letter-spacing="1">READ-ONLY CONTEXT · MCP</text>
+   <path d="M686 110h14v12h-14zM689 110v-4a4 4 0 0 1 8 0v4" fill="none" stroke="#9fb0ae" stroke-width="1.6"/>
+   <rect x="331" y="140" width="374" height="52" rx="6" fill="#262c30"/><rect x="331" y="204" width="374" height="52" rx="6" fill="#262c30"/>
+   <g fill="#dfe5e2" font-size="14"><text x="351" y="171">Jenkins</text><text x="351" y="235">Bitbucket</text></g>
+   <g fill="#7f8a88" font-size="11"><text x="566" y="171">builds · logs</text><text x="566" y="235">pull requests</text></g>
+   <rect x="309" y="300" width="418" height="146" rx="8" fill="#e9ece4"/>
+   <text x="331" y="330" fill="#3f4a46" font-size="10" letter-spacing="1">KNOWLEDGE BASE · FROM WORK SESSIONS</text>
+   <rect x="331" y="346" width="374" height="34" rx="17" fill="#d7dccf"/><circle cx="352" cy="362" r="6" fill="none" stroke="#6c7769" stroke-width="1.5"/><path d="m356 367 5 5" stroke="#6c7769" stroke-width="1.5"/><text x="370" y="367" fill="#5f6a5c" font-size="12">search past sessions</text>
+   <g stroke="#a7b19b" stroke-width="5" stroke-linecap="round"><path d="M333 404h150M333 422h110M519 404h150M519 422h96"/></g>
+  </g>
+ </g>
+</svg>

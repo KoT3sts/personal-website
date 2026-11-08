@@ -1,6 +1,6 @@
 # Cesar Tortolero — Personal Website
 
-Cesar Tortolero's personal website: code, curiosity, and selected projects.
+Cesar Tortolero's personal website: Machine Learning Engineer (Morristown, NJ, NYC area). It covers experience, selected projects, skills and education, and contact links, including a downloadable résumé.
 
 Full name: Cesar Alejandro Tortolero Trujillo. Preferred short/display name: Cesar Tortolero.
 
@@ -38,6 +38,12 @@ npm run build
 Open the printed local URL. Source lives in `web/`; the build copies it into `dist/`. Sites hosting configuration is in `.openai/hosting.json`.
 
 The design includes original SVG artwork, a draggable perspective gallery with keyboard and button controls, project dialogs, reduced motion support, and inline fallbacks. Project covers are illustrations; biography and copy remain open to owner review.
+
+Page sections: hero (role, location, résumé/LinkedIn/email actions), About, Experience (ADP, Kennesaw State University research), Selected projects, Skills & education, Approach, and Contact.
+
+Projects in the gallery: Multi-Agent Workflow, Thoughts-to-Text BCI, Companionship Chatbot, VoiceLab, Work Helper, and Barking Village.
+
+The résumé is served from `web/assets/Cesar_Tortolero_Resume.pdf`; the owner approved publishing it. Do not copy the phone number from the PDF into the HTML.
 
 ## Collaborating
 

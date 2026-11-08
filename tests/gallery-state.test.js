@@ -19,6 +19,14 @@ test('direct project selection normalizes negative indexes and keeps independent
   assert.equal(second.index, 0);
 });
 
+test('a six-project gallery wraps in both directions', () => {
+  const gallery = createGalleryState(6);
+  assert.equal(gallery.step(-1), 5);
+  assert.equal(gallery.step(1), 0);
+  assert.equal(gallery.step(7), 1);
+  assert.equal(gallery.select(-7), 5);
+});
+
 test('rejects invalid gallery size and invalid selection without losing state', () => {
   for (const count of [0, -1, 1.5, NaN]) {
     assert.throws(() => createGalleryState(count), RangeError);
