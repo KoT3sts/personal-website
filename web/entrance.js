@@ -179,6 +179,8 @@ const clamp01 = value => (value < 0 ? 0 : value > 1 ? 1 : value);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const easeInOut = p => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 const easeOut = p => 1 - Math.pow(1 - p, 4);
+// Gentle glide for the tour's page scroll (lower peak speed than cubic).
+const easeGlide = p => -(Math.cos(Math.PI * p) - 1) / 2;
 const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
 const positive = (value, fallback) => (Number.isFinite(value) && value > 0 ? value : fallback);
 
@@ -227,6 +229,8 @@ export function initAgenticEntrance(document, window, config = {}) {
   let liftFrame = 0;
   let lastStats = { ...idleStats };
   let builtCount = 0;
+  // Agents that stay on screen between tour stops: [{ role, label, x, y }].
+  let carry = null;
   const tourEndCallbacks = [];
   const visitedSections = new Set();
 
@@ -276,6 +280,10 @@ export function initAgenticEntrance(document, window, config = {}) {
       current.active.forEach(job => job.update(t));
       current.agents.forEach(agent => placeAgent(current, agent, t));
       if (t >= current.total) {
+        // Hand the ride-along crew's positions to the next stop.
+        carry = tour && current.stayers?.size
+          ? [...current.stayers].filter(agent => agent.x !== undefined).map(agent => ({ role: agent.role, label: agent.label, x: agent.x, y: agent.y }))
+          : null;
         const complete = current.onComplete;
         clearVisuals();
         complete();
@@ -299,10 +307,14 @@ export function initAgenticEntrance(document, window, config = {}) {
     tourY = readScrollY();
   }
 
+  // A glide to the stop, then a slow creep while the crew works, so the page
+  // never sits completely still between sections.
   function driveScroll(current, t) {
     const scroll = current.scroll;
     const p = clamp01(t / Math.max(1, scroll.ms));
-    const y = Math.round(scroll.from + (scroll.to - scroll.from) * easeInOut(p));
+    let y = scroll.from + (scroll.to - scroll.from) * easeGlide(p);
+    if (scroll.creep && t > scroll.ms) y = scroll.to + scroll.creep * easeInOut(clamp01((t - scroll.ms) / Math.max(1, scroll.creepMs)));
+    y = Math.round(y);
     if (y !== Math.round(tourY)) scrollToY(y);
     if (tourY !== current.sy) {
       current.sy = tourY;
@@ -311,7 +323,8 @@ export function initAgenticEntrance(document, window, config = {}) {
       current.version++;
     }
     if (placeDock()) remeasureDots(current);
-    if (p >= 1) { scroll.done = true; dirty = true; }
+    if (p >= 1 && !scroll.settled) { scroll.settled = true; dirty = true; }
+    if (p >= 1 && (!scroll.creep || t >= scroll.ms + scroll.creepMs)) scroll.done = true;
   }
 
   // ---- cleanup ------------------------------------------------------------
@@ -356,6 +369,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     const focusInStage = Boolean(run?.stage.contains(document.activeElement));
     const wasTouring = Boolean(tour);
     tour = null;
+    carry = null;
     sectionsEligible = false;
     observer?.disconnect();
     clearVisuals();
@@ -380,6 +394,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     const focusInDock = Boolean(dock?.root.contains(document.activeElement));
     const allowPasses = tour.firstVisit;
     tour = null;
+    carry = null;
     clearVisuals();
     phase = 'ready';
     replayButton.hidden = false;
@@ -681,6 +696,62 @@ export function initAgenticEntrance(document, window, config = {}) {
   function makeAgent(role, n, count, index) {
     const label = count > 1 ? `${ROLES[role].label}·${n}` : ROLES[role].label;
     return { role, label, index, queue: [], segs: [], si: 0, last: null, bend: (((index * 37) % 7) - 3) / 22, phase: index * 1.7 };
+  }
+
+  // ---- ride-along crew between tour stops ----------------------------------
+  const nextStop = () => (tour ? tour.stops[tour.index + 1] : null);
+  // Agents whose role the next stop needs stay on screen and fly straight in.
+  function pickStayers(current, candidates) {
+    const next = nextStop();
+    if (!next) return new Set();
+    const counts = CREWS[current.tier];
+    const roles = new Set((next.jobs || []).map(job => resolveRole(job.role, counts)));
+    const cap = current.tier === 'phone' ? 1 : current.tier === 'tablet' ? 2 : 3;
+    const stayers = new Set();
+    ['layout', 'qa', 'type', 'copy', 'art', 'links', 'motion', 'a11y', 'nav'].forEach(role => {
+      if (stayers.size >= cap || !roles.has(role)) return;
+      const agent = candidates.find(a => a.role === role && a.queue.length);
+      if (agent) stayers.add(agent);
+    });
+    return stayers;
+  }
+  // Waiting spots near the bottom edge, where the next section comes in.
+  function standby(current, k, n) {
+    return () => ({ x: current.vw * (n > 1 ? 0.24 + (0.52 * k) / (n - 1) : 0.5), y: current.vh * (0.8 - (k % 2) * 0.05) });
+  }
+  // Send a finished agent to wait for the next stop instead of docking.
+  function rideAlong(current, agent, at, k, n) {
+    const s = current.scale;
+    const name = nextStop()?.name.toLowerCase() || 'next';
+    const arrive = at + 560 * s;
+    travelSeg(agent, at, arrive, standby(current, k, n));
+    addEvent(current, at, () => say(agent, `heading to ${name}`));
+    return arrive;
+  }
+  // Match the previous stop's ride-along crew to this stop's roster; the rest
+  // peel off to the dock.
+  function adoptCarry(current) {
+    if (!carry) return;
+    carry.forEach(entry => {
+      const match = current.agents.find(agent => agent.role === entry.role && !agent.carry);
+      const agent = match || makeAgent(entry.role, 1, 1, current.agents.length);
+      agent.carry = { x: entry.x, y: entry.y };
+      agent.label = entry.label;
+      if (!match) { agent.peel = true; current.agents.push(agent); }
+    });
+    carry = null;
+  }
+  // Carried cursors appear exactly where they were, already working.
+  function holdCarried(current, agent, name) {
+    holdSeg(agent, 0, () => agent.carry);
+    addEvent(current, 0, () => {
+      agent.cursor.classList.add('is-in', 'is-carried');
+      if (agent.peel) { say(agent, ''); return; }
+      agent.cursor.classList.add('is-working');
+      if (agent.role !== 'orchestrator') startWorking(current, agent);
+      say(agent, `moving to ${name}`);
+    });
+    addEvent(current, 140 * current.scale, () => agent.cursor.classList.remove('is-carried'));
   }
 
   function startWorking(current, agent) {
@@ -1042,6 +1113,8 @@ export function initAgenticEntrance(document, window, config = {}) {
 
     const builderDeadline = 2750 * s;
     const reviewDeadline = 3750 * s;
+    const stayers = pickStayers(current, subagents);
+    const stayList = [...stayers];
     let latestDock = orchArrive;
     let queued = 0;
     subagents.forEach((agent, index) => {
@@ -1072,22 +1145,35 @@ export function initAgenticEntrance(document, window, config = {}) {
         const mustFinish = agent.queue.some(job => HIDES.has(job.kind));
         const free = fitQueue(current, agent, firstStart, from, mustFinish ? builderDeadline : reviewDeadline);
         scheduleQueue(current, orchestrator, agent, false);
-        agent.dockAt = free + 80 * s + travelMs(current, agent.queue[agent.queue.length - 1].exit(), dotPoint(current, agent));
-        travelSeg(agent, free + 80 * s, agent.dockAt, () => dotPoint(current, agent));
-        addEvent(current, free + 80 * s, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
+        if (stayers.has(agent)) {
+          agent.dockAt = rideAlong(current, agent, free + 80 * s, stayList.indexOf(agent), stayList.length + 1);
+        } else {
+          agent.dockAt = free + 80 * s + travelMs(current, agent.queue[agent.queue.length - 1].exit(), dotPoint(current, agent));
+          travelSeg(agent, free + 80 * s, agent.dockAt, () => dotPoint(current, agent));
+          addEvent(current, free + 80 * s, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
+        }
       }
-      addEvent(current, agent.dockAt, () => dockAgent(current, agent));
+      if (!stayers.has(agent)) addEvent(current, agent.dockAt, () => dockAgent(current, agent));
       latestDock = Math.max(latestDock, agent.dockAt);
     });
-    // Orchestrator reports last, then the hero stage clears.
+    // Orchestrator reports last, then the hero stage clears; on the tour it
+    // leads the ride-along crew down to the next section instead.
     const orchDock = Math.min(current.total * 0.9, latestDock + 160 * s);
-    travelSeg(orchestrator, Math.max(orchArrive, orchDock - 520 * s), orchDock, () => dotPoint(current, orchestrator));
-    addEvent(current, orchDock, () => dockAgent(current, orchestrator));
+    if (nextStop()) {
+      stayers.add(orchestrator);
+      const name = nextStop().name.toLowerCase();
+      travelSeg(orchestrator, Math.max(orchArrive, orchDock - 520 * s), orchDock, standby(current, stayList.length, stayList.length + 1));
+      addEvent(current, Math.max(latestDock - 200 * s, 0), () => say(orchestrator, `next · ${name}`));
+    } else {
+      travelSeg(orchestrator, Math.max(orchArrive, orchDock - 520 * s), orchDock, () => dotPoint(current, orchestrator));
+      addEvent(current, orchDock, () => dockAgent(current, orchestrator));
+      addEvent(current, Math.max(latestDock - 200 * s, 0), () => say(orchestrator, 'handing off'));
+      addEvent(current, orchDock - 300 * s, () => orchestrator.cursor.classList.remove('is-working'));
+    }
+    current.stayers = stayers;
     addEvent(current, 330 * s, () => { current.stage.classList.add('is-assembling'); say(orchestrator, 'dispatching'); });
     const firstReview = Math.min(...current.jobs.filter(job => job.kind === 'review').map(job => job.start), Infinity);
     if (Number.isFinite(firstReview)) addEvent(current, firstReview, () => say(orchestrator, 'reviewing'));
-    addEvent(current, Math.max(latestDock - 200 * s, 0), () => say(orchestrator, 'handing off'));
-    addEvent(current, orchDock - 300 * s, () => orchestrator.cursor.classList.remove('is-working'));
     // End as soon as the crew has reported back (never later than the budget).
     const leaveAt = orchDock + 80 * s;
     current.total = Math.min(current.total, leaveAt + 360 * s);
@@ -1101,39 +1187,69 @@ export function initAgenticEntrance(document, window, config = {}) {
     const s = current.scale;
     current.jobGap = 130 * s;
     const lead = current.lead;
-    const [orchestrator, ...crew] = current.agents;
+    const [orchestrator] = current.agents;
+    const crew = current.agents.filter(agent => agent.role !== 'orchestrator' && !agent.peel);
     const home = agent => () => dotPoint(current, agent);
+    const name = stopInfo.name.toLowerCase();
     const heading = current.heading;
     const command = () => {
       const h = heading ? box(current, heading) : null;
       if (h && h.w) return { x: clamp(h.x + Math.min(h.w, 420) + 30, 40, current.vw - 150), y: clamp(h.y + 8, 90, current.vh - 140) };
       return { x: current.vw * 0.62, y: Math.max(110, current.vh * 0.22) };
     };
-    holdSeg(orchestrator, 0, home(orchestrator));
+    if (orchestrator.carry) holdCarried(current, orchestrator, name);
+    else holdSeg(orchestrator, 0, home(orchestrator));
     const commandAt = lead > 0 ? Math.max(lead * 0.9, 300 * s) : 420 * s;
     travelSeg(orchestrator, lead > 0 ? lead * 0.2 : 60 * s, commandAt, command);
     addEvent(current, 0, () => {
       orchestrator.cursor.classList.add('is-in', 'is-working');
-      say(orchestrator, lead > 0 ? `moving to ${stopInfo.name.toLowerCase()}` : 'planning');
+      say(orchestrator, lead > 0 ? `moving to ${name}` : 'planning');
     });
     addEvent(current, commandAt, () => say(orchestrator, 'dispatching'));
 
-    // The crew sets off while the page is still settling into place.
+    // Agents that did not come along this time head back to the dock.
+    current.agents.filter(agent => agent.peel).forEach(agent => {
+      holdCarried(current, agent, name);
+      const at = 160 * s;
+      agent.dockAt = at + 520 * s;
+      travelSeg(agent, at, agent.dockAt, home(agent));
+      addEvent(current, agent.dockAt, () => dockAgent(current, agent));
+    });
+
+    // Ride-along agents start right away, while the next section is still
+    // sliding in; fresh agents leave the dock while the page settles.
     const dispatchFrom = lead > 0 ? lead * 0.72 : 220 * s;
     const deadline = lead + current.budget - 560 * s;
     const gap = Math.min(240 * s, (current.budget * 0.3) / Math.max(1, crew.length));
+    const stayers = pickStayers(current, crew);
+    const stayList = [...stayers];
     let latest = commandAt;
-    crew.forEach((agent, i) => {
-      const firstStart = dispatchFrom + i * gap;
-      addEvent(current, Math.max(0, firstStart - 360 * s), () => agent.cursor.classList.add('is-in'));
-      holdSeg(agent, 0, home(agent));
-      const free = fitQueue(current, agent, firstStart, home(agent)(), deadline);
-      scheduleQueue(current, orchestrator, agent, true);
+    let fresh = 0;
+    let carried = 0;
+    crew.forEach(agent => {
+      let firstStart;
+      let from;
+      if (agent.carry) {
+        holdCarried(current, agent, name);
+        firstStart = (lead > 0 ? lead * 0.32 : 80 * s) + carried++ * 110 * s;
+        from = agent.carry;
+      } else {
+        firstStart = dispatchFrom + fresh++ * gap;
+        addEvent(current, Math.max(0, firstStart - 360 * s), () => agent.cursor.classList.add('is-in'));
+        holdSeg(agent, 0, home(agent));
+        from = home(agent)();
+      }
+      const free = fitQueue(current, agent, firstStart, from, deadline);
+      scheduleQueue(current, orchestrator, agent, !agent.carry);
       const back = free + 40 * s;
-      agent.dockAt = back + clamp(travelMs(current, agent.queue[agent.queue.length - 1].exit(), home(agent)()), 300 * s, 520 * s);
-      travelSeg(agent, back, agent.dockAt, home(agent));
-      addEvent(current, back, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
-      addEvent(current, agent.dockAt, () => dockAgent(current, agent));
+      if (stayers.has(agent)) {
+        agent.dockAt = rideAlong(current, agent, back, stayList.indexOf(agent), stayList.length + 1);
+      } else {
+        agent.dockAt = back + clamp(travelMs(current, agent.queue[agent.queue.length - 1].exit(), home(agent)()), 300 * s, 520 * s);
+        travelSeg(agent, back, agent.dockAt, home(agent));
+        addEvent(current, back, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
+        addEvent(current, agent.dockAt, () => dockAgent(current, agent));
+      }
       latest = Math.max(latest, agent.dockAt);
     });
 
@@ -1159,11 +1275,20 @@ export function initAgenticEntrance(document, window, config = {}) {
       addEvent(current, job.end, () => completeJob(current, job));
       end = job.end + 80 * s;
     }
-    const orchHome = end + 360 * s;
-    travelSeg(orchestrator, end, orchHome, home(orchestrator));
-    addEvent(current, end, () => orchestrator.cursor.classList.remove('is-working'));
-    addEvent(current, orchHome, () => dockAgent(current, orchestrator));
-    current.total = Math.max(orchHome + 160 * s, crew.length ? lead + current.budget * (current.handoffJob ? 0.6 : 0.8) : lead + 700 * s);
+    const continues = Boolean(nextStop()) && !current.handoffJob;
+    let orchHome;
+    if (continues) {
+      // Lead the ride-along crew down to the next section.
+      stayers.add(orchestrator);
+      orchHome = rideAlong(current, orchestrator, Math.max(commandAt, end - 420 * s), stayList.length, stayList.length + 1);
+    } else {
+      orchHome = end + 360 * s;
+      travelSeg(orchestrator, end, orchHome, home(orchestrator));
+      addEvent(current, end, () => orchestrator.cursor.classList.remove('is-working'));
+      addEvent(current, orchHome, () => dockAgent(current, orchestrator));
+    }
+    current.stayers = stayers;
+    current.total = Math.max(orchHome + 160 * s, crew.length ? lead + current.budget * (current.handoffJob ? 0.6 : continues ? 0.7 : 0.8) : lead + 700 * s);
     addEvent(current, current.total - 180 * s, () => current.stage.classList.add('is-leaving'));
   }
 
@@ -1368,6 +1493,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     clearVisuals();
     const stops = TOUR_STOPS.map(stopInfo => ({ ...stopInfo, section: document.querySelector(stopInfo.sel) })).filter(stopInfo => stopInfo.section);
     tour = { stops, index: 0, firstVisit: !replay };
+    carry = null;
     sectionsEligible = false;
     replayButton.hidden = true;
     builtCount = crewSize(width());
@@ -1392,6 +1518,7 @@ export function initAgenticEntrance(document, window, config = {}) {
 
   function finishTour() {
     tour = null;
+    carry = null;
     phase = 'ready';
     sectionsEligible = false;
     persist();
@@ -1448,7 +1575,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     const to = current.measurable ? Math.round(clamp(y0 + sectionBox.y + offset, 0, maxY)) : y0;
     current.dyFinal = to - y0;
     const travel = Math.abs(to - y0);
-    current.lead = travel < 2 ? 0 : positive(config.scrollDuration, clamp(600 + travel * 0.12, 760, 1400) * (tier === 'phone' ? 0.92 : 1));
+    current.lead = travel < 2 ? 0 : positive(config.scrollDuration, clamp(700 + travel * 0.35, 900, 2200) * (tier === 'phone' ? 0.92 : 1));
     if (current.lead) current.scroll = { from: y0, to, ms: current.lead, done: false };
     current.jobs = collect(current, stopInfo.jobs || [], section);
     // Crew: real roster members for each job's role, round-robin per role.
@@ -1471,9 +1598,19 @@ export function initAgenticEntrance(document, window, config = {}) {
       current.handoffMs = handoffDuration;
       current.jobs.push(current.handoffJob);
     }
+    adoptCarry(current);
     buildStage(current);
     remeasureDots(current);
     planBuild(current, stopInfo);
+    // Keep the page drifting slowly while the crew works (not on the last stop).
+    const creep = tour && tour.index < tour.stops.length - 1 && current.measurable
+      ? Math.min(positive(config.creep, 64), Math.max(0, maxY - to))
+      : 0;
+    if (creep > 2) {
+      current.scroll = current.scroll || { from: y0, to: y0, ms: 0, done: false };
+      current.scroll.creep = creep;
+      current.scroll.creepMs = Math.max(400, current.total - current.scroll.ms);
+    }
     launch(current, advanceTour);
   }
 

@@ -129,3 +129,7 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
   .agentic-stage, .agentic-dock { display: none; }
   .agentic-target[data-build-state] { opacity: 1 !important; translate: none !important; scale: none !important; clip-path: none !important; }
 }
+
+/* Ride-along agents carry over between tour stops without re-animating in. */
+.agentic-cursor.is-carried .agentic-cursor-body,
+.agentic-cursor.is-carried .agentic-role { transition: none; }
