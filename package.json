@@ -7,7 +7,7 @@
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
     "test": "node --test",
-    "check": "node --check web/app.js && node --check web/gallery-state.js && node --check web/entrance.js && node --check scripts/build.mjs && node --check scripts/serve.mjs"
+    "check": "node --check web/app.js && node --check web/gallery-state.js && node --check web/motion.js && node --check web/entrance.js && node --check scripts/build.mjs && node --check scripts/serve.mjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"

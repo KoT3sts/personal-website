@@ -237,3 +237,19 @@ test('every anchor the first-visit entrance targets still exists in the markup',
     assert.ok(document.querySelector(selector), `entrance anchor ${selector}`);
   }
 });
+
+test('dragging moves the cards with the pointer, and a short drag settles back onto the same project', () => {
+  const { document, dispatch, state } = setup();
+  const stage = document.querySelector('.gallery-stage');
+  const cards = [...document.querySelectorAll('.project-card')];
+  dispatch(stage, 'pointerdown', { button: 0, pointerId: 7, clientX: 300, clientY: 120 });
+  dispatch(stage, 'pointermove', { pointerId: 7, clientX: 270, clientY: 121 });
+  assert.ok(stage.classList.contains('is-dragging'));
+  assert.ok(Number(cards[0].style.getPropertyValue('--offset')) < 0, 'active card follows the pointer left');
+  assert.ok(Number(cards[1].style.getPropertyValue('--card-opacity')) > 0.65, 'next card brightens as it approaches');
+  dispatch(stage, 'pointerup', { pointerId: 7, clientX: 270, clientY: 121 });
+  assert.equal(state.index, 0);
+  assert.equal(stage.classList.contains('is-dragging'), false);
+  assert.equal(cards[0].style.getPropertyValue('--offset'), '0');
+  assert.equal(cards[1].style.getPropertyValue('--card-opacity'), '0.65');
+});

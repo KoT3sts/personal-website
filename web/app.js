@@ -1,5 +1,8 @@
-import { createGalleryState } from './gallery-state.js';
+import { createGalleryState, wrapOffset, cardPose, dragOffset, releaseSteps } from './gallery-state.js';
 import { initAgenticEntrance } from './entrance.js';
+import { initMotion } from './motion.js';
+
+const SETTLE = { one: '.82s', many: '1s' };
 
 export function initPortfolio(document, window) {
   const gallery = document.querySelector('.gallery');
@@ -12,43 +15,69 @@ export function initPortfolio(document, window) {
   const dialogContent = dialog.querySelector('.dialog-content');
   const canUseDialog = typeof dialog.showModal === 'function';
   const motion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+  const raf = window.requestAnimationFrame?.bind(window);
+  const cancelRaf = window.cancelAnimationFrame?.bind(window);
   let dialogOpener = null;
   let gesture = null;
   let suppressClick = false;
   let suppressTimer;
+  let dragFrame = 0;
+  let shownIndex = state.index;
 
-  function renderGallery() {
-    const focusedCard = document.activeElement?.closest('.project-card');
-    if (focusedCard && focusedCard !== cards[state.index]) stage.focus();
+  // Only transforms and opacity change here; no layout is read per frame.
+  function layoutCards(drag = 0) {
     cards.forEach((card, index) => {
-      let offset = (index - state.index + cards.length) % cards.length;
-      if (offset > cards.length / 2) offset -= cards.length;
-      const distance = Math.abs(offset);
-      card.style.setProperty('--offset', offset);
-      card.style.setProperty('--distance', distance);
-      card.style.setProperty('--card-z', cards.length - distance);
-      card.style.setProperty('--card-opacity', [1, .65][distance] ?? 0);
+      const position = wrapOffset(index, state.index, cards.length) + drag;
+      const pose = cardPose(position, cards.length);
+      card.style.setProperty('--offset', position);
+      card.style.setProperty('--distance', pose.distance);
+      card.style.setProperty('--card-z', pose.z);
+      card.style.setProperty('--card-opacity', pose.opacity);
       // Keep the incumbent three-card arc: second neighbours fade out, and cards
       // that wrap around the back are hidden so they never sweep across the stage.
-      card.toggleAttribute('data-far', distance > 2);
+      card.toggleAttribute('data-far', pose.far);
+    });
+  }
+
+  function announceCounter(direction) {
+    if (typeof counter.animate !== 'function') return;
+    const keyframes = motion?.matches
+      ? [{ opacity: 0.35 }, { opacity: 1 }]
+      : [{ opacity: 0, transform: `translate3d(${direction * 12}px, 0, 0)` }, { opacity: 1, transform: 'none' }];
+    counter.animate(keyframes, { duration: motion?.matches ? 160 : 520, easing: 'cubic-bezier(.16, 1, .3, 1)' });
+  }
+
+  function renderGallery(direction = 0) {
+    const focusedCard = document.activeElement?.closest('.project-card');
+    if (focusedCard && focusedCard !== cards[state.index]) stage.focus();
+    layoutCards(0);
+    cards.forEach((card, index) => {
       card.setAttribute('aria-hidden', String(index !== state.index));
       card.querySelectorAll('a, button').forEach(link => { link.tabIndex = index === state.index ? 0 : -1; });
     });
     selectors.forEach((button, index) => button.setAttribute('aria-pressed', String(index === state.index)));
     const title = cards[state.index].querySelector('h3').textContent;
     counter.textContent = `${String(state.index + 1).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')} — ${title}`;
+    if (state.index !== shownIndex) announceCounter(direction || 1);
+    shownIndex = state.index;
+  }
+
+  function moveTo(update, direction, distance = 1) {
+    stage.style.setProperty('--settle', distance > 1 ? SETTLE.many : SETTLE.one);
+    update();
+    renderGallery(direction);
   }
 
   function step(delta) {
-    state.step(delta);
-    renderGallery();
+    moveTo(() => state.step(delta), Math.sign(delta), Math.abs(delta));
   }
 
   gallery.querySelector('.gallery-prev').addEventListener('click', () => step(-1));
   gallery.querySelector('.gallery-next').addEventListener('click', () => step(1));
   selectors.forEach(button => button.addEventListener('click', () => {
-    state.select(Number(button.dataset.select));
-    renderGallery();
+    const target = Number(button.dataset.select);
+    const offset = wrapOffset(target, state.index, cards.length);
+    moveTo(() => state.select(target), Math.sign(offset), Math.abs(offset));
   }));
   stage.addEventListener('keydown', event => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -60,32 +89,67 @@ export function initPortfolio(document, window) {
 
   stage.addEventListener('pointerdown', event => {
     if (event.button !== 0 || event.isPrimary === false) return;
-    gesture = { x: event.clientX, y: event.clientY, id: event.pointerId, dragging: false };
+    gesture = { x: event.clientX, y: event.clientY, id: event.pointerId, dragging: false, shift: 0, samples: [] };
     suppressClick = false;
     window.clearTimeout(suppressTimer);
   });
+  function cardShift() {
+    const value = parseFloat(window.getComputedStyle?.(gallery).getPropertyValue('--card-shift'));
+    return value > 0 ? value : 430;
+  }
+  function sample(event) {
+    const time = Number.isFinite(event.timeStamp) ? event.timeStamp : Date.now();
+    gesture.samples.push({ x: event.clientX, time });
+    while (gesture.samples.length > 2 && time - gesture.samples[0].time > 100) gesture.samples.shift();
+  }
+  function velocity() {
+    const [first, last] = [gesture.samples[0], gesture.samples[gesture.samples.length - 1]];
+    const elapsed = last && first ? last.time - first.time : 0;
+    return elapsed >= 16 ? (last.x - first.x) / elapsed : 0;
+  }
+  function paintDrag() {
+    dragFrame = 0;
+    if (gesture?.dragging) layoutCards(dragOffset(gesture.dx, gesture.shift));
+  }
   stage.addEventListener('pointermove', event => {
     if (!gesture || gesture.id !== event.pointerId) return;
     const dx = event.clientX - gesture.x;
     const dy = event.clientY - gesture.y;
     if (!gesture.dragging && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 9) { gesture = null; return; }
-    if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+    if (!gesture.dragging && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
       gesture.dragging = true;
+      gesture.shift = cardShift();
       stage.classList.add('is-dragging');
       stage.setPointerCapture?.(event.pointerId);
     }
+    if (!gesture.dragging) return;
+    gesture.dx = dx;
+    sample(event);
+    // Cards follow the pointer, coalesced to one write per frame.
+    if (motion?.matches) return;
+    if (!raf) paintDrag();
+    else if (!dragFrame) dragFrame = raf(paintDrag);
   });
   function finishGesture(event, cancelled = false) {
     if (!gesture || gesture.id !== event.pointerId) return;
     const dx = event.clientX - gesture.x;
     const dragged = gesture.dragging;
+    if (dragged) sample(event);
+    const speed = dragged ? velocity() : 0;
+    const shift = gesture.shift;
     gesture = null;
+    if (dragFrame) { cancelRaf?.(dragFrame); dragFrame = 0; }
     stage.classList.remove('is-dragging');
     if (stage.hasPointerCapture?.(event.pointerId)) stage.releasePointerCapture(event.pointerId);
-    if (!cancelled && dragged && Math.abs(dx) > 45) {
+    const steps = !cancelled && dragged ? releaseSteps({ dx, velocity: speed, shift }) : 0;
+    if (steps) {
       suppressClick = true;
-      step(dx < 0 ? 1 : -1);
+      step(steps);
       suppressTimer = window.setTimeout(() => { suppressClick = false; }, 350);
+    } else if (dragged) {
+      // Not far enough: settle back onto the current card.
+      stage.style.setProperty('--settle', SETTLE.one);
+      layoutCards(0);
     }
   }
   stage.addEventListener('pointerup', event => finishGesture(event));
@@ -148,10 +212,16 @@ export function initPortfolio(document, window) {
     document.querySelectorAll('main > section[id], footer[id]').forEach(section => navObserver.observe(section));
   }
   const art = document.querySelector('.hero-art');
+  let tiltFrame = 0;
+  let tilt = 0;
+  const paintTilt = () => { tiltFrame = 0; art.style.setProperty('--art-rotate', `${tilt.toFixed(2)}deg`); };
   document.querySelector('.hero').addEventListener('pointermove', event => {
     if (motion?.matches || event.pointerType === 'touch') return;
-    const rotation = (event.clientX / Math.max(window.innerWidth, 1) - .5) * 6;
-    art.style.setProperty('--art-rotate', `${rotation.toFixed(2)}deg`);
+    // The entrance owns the hero while it assembles it.
+    if (document.documentElement.classList.contains('agentic-running')) return;
+    tilt = (event.clientX / Math.max(window.innerWidth, 1) - .5) * 6;
+    if (!raf) paintTilt();
+    else if (!tiltFrame) tiltFrame = raf(paintTilt);
   });
   document.querySelectorAll('[data-year]').forEach(element => { element.textContent = new Date().getFullYear(); });
   renderGallery();
@@ -162,5 +232,7 @@ export function initPortfolio(document, window) {
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   initPortfolio(document, window);
-  initAgenticEntrance(document, window);
+  const entrance = initAgenticEntrance(document, window);
+  try { initMotion(document, window, { entrance }); }
+  catch { document.querySelectorAll('[data-reveal]').forEach(element => element.removeAttribute('data-reveal')); }
 }

@@ -1,22 +1,103 @@
+/* First-visit agent crew. Everything here is decorative (aria-hidden,
+   pointer-events: none) except the Skip and Replay controls. Per-frame motion
+   is written by entrance.js as transforms; CSS only handles state fades. */
 html.agentic-running { scroll-behavior: auto; }
-.agentic-stage { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
-.agentic-veil { position: absolute; inset: 0; background: #101114; opacity: 1; transition: opacity .55s ease; }
+
+.agentic-stage { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; contain: layout style; --agentic-ink: #1d1e1b; --agentic-paper: #f3f2ec; --agentic-mono: "Courier New", Courier, monospace; }
+.agentic-decoration, .agentic-layer, .agentic-cursors { position: absolute; inset: 0; }
+.agentic-veil { position: absolute; inset: 0; background: #101114; transition: opacity .5s cubic-bezier(.16,1,.3,1); }
 .agentic-stage.is-assembling .agentic-veil { opacity: 0; }
 .agentic-stage.is-section .agentic-veil { display: none; }
-.agentic-cursor { position: absolute; left: 0; top: 0; color: var(--agent-color); display: flex; gap: 2px; align-items: flex-start; transition: transform .42s cubic-bezier(.22,.7,.15,1), opacity .2s; filter: drop-shadow(0 2px 2px #0002); will-change: transform; }
-.agentic-role { display: block; margin-top: 16px; padding: 5px 8px; font: 10px/1 "Courier New", monospace; border-radius: 4px; background: #171a16; color: #f2f5ec; border-left: 3px solid var(--agent-color); white-space: nowrap; letter-spacing: .01em; }
-.agentic-frame { position: absolute; border: 1px solid var(--agent-color); background: color-mix(in srgb, var(--agent-color) 5%, transparent); box-shadow: 0 0 0 1px #fff2; }
-.agentic-frame i { position: absolute; width: 5px; height: 5px; background: var(--agent-color); border: 1px solid #edf4ea; }
-.agentic-frame i:nth-child(1) { top: -3px; left: -3px; }.agentic-frame i:nth-child(2) { top: -3px; right: -3px; }.agentic-frame i:nth-child(3) { bottom: -3px; left: -3px; }.agentic-frame i:nth-child(4) { bottom: -3px; right: -3px; }
-.agentic-status, .agentic-skip { position: absolute; bottom: 24px; background: #171a16ed; color: #eef2e6; border: 1px solid #e6edda30; border-radius: 30px; font: 10px/1.4 "Courier New", monospace; padding: 11px 16px; box-shadow: 0 3px 18px #0002; }
-.agentic-status { left: var(--gutter, 25px); display: flex; align-items: center; gap: 8px; }.agentic-status-text { color: #bac7ac; }.agentic-status-light { width: 5px; height: 5px; border-radius: 50%; background: #a7d9bc; box-shadow: 0 0 10px #a7d9bc66; }
-.agentic-skip { right: var(--gutter, 25px); pointer-events: auto; cursor: pointer; min-height: 44px; min-width: 110px; }.agentic-skip:hover { background: #333c2c; }.agentic-skip:focus-visible { outline: 2px solid #d7e8b9; outline-offset: 4px; }
-.agentic-target[data-build-state="pending"] { opacity: 0 !important; }
-.agentic-target[data-build-state="placing"] { animation: agentic-place var(--agentic-step-duration, .8s) ease both; }
-.agentic-target.agentic-text[data-build-state="placing"] { animation: agentic-write var(--agentic-step-duration, .8s) steps(18, end) both; }
-.is-settling .agentic-cursor, .is-settling .agentic-frame, .is-settling .agentic-status { opacity: 0; transition: opacity .18s; }
-.agentic-replay { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 6px 0; color: inherit; font: inherit; text-transform: uppercase; letter-spacing: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }.agentic-replay:hover { color: #d7deca; }.agentic-replay:disabled { display: none; }
-@keyframes agentic-place { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: blur(0); } }
-@keyframes agentic-write { from { opacity: 1; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
-@media (max-width: 640px) { .agentic-role { font-size: 8px; padding: 4px 6px; }.agentic-status, .agentic-skip { bottom: 18px; font-size: 8px; padding: 10px 12px; }.agentic-status-text { display: none; } }
-@media (prefers-reduced-motion: reduce) { .agentic-stage { display: none; }.agentic-target[data-build-state] { opacity: 1 !important; animation: none !important; }.agentic-cursor { transition: none; } }
+
+/* Cursors: position via transform from JS; pop-in and docking on the body. */
+.agentic-cursor { position: absolute; left: 0; top: 0; color: var(--agent-color); will-change: transform; }
+.agentic-cursor-body { position: relative; opacity: 0; scale: .55; transform-origin: 2px 2px; transition: opacity .2s ease, scale .28s cubic-bezier(.16,1,.3,1); }
+.agentic-cursor.is-in .agentic-cursor-body { opacity: 1; scale: 1; }
+.agentic-cursor.is-docked .agentic-cursor-body { opacity: 0; scale: .3; transition-duration: .16s, .18s; }
+.agentic-cursor svg { display: block; filter: drop-shadow(0 1.5px 1.5px rgb(16 17 20 / .28)); }
+.agentic-cursor path { fill: currentColor; stroke: #121310; stroke-width: 1.25; stroke-linejoin: round; }
+.agentic-cursor.is-orchestrator { color: var(--agentic-ink); }
+.agentic-cursor.is-orchestrator path { stroke: var(--agentic-paper); stroke-width: 1.4; }
+.agentic-role { position: absolute; left: 13px; top: 18px; padding: 3px 5px 2px; border-radius: 3px; background: var(--agent-color); color: #12130f; font: 700 10px/1.1 var(--agentic-mono); letter-spacing: .01em; white-space: nowrap; box-shadow: 0 2px 6px -2px rgb(16 17 20 / .35); }
+.agentic-role { opacity: 0; scale: .8; transform-origin: 0 0; transition: opacity .16s ease, scale .2s cubic-bezier(.16,1,.3,1); }
+.agentic-cursor.is-working .agentic-role { opacity: 1; scale: 1; }
+.agentic-cursor.is-flip .agentic-role { left: auto; right: 15px; transform-origin: 100% 0; }
+.agentic-cursor.is-orchestrator .agentic-role { background: var(--agentic-ink); color: var(--agentic-paper); box-shadow: 0 0 0 1px rgb(243 242 236 / .22), 0 2px 6px -2px rgb(16 17 20 / .4); }
+
+/* Selection frames, measured from real element bounds. */
+.agentic-frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid var(--agent-color); background: color-mix(in srgb, var(--agent-color) 7%, transparent); transform-origin: 0 0; transition: opacity .22s ease; }
+.agentic-frame.is-set:not(.is-drag) { animation: agentic-frame-in .18s cubic-bezier(.16,1,.3,1) both; }
+.agentic-frame.is-out { opacity: 0; }
+.agentic-frame.is-review { border-style: dashed; background: none; }
+.agentic-frame.is-text { background: none; border-color: color-mix(in srgb, var(--agent-color) 70%, transparent); }
+.agentic-frame.is-orbit { border-style: dashed; border-radius: 50%; background: none; border-color: color-mix(in srgb, var(--agent-color) 80%, transparent); }
+.agentic-frame i { position: absolute; width: 6px; height: 6px; box-sizing: border-box; background: #fbfaf6; border: 1px solid var(--agent-color); opacity: 0; transition: opacity .15s; }
+.agentic-frame i:nth-child(1) { top: -3.5px; left: -3.5px; }
+.agentic-frame i:nth-child(2) { top: -3.5px; right: -3.5px; }
+.agentic-frame i:nth-child(3) { bottom: -3.5px; left: -3.5px; }
+.agentic-frame i:nth-child(4) { bottom: -3.5px; right: -3.5px; }
+.agentic-frame.is-set:not(.is-review):not(.is-orbit) i { opacity: 1; }
+.agentic-size { position: absolute; left: 50%; top: 100%; translate: -50% 6px; padding: 2px 5px 1px; border-radius: 3px; background: var(--agent-color); color: #12130f; font: 700 9px/1.2 var(--agentic-mono); white-space: nowrap; opacity: 0; transition: opacity .15s; }
+.agentic-frame.is-drag.is-set .agentic-size, .agentic-frame.has-size.is-set .agentic-size, .agentic-frame.is-coord .agentic-size { opacity: 1; }
+.agentic-frame.is-coord .agentic-size { top: 50%; translate: 9px 9px; }
+.agentic-cross { position: absolute; left: 50%; top: 50%; width: 11px; height: 11px; translate: -50% -50%; opacity: 0; transition: opacity .15s; }
+.agentic-cross::before, .agentic-cross::after { content: ""; position: absolute; background: var(--agent-color); }
+.agentic-cross::before { left: 5px; top: 0; width: 1px; height: 11px; }
+.agentic-cross::after { top: 5px; left: 0; height: 1px; width: 11px; }
+.agentic-frame.has-cross.is-set .agentic-cross { opacity: 1; }
+
+/* Text caret and dispatch lines. */
+.agentic-caret { position: absolute; left: 0; top: 0; width: 2px; border-radius: 1px; background: var(--agent-color); }
+.agentic-caret.is-idle { animation: agentic-blink .9s steps(1, end) infinite; }
+.agentic-dispatch { position: absolute; left: 0; top: 0; height: 1px; transform-origin: 0 50%; background: linear-gradient(90deg, color-mix(in srgb, var(--agent-color) 15%, transparent), var(--agent-color)); animation: agentic-dispatch .56s cubic-bezier(.16,1,.3,1) both; }
+
+/* Orchestrator log and Skip. Bottom on wide screens, under the header on phones. */
+.agentic-status, .agentic-skip { position: absolute; bottom: 24px; min-height: 44px; box-sizing: border-box; border: 1px solid rgb(230 237 218 / .19); border-radius: 30px; background: rgb(23 26 22 / .93); color: #eef2e6; font: 10px/1.4 var(--agentic-mono); letter-spacing: .02em; box-shadow: 0 6px 22px -8px rgb(16 17 20 / .45); transition: opacity .24s ease, translate .24s ease; }
+.agentic-status { left: var(--gutter, 25px); display: flex; align-items: center; gap: 12px; padding: 0 16px 0 14px; white-space: nowrap; }
+.agentic-dots { display: flex; gap: 4px; }
+.agentic-dot { width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--agent-color) 34%, #2b2f28); transition: background-color .2s, box-shadow .2s, scale .2s; }
+.agentic-dot.is-active { background: var(--agent-color); box-shadow: 0 0 6px color-mix(in srgb, var(--agent-color) 70%, transparent); }
+.agentic-dot.is-done { background: var(--agent-color); scale: 1.2; }
+.agentic-dot.is-orchestrator { box-sizing: border-box; background: none; border: 1.5px solid #eef2e6; }
+.agentic-dot.is-orchestrator.is-done { background: #eef2e6; }
+.agentic-log { color: #bac7ac; }
+.agentic-log-agents, .agentic-log-done { color: #eef2e6; }
+.agentic-skip { right: var(--gutter, 25px); min-width: 44px; padding: 0 18px; pointer-events: auto; cursor: pointer; }
+.agentic-skip:hover { background: #333c2c; }
+.agentic-skip:focus-visible { outline: 2px solid #d7e8b9; outline-offset: 4px; }
+.agentic-stage.is-leaving .agentic-status { opacity: 0; translate: 0 6px; }
+.agentic-stage.is-leaving .agentic-skip { opacity: 0; }
+
+/* Targets: hidden only while a job is pending, never in section passes. */
+.agentic-target[data-build-state="pending"] { opacity: 0; translate: 0 .35em; }
+.agentic-target[data-build-kind="art"][data-build-state="pending"] { translate: 0 14px; scale: .93; }
+.agentic-target[data-build-state="placing"] { opacity: 1; translate: none; scale: none; transition: opacity var(--agentic-d, .4s) cubic-bezier(.33,1,.68,1), translate var(--agentic-d, .4s) cubic-bezier(.16,1,.3,1), scale var(--agentic-d, .4s) cubic-bezier(.16,1,.3,1); }
+.agentic-target[data-build-state="typing"] { opacity: 1; translate: none; }
+
+/* Replay sits inside the footer's small mono row without changing its height. */
+.agentic-replay { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -16px; padding: 0; color: inherit; font: inherit; text-transform: uppercase; letter-spacing: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.agentic-replay:hover { color: #d7deca; }
+.agentic-replay:disabled { display: none; }
+
+@keyframes agentic-frame-in { from { opacity: 0; scale: .985; } }
+@keyframes agentic-blink { 50% { opacity: 0; } }
+@keyframes agentic-dispatch { 0% { scale: 0 1; opacity: .95; } 45% { scale: 1 1; opacity: .85; } 100% { scale: 1 1; opacity: 0; } }
+
+@media (max-width: 760px) {
+  .footer-bottom > .agentic-replay { order: 4; margin-block: -12px -14px; }
+}
+@media (max-width: 1099px) {
+  .agentic-log-stage { display: none; }
+}
+@media (max-width: 639px) {
+  .agentic-status, .agentic-skip { top: var(--agentic-dock-top, 70px); bottom: auto; font-size: 9px; }
+  .agentic-status { left: var(--gutter, 22px); gap: 9px; padding: 0 13px 0 12px; }
+  .agentic-skip { right: var(--gutter, 22px); padding: 0 14px; }
+  .agentic-log-orch, .agentic-log-scope { display: none; }
+  .agentic-role { font-size: 9px; top: 17px; }
+  .agentic-stage.is-leaving .agentic-status { translate: 0 -6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agentic-stage { display: none; }
+  .agentic-target[data-build-state] { opacity: 1 !important; translate: none !important; scale: none !important; clip-path: none !important; }
+}

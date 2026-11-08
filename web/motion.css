@@ -1,0 +1,89 @@
+/* Motion pass: section reveals, control feedback, gallery coordination and
+   the contact close. Layered into `motion` (order declared in styles.css). */
+@layer motion {
+  /* ---- Section reveals. Hidden states exist only after motion.js marks
+     content that is still below the fold. ---- */
+  [data-reveal="pending"] { opacity: 0; transform: translate3d(0, var(--reveal-y, 26px), 0); }
+  [data-reveal="pending"][data-reveal-variant="heading"] { --reveal-y: 46px; }
+  [data-reveal="pending"][data-reveal-variant="stage"] { transform: translate3d(0, 34px, 0) scale(.97); }
+  [data-reveal="in"] { transition: opacity .55s cubic-bezier(.33,1,.68,1) var(--reveal-delay, 0ms), transform .7s cubic-bezier(.16,1,.3,1) var(--reveal-delay, 0ms); }
+  [data-reveal-variant="heading"][data-reveal="in"] { transition-duration: .6s, .8s; }
+  /* Tag chips settle in a short cascade behind their row. */
+  [data-reveal="pending"] .tag-list li { opacity: 0; transform: translate3d(0, 8px, 0) scale(.96); }
+  [data-reveal="in"] .tag-list li { transition: opacity .4s cubic-bezier(.33,1,.68,1), transform .5s cubic-bezier(.16,1,.3,1); transition-delay: calc(var(--reveal-delay, 0ms) + 140ms + var(--chip, 0) * 24ms); }
+  @media print { [data-reveal], [data-reveal] .tag-list li { opacity: 1 !important; transform: none !important; } }
+
+  /* ---- Control feedback: arrows lean toward their destination, presses give. ---- */
+  .pill-button, .scene-pill, .contact-button, .circle-button, .project-open, .scroll-cue, .about-discover, .main-nav a, .header-contact, .project-selectors button, .dialog-close {
+    transition: background-color .25s, color .25s, border-color .25s, box-shadow .35s cubic-bezier(.16,1,.3,1), transform .18s cubic-bezier(.2,.8,.2,1);
+  }
+  :is(.pill-button, .scene-pill, .contact-button, .circle-button, .project-open, .scroll-cue, .about-discover, .main-nav a):active { transform: scale(.965); transition-duration: .25s, .25s, .25s, .35s, .08s; }
+  :is(.pill-button, .scene-pill, .contact-button, .header-contact, .hero-links a, .contact-links a, .dialog-close) > span[aria-hidden] { display: inline-block; transition: transform .45s cubic-bezier(.16,1,.3,1); }
+  @media (hover: hover) and (pointer: fine) {
+    :is(.scene-pill, .contact-button, .hero-links a, .contact-links a):hover > span[aria-hidden] { transform: translate3d(2px, -2px, 0); }
+    :is(.pill-button, .header-contact, .contact-links a)[download]:hover > span[aria-hidden] { transform: translate3d(0, 3px, 0); }
+    .dialog-close:hover > span[aria-hidden] { transform: rotate(90deg); }
+    .pill-button:hover { box-shadow: 0 16px 30px -16px #171716b3; }
+    .scene-pill-primary:hover { box-shadow: 0 0 34px #f1edff40; }
+    .contact-button:hover { box-shadow: 0 18px 44px -16px #dbe9be66, 0 0 0 4px #e2e8d814; }
+  }
+  /* Underlines draw in from the left and leave to the right. */
+  .hero-links a, .contact-links a, .work-end a, .section-top a { position: relative; }
+  :is(.hero-links a, .contact-links a, .work-end a, .section-top a)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right center; transition: transform .5s cubic-bezier(.16,1,.3,1); pointer-events: none; }
+  :is(.hero-links a, .contact-links a, .work-end a, .section-top a):is(:hover, :focus-visible)::after { transform: scaleX(1); transform-origin: left center; }
+
+  /* ---- Gallery: the active caption settles after its card; selector underline travels. ---- */
+  .js-enabled .project-card-bottom > div { transition: opacity .5s cubic-bezier(.33,1,.68,1) .22s, transform .7s cubic-bezier(.16,1,.3,1) .22s; }
+  .js-enabled .project-card[aria-hidden="true"] .project-card-bottom > div { opacity: .5; transform: translate3d(0, 6px, 0); transition-duration: .3s; transition-delay: 0s; }
+  .project-selectors button { position: relative; }
+  .project-selectors button[aria-pressed="true"] { border-bottom-color: transparent; }
+  .project-selectors button::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--ink); transform: scaleX(0); transition: transform .6s cubic-bezier(.16,1,.3,1); }
+  .project-selectors button[aria-pressed="true"]::after { transform: scaleX(1); }
+
+  /* ---- Disclosures and dialog. ---- */
+  .details-icon { display: inline-block; transition: transform .4s cubic-bezier(.16,1,.3,1); }
+  details[open] > p { animation: detail-open .45s cubic-bezier(.16,1,.3,1); }
+  .project-dialog[open] { animation: dialog-open .5s cubic-bezier(.16,1,.3,1); }
+  .project-dialog[open]::backdrop { animation: backdrop-open .4s ease-out; }
+  @keyframes detail-open { from { opacity: 0; transform: translate3d(0, -6px, 0); } }
+  @keyframes dialog-open { from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.98); } }
+  @keyframes backdrop-open { from { opacity: 0; } }
+
+  /* ---- Closing note: the orbit point travels its ellipse, only while on screen. ---- */
+  .note-orbit i { transform-origin: 105px 0; animation: note-orbit 18s linear infinite; }
+  .closing-note[data-loop="paused"] .note-orbit i { animation-play-state: paused; }
+  @keyframes note-orbit { to { transform: rotate(360deg); } }
+
+  /* ---- Contact close: a soft light rises behind the headline, then breathes. ---- */
+  .contact { position: relative; isolation: isolate; }
+  .contact::before, .contact::after { content: ""; position: absolute; z-index: -1; left: 50%; pointer-events: none; border-radius: 50%; }
+  .contact::before { top: 60px; width: min(1100px, 92vw); height: min(520px, 52vw); margin-left: max(-550px, -46vw); background: radial-gradient(closest-side, #e3eac522, #e3eac50c 55%, transparent); }
+  .contact::after { top: 150px; width: min(560px, 60vw); height: min(240px, 26vw); margin-left: max(-280px, -30vw); background: radial-gradient(closest-side, #f2f7e41c, transparent); animation: contact-breathe 9s ease-in-out infinite; }
+  .contact[data-loop="paused"]::after { animation-play-state: paused; }
+  @keyframes contact-breathe { 0%, 100% { opacity: .55; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .contact { view-timeline: --contact-scene block; }
+      .contact::before { animation: contact-glow-rise linear both; animation-timeline: --contact-scene; animation-range: entry 0% entry 90%; }
+      .contact h2 { animation: contact-title-rise linear both; animation-timeline: --contact-scene; animation-range: entry 0% entry 80%; }
+      /* Hero depth: the sculpture lags as the hero scrolls away. */
+      .hero { view-timeline: --hero-scene block; }
+      .sculpture { animation: hero-idle 12s ease-in-out infinite, hero-depart linear both; animation-timeline: auto, --hero-scene; animation-range: normal, exit 0% exit 100%; }
+      .hero[data-loop="paused"] .sculpture { animation-play-state: paused, running; }
+      html.agentic-running .sculpture { animation-play-state: paused, paused; }
+    }
+  }
+  @keyframes contact-glow-rise { from { opacity: 0; transform: translate3d(0, 18%, 0) scale(.72); } to { opacity: 1; transform: none; } }
+  @keyframes contact-title-rise { from { transform: translate3d(0, 42px, 0) scale(.97); } to { transform: none; } }
+  @keyframes hero-depart { from { translate: 0 0; scale: 1; } to { translate: 0 64px; scale: .97; } }
+  @supports not (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .contact::before { transition: opacity 1.1s cubic-bezier(.33,1,.68,1), transform 1.4s cubic-bezier(.16,1,.3,1); }
+      #contact[data-scene="pending"]::before { opacity: 0; transform: translate3d(0, 18%, 0) scale(.72); }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal], [data-reveal] .tag-list li { opacity: 1 !important; transform: none !important; }
+  }
+}

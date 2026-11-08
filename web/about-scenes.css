@@ -40,16 +40,59 @@
 }
 
 @layer motion {
-  /* Progressive enhancement only: text and artwork remain complete without it. */
+  /* Scroll-linked scene changes. Progressive enhancement only: text and artwork
+     are complete without them, and text opacity is never tied to scroll. */
   @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) and (min-width: 761px) {
-      .about-transition { view-timeline-name: --about-scene; view-timeline-axis: block; }
-      .about-flow { animation: about-flow-shift linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
-      .about-title-panel { animation: about-panel-settle linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
+    @media (prefers-reduced-motion: no-preference) {
+      /* V03: the swirl pulls back and dims to black while ABOUT ME rises, holds, then pushes toward the viewer. */
+      .about-transition { view-timeline: --about-scene block; }
+      .about-transition::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: #101114; opacity: 0; animation: about-dim linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
+      .about-flow { animation: about-flow-drift linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
+      .about-title-panel { animation: about-panel-arc linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
+      .about-transition-meta, .about-transition-foot { animation: about-label-drift linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
+      .about-transition-foot { --label-drift: -1; }
+
+      /* V04: the inset stage opens, the light shaft sweeps in and the sculpture rises into it. */
+      .cinematic { view-timeline: --cine-scene block; }
+      .cinematic-stage { animation: cine-stage-open linear both; animation-timeline: --cine-scene; animation-range: entry 0% cover 42%; }
+      .cinematic-light { animation: cine-light-sweep linear both; animation-timeline: --cine-scene; animation-range: entry 5% cover 50%; }
+      .cinematic-light::before { animation: cine-streak-drift linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      .cinematic-art { animation: cine-art-rise linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      .cinematic-topline { animation: cine-edge-settle linear both; animation-timeline: --cine-scene; animation-range: entry 15% cover 45%; }
+      .cinematic-footer { animation: cine-copy-settle linear both; animation-timeline: --cine-scene; animation-range: entry 25% cover 50%; }
     }
   }
-  @keyframes about-flow-shift { from { transform: translateY(-3%) scale(1.03); } to { transform: translateY(3%) scale(1.08); } }
-  @keyframes about-panel-settle { 0% { transform: translateY(35px) rotate(-5deg); } 45%, 65% { transform: translateY(0) rotate(0); } 100% { transform: translateY(-25px) rotate(3deg); } }
+  @keyframes about-dim { 0%, 60% { opacity: 0; } 100% { opacity: .78; } }
+  @keyframes about-flow-drift {
+    0% { transform: translate3d(0, -3.5%, 0) scale(1.14) rotate(var(--flow-turn, -1.2deg)); }
+    50% { transform: translate3d(0, 0, 0) scale(1.06) rotate(0deg); }
+    100% { transform: translate3d(0, 3.5%, 0) scale(1.02) rotate(calc(var(--flow-turn, -1.2deg) * -.6)); }
+  }
+  @keyframes about-panel-arc {
+    0% { transform: translate3d(0, var(--panel-rise, 90px), 0) scale(var(--panel-from, .9)) rotate(var(--panel-tilt, -4deg)); }
+    42%, 58% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+    100% { transform: translate3d(0, calc(var(--panel-rise, 90px) * -.7), 0) scale(var(--panel-to, 1.08)) rotate(calc(var(--panel-tilt, -4deg) * -.4)); }
+  }
+  @keyframes about-label-drift { from { transform: translate3d(0, calc(var(--label-drift, 1) * 28px), 0); } to { transform: translate3d(0, calc(var(--label-drift, 1) * -28px), 0); } }
+  @keyframes cine-stage-open { from { transform: translate3d(0, 46px, 0) scale(.94); } to { transform: none; } }
+  @keyframes cine-light-sweep { from { opacity: .12; transform: translate3d(14%, -10%, 0); } to { opacity: 1; transform: none; } }
+  @keyframes cine-streak-drift { from { transform: translate3d(-4%, 3%, 0); } to { transform: translate3d(4%, -3%, 0); } }
+  @keyframes cine-art-rise {
+    0% { translate: 0 var(--art-rise, 90px); scale: .86; rotate: 7deg; }
+    46% { translate: 0 0; scale: 1; rotate: 0deg; }
+    100% { translate: 0 calc(var(--art-rise, 90px) * -.75); scale: 1.04; rotate: -3deg; }
+  }
+  @keyframes cine-edge-settle { from { transform: translate3d(0, -18px, 0); } to { transform: none; } }
+  @keyframes cine-copy-settle { from { transform: translate3d(0, 52px, 0); } to { transform: none; } }
+
+  /* Without scroll timelines: a one-time, decoration-only settle (motion.js sets data-scene). */
+  @supports not (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .about-flow, .cinematic-light { transition: opacity 1s cubic-bezier(.33,1,.68,1), transform 1.4s cubic-bezier(.16,1,.3,1); }
+      #about[data-scene="pending"] .about-flow { transform: scale(1.1); }
+      #introduction[data-scene="pending"] .cinematic-light { opacity: .12; transform: translate3d(14%, -10%, 0); }
+    }
+  }
 }
 
 @layer responsive {
@@ -67,7 +110,9 @@
     .about-transition-meta > :last-child, .about-transition-foot > :last-child { max-width: 44%; text-align: right; }
     .about-transition-foot { font-size: 7px; }
     .about-flow { inset: -4% -65%; }
-    .about-title-panel { width: min(67vw, 300px); min-height: 365px; padding: 25px 20px; border-radius: 13px; }
+    .about-title-panel { width: min(67vw, 300px); min-height: 365px; padding: 25px 20px; border-radius: 13px; --panel-rise: 56px; --panel-from: .94; --panel-to: 1.04; --panel-tilt: -2deg; }
+    .about-flow { --flow-turn: -.6deg; }
+    .cinematic-art { --art-rise: 48px; }
     .about-title-panel h2 { font-size: clamp(70px, 19vw, 90px); }
     .cinematic { padding: 90px 14px 26px; }
     .cinematic-stage { min-height: 0; max-height: none; border-radius: 10px; }
