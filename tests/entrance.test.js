@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, TOUR_STOPS } from '../web/entrance.js';
+import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, TOUR_STOPS, SCROLL } from '../web/entrance.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 const entranceCSS = await readFile(new URL('../web/entrance.css', import.meta.url), 'utf8');
@@ -130,7 +130,7 @@ test('the first visit tours every section in order, then hands off and collapses
   assert.ok(dock.querySelector('[data-agentic-dock-replay]'));
   assert.equal(document.querySelector('[data-agentic-replay]').hidden, false);
   assert.ok(heroEnded >= 7000 && heroEnded <= 9000, `hero took ${heroEnded}ms`);
-  assert.ok(clock.now() >= 30000 && clock.now() <= 47000, `tour took ${clock.now()}ms`);
+  assert.ok(clock.now() >= 36000 && clock.now() <= 56000, `tour took ${clock.now()}ms`);
   if (measurable(document) && document.documentElement.scrollHeight > window.innerHeight + 10) {
     assert.ok(window.scrollY > 0, 'the tour ends at the contact section, not back at the top');
   }
@@ -158,6 +158,7 @@ test('the dock count is the number of agents at work and changes between section
   assert.ok(lower.every(max => max >= 1), `lower crews ${lower}`);
   assert.ok(lower.some(max => max >= 10), `some sections are busy: ${[...maxByStop]}`);
   assert.ok(new Set(lower).size >= 2, `crew sizes differ between sections: ${[...maxByStop]}`);
+  assert.ok(lower.every(max => max <= 16), `lower crews stay in their band: ${[...maxByStop]}`);
   // Phones keep a small crew.
   const phone = setup(t, { width: 375, frames: true });
   let phoneMax = 0;
@@ -679,4 +680,80 @@ test('handoff notes appear one at a time, beside the dock, hidden from assistive
   assert.ok([...texts].every(text => /^[a-z0-9]+ → [a-z0-9]+ · [a-z ]+$/.test(text)), [...texts].join(' | '));
   assert.ok([...texts].every(text => !/token|model|api|latency|test|pass|fail/i.test(text)));
   assert.equal(document.querySelectorAll('.agentic-note.is-on').length, 0, 'none left on the pill');
+});
+
+test('after the hero the page keeps moving until Contact, within the acceleration limit, with most of the crew out', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
+  const limit = SCROLL.desktop.accel;
+  let previous = null;
+  let minV = Infinity;
+  let maxAccel = 0;
+  let minCursors = Infinity;
+  let minWorking = Infinity;
+  let maxWorking = 0;
+  let maxStep = 0;
+  let lastWorking = null;
+  let sampled = 0;
+  let settledAtContact = false;
+  let heroEnd = 0;
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    const { index, name } = controller.tour;
+    const { v } = controller.scroll;
+    if (previous !== null) maxAccel = Math.max(maxAccel, Math.abs(v - previous) / 0.016);
+    previous = v;
+    if (index === 0) continue;
+    // The hero is built at rest; About starts the scroll from zero.
+    if (!heroEnd) heroEnd = clock.now();
+    if (clock.now() - heroEnd < 250) continue;
+    if (name === 'Contact') { if (Math.abs(v) < 1) settledAtContact = true; continue; }
+    sampled++;
+    minV = Math.min(minV, v);
+    minCursors = Math.min(minCursors, visibleCursors(document).length);
+    const working = controller.stats.working;
+    minWorking = Math.min(minWorking, working);
+    maxWorking = Math.max(maxWorking, working);
+    if (lastWorking !== null) maxStep = Math.max(maxStep, Math.abs(working - lastWorking));
+    lastWorking = working;
+  }
+  assert.ok(sampled > 100);
+  assertNoResidue(document);
+  if (!measurable(document) || document.documentElement.scrollHeight <= window.innerHeight + 10) return;
+  // Velocity carries over between stops: it never reaches zero before Contact,
+  // where the scroll settles fully before the handoff.
+  assert.ok(minV > 10, `slowest scroll between the hero and Contact: ${minV.toFixed(1)} px/s`);
+  assert.ok(settledAtContact, 'the scroll settles at Contact');
+  assert.ok(maxAccel <= limit * 1.02, `peak acceleration ${maxAccel.toFixed(0)} px/s² (limit ${limit})`);
+  // Most of the crew stays out between sections; the count moves in small steps.
+  assert.ok(minCursors >= 8, `as few as ${minCursors} cursors on screen between the hero and Contact`);
+  assert.ok(minWorking >= 8 && maxWorking <= 16, `crew band ${minWorking}-${maxWorking}`);
+  assert.ok(maxStep <= 3, `crew count jumped by ${maxStep}`);
+});
+
+test('content the visitor can see is never left hidden for more than a moment', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
+  const since = new Map();
+  let worst = 0;
+  let worstName = '';
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    const now = clock.now();
+    const seen = new Set();
+    for (const element of document.querySelectorAll('[data-build-state="pending"]')) {
+      if (element.closest('#home, .site-header')) continue;
+      // Tags waiting their turn in a cascade whose item is already placed are progress.
+      const owner = element.closest('[data-agentic-job]');
+      if (owner && owner !== element && owner.dataset.buildState !== 'pending') continue;
+      const rect = element.getBoundingClientRect();
+      if (!(rect.height > 0 && rect.top < window.innerHeight * 0.97 && rect.bottom > 0)) continue;
+      seen.add(element);
+      if (!since.has(element)) since.set(element, now);
+      const held = now - since.get(element);
+      if (held > worst) { worst = held; worstName = element.className || element.tagName; }
+    }
+    for (const element of [...since.keys()]) if (!seen.has(element)) since.delete(element);
+  }
+  assert.ok(worst <= 300, `${worstName} stayed hidden on screen for ${worst}ms`);
+  assertNoResidue(document);
 });

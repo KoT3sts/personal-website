@@ -25,18 +25,34 @@ const SPEED_KEY = 'cesar:portfolio:agentic-tour-speed:v1';
 const NOTE_MS = 1800; // handoff notes stay up this long (real time)
 const NAME_MAX = 30; // longest item name quoted in an action label
 const HERO_BASE = 4600; // HERO_PLAN waves are authored against this
-const BUILD_BASE = 2800; // tour section plans are authored against this
+const BUILD_BASE = 3200; // tour section plans are authored against this
 const PASS_BASE = 1000; // manual (post-cancel) tracing passes
 
-// Real durations in ms. Hero ~1.6-1.8x the original 4.6 s so each agent's
-// work stays readable; lower sections get ~2.3-3.2 s plus the scroll to them.
+// Real durations in ms. Hero ~1.8x the original 4.6 s so each agent's work
+// stays readable; each lower section gets a ~3-5 s work budget (x `weight`),
+// overlapping the scroll into it.
 export const TIMING = {
-  hero: { desktop: 8200, tablet: 8000, phone: 7200 },
-  build: { desktop: 2200, tablet: 2200, phone: 2100 },
+  hero: { desktop: 8400, tablet: 8200, phone: 7400 },
+  build: { desktop: 3200, tablet: 3000, phone: 2600 },
   pass: 1100,
   handoff: 1300,
   pillMs: 10000,
 };
+
+// The tour's page scroll is one continuous velocity model (px, px/s, px/s²):
+// each stop sets a target and a cruise speed, and the scroll accelerates or
+// brakes toward them within `accel`, so it never stops before Contact.
+export const SCROLL = {
+  desktop: { accel: 900, max: 760, creep: 62, floor: 24 },
+  tablet: { accel: 800, max: 680, creep: 54, floor: 22 },
+  phone: { accel: 700, max: 680, creep: 52, floor: 20 },
+};
+// Agents that stay on screen between stops (plus the orchestrator), the most
+// agents one stop may have out, and how many rotate back to the dock per stop.
+const RIDE_ALONG = { desktop: 13, tablet: 6, phone: 4 };
+const MAX_CREW = { desktop: 16, tablet: 8, phone: 5 };
+const MIN_CREW = { desktop: 12, tablet: 6, phone: 4 };
+const ROTATE = { desktop: 2, tablet: 1, phone: 1 };
 
 export const ROLES = {
   orchestrator: { label: 'orchestrator', color: '#1d1e1b' },
@@ -221,8 +237,6 @@ const clamp01 = value => (value < 0 ? 0 : value > 1 ? 1 : value);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const easeInOut = p => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 const easeOut = p => 1 - Math.pow(1 - p, 4);
-// Gentle glide for the tour's page scroll (lower peak speed than cubic).
-const easeGlide = p => -(Math.cos(Math.PI * p) - 1) / 2;
 const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
 const positive = (value, fallback) => (Number.isFinite(value) && value > 0 ? value : fallback);
 
@@ -259,6 +273,8 @@ export function initAgenticEntrance(document, window, config = {}) {
   let run = null;
   let tour = null;
   let tourY = 0;
+  // The tour's scroll position and velocity (px/s), carried across runs.
+  const tourScroll = { y: 0, v: 0 };
   let observer;
   let destroyed = false;
   let currentSection = null;
@@ -320,19 +336,25 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (!current || paused) return;
     try {
       const t = runTime(current);
-      if (current.scroll && !current.scroll.done) driveScroll(current, t);
+      current.now = t;
+      if (current.traj) driveScroll(current, t);
       if (dirty) { dirty = false; measure(current); current.version++; }
       while (current.next < current.events.length && current.events[current.next].at <= t) {
         current.events[current.next++].fn(t);
         if (run !== current) return;
       }
+      if (current.kind === 'build') guardBlanks(current, t);
       current.active.forEach(job => job.update(t));
       current.agents.forEach(agent => placeAgent(current, agent, t));
       if (t >= current.total) {
-        // Hand the ride-along crew's positions to the next stop.
+        // Hand the ride-along crew's positions (and the tour clock) to the
+        // next stop, so nothing jumps between runs.
         carry = tour && current.stayers?.size
-          ? [...current.stayers].filter(agent => agent.x !== undefined).map(agent => ({ role: agent.role, label: agent.label, x: agent.x, y: agent.y }))
+          ? [...current.stayers].filter(agent => agent.x !== undefined && !agent.cursor.classList.contains('is-docked')).map(agent => ({
+            role: agent.role, label: agent.label, x: agent.x, y: agent.y, anchor: agent.anchor || null, goal: agent.goal || null,
+          }))
           : null;
+        if (tour) tour.vt += t;
         const complete = current.onComplete;
         clearVisuals();
         complete();
@@ -367,15 +389,67 @@ export function initAgenticEntrance(document, window, config = {}) {
     tourY = readScrollY();
   }
 
-  // A glide to the stop, then a slow creep while the crew works, so the page
-  // never sits completely still between sections.
+  // The page scroll follows one velocity model across the whole tour.
+  // `tourScroll` ({ y, v }) persists between runs, so a run starts with the
+  // speed the previous one ended with. Each run lays out its trajectory in
+  // advance (fixed steps of virtual time, so plans and frames agree and 2x
+  // stays in sync): accelerate toward the stop within the limit, arrive at
+  // cruise speed instead of stopping, keep cruising or creeping while the
+  // crew works, and only settle at the last stop.
+  const STEP = 1000 / 120;
+  function scrollStep(p, state, dt) {
+    const { y, v } = state;
+    const s = dt / 1000;
+    let target;
+    if (p.settle) {
+      target = Math.sqrt(2 * p.brake * Math.max(0, p.to - y));
+    } else {
+      if (state.arrived < 0 && y >= p.to - 0.5) state.arrived = state.t;
+      if (state.arrived < 0) target = Math.sqrt(p.cruise * p.cruise + 2 * p.brake * (p.to - y));
+      else if (state.t - state.arrived >= p.cruiseAfter && y < p.until) target = p.cruise;
+      else target = p.creep;
+      // Ease toward the next stop's mark, but never all the way to a stop.
+      target = Math.min(target, Math.max(p.floor, Math.sqrt(p.floor * p.floor + 2 * p.brake * Math.max(0, p.soft - y))));
+      target = Math.min(target, Math.sqrt(2 * p.brake * Math.max(0, p.maxY - y)));
+    }
+    target = Math.min(target, p.max);
+    const dv = clamp(target - v, -p.accel * s, p.accel * s);
+    const next = v + dv;
+    return { y: Math.min(p.maxY, y + (v + next) / 2 * s), v: next, t: state.t + dt, arrived: state.arrived };
+  }
+  function makeTraj(params, from) {
+    const traj = { params, ys: [from.y], vs: [from.v], state: { y: from.y, v: from.v, t: 0, arrived: -1 } };
+    extendTraj(traj, 6000);
+    return traj;
+  }
+  function extendTraj(traj, until) {
+    while ((traj.ys.length - 1) * STEP < until) {
+      traj.state = scrollStep(traj.params, traj.state, STEP);
+      traj.ys.push(traj.state.y);
+      traj.vs.push(traj.state.v);
+    }
+  }
+  function sampleTraj(traj, t) {
+    const at = Math.max(0, t) / STEP;
+    if (at + 2 > traj.ys.length) extendTraj(traj, (at + 240) * STEP);
+    const i = Math.floor(at);
+    const f = at - i;
+    return { y: traj.ys[i] + (traj.ys[i + 1] - traj.ys[i]) * f, v: traj.vs[i] + (traj.vs[i + 1] - traj.vs[i]) * f };
+  }
+  // First planned time at which `test(y)` holds (searching up to `limit` ms).
+  function trajTime(traj, test, limit = 30000) {
+    for (let i = 0; i * STEP <= limit; i++) {
+      if (i >= traj.ys.length - 1) extendTraj(traj, (i + 240) * STEP);
+      if (test(traj.ys[i])) return i * STEP;
+    }
+    return Infinity;
+  }
+
   function driveScroll(current, t) {
-    const scroll = current.scroll;
-    const p = clamp01(t / Math.max(1, scroll.ms));
-    let y = scroll.from + (scroll.to - scroll.from) * easeGlide(p);
-    const creepFrom = scroll.ms + (scroll.hold || 0);
-    if (scroll.creep && t > creepFrom) y = scroll.to + scroll.creep * easeInOut(clamp01((t - creepFrom) / Math.max(1, scroll.creepMs)));
-    y = Math.round(y);
+    const point = sampleTraj(current.traj, t);
+    tourScroll.y = point.y;
+    tourScroll.v = point.v;
+    const y = Math.round(point.y);
     if (y !== Math.round(tourY)) scrollToY(y);
     if (tourY !== current.sy) {
       current.sy = tourY;
@@ -384,8 +458,6 @@ export function initAgenticEntrance(document, window, config = {}) {
       current.version++;
     }
     if (placeDock()) remeasureDots(current);
-    if (p >= 1 && !scroll.settled) { scroll.settled = true; dirty = true; }
-    if (p >= 1 && (!scroll.creep || t >= creepFrom + scroll.creepMs)) scroll.done = true;
   }
 
   // ---- cleanup ------------------------------------------------------------
@@ -817,26 +889,21 @@ export function initAgenticEntrance(document, window, config = {}) {
   const textBox = (current, element) => box(current, element).text || box(current, element);
   const isMeasurable = (current, elements) => elements.some(element => { const r = box(current, element); return r.w > 0 || r.h > 0; });
   const inView = (current, element) => { const r = box(current, element); return r.w > 0 && r.h > 0 && r.y < current.vh && r.y + r.h > 0; };
-  // In view once the tour has scrolled by `dyFinal`, below the fixed header.
-  // Stops that `span` a tall section keep scrolling by `current.span`; an
-  // item qualifies if its top is well inside the view by the end of it.
+  // In view by the end of the stop's planned scroll (`dyFinal`), below the
+  // fixed header.
   const willShow = (current, element) => {
     if (!current.measurable) return true;
     const r = box(current, element);
     const y = r.y - current.dyFinal;
-    const reach = current.span ? current.vh * 0.8 + current.span : current.vh * 0.94;
-    return r.w > 0 && r.h > 0 && y < reach && y + r.h > Math.min(90, current.vh * 0.1);
+    return r.w > 0 && r.h > 0 && y < current.vh * 0.92 && y + r.h > Math.min(90, current.vh * 0.1);
   };
-  // When a spanning stop has scrolled an item's top into the lower view.
+  // When the planned scroll brings an item's top just inside the bottom edge:
+  // its agent arrives then, so content is built as it slides in.
   function readyAt(current, element) {
-    if (!current.span || !current.measurable) return 0;
-    const need = box(current, element).y - current.dyFinal - current.vh * 0.9;
-    if (need <= 0) return 0;
-    const f = clamp01(need / current.span);
-    let lo = 0;
-    let hi = 1;
-    for (let i = 0; i < 18; i++) { const mid = (lo + hi) / 2; if (easeInOut(mid) < f) lo = mid; else hi = mid; }
-    return current.lead + current.spanHold + hi * current.spanMs;
+    if (!current.traj || !current.measurable) return 0;
+    const need = box(current, element).y + current.sy0 - current.vh * 0.97;
+    if (current.traj.ys[0] >= need) return 0;
+    return trajTime(current.traj, y => y >= need);
   }
   // Hidden assembly only for content the visitor cannot see yet.
   const belowFold = (current, element) => !current.measurable || box(current, element).y >= current.vh;
@@ -901,56 +968,67 @@ export function initAgenticEntrance(document, window, config = {}) {
 
   // ---- ride-along crew between tour stops ----------------------------------
   const nextStop = () => (tour ? tour.stops[tour.index + 1] : null);
-  // Agents whose role the next stop needs stay on screen and fly straight in.
+  // The hero keeps most of its crew on screen for About: agents whose role
+  // About needs first, then the rest, up to the ride-along cap.
   function pickStayers(current, candidates) {
     const next = nextStop();
     if (!next) return new Set();
     const counts = CREWS[current.tier];
-    const roles = new Set((next.jobs || []).map(job => resolveRole(job.role, counts)));
-    const cap = current.tier === 'phone' ? 1 : current.tier === 'tablet' ? 2 : 3;
-    const stayers = new Set();
-    ['layout', 'qa', 'type', 'copy', 'art', 'links', 'motion', 'a11y', 'nav'].forEach(role => {
-      if (stayers.size >= cap || !roles.has(role)) return;
-      const agent = candidates.find(a => a.role === role && a.queue.length);
-      if (agent) stayers.add(agent);
-    });
-    return stayers;
+    const roles = new Set((next.jobs || []).flatMap(job => job.roles || [job.role]).map(role => resolveRole(role, counts)));
+    const worked = candidates.filter(agent => agent.queue.length);
+    const ranked = [...worked.filter(agent => roles.has(agent.role)), ...worked.filter(agent => !roles.has(agent.role))];
+    return new Set(ranked.slice(0, RIDE_ALONG[current.tier]));
   }
-  // Waiting spots near the bottom edge, where the next section comes in.
+  // Standby spots spread over the lower half of the view, where the next
+  // section's content scrolls into them (clear of the dock row).
   function standby(current, k, n) {
-    return () => ({ x: current.vw * (n > 1 ? 0.24 + (0.52 * k) / (n - 1) : 0.5), y: current.vh * (0.8 - (k % 2) * 0.05) });
+    const fx = n > 1 ? 0.09 + (0.82 * k) / (n - 1) : 0.5;
+    const fy = 0.55 + ((k * 0.618 + 0.15) % 1) * 0.27;
+    return () => ({ x: current.vw * fx, y: current.vh * fy });
   }
-  // Send a finished agent to wait for the next stop instead of docking.
+  // A slow idle drift around an anchor, on the tour clock, so it carries on
+  // seamlessly into the next run.
+  function drifting(current, agent, anchor) {
+    return () => {
+      const a = anchor();
+      const g = current.t0 + current.now;
+      return { x: a.x + Math.sin(g * 0.0009 + agent.phase) * 9, y: a.y + Math.cos(g * 0.0007 + agent.phase) * 6 };
+    };
+  }
+  function idleSeg(current, agent, at, anchor) {
+    const point = drifting(current, agent, anchor);
+    agent.segs.push({ t0: at, t1: at, kind: 'drift', point, anchor });
+    agent.last = point;
+  }
+  // Send a finished agent to a standby spot to drift until the next stop
+  // adopts it. Idle agents hide their label; the orchestrator keeps talking.
   function rideAlong(current, agent, at, k, n) {
-    const s = current.scale;
-    const name = nextStop()?.name.toLowerCase() || 'next';
-    const arrive = at + 560 * s;
-    travelSeg(agent, at, arrive, standby(current, k, n));
-    addEvent(current, at, () => say(agent, `heading to ${name}`));
+    const spot = standby(current, k, n);
+    const arrive = at + clamp(travelMs(current, agent.last(), spot()), 480, 900);
+    travelSeg(agent, at, arrive, drifting(current, agent, spot));
+    idleSeg(current, agent, arrive, spot);
+    if (agent.role === 'orchestrator') {
+      const name = nextStop()?.name.toLowerCase() || 'next';
+      addEvent(current, at, () => say(agent, `leading crew to ${name}`));
+    } else {
+      addEvent(current, at, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
+    }
     return arrive;
   }
-  // Match the previous stop's ride-along crew to this stop's roster; the rest
-  // peel off to the dock.
-  function adoptCarry(current) {
-    if (!carry) return;
-    carry.forEach(entry => {
-      const match = current.agents.find(agent => agent.role === entry.role && !agent.carry);
-      const agent = match || makeAgent(entry.role, 1, 1, current.agents.length);
-      agent.carry = { x: entry.x, y: entry.y };
-      agent.label = entry.label;
-      if (!match) { agent.peel = true; current.agents.push(agent); }
-    });
-    carry = null;
-  }
-  // Carried cursors appear exactly where they were, already working.
-  function holdCarried(current, agent, name) {
-    holdSeg(agent, 0, () => agent.carry);
+  // Carried cursors appear exactly where they were (still drifting if idle).
+  function holdCarried(current, agent) {
+    const c = agent.carry;
+    if (c.anchor) idleSeg(current, agent, 0, () => c.anchor);
+    else holdSeg(agent, 0, () => ({ x: c.x, y: c.y }));
+    // Caught mid-way to a standby spot with nothing to do yet: carry on there.
+    if (!c.anchor && c.goal && !agent.queue.length) {
+      const arrive = 380 * current.scale;
+      travelSeg(agent, 0, arrive, drifting(current, agent, () => c.goal));
+      idleSeg(current, agent, arrive, () => c.goal);
+    }
     addEvent(current, 0, () => {
       agent.cursor.classList.add('is-in', 'is-carried');
-      if (agent.peel) { say(agent, ''); return; }
-      agent.cursor.classList.add('is-working');
       if (agent.role !== 'orchestrator') startWorking(current, agent);
-      say(agent, `moving to ${name}`);
     });
     addEvent(current, 140 * current.scale, () => agent.cursor.classList.remove('is-carried'));
   }
@@ -979,7 +1057,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     const text = () => textBox(current, target);
     const chars = Math.max(1, (target.textContent || '').trim().length);
     const build = kind === 'build';
-    const typeMs = build ? clamp(chars * (spec.charMs || 46), 420, 1250) : Math.min(760, Math.max(300, chars * (spec.charMs || 40)));
+    // Tour stops type at >= 35 ms per character, up to 1.6 s per job.
+    const typeMs = build ? clamp(chars * Math.max(35, spec.charMs || 35), 420, 1600) : Math.min(760, Math.max(300, chars * (spec.charMs || 40)));
     // `place`: pop the item, write its sub line, then cascade its kids. The
     // phases are fractions of the job's work so compression keeps them.
     const parts = spec.parts || {};
@@ -987,38 +1066,41 @@ export function initAgenticEntrance(document, window, config = {}) {
     const sub = parts.sub || null;
     const kids = parts.kids || [];
     let phases = null;
-    if (spec.kind === 'place') {
-      const popMs = 380;
-      const subStart = popMs * 0.7;
-      const subMs = sub ? clamp((sub.textContent || '').trim().length * 5, 450, 950) : 0;
-      const kidsStart = (sub ? subStart + subMs : popMs * 0.75) + 60;
-      const kidTimes = kids.map((_, i) => kidsStart + (i < 8 ? i * 90 : 8 * 90 + (i - 8) * 35));
-      const end = Math.max(popMs + 220, sub ? subStart + subMs + 120 : 0, kids.length ? kidTimes[kidTimes.length - 1] + 280 : 0);
+    if (job.kind === 'place') {
+      // A soft ~650 ms pop, the sub line written, then ~100 ms per tag.
+      const popMs = 650;
+      const subStart = popMs * 0.6;
+      const subMs = sub ? clamp((sub.textContent || '').trim().length * 7, 550, 1300) : 0;
+      const kidsStart = (sub ? subStart + subMs : popMs * 0.7) + 80;
+      const kidTimes = kids.map((_, i) => kidsStart + (i < 8 ? i * 100 : 8 * 100 + (i - 8) * 45));
+      const end = Math.max(popMs + 260, sub ? subStart + subMs + 140 : 0, kids.length ? kidTimes[kidTimes.length - 1] + 420 : 0);
       phases = { end, pop: popMs / end, subStart: subStart / end, subEnd: (subStart + subMs) / end, kids: kidTimes.map(at => at / end) };
     }
     const workMs = {
-      place: phases ? phases.end : 600,
-      frame: build ? 640 : kind === 'pass' ? 280 : 430,
-      reveal: spec.work || (build ? 620 : 380),
-      type: typeMs + (build ? 240 : 200),
-      wipe: build ? clamp(chars * 6, 650, 1250) : 580,
+      place: phases ? phases.end : 650,
+      frame: build ? 700 : kind === 'pass' ? 280 : 430,
+      reveal: build ? Math.max(spec.work || 0, 760) : spec.work || 380,
+      type: typeMs + (build ? 260 : 200),
+      wipe: build ? clamp(chars * 9, 800, 1600) : 580,
       orbit: build ? 1000 : 1050,
-      review: build ? 620 : kind === 'pass' ? 280 : 440,
-      caret: build ? 480 : 300,
-    }[spec.kind];
-    job.baseWork = workMs * s;
-    job.baseType = typeMs * s;
+      review: build ? 700 : kind === 'pass' ? 280 : 440,
+      caret: build ? 520 : 300,
+    }[job.kind];
+    // Tour stops keep near-real durations; only budgets scale with `weight`.
+    const anim = build ? current.anim : s;
+    job.baseWork = workMs * anim;
+    job.baseType = typeMs * anim;
     job.work = job.baseWork;
     job.typeMs = job.baseType;
     job.chars = chars;
     job.entry = () => {
       const b = r();
-      if (spec.kind === 'frame' || spec.kind === 'review') { const v = visible(current, target); return { x: v.x + 2, y: v.y + 2 }; }
-      if (spec.kind === 'type') { const t = text(); const l = t.lines?.[0] || t; return { x: l.x, y: l.y + l.h * 0.92 }; }
-      if (spec.kind === 'wipe') { const t = text(); const l = t.lines?.[0] || t; return { x: l.x, y: l.y + l.h * 0.5 }; }
-      if (spec.kind === 'orbit') return { x: b.x + b.w * 0.5 + b.w * 0.42, y: b.y + b.h * 0.42 };
-      if (spec.kind === 'caret') { const l = text().last || text(); return { x: l.x + l.w + 6, y: l.y + l.h * 0.8 }; }
-      if (spec.kind === 'place') return { x: b.x + Math.min(18, b.w * 0.25), y: b.y + Math.min(b.h * 0.4, 34) };
+      if (job.kind === 'frame' || job.kind === 'review') { const v = visible(current, target); return { x: v.x + 2, y: v.y + 2 }; }
+      if (job.kind === 'type') { const t = text(); const l = t.lines?.[0] || t; return { x: l.x, y: l.y + l.h * 0.92 }; }
+      if (job.kind === 'wipe') { const t = text(); const l = t.lines?.[0] || t; return { x: l.x, y: l.y + l.h * 0.5 }; }
+      if (job.kind === 'orbit') return { x: b.x + b.w * 0.5 + b.w * 0.42, y: b.y + b.h * 0.42 };
+      if (job.kind === 'caret') { const l = text().last || text(); return { x: l.x + l.w + 6, y: l.y + l.h * 0.8 }; }
+      if (job.kind === 'place') return { x: b.x + Math.min(18, b.w * 0.25), y: b.y + Math.min(b.h * 0.4, 34) };
       return { x: b.x + Math.min(18, b.w * 0.25), y: b.y + Math.min(b.h * 0.58, 120) };
     };
     // Where the cursor sits while placing: the drop, the sub line's caret,
@@ -1052,25 +1134,25 @@ export function initAgenticEntrance(document, window, config = {}) {
     }
     job.cursorAt = p => {
       const b = r();
-      if (spec.kind === 'frame' || spec.kind === 'review') {
+      if (job.kind === 'frame' || job.kind === 'review') {
         const v = visible(current, target);
-        const e = spec.kind === 'frame' ? easeInOut(p) : easeOut(p);
+        const e = job.kind === 'frame' ? easeInOut(p) : easeOut(p);
         return { x: v.x + 2 + (v.w - 4) * e, y: v.y + 2 + (v.h - 4) * e };
       }
-      if (spec.kind === 'type' || spec.kind === 'wipe') {
+      if (job.kind === 'type' || job.kind === 'wipe') {
         // Ride the caret while working; plan with the first/last line ends.
         const t = text();
         const first = t.lines?.[0] || t;
         const last = t.last || t;
         const point = p > 0 && p < 1 && job.caretPoint ? job.caretPoint : p >= 1 ? { x: last.x + last.w, y: last.y, h: last.h } : { x: first.x, y: first.y, h: first.h };
-        return { x: point.x + 4, y: point.y + point.h * (spec.kind === 'type' ? 0.92 : 0.5) + (spec.kind === 'type' ? 6 : 0) };
+        return { x: point.x + 4, y: point.y + point.h * (job.kind === 'type' ? 0.92 : 0.5) + (job.kind === 'type' ? 6 : 0) };
       }
-      if (spec.kind === 'orbit') {
+      if (job.kind === 'orbit') {
         const angle = easeInOut(p) * Math.PI * 2;
         return { x: b.x + b.w * 0.5 + Math.cos(angle) * b.w * 0.42, y: b.y + b.h * 0.42 + Math.sin(angle) * b.h * 0.3 };
       }
-      if (spec.kind === 'caret') { const start = job.entry(); return { x: start.x + 10 * easeOut(p), y: start.y + 6 * easeOut(p) }; }
-      if (spec.kind === 'place') return placeAt(p);
+      if (job.kind === 'caret') { const start = job.entry(); return { x: start.x + 10 * easeOut(p), y: start.y + 6 * easeOut(p) }; }
+      if (job.kind === 'place') return placeAt(p);
       const start = job.entry();
       return { x: start.x + Math.min(b.w * 0.42, 360) * easeInOut(p), y: start.y + Math.min(b.h * 0.06, 24) * easeInOut(p) };
     };
@@ -1094,7 +1176,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     let lastStep = -1;
 
     job.begin = () => {
-      const k = spec.kind;
+      job.begun = true;
+      const k = job.kind;
       if (k === 'frame') {
         job.frame = frame(`is-drag${spec.cross ? ' has-cross' : ''}`);
         job.frame.style.scale = '0.001';
@@ -1122,10 +1205,11 @@ export function initAgenticEntrance(document, window, config = {}) {
         job.update(job.arrive);
         return;
       }
-      reveals.forEach((element, index) => {
+      const shown = job.reveals;
+      shown.forEach((element, index) => {
         if (k === 'reveal') {
-          element.style.setProperty('--agentic-d', `${realMs(Math.max(60, job.work * (reveals.length > 1 ? 0.7 : 1)))}ms`);
-          if (reveals.length > 1) element.style.transitionDelay = `${realMs(index * (job.work * 0.3) / (reveals.length - 1))}ms`;
+          element.style.setProperty('--agentic-d', `${realMs(Math.max(60, job.work * (shown.length > 1 ? 0.7 : 1)))}ms`);
+          if (shown.length > 1) element.style.transitionDelay = `${realMs(index * (job.work * 0.3) / (shown.length - 1))}ms`;
           element.dataset.buildState = 'placing';
         } else {
           element.dataset.buildState = 'typing';
@@ -1178,12 +1262,12 @@ export function initAgenticEntrance(document, window, config = {}) {
       const p = clamp01((now - job.arrive) / Math.max(1, job.work));
       const geometryChanged = version !== current.version;
       version = current.version;
-      const b = spec.kind === 'frame' || spec.kind === 'review' ? visible(current, target) : r();
+      const b = job.kind === 'frame' || job.kind === 'review' ? visible(current, target) : r();
       if (geometryChanged) {
-        if (spec.kind === 'orbit') {
+        if (job.kind === 'orbit') {
           place(job.frame, { x: b.x + b.w * 0.08, y: b.y + b.h * 0.12, w: b.w * 0.84, h: b.h * 0.6 });
           job.frame.querySelector('b').textContent = `x ${Math.round(b.x + b.w / 2)} · y ${Math.round(b.y + b.h * 0.42)}`;
-        } else if (TEXT_KINDS.has(spec.kind)) {
+        } else if (TEXT_KINDS.has(job.kind)) {
           const t = text();
           place(job.frame, { x: t.x - 4, y: t.y - 3, w: t.w + 8, h: t.h + 6 });
         } else {
@@ -1191,14 +1275,14 @@ export function initAgenticEntrance(document, window, config = {}) {
           job.frame.querySelector('b').textContent = sizeLabel(b);
         }
       }
-      if (spec.kind === 'frame') {
+      if (job.kind === 'frame') {
         const e = easeInOut(p);
         job.frame.style.scale = `${Math.max(e, 0.001)} ${Math.max(e, 0.001)}`;
         if (p >= 1 && !job.frame.classList.contains('is-set')) job.frame.classList.add('is-set');
-      } else if (spec.kind === 'review' && p > 0.05 && !job.frame.classList.contains('is-set')) {
+      } else if (job.kind === 'review' && p > 0.05 && !job.frame.classList.contains('is-set')) {
         job.frame.classList.add('is-set');
         if (spec.size) job.frame.classList.add('has-size');
-      } else if (spec.kind === 'type') {
+      } else if (job.kind === 'type') {
         const progress = clamp01((now - job.arrive) / Math.max(1, job.typeMs));
         const step = Math.floor(progress * job.chars);
         job.typeProgress = progress;
@@ -1208,11 +1292,11 @@ export function initAgenticEntrance(document, window, config = {}) {
           placeCaret(job.caretPoint);
         }
         if (progress >= 1 && !job.caret.classList.contains('is-idle')) job.caret.classList.add('is-idle');
-      } else if (spec.kind === 'wipe') {
+      } else if (job.kind === 'wipe') {
         job.caretPoint = writeClip(easeInOut(p));
         placeCaret(job.caretPoint);
         if (p >= 1 && job.caret && !job.caret.classList.contains('is-idle')) job.caret.classList.add('is-idle');
-      } else if (spec.kind === 'place') {
+      } else if (job.kind === 'place') {
         if (sub && p >= phases.subStart) {
           const q = clamp01((p - phases.subStart) / Math.max(1e-6, phases.subEnd - phases.subStart));
           job.caretPoint = writeClipOn(sub, easeInOut(q));
@@ -1222,20 +1306,35 @@ export function initAgenticEntrance(document, window, config = {}) {
         }
         while (job.kidIndex < kids.length && p >= phases.kids[job.kidIndex]) {
           const kid = kids[job.kidIndex++];
-          kid.style.setProperty('--agentic-d', `${realMs(260)}ms`);
+          kid.style.setProperty('--agentic-d', `${realMs(420)}ms`);
           kid.dataset.buildState = 'placing';
         }
-      } else if (spec.kind === 'caret' && geometryChanged) {
+      } else if (job.kind === 'caret' && geometryChanged) {
         const l = text().last || text();
         placeCaret({ x: l.x + l.w + 3, y: l.y, h: l.h });
       }
     };
 
+    // The agent is late for content already on screen (or will be): show it
+    // now and keep only a decorative pass over it.
+    job.downgrade = () => {
+      if (job.late) return;
+      job.late = true;
+      job.reveals.forEach(element => {
+        element.style.setProperty('--agentic-d', `${realMs(360)}ms`);
+        element.style.removeProperty('transition-delay');
+        if (element.dataset.buildState === 'pending') element.dataset.buildState = 'placing';
+      });
+      job.reveals = [];
+      job.kind = DEMOTE[job.kind] || job.kind;
+      if (run === current) job.target.dataset.agenticJob = job.kind;
+    };
+
     job.finish = () => {
-      reveals.forEach(element => cleanTarget(element));
+      job.reveals.forEach(element => cleanTarget(element));
       if (current.kind === 'pass') target.dataset.buildState = 'tracing';
       job.ui.forEach(element => { if (element !== job.frame) element.remove(); });
-      if (spec.kind !== 'frame') job.frame?.classList.add('is-out');
+      if (job.kind !== 'frame') job.frame?.classList.add('is-out');
     };
     return job;
   }
@@ -1244,8 +1343,9 @@ export function initAgenticEntrance(document, window, config = {}) {
   function travelMs(current, from, to) {
     const d = distance(from, to);
     if (current.kind === 'pass') return clamp(230 + d * 0.3, 200, 260) * current.scale;
-    if (current.kind === 'build') return clamp(320 + d * 0.38, 380, 760) * current.scale;
-    return clamp(230 + d * 0.3, 240, 560) * current.scale;
+    // Eased, never hurried: at least ~450 ms per move.
+    if (current.kind === 'build') return clamp(450 + d * 0.4, 450, 900) * current.anim;
+    return clamp(260 + d * 0.3, 260, 560) * current.scale;
   }
 
   function addEvent(current, at, fn) { current.events.push({ at, fn }); }
@@ -1300,7 +1400,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     let factor = 1;
     let free = simulate(current, agent, firstStart, from, factor);
     if (free > deadline) {
-      factor = Math.max(0.55, (deadline - firstStart - gaps()) / Math.max(1, free - firstStart - gaps()));
+      factor = Math.max(0.8, (deadline - firstStart - gaps()) / Math.max(1, free - firstStart - gaps()));
       free = simulate(current, agent, firstStart, from, factor);
     }
     while (free > deadline && agent.queue.length > 1 && agent.queue.some(job => OPTIONAL.has(job.kind))) {
@@ -1439,10 +1539,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     // leads the ride-along crew down to the next section instead.
     const orchDock = Math.min(current.total * 0.9, latestDock + 160 * s);
     if (nextStop()) {
+      // Most of the crew rides along into About instead of docking.
       stayers.add(orchestrator);
-      const name = nextStop().name.toLowerCase();
-      travelSeg(orchestrator, Math.max(orchArrive, orchDock - 520 * s), orchDock, standby(current, stayList.length, stayList.length + 1));
-      addEvent(current, Math.max(latestDock - 200 * s, 0), () => say(orchestrator, `leading crew to ${name}`));
+      rideAlong(current, orchestrator, Math.max(orchArrive, orchDock - 520 * s), stayList.length, stayList.length + 1);
     } else {
       travelSeg(orchestrator, Math.max(orchArrive, orchDock - 520 * s), orchDock, () => dotPoint(current, orchestrator));
       addEvent(current, orchDock, () => dockAgent(current, orchestrator));
@@ -1459,84 +1558,146 @@ export function initAgenticEntrance(document, window, config = {}) {
     addEvent(current, leaveAt, () => current.stage.classList.add('is-leaving'));
   }
 
-  // A tour stop: the page scrolls for `lead` ms while the orchestrator moves
-  // to the section and the crew lifts off the dock; agents are dispatched one
-  // at a time, work, and fly home.
+  // A tour stop. The run starts while the page is still moving: the carried
+  // crew takes the first items as they slide in, a few fresh agents leave the
+  // dock, and the run hands over to the next stop as soon as its builder jobs
+  // are done (late reviews are left out). Everyone who worked stays on screen
+  // except one or two agents who rotate back to the dock; the last stop docks
+  // the whole crew and ends with the handoff.
   function planBuild(current, stopInfo) {
     const s = current.scale;
-    current.jobGap = 130 * s;
+    const anim = current.anim;
+    current.jobGap = 160 * anim;
     const lead = current.lead;
     const [orchestrator] = current.agents;
-    const crew = current.agents.filter(agent => agent.role !== 'orchestrator' && !agent.peel);
+    const crew = current.agents.filter(agent => agent.role !== 'orchestrator');
     const home = agent => () => dotPoint(current, agent);
     const name = stopInfo.name.toLowerCase();
     const heading = current.heading;
+    const last = !nextStop();
     const command = () => {
       const h = heading ? box(current, heading) : null;
       if (h && h.w) return { x: clamp(h.x + Math.min(h.w, 420) + 30, 40, current.vw - 150), y: clamp(h.y + 8, 90, current.vh - 140) };
       return { x: current.vw * 0.62, y: Math.max(110, current.vh * 0.22) };
     };
-    if (orchestrator.carry) holdCarried(current, orchestrator, name);
+    if (orchestrator.carry) holdCarried(current, orchestrator);
     else holdSeg(orchestrator, 0, home(orchestrator));
-    const commandAt = lead > 0 ? Math.max(lead * 0.9, 300 * s) : 420 * s;
-    travelSeg(orchestrator, lead > 0 ? lead * 0.2 : 60 * s, commandAt, command);
+    const commandAt = clamp(lead * 0.6, 520 * anim, 1600 * anim);
+    travelSeg(orchestrator, 60 * s, commandAt, command);
     addEvent(current, 0, () => {
       orchestrator.cursor.classList.add('is-in', 'is-working');
       say(orchestrator, lead > 0 ? `moving to ${name}` : 'planning');
     });
     addEvent(current, commandAt, () => say(orchestrator, 'dispatching'));
 
-    // Agents that did not come along this time head back to the dock.
-    current.agents.filter(agent => agent.peel).forEach(agent => {
-      holdCarried(current, agent, name);
-      const at = 160 * s;
-      agent.dockAt = at + 520 * s;
-      travelSeg(agent, at, agent.dockAt, home(agent));
-      addEvent(current, agent.dockAt, () => dockAgent(current, agent));
-    });
-
-    // Ride-along agents start right away, while the next section is still
-    // sliding in; fresh agents leave the dock while the page settles.
-    const dispatchFrom = lead > 0 ? lead * 0.72 : 220 * s;
-    const deadline = Math.max(lead + current.budget - 560 * s, current.span ? lead + current.spanHold + current.spanMs + 900 * s : 0);
-    const gap = Math.min(240 * s, (current.budget * 0.3) / Math.max(1, crew.length));
-    // Work top to bottom: on spanning stops items arrive as the page scrolls.
+    // Lay out every queue: items are taken as they scroll in (readyAt).
+    const lastReady = Math.max(0, ...current.jobs.map(job => (Number.isFinite(job.readyAt) ? job.readyAt : 0)));
+    const deadline = Math.max(lead + current.budget - 400 * s, lastReady + 1400 * anim);
+    const gap = Math.min(220 * anim, (current.budget * 0.25) / Math.max(1, crew.length));
     crew.forEach(agent => agent.queue.sort((a, b) => (a.readyAt || 0) - (b.readyAt || 0)));
-    const stayers = pickStayers(current, crew);
-    const stayList = [...stayers];
-    let latest = commandAt;
     let fresh = 0;
     let carried = 0;
     crew.forEach(agent => {
-      let firstStart;
-      let from;
       if (agent.carry) {
-        holdCarried(current, agent, name);
-        firstStart = (lead > 0 ? lead * 0.32 : 80 * s) + carried++ * 110 * s;
-        from = agent.carry;
+        agent.firstStart = 40 * s + carried++ * 70 * s;
+        agent.from = { x: agent.carry.x, y: agent.carry.y };
       } else {
-        firstStart = dispatchFrom + fresh++ * gap;
-        addEvent(current, Math.max(0, firstStart - 360 * s), () => agent.cursor.classList.add('is-in'));
-        holdSeg(agent, 0, home(agent));
-        from = home(agent)();
+        agent.firstStart = 200 * s + fresh++ * gap;
+        agent.from = home(agent)();
       }
-      const free = fitQueue(current, agent, firstStart, from, deadline);
-      scheduleQueue(current, orchestrator, agent, !agent.carry);
-      const back = free + 40 * s;
-      if (stayers.has(agent)) {
-        agent.dockAt = rideAlong(current, agent, back, stayList.indexOf(agent), stayList.length + 1);
-      } else {
-        agent.dockAt = back + clamp(travelMs(current, agent.queue[agent.queue.length - 1].exit(), home(agent)()), 300 * s, 520 * s);
-        travelSeg(agent, back, agent.dockAt, home(agent));
-        addEvent(current, back, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
+      agent.free = agent.queue.length ? fitQueue(current, agent, agent.firstStart, agent.from, deadline) : 0;
+    });
+    // Content that would sit on screen still hidden is shown now instead.
+    current.jobs.forEach(job => {
+      if (job.reveals.length && job.agent !== orchestrator && Number.isFinite(job.readyAt) && job.arrive > job.readyAt + 200 * anim) {
+        job.downgrade();
+        if (tour) tour.late++;
+      }
+    });
+
+    // Hand over once the builders are done.
+    const crewJobs = current.jobs.filter(job => job.agent && job.agent !== orchestrator);
+    const builders = crewJobs.filter(job => HIDES.has(job.kind));
+    const handover = Math.max(commandAt + 400 * s, lead * 0.5, ...(builders.length ? builders : crewJobs).map(job => job.end)) + 260 * anim;
+    let total = handover;
+    if (!last) {
+      crew.forEach(agent => {
+        let dropped = false;
+        while (agent.queue.length && OPTIONAL.has(agent.queue[agent.queue.length - 1].kind) && agent.queue[agent.queue.length - 1].start >= handover - 120 * anim) {
+          const job = agent.queue.pop();
+          current.jobs.splice(current.jobs.indexOf(job), 1);
+          dropped = true;
+        }
+        if (dropped) agent.free = agent.queue.length ? agent.queue[agent.queue.length - 1].end + current.jobGap : 0;
+        if (agent.queue.length) total = Math.max(total, agent.queue[agent.queue.length - 1].end + 60 * anim);
+      });
+    }
+
+    // Who goes back to the dock: everyone on the last stop; otherwise the
+    // agents that finish first, one or two per stop, or more if over the cap.
+    const out = crew.filter(agent => agent.queue.length || agent.carry);
+    let rotate;
+    if (last) rotate = new Set(out);
+    else {
+      const ranked = [...out].sort((a, b) => a.free - b.free);
+      // Over the ride-along cap: the excess; otherwise a couple for variety,
+      // as long as the crew stays above its floor.
+      const n = Math.min(ranked.length, Math.max(ranked.length - RIDE_ALONG[current.tier], ranked.length > MIN_CREW[current.tier] ? ROTATE[current.tier] : 0));
+      rotate = new Set(ranked.slice(0, n));
+    }
+    const stayList = out.filter(agent => !rotate.has(agent));
+    // Standby slots for everyone still out (the orchestrator takes the last).
+    const slots = [...stayList, ...out.filter(agent => rotate.has(agent))];
+    let docking = 0;
+    let latest = commandAt;
+    crew.forEach(agent => {
+      if (agent.carry) holdCarried(current, agent);
+      if (!agent.queue.length && !agent.carry) return; // fresh, but nothing left to do
+      if (agent.queue.length) {
+        if (!agent.carry) {
+          addEvent(current, Math.max(0, agent.queue[0].start - 320 * s), () => agent.cursor.classList.add('is-in'));
+          holdSeg(agent, 0, home(agent));
+        }
+        scheduleQueue(current, orchestrator, agent, !agent.carry);
+      }
+      const k = slots.indexOf(agent);
+      const back = agent.queue.length ? agent.free + 40 * s : 480 * s + k * 40 * s;
+      if (rotate.has(agent)) {
+        // Rotating agents leave near the handover (not as soon as they are
+        // free), so the crew count changes in small steps; until then they
+        // wait at a standby spot like everyone else.
+        let leave = back;
+        if (!last) {
+          leave = Math.max(back, handover - 700 * anim + docking++ * 120 * anim);
+          if (leave - back > 900 * anim) rideAlong(current, agent, back, k, slots.length + 1);
+          else leave = back;
+        }
+        agent.dockAt = leave + clamp(travelMs(current, agent.last(), home(agent)()), 450 * anim, 640 * anim);
+        travelSeg(agent, leave, agent.dockAt, home(agent));
+        addEvent(current, leave, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
         addEvent(current, agent.dockAt, () => dockAgent(current, agent));
+        if (!last) total = Math.max(total, agent.dockAt + 60 * s);
+      } else {
+        // Idle carried agents drift over to this stop's standby spots.
+        agent.dockAt = rideAlong(current, agent, back, k, slots.length + 1);
       }
       latest = Math.max(latest, agent.dockAt);
     });
 
-    let end = Math.max(latest + 120 * s, commandAt + 300 * s);
+    let orchHome;
+    if (!last) {
+      // The orchestrator leads the crew on; the next stop starts while the
+      // page is still moving.
+      orchHome = rideAlong(current, orchestrator, Math.max(commandAt, total - 520 * anim), slots.length, slots.length + 1);
+      current.stayers = new Set([...stayList, orchestrator]);
+      current.total = total;
+      addEvent(current, total - 220 * anim, () => current.stage.classList.add('is-leaving'));
+      return;
+    }
+    // Last stop: the scroll settles and, once the builders are done, the
+    // orchestrator hands off while the crew docks.
+    let end = Math.max(handover, commandAt + 300 * s, lead + 200 * s);
     if (current.handoffJob) {
-      // Final handoff: the orchestrator frames the contact button.
       const job = current.handoffJob;
       const h = current.handoffMs;
       job.agent = orchestrator;
@@ -1556,24 +1717,17 @@ export function initAgenticEntrance(document, window, config = {}) {
       addEvent(current, job.end, () => completeJob(current, job));
       end = job.end + 80 * s;
     }
-    const continues = Boolean(nextStop()) && !current.handoffJob;
-    const floor = crew.length ? lead + current.budget * (current.handoffJob ? 0.6 : continues ? 0.7 : 0.8) : lead + 700 * s;
-    let orchHome;
-    if (continues) {
-      // Lead the ride-along crew down to the next section.
-      stayers.add(orchestrator);
-      orchHome = rideAlong(current, orchestrator, Math.max(commandAt, end - 420 * s), stayList.length, stayList.length + 1);
-    } else {
-      // The last stop ends as the orchestrator docks, so no frame is empty.
-      const leave = Math.max(end, floor - 360 * s);
-      orchHome = leave + 360 * s;
-      travelSeg(orchestrator, leave, orchHome, home(orchestrator));
-      current.lastStop = true;
-      addEvent(current, leave, () => orchestrator.cursor.classList.remove('is-working'));
-      addEvent(current, orchHome, () => dockAgent(current, orchestrator));
-    }
-    current.stayers = stayers;
-    current.total = Math.max(orchHome + (current.lastStop ? 0 : 160 * s), floor);
+    const floor = crew.length ? lead + current.budget * 0.6 : lead + 700 * s;
+    // The last stop ends as the orchestrator docks, after its crew, so no
+    // frame is empty.
+    const leave = Math.max(end, floor - 360 * s, latest - 300 * s);
+    orchHome = leave + 360 * s;
+    travelSeg(orchestrator, leave, orchHome, home(orchestrator));
+    current.lastStop = true;
+    addEvent(current, leave, () => orchestrator.cursor.classList.remove('is-working'));
+    addEvent(current, orchHome, () => dockAgent(current, orchestrator));
+    current.stayers = new Set();
+    current.total = Math.max(orchHome, floor);
     addEvent(current, current.total - 180 * s, () => current.stage.classList.add('is-leaving'));
   }
 
@@ -1601,6 +1755,20 @@ export function initAgenticEntrance(document, window, config = {}) {
       addEvent(current, agent.dockAt, () => dockAgent(current, agent));
     });
     addEvent(current, current.total - 90 * s, () => current.stage.classList.add('is-leaving'));
+  }
+
+  // Never leave content hidden on screen: if an item is visible for more
+  // than a moment before its agent gets there, show it and downgrade the job.
+  function guardBlanks(current, t) {
+    if (!current.measurable || !current.guarded.size) return;
+    const edge = current.vh * 0.97;
+    current.guarded.forEach(job => {
+      if (job.begun || job.late) { current.guarded.delete(job); return; }
+      const r = box(current, job.target);
+      if (!(r.h > 0 && r.y < edge && r.y + r.h > 0)) return;
+      if (job.seenAt === undefined) job.seenAt = t;
+      else if (t - job.seenAt > 220) { job.downgrade(); current.guarded.delete(job); if (tour) tour.late++; }
+    });
   }
 
   function completeJob(current, job) {
@@ -1634,13 +1802,17 @@ export function initAgenticEntrance(document, window, config = {}) {
     const seg = segs[agent.si];
     const p = clamp01((t - seg.t0) / Math.max(1e-6, seg.t1 - seg.t0));
     const point = seg.point(p);
-    if (seg.kind === 'work' || (seg.kind === 'travel' && p < 1)) return point;
+    if (seg.kind === 'work' || seg.kind === 'drift' || (seg.kind === 'travel' && p < 1)) return point;
     return { x: point.x + Math.sin(t * 0.0042 + agent.phase) * 1.4, y: point.y + Math.cos(t * 0.0037 + agent.phase) * 1.2 };
   }
 
   function placeAgent(current, agent, t) {
     const point = segPoint(agent, t);
     agent.position = point;
+    const seg = agent.segs[agent.si];
+    agent.anchor = seg && seg.kind === 'drift' && t >= seg.t0 ? seg.anchor() : null;
+    const after = agent.segs[agent.si + 1];
+    agent.goal = seg && seg.kind === 'travel' && after?.kind === 'drift' ? after.anchor() : null;
     const x = Math.max(2, Math.min(current.vw - 14, point.x));
     const y = Math.max(2, Math.min(current.vh - 20, point.y));
     if (agent.x !== undefined && Math.abs(agent.x - x) < 0.05 && Math.abs(agent.y - y) < 0.05) return;
@@ -1733,12 +1905,19 @@ export function initAgenticEntrance(document, window, config = {}) {
   function prepare(kind, duration) {
     const tier = crewTier(width());
     const base = kind === 'hero' ? HERO_BASE : kind === 'build' ? BUILD_BASE : PASS_BASE;
+    const scale = duration / base;
     return {
       kind,
       tier,
       total: duration,
       budget: duration,
-      scale: duration / base,
+      scale,
+      // Animation pace: tour stops stay near real time whatever their weight.
+      anim: kind === 'build' && scale >= 0.5 ? clamp(scale, 0.95, 1.15) : scale,
+      now: 0,
+      t0: 0,
+      traj: null,
+      guarded: new Set(),
       cache: new Map(),
       view: new Map(),
       version: 0,
@@ -1747,9 +1926,6 @@ export function initAgenticEntrance(document, window, config = {}) {
       dy: 0,
       dyFinal: 0,
       lead: 0,
-      span: 0,
-      spanMs: 0,
-      spanHold: 0,
       vt: 0,
       last: 0,
       jobGap: 70,
@@ -1807,9 +1983,12 @@ export function initAgenticEntrance(document, window, config = {}) {
       });
       if (current.kind === 'pass') job.target.dataset.buildState = 'tracing';
     });
+    if (current.kind === 'build') current.jobs.forEach(job => { if (job.reveals.length) current.guarded.add(job); });
     lastStats = statsOf(current);
     run = current;
     root.classList.add('agentic-running');
+    current.t0 = tour ? tour.vt : 0;
+    current.now = 0;
     current.vt = 0;
     current.last = clock();
     // Events due at once (carried cursors, the orchestrator) apply before the
@@ -1828,7 +2007,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     observer?.disconnect();
     clearVisuals();
     const stops = TOUR_STOPS.map(stopInfo => ({ ...stopInfo, section: document.querySelector(stopInfo.sel) })).filter(stopInfo => stopInfo.section);
-    tour = { stops, index: 0, firstVisit: !replay, realStart: clock(), hiddenMs: 0, workers: new Set() };
+    tour = { stops, index: 0, firstVisit: !replay, realStart: clock(), hiddenMs: 0, workers: new Set(), vt: 0, late: 0 };
     planSteps = stops.map(stopInfo => ({ label: planName(stopInfo.name), state: 'planned', agents: 0 }));
     carry = null;
     sectionsEligible = false;
@@ -1838,6 +2017,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     const focusOnReplay = Boolean(document.activeElement?.closest?.('[data-agentic-replay], [data-agentic-dock-replay]'));
     if (replay) scrollToY(0);
     tourY = readScrollY();
+    tourScroll.y = tourY;
+    tourScroll.v = 0;
     root.classList.add('agentic-touring');
     ensureDock();
     renderPlan();
@@ -1900,6 +2081,114 @@ export function initAgenticEntrance(document, window, config = {}) {
     });
   }
 
+  // Where a stop's scroll heads: the section's top clear of the fixed header
+  // (like an anchor link), a full-bleed scene's top, or a tall scene's end.
+  function stopTarget(current, stopInfo, maxY) {
+    const r = box(current, stopInfo.section);
+    const headerPad = stopInfo.align ? 0 : parseFloat(window.getComputedStyle?.(root).scrollPaddingTop) || 0;
+    const offset = stopInfo.align === 'end' ? Math.max(0, r.h - current.vh) : -headerPad;
+    return clamp(current.sy0 + r.y + offset, 0, maxY);
+  }
+
+  // The stop's trajectory, continuing from the scroll's current velocity.
+  function planScroll(current, stopInfo, following) {
+    const y0 = current.sy0;
+    const from = Math.abs(tourScroll.y - y0) < 2 ? { y: tourScroll.y, v: Math.max(0, tourScroll.v) } : { y: y0, v: 0 };
+    const maxY = Math.max(0, (root.scrollHeight || 0) - current.vh);
+    const motion = SCROLL[current.tier];
+    // Test timing (`scrollDuration`) makes the scroll effectively immediate.
+    const boost = config.scrollDuration ? 400 : 1;
+    const accel = motion.accel * boost * boost;
+    const to = Math.max(stopTarget(current, stopInfo, maxY), from.y);
+    // Tall sections: cruise on through them while their items are placed.
+    let span = 0;
+    if (stopInfo.span) {
+      const r = box(current, stopInfo.section);
+      span = Math.min(y0 + r.y + r.h - current.vh - to, current.vh * stopInfo.span, maxY - to);
+      if (!(span > 40)) span = 0;
+    }
+    const creep = motion.creep;
+    const cruise = span ? clamp(span / (current.budget * 0.7 / 1000), creep, motion.max * 0.45 * boost) : creep;
+    const soft = following ? Math.max(to + span, stopTarget(current, following, maxY)) : maxY;
+    current.traj = makeTraj({ accel, brake: accel * 0.55, max: motion.max * boost, floor: motion.floor, creep, cruise, to, until: to + span, cruiseAfter: span ? current.budget * 0.15 : 0, soft, maxY, settle: !following }, from);
+    current.lead = trajTime(current.traj, y => y >= to - 2);
+    if (!Number.isFinite(current.lead)) current.lead = 0;
+    current.dyFinal = sampleTraj(current.traj, current.lead + current.budget).y - y0;
+  }
+
+  // The stop's roster: the carried crew first, then fresh agents from the
+  // dock for the roles its jobs still need (up to the crew cap), one agent
+  // per role instance, round-robin per role.
+  function buildCrew(current) {
+    const counts = CREWS[current.tier];
+    const orchestrator = makeAgent('orchestrator', 1, 1, 0);
+    current.agents.push(orchestrator);
+    const crew = [];
+    const byRole = new Map();
+    const labels = new Set();
+    const add = agent => {
+      crew.push(agent);
+      current.agents.push(agent);
+      labels.add(agent.label);
+      if (!byRole.has(agent.role)) byRole.set(agent.role, []);
+      byRole.get(agent.role).push(agent);
+      return agent;
+    };
+    (carry || []).forEach(entry => {
+      if (entry.role === 'orchestrator') { orchestrator.carry = entry; return; }
+      if (!counts[entry.role] || labels.has(entry.label)) return; // the viewport class changed
+      const agent = makeAgent(entry.role, 1, 1, current.agents.length);
+      agent.label = entry.label;
+      agent.carry = entry;
+      add(agent);
+    });
+    carry = null;
+    const freshLabel = role => {
+      for (let n = 1; n <= (counts[role] || 0); n++) {
+        const label = counts[role] > 1 ? `${ROLES[role].label}·${n}` : ROLES[role].label;
+        if (!labels.has(label)) return n;
+      }
+      return 0;
+    };
+    const freshAgent = role => {
+      const n = freshLabel(role);
+      return n ? add(makeAgent(role, n, counts[role], current.agents.length)) : null;
+    };
+    const turn = {};
+    current.jobs.forEach(job => {
+      const role = resolveRole(job.role, counts);
+      const n = turn[role] = (turn[role] || 0) + 1;
+      const pool = byRole.get(role) || [];
+      const slot = (n - 1) % counts[role];
+      let agent = pool[slot];
+      if (!agent && crew.length < MAX_CREW[current.tier]) agent = freshAgent(role);
+      if (!agent && pool.length) agent = pool[slot % pool.length];
+      if (!agent) {
+        // A full crew: the least-busy agent along the role's fallback chain.
+        const chain = [];
+        for (let next = FALLBACK[role]; next && chain.length < 6; next = FALLBACK[next]) if (!chain.includes(next)) chain.push(next);
+        const options = chain.flatMap(r => byRole.get(r) || []);
+        const choices = options.length ? options : crew;
+        agent = choices.reduce((best, next) => (next.queue.length < best.queue.length ? next : best), choices[0]) || freshAgent(role);
+      }
+      job.agent = agent;
+      agent.queue.push(job);
+    });
+    // Keep the crew in its band: below the floor, fresh agents from the dock
+    // take every other job from the busiest queues.
+    while (crew.length < MIN_CREW[current.tier]) {
+      const busiest = [...crew].sort((a, b) => b.queue.length - a.queue.length).find(agent => agent.queue.length >= 2 && freshLabel(agent.role));
+      if (!busiest) break;
+      const helper = freshAgent(busiest.role);
+      busiest.queue = busiest.queue.filter((job, index) => {
+        if (index % 2 === 0) return true;
+        job.agent = helper;
+        helper.queue.push(job);
+        return false;
+      });
+    }
+  }
+
   function startBuild(stopInfo) {
     const section = stopInfo.section;
     phase = 'tour';
@@ -1910,67 +2199,23 @@ export function initAgenticEntrance(document, window, config = {}) {
     const candidates = gather(current, stopInfo.jobs || [], section);
     current.heading = section.querySelector('h2');
     const handoff = stopInfo.handoff ? section.querySelector(stopInfo.handoff) : null;
-    watchElements(current, [section, current.heading, handoff, ...candidates]);
+    const following = nextStop();
+    watchElements(current, [section, following?.section, current.heading, handoff, ...candidates]);
     measure(current);
     current.measurable = isMeasurable(current, [...current.watch]);
-    // Scroll target: the section's top, clamped to the scrollable range.
-    const y0 = current.sy0;
-    const maxY = Math.max(0, (root.scrollHeight || 0) - current.vh);
-    const sectionBox = box(current, section);
-    // Stop where an anchor link would (clear of the fixed header), unless the
-    // stop is a full-bleed scene or should show the section's end.
-    const headerPad = stopInfo.align ? 0 : parseFloat(window.getComputedStyle?.(root).scrollPaddingTop) || 0;
-    const offset = stopInfo.align === 'end' ? Math.max(0, sectionBox.h - current.vh) : -headerPad;
-    const to = current.measurable ? Math.round(clamp(y0 + sectionBox.y + offset, 0, maxY)) : y0;
-    current.dyFinal = to - y0;
-    const travel = Math.abs(to - y0);
-    current.lead = travel < 2 ? 0 : positive(config.scrollDuration, clamp(700 + travel * 0.35, 900, 2200) * (tier === 'phone' ? 0.92 : 1));
-    if (current.lead) current.scroll = { from: y0, to, ms: current.lead, done: false };
-    // Tall sections: keep scrolling through them while items are placed.
-    if (stopInfo.span && current.measurable) {
-      const sectionEnd = y0 + sectionBox.y + sectionBox.h;
-      const span = Math.min(sectionEnd - current.vh - to, current.vh * stopInfo.span, maxY - to);
-      // Hold briefly first so the heading is built while still in view.
-      if (span > 40) { current.span = Math.round(span); current.spanHold = current.budget * 0.2; current.spanMs = current.budget * 0.8; }
-    }
+    if (current.measurable) planScroll(current, stopInfo, following);
     current.jobs = collect(current, stopInfo.jobs || [], section);
     current.jobs.forEach(job => { job.readyAt = readyAt(current, job.target); });
-    // Crew: real roster members for each job's role, round-robin per role.
-    const counts = CREWS[tier];
-    current.agents.push(makeAgent('orchestrator', 1, 1, 0));
-    const roster = new Map();
-    const turn = {};
-    current.jobs.forEach(job => {
-      const role = resolveRole(job.role, counts);
-      const n = turn[role] = (turn[role] || 0) + 1;
-      const slot = ((n - 1) % counts[role]) + 1;
-      const key = `${role}#${slot}`;
-      let agent = roster.get(key);
-      if (!agent) { agent = makeAgent(role, slot, counts[role], current.agents.length); roster.set(key, agent); current.agents.push(agent); }
-      job.agent = agent;
-      agent.queue.push(job);
-    });
+    buildCrew(current);
     if (handoff && (!current.measurable || willShow(current, handoff))) {
       current.handoffJob = createJob(current, { kind: 'review', role: 'orchestrator', act: 'handing off', size: true, color: '#e6eed6' }, handoff, []);
       current.handoffMs = handoffDuration;
       current.jobs.push(current.handoffJob);
     }
-    adoptCarry(current);
     buildStage(current);
     remeasureDots(current);
     planBuild(current, stopInfo);
-    // Keep the page drifting slowly while the crew works (not on the last
-    // stop); spanning stops scroll on through the section instead.
-    const creep = current.span || (tour && tour.index < tour.stops.length - 1 && current.measurable
-      ? Math.min(positive(config.creep, 64), Math.max(0, maxY - to))
-      : 0);
-    if (creep > 2) {
-      current.scroll = current.scroll || { from: y0, to: y0, ms: 0, done: false };
-      current.scroll.creep = creep;
-      current.scroll.creepMs = current.span ? current.spanMs : Math.max(400, current.total - current.scroll.ms);
-      current.scroll.hold = current.span ? current.spanHold : 0;
-    }
-    if (stopInfo.note) addEvent(current, current.lead + Math.max(0, current.total - current.lead) * 0.5, () => showNote(stopInfo.note));
+    if (stopInfo.note) addEvent(current, current.total * 0.5, () => showNote(stopInfo.note));
     launch(current, advanceTour);
   }
 
@@ -2135,6 +2380,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     get tour() { return tour ? { index: tour.index, total: tour.stops.length, name: tour.stops[tour.index]?.name } : null; },
     get stats() { return run ? statsOf(run) : { ...lastStats, working: 0, visible: 0 }; },
     get speed() { return speed; },
+    // The tour's scroll model (px, px/s) and how many jobs were shown early.
+    get scroll() { return { y: tourScroll.y, v: tourScroll.v, late: tour ? tour.late : 0 }; },
     get crewTier() { return crewTier(width()); },
     get crewSize() { return crewSize(width()); },
     whenTourEnds(callback) { if (tour) tourEndCallbacks.push(callback); else callback(); },
