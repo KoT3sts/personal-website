@@ -148,8 +148,8 @@ Desktop composition is the primary fidelity target. Use 1440×900 and 1280×800 
 | --- | --- | --- |
 | Intro | No reference-style opening | Wavy luminous outline, point orbit, brand reveal |
 | Hero | Large type and original orbital SVG | Cesar portrait, silhouette/overlap/fade, closer type and peripheral layout |
-| About transition | Missing | Illustrated field and centered ABOUT ME panel |
-| Cinematic scene | Two-column copy and orbital graphic | Inset light-shaft scene and edge-aligned copy |
+| About transition | Original vector flow field and centered dark ABOUT ME panel; progressive scroll movement | Tune illustration density and choreography against reference; desktop/mobile first pass reviewed November 8 |
+| Cinematic scene | Inset beam-lit panel, original abstract luminous sculpture, edge-aligned copy and pills | Reference uses a suspended figure; current sculpture is an original adaptation. Continue geometry, lighting and spacing comparison |
 | Experience | Missing | Approved timeline content and horizontal typographic chapters |
 | Curved showcase | Flat perspective coverflow, illustrated covers | Real/sanitized visuals, continuous ribbon curvature and matching motion |
 | Circular work explorer | Missing | Circular arrangement, stacked state, coordinated titles/index/controls |

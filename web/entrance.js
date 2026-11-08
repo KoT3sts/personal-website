@@ -190,7 +190,7 @@ export function initAgenticEntrance(document, window, config = {}) {
         }
         if (visitedSections.has(entry.target)) return;
         visitedSections.add(entry.target);
-        const elements = [...entry.target.querySelectorAll('.section-top, h2, .about-copy > p, .orbital-panel, .project-image-link, .approach-heading > p, details, .contact-button')].slice(0, 7);
+        const elements = [...entry.target.querySelectorAll('.section-top, h2:not(.cinematic-copy h2), .cinematic-art, .cinematic-copy, .scene-actions, .project-image-link, .approach-heading > p, details, .contact-button')].slice(0, 7);
         if (!elements.length) return;
         phase = 'section';
         animateTargets(elements, sectionDuration, true, () => { phase = 'ready'; });

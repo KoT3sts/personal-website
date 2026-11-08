@@ -6,6 +6,33 @@ import { initPortfolio } from '../web/app.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 
+test('About navigation covers both scenes while header colors follow the actual section', t => {
+  const { window } = new JSDOM(html, { url: 'https://portfolio.test/#about' });
+  t.after(() => window.close());
+  window.matchMedia = () => ({ matches: true });
+  let onIntersection;
+  const observed = [];
+  window.IntersectionObserver = class {
+    constructor(callback) { onIntersection = callback; }
+    observe(element) { observed.push(element); }
+  };
+  const { document } = window;
+  initPortfolio(document, window);
+  const header = document.querySelector('.site-header');
+  const nav = () => document.querySelector('.main-nav [aria-current]')?.hash;
+  const enter = id => onIntersection([{ target: document.getElementById(id), isIntersecting: true }]);
+  assert.ok(observed.includes(document.querySelector('#introduction')));
+  enter('about');
+  assert.equal(nav(), '#about');
+  assert.ok(header.classList.contains('is-dark'));
+  enter('introduction');
+  assert.equal(nav(), '#about', 'cinematic introduction belongs to About');
+  assert.ok(header.classList.contains('is-dark'));
+  enter('work');
+  assert.equal(nav(), '#work');
+  assert.equal(header.classList.contains('is-dark'), false);
+});
+
 function setup(reducedMotion = false, withDialog = false) {
   const { window: runtime } = new JSDOM(html, { url: 'https://portfolio.test/' });
   const { document, Event } = runtime;

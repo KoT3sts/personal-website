@@ -133,3 +133,21 @@ test('skip and replay controls reserve at least 44px of hit-area height', t => {
   const replay = document.querySelector('[data-agentic-replay]');
   assert.ok(parseFloat(window.getComputedStyle(replay).minHeight) >= 44);
 });
+
+test('cinematic section traces the artwork and copy without hiding them, then settles on scroll-away', async t => {
+  const { document, window, controller, intersect } = setup(t, { observeSections: true });
+  await new Promise(resolve => window.setTimeout(resolve, 100));
+  const section = document.querySelector('#introduction');
+  intersect(section, true);
+  assert.equal(controller.phase, 'section');
+  const art = section.querySelector('.cinematic-art');
+  const copy = section.querySelector('.cinematic-copy');
+  assert.equal(art.dataset.buildState, 'tracing');
+  assert.equal(copy.dataset.buildState, 'tracing');
+  assert.notEqual(window.getComputedStyle(copy).opacity, '0');
+  assert.equal(section.querySelector('[data-build-state="pending"]'), null);
+  intersect(section, false);
+  assert.equal(controller.phase, 'ready');
+  assert.equal(section.querySelector('[data-build-state]'), null);
+  assert.equal(document.querySelector('.agentic-stage'), null);
+});

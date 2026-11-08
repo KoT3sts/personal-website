@@ -58,24 +58,6 @@
   .hero-note { justify-self: end; color: #6e7165; font-size: 9px; line-height: 1.7; }
   .scroll-cue { width: 50px; height: 50px; display: grid; place-items: center; border: 1px solid #c7c9bd; border-radius: 50%; margin-bottom: 4px; font-size: 24px; }
   .hero-rule { display: flex; justify-content: space-between; gap: 30px; position: absolute; bottom: 25px; left: var(--gutter); right: var(--gutter); border-top: 1px solid var(--line); padding-top: 15px; color: #73766b; font-size: 8px; }
-  .about { padding: 0 var(--gutter); overflow: clip; }
-  .about-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: center; min-height: 685px; gap: 5vw; padding: 82px 0 90px; }
-  .about-copy h2 { font-size: clamp(42px, 4.8vw, 78px); letter-spacing: -.065em; line-height: .99; font-weight: 500; margin-bottom: 33px; }
-  .about-copy h2 span { color: #8f928a; }
-  .about-copy > p { font-size: 15px; line-height: 1.65; color: #aaaDa5; max-width: 365px; margin-top: 16px; }
-  .about-copy .text-link { margin-top: 26px; }
-  .about-bottom { display: flex; justify-content: space-between; gap: 30px; border-top: 1px solid #333438; padding: 20px 0 28px; color: #979a90; font-size: 9px; }
-  .orbital-panel { position: relative; width: 100%; aspect-ratio: 1; max-width: 570px; border: 1px solid #35363c; border-radius: 50% 50% 0 0; background: radial-gradient(ellipse at 50% 48%, #262a26 0%, #111215 60%); overflow: hidden; }
-  .orbital-orbit { position: absolute; inset: 20%; border: 1px solid #b0b6a76b; border-radius: 50%; box-shadow: 0 0 10px #e7efc80b; }
-  .orbit-one { transform: rotate(-35deg) scaleX(.38); }
-  .orbit-two { transform: rotate(35deg) scaleX(.38); }
-  .orbit-three { transform: rotate(90deg) scaleX(.38); }
-  .orbit-one::after { content: ""; position: absolute; top: 50%; right: -5px; width: 8px; height: 8px; border-radius: 50%; background: #f5f6e8; box-shadow: 0 0 17px 4px #e7efc859; }
-  .orbital-center { position: absolute; inset: 33%; display: flex; align-items: center; justify-content: center; font-size: clamp(72px, 10vw, 150px); font-weight: 700; line-height: 1; letter-spacing: -.14em; text-shadow: 0 0 38px #f8ffda4d; transform: translateX(-10px); }
-  .orbital-center span { font-size: 12px; align-self: center; margin-top: 15px; margin-left: 12px; color: var(--green); }
-  .beam { position: absolute; top: -36%; left: 46%; width: 48%; height: 105%; transform: rotate(32deg); background: linear-gradient(90deg, transparent, #f1f3db12, #f1f3db40, #f1f3db0a, transparent); filter: blur(14px); }
-  .orbital-caption { position: absolute; bottom: 25px; width: 100%; text-align: center; color: #868a7f; font-size: 8px; }
-  .orbital-cross { position: absolute; font-size: 17px; color: #5d6357; font-weight: 400; }.cross-one { top: 35%; left: 12%; }.cross-two { right: 12%; bottom: 25%; }
   .work { padding: 0 var(--gutter); overflow: clip; }
   .work-heading { display: flex; justify-content: space-between; align-items: end; gap: 30px; padding: 78px 0 20px; }
   .work-heading h2 { font-size: clamp(55px, 7.6vw, 125px); letter-spacing: -.07em; line-height: .9; font-weight: 600; }
@@ -156,12 +138,7 @@
   .sculpture { animation: float 8s ease-in-out infinite; }
   .js-enabled .project-card { transition: transform .8s cubic-bezier(.22,.7,.15,1), opacity .5s; }
   .is-dragging .project-card { transition-duration: .15s; }
-  .orbital-orbit.orbit-one { animation: orbit-one 28s linear infinite; }.orbital-orbit.orbit-two { animation: orbit-two 24s linear infinite reverse; }
-  .beam { animation: beam 13s ease-in-out infinite; }
   @keyframes float { 0%,100% { transform: translateY(0) rotate(var(--art-rotate, 0deg)); }50% { transform: translateY(-13px) rotate(calc(var(--art-rotate, 0deg) + 2deg)); } }
-  @keyframes orbit-one { to { transform: rotate(325deg) scaleX(.38); } }
-  @keyframes orbit-two { to { transform: rotate(395deg) scaleX(.38); } }
-  @keyframes beam { 50% { transform: rotate(20deg) translateX(-15%); opacity: .5; } }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
 }
 @layer responsive {
@@ -170,7 +147,6 @@
     .hero { min-height: 830px; padding-top: 154px; }.hero h1 { font-size: 12.4vw; }.hero-art { width: 630px; top: 278px; }.hero-intro p { font-size: 21px; }
     .hero-note { font-size: 8px; }.orbit-label { right: 0; }
     .gallery { --card-width: 465px; --card-shift: 340px; }.js-enabled .gallery-stage { height: 500px; }
-    .about-layout { gap: 35px; }.about-copy > p { font-size: 14px; }.about-copy h2 { font-size: 5.2vw; }
     .approach-heading { grid-template-columns: 1fr 200px; gap: 30px; }.approach-heading h2 { font-size: 6.1vw; }
   }
   @media (max-width: 760px) {
@@ -179,7 +155,6 @@
     .hero-art { top: 252px; width: 525px; }.orbit-label { top: 43%; right: 8%; font-size: 7px; }.art-coordinate { left: 11%; top: 58%; font-size: 7px; }
     .hero-bottom { grid-template-columns: 1fr 1fr; bottom: 100px; gap: 25px; }.hero-intro p { font-size: 22px; }.small-label { font-size: 8px; }.hero-note { font-size: 7px; align-self: end; }.scroll-cue { display: none; }.hero-rule { font-size: 7px; bottom: 22px; padding-top: 12px; }
     .section-top { font-size: 8px; gap: 30px; padding: 25px 0; }.section-top > :last-child { text-align: right; max-width: 46%; }
-    .about-layout { display: flex; flex-direction: column; align-items: stretch; gap: 50px; padding: 60px 0 45px; }.about-copy h2 { font-size: clamp(45px, 8.5vw, 66px); }.about-copy > p { max-width: 100%; font-size: 15px; }.about-copy .text-link { margin-top: 21px; }.orbital-panel { width: min(100%, 420px); margin-inline: auto; }.orbital-center { font-size: 115px; }.about-bottom { font-size: 7px; }.about-bottom > :last-child { text-align: right; max-width: 45%; }
     .work-heading { display: block; padding-top: 55px; }.work-heading h2 { font-size: 12vw; }.work-heading > p { margin-top: 25px; font-size: 12px; }.gallery { --card-width: min(80vw, 410px); --card-shift: 285px; margin-top: 15px; }.js-enabled .gallery-stage { height: calc(55vw + 165px); max-height: 465px; }.js-enabled .project-card { top: 30px; }.project-card-bottom { padding: 17px 18px; }.project-card h3 { font-size: 23px; }.project-card-bottom .mono { font-size: 7px; }.project-open { width: 33px; height: 33px; }.gallery-controls { gap: 15px; }.gallery-count { width: 206px; font-size: 9px; }.circle-button { width: 40px; height: 40px; }.project-selectors { gap: 20px; }.project-selectors button { font-size: 10px; }.gallery-instruction { font-size: 7px; margin-top: 20px; }.work-end { margin-top: 50px; font-size: 7px; }.gallery-track { grid-template-columns: 1fr; }
     .approach { padding-bottom: 60px; }.approach-heading { display: block; padding-top: 55px; padding-bottom: 40px; }.approach-heading h2 { font-size: 10.5vw; }.approach-heading p { margin-top: 28px; max-width: 275px; font-size: 13px; }.approach-list summary { font-size: 22px; gap: 20px; padding: 25px 0; }.approach-list details > p { padding-left: 33px; padding-right: 10px; font-size: 13px; }.details-icon { font-size: 22px; }
     .closing-note { min-height: 410px; padding-block: 75px; }.closing-note > .mono { font-size: 7px; }.closing-note p { font-size: 17vw; }.note-orbit { right: -80px; top: 27%; }

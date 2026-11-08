@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" fill="none">
+  <defs>
+    <linearGradient id="porcelain" x1="180" y1="130" x2="435" y2="435" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset=".24" stop-color="#f7f7ff"/><stop offset=".48" stop-color="#9293a9"/><stop offset=".64" stop-color="#f9f9ff"/><stop offset=".86" stop-color="#e9e9f6"/><stop offset="1" stop-color="#666980"/></linearGradient>
+    <linearGradient id="edge" x1="375" y1="175" x2="205" y2="422" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset=".45" stop-color="#dedfeb"/><stop offset="1" stop-color="#737489"/></linearGradient>
+    <linearGradient id="inner" x1="235" y1="200" x2="360" y2="430" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset=".38" stop-color="#575b75"/><stop offset=".7" stop-color="#d1d2e2"/><stop offset="1" stop-color="#fff"/></linearGradient>
+    <filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="12"/></filter>
+    <filter id="soft" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="1.5"/></filter>
+  </defs>
+  <g opacity=".36" filter="url(#bloom)" stroke="#fff" stroke-width="13"><path d="M325 146C432 150 475 251 418 338S254 458 201 387 137 249 217 181 344 143 360 215 292 337 255 353"/><path d="M352 163C318 110 226 166 233 252s126 113 118 161"/></g>
+  <path d="M325 146C417 134 473 211 447 291 429 347 356 410 288 423 220 437 164 401 158 336 151 266 193 192 255 162 286 147 307 145 325 146ZM324 186C282 181 242 221 229 264 213 319 236 368 279 374 324 382 387 326 408 282 430 236 390 184 324 186Z" fill="url(#porcelain)" fill-rule="evenodd"/>
+  <path d="M325 146C253 128 195 187 190 250 183 323 244 373 294 396 325 410 354 426 354 455 378 427 377 399 356 374 328 342 286 334 267 294 247 254 265 192 306 176 330 166 348 168 364 183 359 163 345 150 325 146Z" fill="url(#inner)"/>
+  <path d="M364 183C407 213 406 254 382 299 362 335 321 369 279 374 313 385 359 367 393 334 431 298 459 244 437 201 416 162 376 147 349 149 371 157 386 166 398 179 388 177 373 177 364 183Z" fill="url(#edge)"/>
+  <g stroke="#fff" stroke-linecap="round"><path d="M199 348C176 295 204 213 250 180" stroke-width="2" opacity=".8"/><path d="M327 151C383 150 423 181 435 219" stroke-width="3" opacity=".85"/><path d="M288 419C332 414 371 393 402 362" stroke-width="2" opacity=".6"/><path d="M265 295C282 331 328 344 355 374" stroke-width="2" opacity=".7"/></g>
+  <path d="M205 231C224 193 264 165 301 158" stroke="#fff" stroke-width="6" stroke-linecap="round" filter="url(#soft)"/>
+</svg>

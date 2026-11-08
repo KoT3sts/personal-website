@@ -136,7 +136,7 @@ export function initPortfolio(document, window) {
         if (!entry.isIntersecting) return;
         header.classList.toggle('is-dark', entry.target.classList.contains('dark-section'));
         navLinks.forEach(link => {
-          if (link.hash === `#${entry.target.id}`) link.setAttribute('aria-current', 'location');
+          if (link.hash === `#${entry.target.dataset.navSection || entry.target.id}`) link.setAttribute('aria-current', 'location');
           else link.removeAttribute('aria-current');
         });
       });

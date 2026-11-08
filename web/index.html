@@ -13,6 +13,7 @@
   <title>Cesar Tortolero — Code & Curiosity</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./about-scenes.css">
   <link rel="stylesheet" href="./entrance.css">
   <link rel="preload" href="./assets/sculpture.svg" as="image" type="image/svg+xml">
   <script type="module" src="./app.js"></script>
@@ -47,24 +48,36 @@
       <div class="hero-rule mono"><span>THINK DEEPLY. MAKE SOMETHING.</span><span>SCROLL TO EXPLORE ↓</span></div>
     </section>
 
-    <section id="about" class="about dark-section" aria-labelledby="about-title">
-      <div class="section-top mono"><span>01 / A LITTLE CONTEXT</span><span>THE PERSON BEHIND THE PROJECTS</span></div>
-      <div class="about-layout">
-        <div class="about-copy">
-          <h2 id="about-title">Good software<br>starts with a<br><span>better question.</span></h2>
-          <p>I'm Cesar Tortolero. I like turning messy, everyday problems into software that makes things a little clearer.</p>
-          <p>My projects move between operations, opportunity discovery, and experiments with language. Different problems. The same curiosity.</p>
-          <a class="text-link light-link" href="#work">A few things I'm building <span aria-hidden="true">↗</span></a>
-        </div>
-        <div class="orbital-panel" aria-hidden="true">
-          <div class="beam"></div>
-          <div class="orbital-orbit orbit-one"></div><div class="orbital-orbit orbit-two"></div><div class="orbital-orbit orbit-three"></div>
-          <div class="orbital-center">C<span>●</span></div>
-          <span class="orbital-caption mono">A LITTLE CURIOSITY GOES A LONG WAY.</span>
-          <span class="orbital-cross cross-one">+</span><span class="orbital-cross cross-two">+</span>
+    <section id="about" class="about-transition dark-section" aria-labelledby="about-title">
+      <div class="about-flow" aria-hidden="true"><img src="./assets/about-flow.svg" alt="" width="1600" height="1000" loading="lazy"></div>
+      <div class="about-transition-meta mono"><span>01 / A LITTLE CONTEXT</span><span>THE PERSON BEHIND THE PROJECTS</span></div>
+      <div class="about-title-panel">
+        <span class="about-panel-index mono">C / A CLOSER LOOK</span>
+        <h2 id="about-title">ABOUT<br>ME</h2>
+        <a class="about-discover" href="#introduction" aria-label="Meet Cesar"><span aria-hidden="true">↓</span></a>
+      </div>
+      <div class="about-transition-foot mono"><span>A LITTLE CURIOSITY GOES A LONG WAY.</span><span>KEEP EXPLORING ↓</span></div>
+    </section>
+
+    <section id="introduction" class="cinematic dark-section" data-nav-section="about" aria-labelledby="introduction-title">
+      <div class="cinematic-stage">
+        <div class="cinematic-light" aria-hidden="true"></div>
+        <div class="cinematic-art" aria-hidden="true"><img src="./assets/light-sculpture.svg" alt="" width="600" height="600" loading="lazy"></div>
+        <div class="cinematic-topline mono"><span>TURNING BETTER QUESTIONS<br>INTO USEFUL SOFTWARE.</span><span>CESAR TORTOLERO<br>CODE & CURIOSITY</span></div>
+        <div class="cinematic-footer">
+          <div class="cinematic-copy">
+            <span class="mono">SOFTWARE / APPLIED AI / EXPERIMENTS</span>
+            <h2 id="introduction-title">Good software starts with a better question.</h2>
+            <p>I'm Cesar Tortolero. I like turning messy, everyday problems into software that makes things a little clearer.</p>
+            <p>My projects move between operations, opportunity discovery, and experiments with language. Different problems. The same curiosity.</p>
+          </div>
+          <div class="scene-actions">
+            <a class="scene-pill scene-pill-primary" href="#work">Explore my work <span aria-hidden="true">↗</span></a>
+            <a class="scene-pill" href="#approach">My approach <span aria-hidden="true">↗</span></a>
+          </div>
         </div>
       </div>
-      <div class="about-bottom mono"><span>SOFTWARE / APPLIED AI / EXPERIMENTS</span><span>IDEAS ARE A STARTING POINT, NOT A FINISH LINE.</span></div>
+      <div class="cinematic-caption mono"><span>IDEAS ARE A STARTING POINT.</span><span>THE INTERESTING PART IS WHAT HAPPENS NEXT.</span></div>
     </section>
 
     <section id="work" class="work" aria-labelledby="work-title">
