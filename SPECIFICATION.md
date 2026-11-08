@@ -207,7 +207,7 @@ Existing source is in `web/`; static builds go to `dist/`. Contributors should s
 | 5.0–11.0s | The demonstrated viewport moves down; About headings and body copy are selected/revealed while agents remain active | Further sections assembling on first exposure |
 | 12.0–16.23s | The About content is readable; the project-section heading and first project regions begin assembling | The effect extends beyond a generic loading spinner |
 
-The recording proves an assembly presentation, not that live AI inference or editing is occurring. It does not establish whether the observed scrolling was manual or automated. With the owner's approval (November 8), the first eligible home visit runs a guided build tour: after the hero, the page glides section by section while agents build each one. Any visitor input (wheel, touch, pointer, any key, a scroll the tour did not cause, Escape or Skip tour) ends the tour where the visitor is, with all content visible and no snap-back.
+The recording proves an assembly presentation, not that live AI inference or editing is occurring. It does not establish whether the observed scrolling was manual or automated. With the owner's approval (November 8), every eligible home load (the owner chose every visit, reloads included) runs a guided build tour: after the hero, the page glides section by section while agents build each one. Any visitor input (wheel, touch, pointer, any key, a scroll the tour did not cause, Escape or Skip tour) ends the tour where the visitor is, with all content visible and no snap-back.
 
 ### Adaptation: the same portfolio, assembled in front of the visitor
 

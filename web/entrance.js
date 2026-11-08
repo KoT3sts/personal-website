@@ -1743,7 +1743,14 @@ export function initAgenticEntrance(document, window, config = {}) {
   window.addEventListener('pagehide', onPageHide);
   media?.addEventListener?.('change', onMotion);
   replayButton.addEventListener('click', () => startTour(true));
-  const eligible = shouldPlayEntrance({ seen, reducedMotion: Boolean(media?.matches), storageAvailable: Boolean(storage), hash: window.location.hash, navigationType });
+  // `everyVisit`: play on every load (reloads included), not only the first.
+  const everyVisit = Boolean(config.everyVisit);
+  const eligible = shouldPlayEntrance({ seen: everyVisit ? false : seen, reducedMotion: Boolean(media?.matches), storageAvailable: Boolean(storage), hash: window.location.hash, navigationType });
+  if (eligible && everyVisit) {
+    // A reload would restore the old scroll position; start from the top instead.
+    try { if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'; } catch { /* not available */ }
+    if (readScrollY() > 0) scrollToY(0);
+  }
   try { if (eligible) startTour(); else replayButton.hidden = false; }
   catch { stop(false, false); }
   return {

@@ -232,7 +232,7 @@ export function initPortfolio(document, window) {
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   initPortfolio(document, window);
-  const entrance = initAgenticEntrance(document, window);
+  const entrance = initAgenticEntrance(document, window, { everyVisit: true });
   try { initMotion(document, window, { entrance }); }
   catch { document.querySelectorAll('[data-reveal]').forEach(element => element.removeAttribute('data-reveal')); }
 }
