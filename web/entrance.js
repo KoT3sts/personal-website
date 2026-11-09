@@ -2,7 +2,8 @@
 //
 // One orchestrator dispatches role-coloured subagents that appear to assemble
 // the real, prebuilt page. On an eligible first visit the crew builds the
-// hero; then the page scrolls itself from section to section while smaller
+// hero from a black screen (measured layout guides, a paint wipe that clears
+// the black, then the build); then the page scrolls itself from section to section while smaller
 // crews assemble each one, and a bottom dock reports how many agents are
 // working where. Items are placed one by one (cards pop in, proof lines are
 // written, tags cascade); tall sections keep scrolling while that happens.
@@ -27,6 +28,11 @@ const NAME_MAX = 30; // longest item name quoted in an action label
 const HERO_BASE = 4600; // HERO_PLAN waves are authored against this
 const BUILD_BASE = 3200; // tour section plans are authored against this
 const PASS_BASE = 1000; // manual (post-cancel) tracing passes
+// The hero opens on a black screen: the orchestrator plans alone, the crew
+// pops in, agents draw measured layout guides, a paint agent wipes the black
+// away, and only then does the build start. Real ms at the desktop hero pace;
+// scaled with the hero run (so short test timings and 2x both hold).
+const INTRO = { crew: 300, crewEnd: 620, guides: 700, guidesEnd: 2400, paint: 2400, paintEnd: 3180, end: 3300, fade: 600 };
 
 // Real durations in ms. Hero ~1.8x the original 4.6 s so each agent's work
 // stays readable; each lower section gets a ~3-5 s work budget (x `weight`),
@@ -371,6 +377,7 @@ export function initAgenticEntrance(document, window, config = {}) {
         if (run !== current) return;
       }
       if (current.kind === 'build') guardBlanks(current, t);
+      if (current.guides) updateIntro(current, t);
       current.active.forEach(job => job.update(t));
       current.agents.forEach(agent => placeAgent(current, agent, t));
       if (t >= current.total) {
@@ -878,6 +885,8 @@ export function initAgenticEntrance(document, window, config = {}) {
   function measure(current) {
     current.vw = window.innerWidth || 1024;
     current.vh = window.innerHeight || 768;
+    // The layout viewport (without a classic scrollbar), for edge distances.
+    current.cw = root.clientWidth || current.vw;
     current.sy0 = current.sy = readScrollY();
     current.dy = 0;
     current.view.clear();
@@ -890,6 +899,10 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (window.getComputedStyle?.(element).position === 'sticky') current.live.add(element);
     });
     measureColumn(current);
+    if (current.gapProbe) {
+      const gap = parseFloat(window.getComputedStyle?.(current.gapProbe).columnGap);
+      current.gap = Number.isFinite(gap) && gap > 0 ? gap : 0;
+    }
     remeasureDots(current);
   }
 
@@ -978,7 +991,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     const stage = make('div', `agentic-stage is-${current.kind}`);
     const decoration = make('div', 'agentic-decoration', stage);
     decoration.setAttribute('aria-hidden', 'true');
-    if (current.kind === 'hero') make('div', 'agentic-veil', decoration);
+    if (current.kind === 'hero') {
+      current.veil = make('div', 'agentic-veil', decoration);
+      current.guideLayer = make('div', 'agentic-guides', decoration);
+    }
     current.layer = make('div', 'agentic-layer', decoration);
     current.cursorLayer = make('div', 'agentic-cursors', decoration);
     current.agents.forEach(agent => {
@@ -1577,18 +1593,21 @@ export function initAgenticEntrance(document, window, config = {}) {
       const angle = index * 2.39996;
       const radius = 30 + 15 * Math.sqrt(index + 1);
       const ring = () => { const c = spawn(); return { x: c.x + Math.cos(angle) * radius, y: c.y + Math.sin(angle) * radius * 0.8 }; };
+      agent.ring = ring;
       const k = queuedList.indexOf(agent);
       let firstStart = agent.firstStart;
       let from;
       if (k >= NARROW_IDLE && narrow) {
         // Stays in the dock until shortly before its first job.
+        agent.held = true;
         firstStart = Math.max(firstStart, 1160 * s);
         holdSeg(agent, 0, () => dotPoint(current, agent));
         from = dotPoint(current, agent);
         addEvent(current, Math.max(popAt, firstStart - 320 * s), () => agent.cursor.classList.add('is-in'));
       } else {
         addEvent(current, popAt, () => agent.cursor.classList.add('is-in'));
-        holdSeg(agent, 0, spawn);
+        // After the intro the crew is already out: start where the intro left it.
+        holdSeg(agent, 0, current.intro ? () => (agent.introEnd || ring)() : spawn);
         travelSeg(agent, popAt, popAt + 380 * s, ring);
         from = ring();
         if (!agent.queue.length) {
@@ -1675,7 +1694,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       addEvent(current, orchDock - 300 * s, () => orchestrator.cursor.classList.remove('is-working'));
     }
     current.stayers = stayers;
-    addEvent(current, 330 * s, () => { current.stage.classList.add('is-assembling'); say(orchestrator, 'dispatching'); });
+    addEvent(current, 330 * s, () => say(orchestrator, 'dispatching'));
     const firstReview = Math.min(...current.jobs.filter(job => job.kind === 'review').map(job => job.start), Infinity);
     if (firstReview < orchLeave) addEvent(current, firstReview, () => say(orchestrator, 'reviewing'));
     if (onward) {
@@ -1687,6 +1706,204 @@ export function initAgenticEntrance(document, window, config = {}) {
     const leaveAt = orchDock + 80 * s;
     current.total = Math.min(current.total, leaveAt + 360 * s);
     addEvent(current, leaveAt, () => current.stage.classList.add('is-leaving'));
+  }
+
+  // ---- hero intro: black screen, guides, paint --------------------------
+  const introUnit = current => current.scale * HERO_BASE / TIMING.hero.desktop;
+  // Rough label width (9.5px bold mono), so labels stay on screen.
+  const labelWidth = text => text.length * 5.9 + 12;
+
+  // Layout guides, each measured live from the bounds cache: the content
+  // column's margins, three lines of a 12-column grid over it, the header's
+  // baseline and dashed boxes around the hero's main blocks. `geom()` gives
+  // the guide's bounds, label text and label spot; `tip(e)` where the drawing
+  // cursor is at eased progress `e`.
+  function heroGuides(current) {
+    const column = () => current.column || { left: current.vw * 0.06, right: current.vw * 0.94 };
+    // A real gutter only when it fits a 12-column grid (else lines sit on
+    // plain twelfths and no gutter is claimed).
+    const grid = () => {
+      const { left, right } = column();
+      const W = right - left;
+      const gap = current.gap > 0 && current.gap <= W / 16 ? current.gap : 0;
+      return { left, gap, colW: (W - 11 * gap) / 12 };
+    };
+    const list = [];
+    const add = (id, kind, act, geom) => list.push({ id, kind, act, geom });
+    add('margin-left', 'v', 'drawing margins', () => {
+      const x = column().left;
+      return { x, y: 0, w: 1, h: current.vh, text: `margin ${Math.round(x)}`, lx: x + 6, ly: current.vh * 0.6 };
+    });
+    add('margin-right', 'v', 'drawing margins', () => {
+      const x = column().right;
+      const text = `margin ${Math.round((current.cw || current.vw) - x)}`;
+      return { x, y: 0, w: 1, h: current.vh, text, lx: x - 6 - labelWidth(text), ly: current.vh * 0.6 };
+    });
+    const header = document.querySelector('.site-header');
+    const head = header && box(current, header);
+    if (head && head.h > 0 && head.y + head.h < current.vh * 0.5) {
+      add('baseline', 'h', 'setting baseline', () => {
+        const r = box(current, header);
+        const y = r.y + r.h;
+        const text = `baseline ${Math.round(y)}`;
+        return { x: 0, y, w: current.vw, h: 1, text, lx: column().right - labelWidth(text), ly: y + 6 };
+      });
+    }
+    [3, 6, 9].forEach((k, i) => add(`col-${k}`, 'v', 'drawing columns', () => {
+      const g = grid();
+      const x = g.left + k * g.colW + (k - 0.5) * g.gap;
+      const text = `col ${k}/12 · x ${Math.round(x)}${i === 0 && g.gap ? ` · gutter ${Math.round(g.gap)}` : ''}`;
+      return { x, y: 0, w: 1, h: current.vh, text, lx: x + 6, ly: current.vh * 0.17 + i * 22 };
+    }));
+    [['box-title', '#hero-title', 'boxing headline'], ['box-art', '.hero-art', 'boxing artwork'], ['box-intro', '.hero-bottom', 'boxing intro row']].forEach(([id, sel, act]) => {
+      const element = document.querySelector(sel);
+      // Only blocks that start well inside the first screen get a box.
+      if (!element || !inView(current, element) || box(current, element).y > current.vh * 0.8) return;
+      add(id, 'box', act, () => {
+        const r = box(current, element);
+        const text = `${Math.round(r.w)} × ${Math.round(r.h)}`;
+        return { x: r.x, y: r.y, w: r.w, h: r.h, text, lx: r.x, ly: r.y > 40 ? r.y - 18 : r.y + 5 };
+      });
+    });
+    list.forEach(guide => {
+      guide.tip = e => {
+        const g = guide.geom();
+        if (guide.kind === 'v') return { x: g.x, y: g.y + g.h * e };
+        if (guide.kind === 'h') return { x: g.x + g.w * e, y: g.y };
+        return { x: g.x + g.w * e, y: g.y + g.h * e };
+      };
+      guide.from = () => guide.tip(0);
+      guide.line = make('div', `agentic-guide is-${guide.kind}`, current.guideLayer);
+      guide.line.dataset.guide = guide.id;
+      guide.label = make('b', 'agentic-guide-label', current.guideLayer);
+      guide.label.dataset.guide = guide.id;
+      guide.e = 0;
+      if (guide.kind === 'box') guide.line.style.clipPath = 'inset(0 100% 100% 0)';
+      else guide.line.style.scale = guide.kind === 'v' ? '1 0' : '0 1';
+    });
+    return list;
+  }
+
+  function placeGuide(current, guide) {
+    const g = guide.geom();
+    guide.line.style.translate = `${g.x}px ${g.y}px`;
+    guide.line.style.width = `${Math.max(1, g.w)}px`;
+    guide.line.style.height = `${Math.max(1, g.h)}px`;
+    if (guide.label.textContent !== g.text) guide.label.textContent = g.text;
+    const lx = clamp(g.lx, 4, Math.max(4, (current.cw || current.vw) - labelWidth(g.text) - 4));
+    const ly = clamp(g.ly, 4, Math.max(4, current.vh - 22));
+    guide.label.style.translate = `${lx.toFixed(1)}px ${ly.toFixed(1)}px`;
+  }
+
+  // Per frame: guide growth (scale / clip-path), labels, and the veil's wipe.
+  function updateIntro(current, t) {
+    const geometryChanged = current.introVersion !== current.version;
+    current.introVersion = current.version;
+    current.guides.forEach(guide => {
+      if (geometryChanged) placeGuide(current, guide);
+      const e = Math.round(easeInOut(clamp01((t - guide.t0) / Math.max(1e-6, guide.t1 - guide.t0))) * 1000) / 1000;
+      if (e !== guide.e) {
+        guide.e = e;
+        if (guide.kind === 'box') { const rest = ((1 - e) * 100).toFixed(1); guide.line.style.clipPath = e >= 1 ? 'none' : `inset(0 ${rest}% ${rest}% 0)`; }
+        else guide.line.style.scale = guide.kind === 'v' ? `1 ${e}` : `${e} 1`;
+      }
+      const on = t >= guide.t1;
+      if (on !== guide.on) { guide.on = on; guide.label.classList.toggle('is-on', on); }
+    });
+    const veil = current.veil;
+    if (!veil) return;
+    const { t0, t1, sweep } = current.paint;
+    if (t >= t1) { veil.remove(); current.veil = null; return; }
+    if (t <= t0) return;
+    const x = Math.round(clamp(sweep(easeInOut((t - t0) / (t1 - t0))).x, 0, current.vw) * 10) / 10;
+    if (x !== current.veilX) { current.veilX = x; veil.style.clipPath = `inset(0 0 0 ${x}px)`; }
+  }
+
+  // Plays before the planned hero build: shifts that plan behind the intro,
+  // then lays out the intro's own cursor paths and events.
+  function planIntro(current) {
+    const lead = current.intro;
+    if (!lead) return;
+    const u = introUnit(current);
+    const orchestrator = current.agents[0];
+    const subagents = current.agents.slice(1);
+    current.events.forEach(event => { event.at += lead; });
+    current.jobs.forEach(job => { job.start += lead; job.arrive += lead; job.end += lead; });
+    current.total += lead;
+    const body = new Map(current.agents.map(agent => {
+      agent.segs.forEach(seg => { seg.t0 += lead; seg.t1 += lead; });
+      const segs = agent.segs;
+      agent.segs = [];
+      return [agent, segs];
+    }));
+    const spawn = () => ({ x: current.vw / 2, y: current.vh * 0.45 });
+
+    // 0-0.7 s, black: the orchestrator plans alone, then the crew pops in.
+    holdSeg(orchestrator, 0, spawn);
+    addEvent(current, 0, () => { orchestrator.cursor.classList.add('is-in', 'is-working'); say(orchestrator, 'planning layout'); });
+    addEvent(current, INTRO.guides * u, () => say(orchestrator, 'setting guides'));
+    addEvent(current, INTRO.paint * u, () => say(orchestrator, 'clearing canvas'));
+    const crew = subagents.filter(agent => !agent.held && agent.ring);
+    crew.forEach((agent, i) => {
+      const popAt = (INTRO.crew + (INTRO.crewEnd - INTRO.crew) * i / Math.max(1, crew.length)) * u;
+      holdSeg(agent, 0, spawn);
+      addEvent(current, popAt, () => agent.cursor.classList.add('is-in'));
+      travelSeg(agent, popAt, popAt + 380 * u, agent.ring);
+    });
+
+    // ~0.7-2.4 s: guides, about two per drawing agent.
+    current.guides = heroGuides(current);
+    const painter = crew.find(agent => agent.role === 'art') || crew.find(agent => agent.role === 'motion') || crew[crew.length - 1];
+    const prefer = ['layout', 'qa', 'a11y', 'nav', 'type', 'copy', 'links', 'motion', 'art'];
+    const drawers = crew.filter(agent => agent !== painter)
+      .sort((a, b) => prefer.indexOf(a.role) - prefer.indexOf(b.role) || a.index - b.index)
+      .slice(0, Math.ceil(current.guides.length / 2));
+    const queues = drawers.length ? drawers.map(() => []) : [[]];
+    current.guides.forEach((guide, i) => queues[i % queues.length].push(guide));
+    const guidesEnd = INTRO.guidesEnd * u;
+    queues.forEach((queue, k) => {
+      const agent = drawers[k];
+      let t = (INTRO.guides + k * 90) * u;
+      let at = agent ? agent.ring() : spawn();
+      const legs = queue.map(guide => { const ms = clamp(120 + distance(at, guide.from()) * 0.2, 160, 300) * u; at = guide.tip(1); return ms; });
+      const draw = clamp((guidesEnd - t - legs.reduce((sum, ms) => sum + ms + 40 * u, 0)) / Math.max(1, queue.length), 420 * u, 650 * u);
+      queue.forEach((guide, j) => {
+        const arrive = t + legs[j];
+        guide.t0 = arrive;
+        guide.t1 = arrive + draw;
+        if (agent) {
+          travelSeg(agent, t, arrive, guide.from);
+          agent.segs.push({ t0: guide.t0, t1: guide.t1, kind: 'work', point: p => guide.tip(easeInOut(p)) });
+          agent.last = () => guide.tip(1);
+          addEvent(current, t, () => { startWorking(current, agent); agent.cursor.classList.add('is-working'); say(agent, guide.act); });
+        }
+        t = guide.t1 + 40 * u;
+      });
+      if (!agent || !queue.length) return;
+      addEvent(current, t, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
+      travelSeg(agent, t, t + 420 * u, agent.ring);
+    });
+
+    // ~2.4-3.3 s: the paint agent sweeps left to right; the veil follows it.
+    const sweep = e => ({ x: -12 + (current.vw + 24) * e, y: current.vh * (0.52 + 0.05 * Math.sin(e * Math.PI * 2)) });
+    current.paint = { t0: INTRO.paint * u, t1: INTRO.paintEnd * u, sweep };
+    if (painter) {
+      const leave = current.paint.t0 - 420 * u;
+      travelSeg(painter, leave, current.paint.t0, () => sweep(0));
+      painter.segs.push({ t0: current.paint.t0, t1: current.paint.t1, kind: 'work', point: p => sweep(easeInOut(p)) });
+      painter.last = () => sweep(1);
+      painter.introEnd = () => sweep(1);
+      addEvent(current, leave, () => { startWorking(current, painter); painter.cursor.classList.add('is-working'); say(painter, 'painting canvas'); });
+      addEvent(current, current.paint.t1, () => { painter.cursor.classList.remove('is-working'); say(painter, ''); });
+    }
+
+    // The guides fade out as the hero hands over, gone when its run ends.
+    const fade = INTRO.fade * u;
+    addEvent(current, Math.max(guidesEnd, current.total - fade), () => {
+      current.guideLayer.style.transitionDuration = `${realMs(fade)}ms`;
+      current.guideLayer.classList.add('is-fading');
+    });
+    current.agents.forEach(agent => { agent.segs = [...agent.segs, ...body.get(agent)]; });
   }
 
   // A tour stop. The run starts while the page is still moving: the carried
@@ -2134,6 +2351,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     // Events due at once (carried cursors, the orchestrator) apply before the
     // first paint, so the crew never blinks out between stops.
     while (current.next < current.events.length && current.events[current.next].at <= 0) current.events[current.next++].fn(0);
+    if (current.guides) updateIntro(current, 0);
     current.agents.forEach(agent => placeAgent(current, agent, 0));
     schedule();
   }
@@ -2201,7 +2419,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     visitedSections.add(hero);
     const current = prepare('hero', heroDuration(crewTier(width())));
     const candidates = gather(current, HERO_PLAN, document);
-    watchElements(current, [...candidates, document.querySelector('.hero-kicker')]);
+    // The intro's guides measure the header and the hero's main blocks.
+    current.gapProbe = document.querySelector('.hero-bottom');
+    watchElements(current, [...candidates, document.querySelector('.hero-kicker'), ...['.site-header', '#hero-title', '.hero-art', '.hero-bottom'].map(sel => document.querySelector(sel))]);
     measure(current);
     current.measurable = isMeasurable(current, [...current.watch]);
     current.jobs = collect(current, HERO_PLAN, document);
@@ -2213,7 +2433,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     });
     buildStage(current);
     remeasureDots(current);
+    current.intro = INTRO.end * introUnit(current);
     planHero(current);
+    planIntro(current);
     if (tour) addEvent(current, current.total * 0.55, () => showNote(tour?.stops[0]?.note));
     launch(current, () => {
       if (tour) { advanceTour(); return; }

@@ -131,7 +131,7 @@ test('the first visit tours every section in order, then hands off and collapses
   assert.equal(+seconds, Math.round(clock.now() / 1000), 'measured tour time');
   assert.ok(dock.querySelector('[data-agentic-dock-replay]'));
   assert.equal(document.querySelector('[data-agentic-replay]').hidden, false);
-  assert.ok(heroEnded >= 3500 && heroEnded <= 6000, `hero took ${heroEnded}ms`);
+  assert.ok(heroEnded >= 7500 && heroEnded <= 10000, `hero took ${heroEnded}ms`);
   assert.ok(clock.now() >= 36000 && clock.now() <= 56000, `tour took ${clock.now()}ms`);
   if (measurable(document) && document.documentElement.scrollHeight > window.innerHeight + 10) {
     assert.ok(window.scrollY > 0, 'the tour ends at the contact section, not back at the top');
@@ -835,5 +835,150 @@ test('on phones at most two idle cursors stay out between stops; the others wait
   assert.equal(transitions, stopNames(document).length - 1);
   assert.ok(carriedPeak <= 2, `${carriedPeak} agents carried between stops`);
   assert.ok(peak <= 2, `${peak} idle cursors on screen at once`);
+  assertNoResidue(document);
+});
+
+// ---- hero intro: black screen, measured guides, paint wipe ----------------
+// `translate: 412px 0px` reads back as "412px".
+const translateOf = element => { const m = /([-\d.]+)px(?:\s+([-\d.]+)px)?/.exec(element.style.translate || ''); return m ? { x: +m[1], y: +(m[2] || 0) } : null; };
+const numbersIn = text => (text.match(/\d+/g) || []).map(Number);
+// Hero content that has started to appear (frames mark the first build job).
+const heroStarted = document => document.querySelector('#home [data-build-state="typing"], #home [data-build-state="placing"], .site-header [data-build-state="placing"], .agentic-frame');
+
+test('the hero opens on a black screen: the veil is opaque and no hero content shows', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  clock.run(300);
+  const veil = document.querySelector('.agentic-veil');
+  assert.ok(veil, 'the veil is up');
+  const style = window.getComputedStyle(veil);
+  assert.equal(style.opacity, '1');
+  assert.equal(style.backgroundColor, 'rgb(16, 17, 20)');
+  assert.ok(!veil.style.clipPath || veil.style.clipPath === 'none', `veil clip ${veil.style.clipPath}`);
+  if (measurable(document)) {
+    const r = veil.getBoundingClientRect();
+    const view = document.documentElement;
+    assert.ok(r.left <= 0 && r.top <= 0 && r.right >= view.clientWidth - 1 && r.bottom >= view.clientHeight - 1, 'covers the viewport');
+  }
+  assert.equal(heroStarted(document), null, 'no hero content has started');
+  assert.ok(document.querySelectorAll('#home [data-build-state="pending"]').length > 0, 'hero content waits hidden');
+  assert.ok(document.querySelector('.agentic-cursor.is-orchestrator.is-in'), 'the orchestrator is out');
+  assert.equal(document.querySelector('.agentic-cursor.is-orchestrator .agentic-role').textContent, 'orchestrator · planning layout');
+  assert.equal(document.querySelectorAll('.agentic-guide-label.is-on').length, 0, 'no guides drawn yet');
+  controller.skip();
+  assertNoResidue(document);
+});
+
+test('guides are drawn before the first content job, labelled with measured numbers, and the paint wipe clears the veil first', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  let firstJob = 0;
+  let veilGone = 0;
+  let guidesDone = 0;
+  let painted = 0;
+  let wipeOff = 0;
+  let snapshot = null;
+  while (controller.touring && controller.tour.index === 0 && !firstJob) {
+    clock.step(16);
+    const now = clock.now();
+    const labels = [...document.querySelectorAll('.agentic-guide-label')];
+    if (!guidesDone && labels.length && labels.every(label => label.classList.contains('is-on'))) {
+      guidesDone = now;
+      snapshot = labels.map(label => [label.dataset.guide, label.textContent]);
+    }
+    const veil = document.querySelector('.agentic-veil');
+    const painter = [...document.querySelectorAll('.agentic-cursor.is-working')].find(cursor => /painting canvas$/.test(cursor.textContent));
+    const clip = veil && /inset\(0px 0px 0px ([\d.]+)px\)/.exec(veil.style.clipPath || '');
+    if (painter && clip) {
+      const x = cursorPoint(painter).x + 2;
+      const edge = +clip[1];
+      if (edge > 0 && edge < window.innerWidth) { painted++; wipeOff = Math.max(wipeOff, Math.abs(edge - x)); }
+    }
+    if (!veil && !veilGone) veilGone = now;
+    if (heroStarted(document)) firstJob = now;
+  }
+  assert.ok(firstJob > 0, 'the build started');
+  assert.ok(guidesDone > 0 && guidesDone < firstJob, `guides drawn at ${guidesDone}ms, first job at ${firstJob}ms`);
+  assert.ok(veilGone > guidesDone && veilGone <= firstJob, `veil gone at ${veilGone}ms (guides ${guidesDone}ms, first job ${firstJob}ms)`);
+  assert.ok(firstJob >= 3000, `the build waits for the intro (${firstJob}ms)`);
+  if (!measurable(document)) return;
+  assert.ok(painted > 10, `${painted} frames of paint wipe`);
+  assert.ok(wipeOff <= 30, `the wipe follows the paint agent (off by ${wipeOff.toFixed(1)}px)`);
+  // Every label is a measurement of the live layout (±1 px).
+  const ids = snapshot.map(([id]) => id);
+  for (const id of ['margin-left', 'margin-right', 'baseline', 'col-3', 'col-6', 'col-9', 'box-title', 'box-art']) assert.ok(ids.includes(id), `${id} guide in ${ids}`);
+  const header = document.querySelector('.site-header').getBoundingClientRect();
+  const [left, right] = [header.left, header.right];
+  const near = (actual, expected, what) => assert.ok(Math.abs(actual - expected) <= 1, `${what}: label ${actual} vs measured ${expected.toFixed(1)}`);
+  const text = Object.fromEntries(snapshot);
+  near(numbersIn(text['margin-left'])[0], left, 'left margin');
+  near(numbersIn(text['margin-right'])[0], document.documentElement.clientWidth - right, 'right margin');
+  near(numbersIn(text.baseline)[0], header.bottom, 'header baseline');
+  const gutter = /gutter (\d+)/.exec(text['col-3']);
+  const gap = gutter ? +gutter[1] : 0;
+  if (gutter) near(gap, parseFloat(window.getComputedStyle(document.querySelector('.hero-bottom')).columnGap), 'gutter');
+  const colW = (right - left - 11 * gap) / 12;
+  for (const k of [3, 6, 9]) {
+    const [n, of, x] = numbersIn(text[`col-${k}`]);
+    assert.deepEqual([n, of], [k, 12]);
+    near(x, left + k * colW + (k - 0.5) * gap, `column ${k}`);
+    const line = document.querySelector(`.agentic-guide[data-guide="col-${k}"]`);
+    near(translateOf(line).x, x, `column ${k} line`);
+  }
+  for (const [id, sel] of [['box-title', '#hero-title'], ['box-art', '.hero-art'], ['box-intro', '.hero-bottom']]) {
+    if (!text[id]) continue;
+    const r = document.querySelector(sel).getBoundingClientRect();
+    assert.match(text[id], /^\d+ × \d+$/);
+    const [w, h] = numbersIn(text[id]);
+    near(w, r.width, `${sel} width`);
+    near(h, r.height, `${sel} height`);
+  }
+  // Guides are decoration only.
+  const guides = document.querySelector('.agentic-guides');
+  assert.equal(guides.closest('[aria-hidden="true"]')?.classList.contains('agentic-decoration'), true);
+  assert.equal(window.getComputedStyle(guides).pointerEvents, 'none');
+  controller.skip();
+  assertNoResidue(document);
+});
+
+test('the guides fade as the hero hands over and are gone when the hero run ends', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true });
+  let fading = 0;
+  let handover = 0;
+  while (controller.touring && clock.now() < 20000) {
+    clock.step(16);
+    if (!fading && document.querySelector('.agentic-guides.is-fading')) fading = clock.now();
+    if (controller.tour?.index === 1) { handover = clock.now(); break; }
+  }
+  assert.ok(handover >= 7000 && handover <= 10000, `the hero took ${handover}ms`);
+  assert.ok(fading > 0 && handover - fading >= 400 && handover - fading <= 800, `guides faded from ${fading}ms, handover ${handover}ms`);
+  assert.equal(document.querySelector('.agentic-guides, .agentic-guide, .agentic-veil'), null, 'no guides or veil after the hero');
+  controller.skip();
+});
+
+test('cancelling during the guide phase removes the veil and guides and reveals everything', t => {
+  for (const action of ['wheel', 'skip']) {
+    const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
+    clock.run(1600);
+    assert.ok(document.querySelector('.agentic-veil'), `${action}: veil still up`);
+    assert.ok(document.querySelector('.agentic-guide-label.is-on'), `${action}: guides being drawn`);
+    if (action === 'wheel') document.querySelector('#main').dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 120 }));
+    else document.querySelector('[data-agentic-skip]').click();
+    assert.equal(controller.touring, false, action);
+    assert.equal(document.querySelector('.agentic-veil, .agentic-guides, .agentic-guide, .agentic-guide-label'), null, `${action}: no veil or guides`);
+    assertNoResidue(document);
+    clock.step(2000);
+    assert.equal(document.querySelector('.agentic-veil, .agentic-guide'), null, `${action}: nothing comes back`);
+  }
+});
+
+test('the intro runs on the tour clock, so 2x halves it', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
+  const button = dockOf(document).querySelector('[data-agentic-speed]');
+  button.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  button.click();
+  assert.equal(controller.speed, 2);
+  let veilGone = 0;
+  while (controller.touring && clock.now() < 6000 && !veilGone) { clock.step(16); if (!document.querySelector('.agentic-veil')) veilGone = clock.now(); }
+  assert.ok(veilGone >= 1400 && veilGone <= 1800, `veil gone at ${veilGone}ms at 2x`);
+  controller.skip();
   assertNoResidue(document);
 });
