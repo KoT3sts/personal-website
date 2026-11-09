@@ -1,6 +1,7 @@
 import { createGalleryState, wrapOffset, cardPose, dragOffset, releaseSteps } from './gallery-state.js';
 import { initAgenticEntrance } from './entrance.js';
-import { initMotion, sectionAtLine } from './motion.js';
+import { initMotion } from './motion.js';
+import { initHeader } from './header.js';
 
 const SETTLE = { one: '.82s', many: '1s' };
 
@@ -197,37 +198,7 @@ export function initPortfolio(document, window) {
     document.querySelector('.project-stories').style.display = 'grid';
   }
 
-  const header = document.querySelector('.site-header');
-  const navLinks = [...document.querySelectorAll('.main-nav a')];
-  const pageSections = [...document.querySelectorAll('main > section[id], footer[id]')];
-  // Header tone follows the section actually behind the header (its centre
-  // line), not the reading band used for navigation, so the light wordmark
-  // never sits on a light section, including at the very bottom of the page.
-  let toneFrame = 0;
-  function paintHeaderTone() {
-    toneFrame = 0;
-    const bounds = header.getBoundingClientRect();
-    const index = sectionAtLine(pageSections.map(section => section.getBoundingClientRect()), bounds.top + bounds.height / 2);
-    header.classList.toggle('is-dark', index >= 0 && pageSections[index].classList.contains('dark-section'));
-  }
-  const queueHeaderTone = () => {
-    if (!raf) paintHeaderTone();
-    else if (!toneFrame) toneFrame = raf(paintHeaderTone);
-  };
-  ['scroll', 'resize', 'load', 'pageshow'].forEach(type => window.addEventListener(type, queueHeaderTone, { passive: true }));
-  if (window.IntersectionObserver) {
-    const navObserver = new window.IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        navLinks.forEach(link => {
-          if (link.hash === `#${entry.target.dataset.navSection || entry.target.id}`) link.setAttribute('aria-current', 'location');
-          else link.removeAttribute('aria-current');
-        });
-      });
-    }, { rootMargin: '-12% 0px -70% 0px', threshold: 0 });
-    pageSections.forEach(section => navObserver.observe(section));
-  }
-  paintHeaderTone();
+  initHeader(document, window);
   const art = document.querySelector('.hero-art');
   let tiltFrame = 0;
   let tilt = 0;
