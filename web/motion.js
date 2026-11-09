@@ -26,7 +26,7 @@ const CHIP_CAP = 8;
 
 // Only content wholly below the fold may wait for a reveal.
 export function shouldHold(rect, viewportHeight) {
-  return rect.top > viewportHeight * 0.92;
+  return rect.top >= viewportHeight;
 }
 
 export function staggerDelay(batchIndex) {

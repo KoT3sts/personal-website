@@ -62,6 +62,7 @@ function setup({ groups, reduced = false, entrance, rootClasses = [] }) {
 test('only content wholly below the fold may wait for a reveal', () => {
   assert.equal(shouldHold({ top: 900 }, 800), true);
   assert.equal(shouldHold({ top: 700 }, 800), false, 'partly visible content stays visible');
+  assert.equal(shouldHold({ top: 760 }, 800), false, 'content near the bottom of the viewport stays visible');
   assert.equal(shouldHold({ top: -400 }, 800), false, 'content already passed stays visible');
 });
 

@@ -4,6 +4,8 @@ Updated: November 8, 2026 (America/New_York), recruiter content integrated.
 
 ## Confirmed state
 
+- November 9 Windows import: verified the Overleaf bundle against its SHA-256 manifest and imported all 14 commits at `74e2231`, including the About merge. The integrated branch supersedes the content-only draft PR #2. Independent review led to fixes for scroll restoration, keyboard focus at tour completion, and visible content near the viewport edge. All 79 Node tests, syntax checks, build, and diff checks passed. Chrome verified desktop Skip and reload, and phone-width scrolling reached the lower sections without horizontal overflow. The earlier source-Mac observations below are historical.
+
 - November 8 (source Mac), latest: no text appears without an agent on desktop (117 unbuilt reveals → 0 at 1280; phone 146 → 26). Added jobs for Experience role lines (company, title, dates, place), Education entries (school typed, degree, dates), project captions, the closing note, and headings or rows the scroll passes. Late items are rescued by the nearest idle margin agent (hard cap of 450 ms hidden on screen, instant reveal only if nobody can reach it in time). Uncovered text below the fold waits in a rescue pool. Phones use 8 agents (up to 3 idle at the bottom edge). Tour ≈ 53 s desktop and 52.5 s phone at 1×, ≈ 26.5 s at 2×; slowest scroll 59 px/s, no errors or leftovers. Entrance tests 45/45 in the Chrome harness (not under node; run `npm test` before publishing). Note: the tour-length test allows ≤ 56 s and harness runs at 1280 are 54–55.6 s.
 
 - November 8 (source Mac), build-from-scratch tour (commits add4255, eb2b6f2 and the section-wireframe commit):
