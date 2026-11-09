@@ -53,6 +53,8 @@ const RIDE_ALONG = { desktop: 13, tablet: 6, phone: 4 };
 const MAX_CREW = { desktop: 16, tablet: 8, phone: 5 };
 const MIN_CREW = { desktop: 12, tablet: 6, phone: 4 };
 const ROTATE = { desktop: 2, tablet: 1, phone: 1 };
+// Idle agents kept on screen when the side margins are too narrow (phones).
+const NARROW_IDLE = 2;
 
 export const ROLES = {
   orchestrator: { label: 'orchestrator', color: '#1d1e1b' },
@@ -887,7 +889,31 @@ export function initAgenticEntrance(document, window, config = {}) {
       // Sticky elements do not move with the scroll: re-read them instead.
       if (window.getComputedStyle?.(element).position === 'sticky') current.live.add(element);
     });
+    measureColumn(current);
     remeasureDots(current);
+  }
+
+  // The content column's left/right edges (the header's bounds, the hero's
+  // inner box or the first section header), so idle cursors can wait in the
+  // side margins. Unmeasurable: 6% of the viewport width on each side.
+  function measureColumn(current) {
+    const vw = current.vw;
+    const edges = element => {
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      let left = rect.left;
+      let right = rect.right;
+      if (element === hero) {
+        const style = window.getComputedStyle?.(element);
+        left += parseFloat(style?.paddingLeft) || 0;
+        right -= parseFloat(style?.paddingRight) || 0;
+      }
+      return rect.width > 0 && right - left > vw * 0.3 ? { left, right } : null;
+    };
+    const found = edges(document.querySelector('.site-header')) || edges(hero) || edges(document.querySelector('.section-top'));
+    const left = clamp(found ? found.left : vw * 0.06, 0, vw * 0.45);
+    const right = clamp(found ? found.right : vw * 0.94, vw * 0.55, vw);
+    current.column = { left, right, narrow: Math.min(left, vw - right) < 40 };
   }
 
   function remeasureDots(current) {
@@ -995,31 +1021,55 @@ export function initAgenticEntrance(document, window, config = {}) {
   const nextStop = () => (tour ? tour.stops[tour.index + 1] : null);
   // The hero keeps most of its crew on screen for About: agents whose role
   // About needs first, then the rest, up to the ride-along cap.
-  function pickStayers(current, candidates) {
+  // `first` (agents still busy when the hero hands over) ride along before
+  // anyone else; narrow screens keep at most two idle agents out.
+  function pickStayers(current, candidates, first = []) {
     const next = nextStop();
     if (!next) return new Set();
     const counts = CREWS[current.tier];
     const roles = new Set((next.jobs || []).flatMap(job => job.roles || [job.role]).map(role => resolveRole(role, counts)));
     const worked = candidates.filter(agent => agent.queue.length);
-    const ranked = [...worked.filter(agent => roles.has(agent.role)), ...worked.filter(agent => !roles.has(agent.role))];
-    return new Set(ranked.slice(0, RIDE_ALONG[current.tier]));
+    const ranked = new Set([...first, ...worked.filter(agent => roles.has(agent.role)), ...worked.filter(agent => !roles.has(agent.role))]);
+    return new Set([...ranked].slice(0, idleCap(current)));
   }
-  // Standby spots spread over the lower half of the view, where the next
-  // section's content scrolls into them (clear of the dock row).
+  const idleCap = current => (current.column?.narrow ? NARROW_IDLE : RIDE_ALONG[current.tier]);
+  // Standby spots clear of the content column: two loose flocks in the side
+  // margins, spread between 25% and 85% of the view height (even k left, odd
+  // k right). Margins under 40 px (phones): at most two spots along the
+  // bottom edge, above the dock. Each spot carries the horizontal band its
+  // swarm must stay in (`lo`/`hi`) and how far the swarm may sway (`fx`/`fy`).
   function standby(current, k, n) {
-    const fx = n > 1 ? 0.09 + (0.82 * k) / (n - 1) : 0.5;
-    const fy = 0.55 + ((k * 0.618 + 0.15) % 1) * 0.27;
-    return () => ({ x: current.vw * fx, y: current.vh * fy });
+    return () => {
+      const { vw, vh } = current;
+      const column = current.column || { left: vw * 0.06, right: vw * 0.94, narrow: vw * 0.06 < 40 };
+      if (column.narrow) {
+        return { x: vw * (k % 2 ? 0.78 : 0.22), y: vh - 110, lo: 10, hi: vw - 10, fx: 0.4, fy: 0.35 };
+      }
+      const right = k % 2 === 1;
+      const lo = right ? column.right + 8 : 10;
+      const hi = Math.max(lo, right ? vw - 10 : column.left - 8);
+      const per = Math.max(1, Math.ceil(n / 2));
+      const jitter = ((k * 0.618 + 0.31) % 1) - 0.5;
+      const row = Math.floor(k / 2) + 0.5 + jitter * 0.5;
+      const half = (hi - lo) / 2;
+      return { x: lo + half + jitter * half * 0.6, y: vh * (0.25 + (0.6 * row) / per), lo, hi, fx: Math.min(1, half / 110), fy: 1 };
+    };
   }
   // A slow idle drift around an anchor, on the tour clock, so it carries on
-  // seamlessly into the next run.
+  // seamlessly into the next run. Standby anchors keep the sway in their band.
   function drifting(current, agent, anchor) {
-    return () => swarm(anchor(), current.t0 + current.now, agent, 1);
+    return () => {
+      const a = anchor();
+      const p = swarm(a, current.t0 + current.now, agent, 1);
+      if (a.lo === undefined) return p;
+      return { x: clamp(a.x + (p.x - a.x) * a.fx, a.lo, a.hi), y: a.y + (p.y - a.y) * a.fy };
+    };
   }
   function idleSeg(current, agent, at, anchor) {
     const point = drifting(current, agent, anchor);
     agent.segs.push({ t0: at, t1: at, kind: 'drift', point, anchor });
     agent.last = point;
+    if (agent.role !== 'orchestrator') addEvent(current, at, () => agent.cursor.classList.add('is-idle'));
   }
   // Send a finished agent to a standby spot to drift until the next stop
   // adopts it. Idle agents hide their label; the orchestrator keeps talking.
@@ -1032,20 +1082,23 @@ export function initAgenticEntrance(document, window, config = {}) {
       const name = nextStop()?.name.toLowerCase() || 'next';
       addEvent(current, at, () => say(agent, `leading crew to ${name}`));
     } else {
-      addEvent(current, at, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
+      addEvent(current, at, () => { agent.cursor.classList.remove('is-working', 'is-idle'); say(agent, ''); });
     }
     return arrive;
   }
   // Carried cursors appear exactly where they were (still drifting if idle).
-  function holdCarried(current, agent) {
+  // One caught away from a standby spot with nothing to do for a while goes
+  // on to its spot (or slot `k` of `n`) instead of waiting over the content.
+  function holdCarried(current, agent, k = 0, n = 1) {
     const c = agent.carry;
     if (c.anchor) idleSeg(current, agent, 0, () => c.anchor);
     else holdSeg(agent, 0, () => ({ x: c.x, y: c.y }));
-    // Caught mid-way to a standby spot with nothing to do yet: carry on there.
-    if (!c.anchor && c.goal && !agent.queue.length) {
-      const arrive = 380 * current.scale;
-      travelSeg(agent, 0, arrive, drifting(current, agent, () => c.goal));
-      idleSeg(current, agent, arrive, () => c.goal);
+    const arrive = 380 * current.scale;
+    const waits = !agent.queue.length || agent.queue[0].start >= arrive + 250 * current.anim;
+    if (!c.anchor && agent.role !== 'orchestrator' && waits) {
+      const spot = c.goal ? () => c.goal : standby(current, k, n);
+      travelSeg(agent, 0, arrive, drifting(current, agent, spot));
+      idleSeg(current, agent, arrive, spot);
     }
     addEvent(current, 0, () => {
       agent.cursor.classList.add('is-in', 'is-carried');
@@ -1444,7 +1497,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       travelSeg(agent, job.start, job.arrive, job.entry);
       workSeg(agent, job);
       if (orchestrator && (lineEvery || jobIndex === 0)) addEvent(current, job.start, now => dispatchLine(current, orchestrator, agent, job, now));
-      addEvent(current, job.start, () => { startWorking(current, agent); agent.cursor.classList.add('is-working'); say(agent, job.act); });
+      addEvent(current, job.start, () => { startWorking(current, agent); agent.cursor.classList.remove('is-idle'); agent.cursor.classList.add('is-working'); say(agent, job.act); });
       addEvent(current, job.arrive, now => { job.begin(now); current.active.add(job); });
       addEvent(current, job.end, () => completeJob(current, job));
       if (job.kind === 'frame') addEvent(current, job.end + (current.kind === 'build' ? 520 : 620) * s, () => job.frame?.classList.add('is-out'));
@@ -1467,7 +1520,6 @@ export function initAgenticEntrance(document, window, config = {}) {
       }
       return { x: current.vw / 2 + 60, y: Math.max(90, current.vh * 0.14) };
     };
-    const orchPoint = () => orchestrator.position || spawn();
 
     // Assign jobs round-robin within each resolved role.
     const byRole = new Map();
@@ -1513,58 +1565,111 @@ export function initAgenticEntrance(document, window, config = {}) {
 
     const builderDeadline = 2750 * s;
     const reviewDeadline = 3750 * s;
-    const stayers = pickStayers(current, subagents);
-    const stayList = [...stayers];
-    let latestDock = orchArrive;
-    let queued = 0;
+    const onward = Boolean(nextStop());
+    const narrow = Boolean(current.column?.narrow);
+    // Agents dispatched late wait in a side margin (narrow screens: two along
+    // the bottom edge, the rest at the dock) instead of over the headline.
+    const queuedList = ordered.filter(agent => agent.firstStart > 1150 * s);
+    const worked = [];
+    const docked = [];
     subagents.forEach((agent, index) => {
       const popAt = (40 + index * 20) * s;
       const angle = index * 2.39996;
       const radius = 30 + 15 * Math.sqrt(index + 1);
       const ring = () => { const c = spawn(); return { x: c.x + Math.cos(angle) * radius, y: c.y + Math.sin(angle) * radius * 0.8 }; };
-      addEvent(current, popAt, () => agent.cursor.classList.add('is-in'));
-      holdSeg(agent, 0, spawn);
-      travelSeg(agent, popAt, popAt + 380 * s, ring);
-      if (!agent.queue.length) {
-        agent.dockAt = (1200 + index * 30) * s;
-        travelSeg(agent, agent.dockAt - 420 * s, agent.dockAt, () => dotPoint(current, agent));
+      const k = queuedList.indexOf(agent);
+      let firstStart = agent.firstStart;
+      let from;
+      if (k >= NARROW_IDLE && narrow) {
+        // Stays in the dock until shortly before its first job.
+        firstStart = Math.max(firstStart, 1160 * s);
+        holdSeg(agent, 0, () => dotPoint(current, agent));
+        from = dotPoint(current, agent);
+        addEvent(current, Math.max(popAt, firstStart - 320 * s), () => agent.cursor.classList.add('is-in'));
       } else {
-        let firstStart = agent.firstStart;
-        let from = ring();
-        if (firstStart > 1150 * s) {
-          // Wait beside the orchestrator until dispatched; phones use the
-          // right margin so idle cursors stay clear of the copy.
-          const k = queued++;
-          const slot = current.tier === 'phone'
-            ? () => { const o = orchPoint(); return { x: current.vw - 26, y: o.y + 34 + k * 30 }; }
-            : () => { const o = orchPoint(); return { x: o.x + 34 + k * 30, y: o.y - 30 - (k % 2) * 12 }; };
-          travelSeg(agent, 780 * s, 1150 * s, slot);
+        addEvent(current, popAt, () => agent.cursor.classList.add('is-in'));
+        holdSeg(agent, 0, spawn);
+        travelSeg(agent, popAt, popAt + 380 * s, ring);
+        from = ring();
+        if (!agent.queue.length) {
+          agent.dockAt = (1200 + index * 30) * s;
+          travelSeg(agent, agent.dockAt - 420 * s, agent.dockAt, () => dotPoint(current, agent));
+          docked.push(agent);
+          return;
+        }
+        if (k >= 0) {
+          const slot = standby(current, k, queuedList.length);
+          travelSeg(agent, 780 * s, 1150 * s, drifting(current, agent, slot));
+          idleSeg(current, agent, 1150 * s, slot);
           from = slot();
           firstStart = Math.max(firstStart, 1160 * s);
         }
-        const mustFinish = agent.queue.some(job => HIDES.has(job.kind));
-        const free = fitQueue(current, agent, firstStart, from, mustFinish ? builderDeadline : reviewDeadline);
-        scheduleQueue(current, orchestrator, agent, false);
-        if (stayers.has(agent)) {
-          agent.dockAt = rideAlong(current, agent, free + 80 * s, stayList.indexOf(agent), stayList.length + 1);
-        } else {
-          agent.dockAt = free + 80 * s + travelMs(current, agent.queue[agent.queue.length - 1].exit(), dotPoint(current, agent));
-          travelSeg(agent, free + 80 * s, agent.dockAt, () => dotPoint(current, agent));
-          addEvent(current, free + 80 * s, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
-        }
       }
-      if (!stayers.has(agent)) addEvent(current, agent.dockAt, () => dockAgent(current, agent));
+      const mustFinish = agent.queue.some(job => HIDES.has(job.kind));
+      fitQueue(current, agent, firstStart, from, mustFinish ? builderDeadline : reviewDeadline);
+      worked.push(agent);
+    });
+
+    // On the tour the hero hands over as soon as its builder jobs (the ones
+    // that hide content) are done, and About's scroll starts from rest. Review
+    // work still running then is cut short, later reviews are dropped, and
+    // the agents still out ride along instead of docking.
+    const lastEnd = agent => (agent.queue.length ? agent.queue[agent.queue.length - 1].end : 0);
+    const builders = current.jobs.filter(job => HIDES.has(job.kind));
+    const handover = onward
+      ? Math.min(current.total, Math.max(orchArrive + 400 * s, ...(builders.length ? builders : current.jobs).map(job => job.end)) + 30 * s)
+      : Infinity;
+    const trim = (agent, cutoff) => {
+      while (agent.queue.length && OPTIONAL.has(agent.queue[agent.queue.length - 1].kind) && agent.queue[agent.queue.length - 1].start + 200 * s > cutoff) {
+        current.jobs.splice(current.jobs.indexOf(agent.queue.pop()), 1);
+      }
+      const job = agent.queue[agent.queue.length - 1];
+      if (job && OPTIONAL.has(job.kind) && job.end > cutoff) {
+        // Already dispatched: a quicker pass that ends on time.
+        job.arrive = Math.min(job.arrive, job.start + (cutoff - job.start) * 0.6);
+        job.end = cutoff;
+        job.work = job.end - job.arrive;
+      }
+    };
+    if (onward) worked.forEach(agent => trim(agent, handover - 30 * s));
+    // Agents that could not reach the dock before the handover ride along first.
+    const late = onward ? worked.filter(agent => agent.queue.length && lastEnd(agent) + 340 * s > handover).sort((a, b) => lastEnd(b) - lastEnd(a)) : [];
+    const stayers = pickStayers(current, worked, late);
+    const stayList = [...stayers];
+    if (onward) worked.forEach(agent => { if (!stayers.has(agent)) trim(agent, handover - 380 * s); });
+    let latestDock = orchArrive;
+    docked.forEach(agent => {
+      addEvent(current, agent.dockAt, () => dockAgent(current, agent));
+      latestDock = Math.max(latestDock, agent.dockAt);
+    });
+    worked.forEach(agent => {
+      if (agent.queue.length) scheduleQueue(current, orchestrator, agent, false);
+      const done = lastEnd(agent) || Math.max(agent.firstStart, 1160 * s);
+      const free = done + current.jobGap;
+      if (stayers.has(agent)) {
+        // Leave for a standby spot before the handover, so the next stop
+        // picks the agent up on its way there rather than over the content.
+        rideAlong(current, agent, Math.min(free + 80 * s, Math.max(done + 15 * s, handover - 25 * s)), stayList.indexOf(agent), stayList.length + 1);
+        return;
+      }
+      const exit = agent.queue.length ? agent.queue[agent.queue.length - 1].exit() : agent.last();
+      const travel = travelMs(current, exit, dotPoint(current, agent));
+      const leave = Math.min(free + 80 * s, Math.max(done + 15 * s, handover - travel));
+      agent.dockAt = Math.min(Math.max(leave + 150 * s, Math.min(leave + travel, handover)), current.total);
+      travelSeg(agent, leave, agent.dockAt, () => dotPoint(current, agent));
+      addEvent(current, leave, () => { agent.cursor.classList.remove('is-working', 'is-idle'); say(agent, ''); });
+      addEvent(current, Math.min(agent.dockAt, handover), () => dockAgent(current, agent));
       latestDock = Math.max(latestDock, agent.dockAt);
     });
     // Orchestrator reports last, then the hero stage clears; on the tour it
-    // leads the ride-along crew down to the next section instead.
+    // leads the ride-along crew down to the next section without docking.
     const orchDock = Math.min(current.total * 0.9, latestDock + 160 * s);
-    if (nextStop()) {
-      // Most of the crew rides along into About instead of docking.
+    const orchLeave = onward ? Math.max(orchArrive, handover - 520 * s) : Math.max(orchArrive, orchDock - 520 * s);
+    if (onward) {
       stayers.add(orchestrator);
-      rideAlong(current, orchestrator, Math.max(orchArrive, orchDock - 520 * s), stayList.length, stayList.length + 1);
+      rideAlong(current, orchestrator, orchLeave, stayList.length, stayList.length + 1);
     } else {
-      travelSeg(orchestrator, Math.max(orchArrive, orchDock - 520 * s), orchDock, () => dotPoint(current, orchestrator));
+      travelSeg(orchestrator, orchLeave, orchDock, () => dotPoint(current, orchestrator));
       addEvent(current, orchDock, () => dockAgent(current, orchestrator));
       addEvent(current, Math.max(latestDock - 200 * s, 0), () => say(orchestrator, 'handing off'));
       addEvent(current, orchDock - 300 * s, () => orchestrator.cursor.classList.remove('is-working'));
@@ -1572,7 +1677,12 @@ export function initAgenticEntrance(document, window, config = {}) {
     current.stayers = stayers;
     addEvent(current, 330 * s, () => { current.stage.classList.add('is-assembling'); say(orchestrator, 'dispatching'); });
     const firstReview = Math.min(...current.jobs.filter(job => job.kind === 'review').map(job => job.start), Infinity);
-    if (Number.isFinite(firstReview)) addEvent(current, firstReview, () => say(orchestrator, 'reviewing'));
+    if (firstReview < orchLeave) addEvent(current, firstReview, () => say(orchestrator, 'reviewing'));
+    if (onward) {
+      current.total = handover;
+      addEvent(current, Math.max(0, handover - 140), () => current.stage.classList.add('is-leaving'));
+      return;
+    }
     // End as soon as the crew has reported back (never later than the budget).
     const leaveAt = orchDock + 80 * s;
     current.total = Math.min(current.total, leaveAt + 360 * s);
@@ -1663,7 +1773,8 @@ export function initAgenticEntrance(document, window, config = {}) {
       const ranked = [...out].sort((a, b) => a.free - b.free);
       // Over the ride-along cap: the excess; otherwise a couple for variety,
       // as long as the crew stays above its floor.
-      const n = Math.min(ranked.length, Math.max(ranked.length - RIDE_ALONG[current.tier], ranked.length > MIN_CREW[current.tier] ? ROTATE[current.tier] : 0));
+      // Narrow margins: only the last two to finish stay out.
+      const n = Math.min(ranked.length, Math.max(ranked.length - idleCap(current), ranked.length > MIN_CREW[current.tier] ? ROTATE[current.tier] : 0));
       rotate = new Set(ranked.slice(0, n));
     }
     const stayList = out.filter(agent => !rotate.has(agent));
@@ -1672,7 +1783,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     let docking = 0;
     let latest = commandAt;
     crew.forEach(agent => {
-      if (agent.carry) holdCarried(current, agent);
+      const k = slots.indexOf(agent);
+      if (agent.carry) holdCarried(current, agent, k, slots.length + 1);
       if (!agent.queue.length && !agent.carry) return; // fresh, but nothing left to do
       if (agent.queue.length) {
         if (!agent.carry) {
@@ -1681,21 +1793,21 @@ export function initAgenticEntrance(document, window, config = {}) {
         }
         scheduleQueue(current, orchestrator, agent, !agent.carry);
       }
-      const k = slots.indexOf(agent);
       const back = agent.queue.length ? agent.free + 40 * s : 480 * s + k * 40 * s;
       if (rotate.has(agent)) {
         // Rotating agents leave near the handover (not as soon as they are
         // free), so the crew count changes in small steps; until then they
-        // wait at a standby spot like everyone else.
+        // wait at a standby spot like everyone else. Narrow screens have no
+        // room for them: they go straight back.
         let leave = back;
-        if (!last) {
+        if (!last && !current.column?.narrow) {
           leave = Math.max(back, handover - 700 * anim + docking++ * 120 * anim);
           if (leave - back > 900 * anim) rideAlong(current, agent, back, k, slots.length + 1);
           else leave = back;
         }
         agent.dockAt = leave + clamp(travelMs(current, agent.last(), home(agent)()), 450 * anim, 640 * anim);
         travelSeg(agent, leave, agent.dockAt, home(agent));
-        addEvent(current, leave, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
+        addEvent(current, leave, () => { agent.cursor.classList.remove('is-working', 'is-idle'); say(agent, ''); });
         addEvent(current, agent.dockAt, () => dockAgent(current, agent));
         if (!last) total = Math.max(total, agent.dockAt + 60 * s);
       } else {

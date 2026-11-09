@@ -30,8 +30,10 @@ function manualFrames(window) {
   };
 }
 
-function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = false, observeSections = false, width, frames = false, media, navigationType } = {}) {
+function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = false, observeSections = false, width, frames = false, media, navigationType, layout = false } = {}) {
   const { window } = new JSDOM(html, { url: `https://portfolio.test/${hash}` });
+  // In a real layout engine (the browser harness), lay the page out at `width`.
+  if (layout && width && window.frameElement) window.frameElement.style.width = `${width}px`;
   window.matchMedia = media || (() => ({ matches: reduced }));
   if (width) Object.defineProperty(window, 'innerWidth', { value: width, configurable: true });
   if (navigationType) window.performance.getEntriesByType = () => [{ type: navigationType }];
@@ -129,7 +131,7 @@ test('the first visit tours every section in order, then hands off and collapses
   assert.equal(+seconds, Math.round(clock.now() / 1000), 'measured tour time');
   assert.ok(dock.querySelector('[data-agentic-dock-replay]'));
   assert.equal(document.querySelector('[data-agentic-replay]').hidden, false);
-  assert.ok(heroEnded >= 7000 && heroEnded <= 9000, `hero took ${heroEnded}ms`);
+  assert.ok(heroEnded >= 3500 && heroEnded <= 6000, `hero took ${heroEnded}ms`);
   assert.ok(clock.now() >= 36000 && clock.now() <= 56000, `tour took ${clock.now()}ms`);
   if (measurable(document) && document.documentElement.scrollHeight > window.innerHeight + 10) {
     assert.ok(window.scrollY > 0, 'the tour ends at the contact section, not back at the top');
@@ -755,5 +757,83 @@ test('content the visitor can see is never left hidden for more than a moment', 
     for (const element of [...since.keys()]) if (!seen.has(element)) since.delete(element);
   }
   assert.ok(worst <= 300, `${worstName} stayed hidden on screen for ${worst}ms`);
+  assertNoResidue(document);
+});
+
+test('the hero hands over to About as soon as its content is built, with no pause before the scroll', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
+  let built = 0;
+  let handover = 0;
+  let moving = 0;
+  while (controller.touring && clock.now() < 20000) {
+    clock.step(16);
+    const index = controller.tour?.index;
+    if (index === 0 && !built && !document.querySelector('[data-build-state]')) built = clock.now();
+    if (index === 1 && !handover) {
+      handover = clock.now();
+      // Nothing in the hero is left hidden, and the crew carries on without docking.
+      assert.equal(document.querySelector('#home [data-build-state], .site-header [data-build-state]'), null);
+      assert.ok(document.querySelector('.agentic-cursor.is-orchestrator.is-in:not(.is-docked)'), 'the orchestrator leads the crew on');
+      assert.ok(document.querySelectorAll('.agentic-cursor.is-carried:not(.is-orchestrator)').length >= 2, 'agents ride along');
+    }
+    if (handover && controller.scroll.v > 0) { moving = clock.now(); break; }
+    if (handover && clock.now() - handover > 400) break;
+  }
+  assert.ok(built > 0, 'the hero builder jobs finished during the hero');
+  assert.ok(handover > 0 && handover - built < 150, `the hero handed over ${handover - built}ms after its last build job`);
+  controller.skip();
+  if (!measurable(document) || document.documentElement.scrollHeight <= window.innerHeight + 10) return;
+  assert.ok(moving > 0, 'About scrolls');
+  assert.ok(moving - built < 150, `${moving - built}ms from the hero's last build job to the scroll`);
+});
+
+// The content column as entrance.js measures it: the header's bounds, or 6%
+// margins when nothing can be measured.
+const contentColumn = (document, width) => {
+  const r = document.querySelector('.site-header').getBoundingClientRect();
+  return r.width > 0 ? [r.left, r.right] : [width * 0.06, width * 0.94];
+};
+
+test('idle cursors wait in the side margins, clear of the content column', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  let checked = 0;
+  const over = [];
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    const [left, right] = contentColumn(document, 1280);
+    for (const cursor of document.querySelectorAll('.agentic-cursor.is-idle.is-in:not(.is-docked)')) {
+      const p = cursorPoint(cursor);
+      if (!p) continue;
+      checked++;
+      const x = p.x + 2;
+      if (x > left - 8 + 0.2 && x < right + 8 - 0.2) over.push(`${cursor.textContent} at x=${x.toFixed(0)} (${controller.tour.name}, ${clock.now()}ms)`);
+    }
+  }
+  assert.ok(checked > 200, `${checked} idle cursor samples`);
+  assert.deepEqual(over.slice(0, 5), [], `${over.length} idle samples over the content column [${contentColumn(document, 1280).map(Math.round)}]`);
+  assertNoResidue(document);
+});
+
+test('on phones at most two idle cursors stay out between stops; the others wait in the dock', t => {
+  const { document, controller, clock } = setup(t, { width: 375, frames: true, layout: true });
+  let index = 0;
+  let transitions = 0;
+  let peak = 0;
+  let carriedPeak = 0;
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    peak = Math.max(peak, document.querySelectorAll('.agentic-cursor.is-idle.is-in:not(.is-docked)').length);
+    if (controller.tour.index !== index) {
+      index = controller.tour.index;
+      transitions++;
+      carriedPeak = Math.max(carriedPeak, document.querySelectorAll('.agentic-cursor.is-carried.is-in:not(.is-orchestrator):not(.is-docked)').length);
+      assert.ok(document.querySelector('.agentic-cursor.is-orchestrator.is-in:not(.is-docked)'), 'the orchestrator stays out');
+    }
+  }
+  assert.equal(transitions, stopNames(document).length - 1);
+  assert.ok(carriedPeak <= 2, `${carriedPeak} agents carried between stops`);
+  assert.ok(peak <= 2, `${peak} idle cursors on screen at once`);
   assertNoResidue(document);
 });
