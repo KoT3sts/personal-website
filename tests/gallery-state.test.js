@@ -38,59 +38,95 @@ test('rejects invalid gallery size and invalid selection without losing state', 
   }
 });
 
-test('card poses keep the incumbent arc at rest and interpolate while dragging', async () => {
-  const { cardPose, wrapOffset } = await import('../web/gallery-state.js');
+test('ribbon positions wrap continuously so every card keeps one place on the ribbon', async () => {
+  const { wrapOffset, wrapPosition } = await import('../web/gallery-state.js');
   assert.deepEqual([0, 1, 2, 3, 4, 5].map(index => wrapOffset(index, 0, 6)), [0, 1, 2, 3, -2, -1]);
-  assert.deepEqual(cardPose(0, 6), { distance: 0, opacity: 1, shade: 0, z: 6, far: false });
-  assert.deepEqual(cardPose(-1, 6), { distance: 1, opacity: 1, shade: 0.35, z: 5, far: false });
-  assert.deepEqual(cardPose(2, 6), { distance: 2, opacity: 0, shade: 0.35, z: 4, far: false });
-  assert.equal(cardPose(3, 6).far, true);
-  const between = cardPose(0.5, 6);
-  assert.ok(between.shade > 0 && between.shade < 0.35, 'a half-dragged card sits between active and neighbour');
-  assert.equal(Object.is(cardPose(-0, 6).distance, -0), false);
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map(index => wrapPosition(index - 0.25, 6)), [-0.25, 0.75, 1.75, 2.75, -2.25, -1.25]);
+  assert.equal(wrapPosition(7.5, 6), 1.5);
+  assert.equal(wrapPosition(-7.5, 6), -1.5);
+  assert.equal(wrapPosition(3, 6), -3, 'the opposite card sits at one end of the range');
+  assert.equal(Object.is(wrapPosition(-6, 6), -0), false);
+  assert.equal(wrapPosition(NaN, 6), 0);
 });
 
-// Regression: neighbours used to be 65% opaque, so mid-drag and mid-transition
-// the card behind showed through the card in front of it.
-test('cards that can overlap a nearer card stay opaque; only cards behind the neighbours fade', async () => {
-  const { cardPose, NEIGHBOUR_SHADE } = await import('../web/gallery-state.js');
-  for (let step = 0; step <= 100; step += 1) {
-    const position = step / 100;
-    assert.equal(cardPose(position, 6).opacity, 1, `card at ${position} must be opaque`);
-    assert.equal(cardPose(-position, 6).opacity, 1, `card at ${-position} must be opaque`);
+test('ribbon geometry keeps the viewer inside the curve and scales by device tier', async () => {
+  const { ribbonGeometry, ribbonProjection, VIEW_DEPTH, COVER_RATIO } = await import('../web/gallery-state.js');
+  const desktop = ribbonGeometry(1440);
+  const tablet = ribbonGeometry(768);
+  const phone = ribbonGeometry(390);
+  assert.deepEqual([desktop.tier, tablet.tier, phone.tier], ['desktop', 'tablet', 'phone']);
+  assert.ok(phone.strips < tablet.strips && tablet.strips < desktop.strips, 'fewer strips on smaller screens');
+  assert.ok(phone.radius < tablet.radius && tablet.radius < desktop.radius, 'smaller radius on phones');
+  for (const geometry of [desktop, tablet, phone]) {
+    assert.ok(Math.abs(geometry.height - geometry.width * COVER_RATIO) <= 1, 'covers keep their landscape ratio');
+    assert.ok(geometry.perspective > geometry.radius && geometry.perspective < 2 * geometry.radius, 'viewer inside the cylinder: no strip hides another');
+    assert.ok(Math.abs(geometry.perspective - geometry.radius * VIEW_DEPTH) < 0.01);
+    assert.ok(geometry.reach > 1 && geometry.reach < 2, 'both neighbours show, the rest is offscreen');
+    assert.ok(geometry.band > geometry.height, 'concave edges come forward, so the band is taller than a card');
   }
-  // The card's share of the final colour on the paper background is unchanged
-  // from the old opacity curve, so the arc looks the same at rest.
-  const share = position => { const pose = cardPose(position, 6); return Math.round((1 - pose.shade) * pose.opacity * 1000) / 1000; };
-  assert.equal(share(0), 1);
-  assert.equal(share(1), 1 - NEIGHBOUR_SHADE);
-  assert.equal(share(1.5), Math.round(0.65 * 0.5 * 1000) / 1000);
-  assert.equal(share(2), 0);
-  // Depth still increases monotonically while a card travels back.
-  const shares = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map(share);
-  shares.slice(1).forEach((value, index) => assert.ok(value <= shares[index], 'cards recede smoothly'));
+  // Continuous curvature: projected height grows smoothly toward the edges.
+  const scales = [0, 0.1, 0.2, 0.3, 0.4, 0.5].map(theta => ribbonProjection(theta, desktop).scale);
+  scales.slice(1).forEach((value, index) => assert.ok(value > scales[index]));
+  assert.equal(ribbonGeometry(0).tier, 'desktop', 'unknown widths fall back to a desktop review size');
+  // The other bend recedes instead.
+  assert.ok(ribbonProjection(0.4, { ...desktop, bend: -1 }).scale < 1);
 });
 
-test('drag offset follows the pointer one-to-one, then resists past one card', async () => {
-  const { dragOffset } = await import('../web/gallery-state.js');
-  assert.equal(dragOffset(-215, 430), -0.5);
-  assert.equal(dragOffset(430, 430), 1);
-  assert.ok(dragOffset(860, 430) < 1.4 && dragOffset(860, 430) > 1);
-  assert.equal(dragOffset(5000, 430), 1.4);
-  assert.equal(dragOffset(100, 0), 0);
-  assert.equal(dragOffset(NaN, 430), 0);
+test('strips tile a card symmetrically and cards are placed around the stage centre', async () => {
+  const { stripOffsets, cardCentre, ribbonGeometry } = await import('../web/gallery-state.js');
+  const geometry = ribbonGeometry(1440);
+  const offsets = stripOffsets(geometry.strips, geometry.width, geometry.pitch);
+  assert.equal(offsets.length, geometry.strips);
+  assert.ok(Math.abs(offsets[0] + offsets[offsets.length - 1]) < 0.002, 'symmetric about the card centre');
+  assert.ok(offsets.every((value, index) => index === 0 || value > offsets[index - 1]));
+  assert.ok(offsets[offsets.length - 1] < 0.5, 'strips stay inside their card; the gap stays empty');
+  assert.deepEqual(stripOffsets(0, 100, 110), []);
+  assert.equal(cardCentre(0, geometry), 0);
+  assert.ok(Math.abs(cardCentre(1, geometry) + cardCentre(-1, geometry)) < 1e-9);
+  assert.ok(cardCentre(1, geometry) > geometry.pitch, 'neighbours are pushed out by the curve');
 });
 
-test('released drags snap to the projected card, with a minimum of one for deliberate drags or flicks', async () => {
-  const { releaseSteps } = await import('../web/gallery-state.js');
+test('neighbours sit back on the paper, captions belong to the nearest card, and offscreen cards hide', async () => {
+  const { ribbonPose, NEIGHBOUR_LEVEL } = await import('../web/gallery-state.js');
+  assert.deepEqual(ribbonPose(0, 1.3), { distance: 0, opacity: 1, caption: 1, far: false });
+  assert.deepEqual(ribbonPose(-1, 1.3), { distance: 1, opacity: NEIGHBOUR_LEVEL, caption: 0, far: false });
+  assert.equal(ribbonPose(2, 1.3).far, true);
+  assert.equal(ribbonPose(1.29, 1.3).far, false);
+  const half = ribbonPose(0.2, 1.3);
+  assert.ok(half.opacity < 1 && half.opacity > NEIGHBOUR_LEVEL);
+  assert.ok(half.caption > 0 && half.caption < 1);
+  assert.equal(ribbonPose(0.5, 1.3).caption, 0, 'mid-drag neither caption competes');
+});
+
+test('settles ease out exponentially within 600–1000 ms and carry the release speed', async () => {
+  const { easeOutExpo, settleDuration } = await import('../web/gallery-state.js');
+  assert.equal(easeOutExpo(0), 0);
+  assert.equal(easeOutExpo(1), 1);
+  assert.equal(easeOutExpo(-1), 0);
+  assert.equal(easeOutExpo(2), 1);
+  assert.ok(easeOutExpo(0.2) > 0.75, 'most of the travel happens early');
+  for (const distance of [0, 0.05, 1, 2, 5, -3]) {
+    const duration = settleDuration({ distance });
+    assert.ok(duration >= 600 && duration <= 1000, `${distance} cards in ${duration} ms`);
+  }
+  assert.ok(settleDuration({ distance: 2 }) > settleDuration({ distance: 1 }), 'longer trips take longer');
+  assert.ok(settleDuration({ distance: 1, velocity: 0.01 }) < settleDuration({ distance: 1 }), 'a fast release settles sooner');
+  assert.equal(settleDuration({ distance: NaN, velocity: NaN }), 640);
+});
+
+test('released drags land on the projected card, with a minimum of one for deliberate drags or flicks', async () => {
+  const { releaseTarget } = await import('../web/gallery-state.js');
+  const pitch = 430;
+  const at = dx => -dx / pitch; // dragging left moves the ribbon toward later cards
   // The DOM test's 90px swipe with no measurable velocity still advances one card.
-  assert.equal(releaseSteps({ dx: -90, velocity: 0, shift: 430 }), 1);
-  assert.equal(releaseSteps({ dx: 90, velocity: 0, shift: 430 }), -1);
-  assert.equal(releaseSteps({ dx: -30, velocity: 0, shift: 430 }), 0, 'small drags settle back');
-  assert.equal(releaseSteps({ dx: -30, velocity: -0.9, shift: 430 }), 1, 'a quick flick advances');
-  assert.equal(releaseSteps({ dx: -500, velocity: -2, shift: 430 }), 2, 'momentum can carry two cards');
-  assert.equal(releaseSteps({ dx: -3000, velocity: -9, shift: 430 }), 2, 'never more than two');
-  assert.equal(releaseSteps({ dx: -200, velocity: 1, shift: 430 }), 0, 'reversing before release cancels');
-  assert.equal(Object.is(releaseSteps({ dx: 10, velocity: 0, shift: 430 }), -0), false);
-  assert.equal(releaseSteps({ dx: -90, shift: 0 }), 0);
+  assert.equal(releaseTarget({ origin: 0, position: at(-90), pitch }), 1);
+  assert.equal(releaseTarget({ origin: 0, position: at(90), pitch }), -1);
+  assert.equal(releaseTarget({ origin: 0, position: at(-30), pitch }), 0, 'small drags settle back');
+  assert.equal(releaseTarget({ origin: 0, position: at(-30), velocity: 0.9 / pitch, pitch }), 1, 'a quick flick advances');
+  assert.equal(releaseTarget({ origin: 0, position: at(-500), velocity: 2 / pitch, pitch }), 2, 'momentum can carry further');
+  assert.equal(releaseTarget({ origin: 0, position: at(-3000), velocity: 9 / pitch, pitch }), 9, 'never more than two past the release point');
+  assert.equal(releaseTarget({ origin: 0, position: at(-200), velocity: -1 / pitch, pitch }), 0, 'reversing before release cancels');
+  assert.equal(releaseTarget({ origin: 4, position: 4.3, pitch }), 5, 'works from any card');
+  assert.equal(Object.is(releaseTarget({ origin: 0, position: at(10), pitch }), -0), false);
+  assert.equal(releaseTarget({ origin: 2, position: 2.4, pitch: 0 }), 2);
 });

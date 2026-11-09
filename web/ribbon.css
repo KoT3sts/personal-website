@@ -1,1 +1,220 @@
-/* Curved ribbon gallery (SPECIFICATION V06). Owned by the ribbon workstream. */
+/* Curved ribbon gallery (SPECIFICATION V06). Owned by the ribbon workstream.
+   Unlayered on purpose: it replaces the flat coverflow rules in styles.css,
+   which live in cascade layers. Opacity/translate/scale on the build tour's
+   targets (.project-card, .project-image-link, card h3) stay at or below
+   entrance.css specificity, so the tour still wins while it builds.
+
+   Geometry comes from gallery-state.js (ribbonGeometry) as custom properties
+   on .gallery; app.js writes --o / --card-x / --card-opacity / --caption per
+   card per frame. Every strip shares the stage-centre slot as its box, so its
+   own perspective() projects from one common vanishing point. */
+
+.js-enabled .gallery {
+  --ribbon-w: 690px;
+  --ribbon-h: 475px;
+  --ribbon-band: 560px;
+  --ribbon-r: 790px;
+  --ribbon-p: 1264px;
+  --ribbon-a: 50;
+  --ribbon-bend: 1;
+  --strip-w: 34.5px;
+  --ribbon-radius: 6px;
+  --caption-gap: clamp(18px, 2.4vw, 34px);
+  --caption-space: clamp(80px, 7vw, 104px);
+  --edge-fade: clamp(16px, 4.5vw, 72px);
+  margin-top: clamp(18px, 3.2vw, 48px);
+}
+
+/* ---- Stage: full-bleed band; horizontal movement stays inside it. ---- */
+.js-enabled .gallery-stage {
+  position: relative;
+  isolation: isolate;
+  height: calc(var(--ribbon-band) + var(--caption-gap) + var(--caption-space));
+  margin-inline: calc(-1 * var(--gutter));
+  overflow: clip;
+  perspective: none;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  outline-offset: -4px;
+}
+.js-enabled .gallery-stage.is-dragging { cursor: grabbing; }
+.js-enabled .gallery-track {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: auto;
+  height: auto;
+  transform-style: flat;
+}
+/* The ribbon dissolves into the paper at the viewport edges. */
+.js-enabled .gallery-stage::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 0 0 auto;
+  height: var(--ribbon-band);
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--paper), rgb(238 237 232 / 0) var(--edge-fade), rgb(238 237 232 / 0) calc(100% - var(--edge-fade)), var(--paper));
+}
+
+/* ---- Cards: a centre slot moved along the ribbon. ---- */
+.js-enabled .project-card {
+  position: absolute;
+  top: calc((var(--ribbon-band) - var(--ribbon-h)) / 2);
+  left: calc(50% - var(--ribbon-w) / 2);
+  width: var(--ribbon-w);
+  height: var(--ribbon-h);
+  z-index: auto;
+  overflow: visible;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backface-visibility: visible;
+  transform: translate3d(var(--card-x, 0px), 0, 0);
+  opacity: var(--card-opacity, 1);
+  transition: none;
+  pointer-events: none;
+}
+.js-enabled .project-card::after { content: none; }
+.js-enabled .project-card[data-far] { visibility: hidden; }
+
+.js-enabled .project-image-link {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: visible;
+  border-radius: var(--ribbon-radius);
+  outline-offset: 10px;
+  pointer-events: auto;
+}
+.js-enabled .project-card[aria-hidden="true"] :is(a, button) { pointer-events: none; }
+/* The real cover stays for alt text, the dialog and the card-to-dialog
+   animation; the strips draw it. */
+.js-enabled .project-image-link img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- Strips: one cover, cut vertically and laid on the cylinder. ---- */
+.ribbon-strips {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.ribbon-strip {
+  position: absolute;
+  top: 0;
+  left: calc(50% - var(--strip-w) / 2);
+  /* 1px overlap hides seams between neighbouring strips. */
+  width: calc(var(--strip-w) + 1px);
+  height: 100%;
+  background-color: #dddcd4;
+  background-image: var(--cover);
+  background-repeat: no-repeat;
+  background-size: var(--ribbon-w) var(--ribbon-h);
+  background-position: calc(var(--k, 0) * var(--strip-w) * -1) 0;
+  backface-visibility: hidden;
+  /* Undo the card's slide (the projection is measured from the stage
+     centre), then place the strip on the cylinder. */
+  transform:
+    translate3d(calc(-1 * var(--card-x, 0px)), 0, 0)
+    perspective(var(--ribbon-p))
+    translateZ(calc(var(--ribbon-bend) * var(--ribbon-r)))
+    rotateY(calc((var(--o, 0) + var(--s, 0)) * var(--ribbon-a) * var(--ribbon-bend) * -1deg))
+    translateZ(calc(var(--ribbon-bend) * var(--ribbon-r) * -1));
+  pointer-events: auto;
+}
+.ribbon-strip:first-child { border-radius: var(--ribbon-radius) 0 0 var(--ribbon-radius); }
+.ribbon-strip:last-child { width: var(--strip-w); border-radius: 0 var(--ribbon-radius) var(--ribbon-radius) 0; }
+/* A visible neighbour is a shortcut to that project. */
+.js-enabled .project-card[aria-hidden="true"] .ribbon-strip { cursor: pointer; }
+.js-enabled .gallery-stage.is-dragging .ribbon-strip { cursor: grabbing; }
+
+/* Soft contact shadow under the centre of the ribbon. */
+.js-enabled .gallery-ground {
+  display: block;
+  position: absolute;
+  z-index: -1;
+  top: calc((var(--ribbon-band) + var(--ribbon-h)) / 2 - 14px);
+  right: auto;
+  bottom: auto;
+  left: calc(50% - var(--ribbon-w) * .42);
+  width: calc(var(--ribbon-w) * .84);
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(23 23 22 / .16), rgb(23 23 22 / 0));
+  filter: blur(8px);
+}
+
+/* ---- Caption: the nearest card's category and title, centred below. ---- */
+.js-enabled .project-card-bottom {
+  position: absolute;
+  top: calc((var(--ribbon-band) + var(--ribbon-h)) / 2 + var(--caption-gap));
+  left: 50%;
+  width: max-content;
+  max-width: min(calc(100vw - 2 * var(--gutter)), 620px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 0;
+  text-align: center;
+  opacity: var(--caption, 1);
+  /* Stays centred while its card travels; lifts in as it arrives. */
+  transform: translate3d(calc(-50% - var(--card-x, 0px)), calc((1 - var(--caption, 1)) * 10px), 0);
+  pointer-events: none;
+}
+.js-enabled .project-card[aria-hidden="false"] .project-card-bottom { pointer-events: auto; }
+.js-enabled .project-card-bottom > div {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  min-width: 0;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+.js-enabled .project-card-bottom .mono { font-size: 10px; letter-spacing: .08em; color: var(--label); }
+.js-enabled .project-card h3 {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 36px);
+  font-weight: 600;
+  letter-spacing: -.05em;
+  line-height: 1;
+  text-wrap: balance;
+}
+.js-enabled .project-open { width: 44px; height: 44px; }
+@media (hover: hover) and (pointer: fine) {
+  .js-enabled .project-card:has(.project-image-link:hover) .project-open { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+}
+
+/* ---- Index: current / total between the arrows. ---- */
+.js-enabled .gallery-controls { gap: clamp(16px, 2.4vw, 28px); }
+.js-enabled .gallery-count {
+  width: auto;
+  min-width: 8ch;
+  font-size: 12px;
+  letter-spacing: .12em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+@media (max-width: 760px) {
+  .js-enabled .gallery { --ribbon-radius: 5px; --caption-space: 70px; --caption-gap: 18px; }
+  .js-enabled .project-card-bottom { gap: 12px; }
+  .js-enabled .project-card h3 { font-size: 23px; }
+}
+
+/* Print: browsers drop background images, so show the real cover instead of the strips. */
+@media print {
+  .js-enabled .project-image-link img { opacity: 1; }
+  .ribbon-strips { display: none; }
+}

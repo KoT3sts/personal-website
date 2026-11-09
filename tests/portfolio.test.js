@@ -109,16 +109,22 @@ test('every project card has a matching selector, story, and only the nearest ne
     assert.ok(story, `missing story for ${title}`);
     assert.equal(story.querySelector('h3').textContent, title);
   });
-  // Index 0 is active: cards 1 and 5 are neighbours (opaque, washed back), 2 and 4 fade out, 3 wraps behind and is hidden.
+  // Index 0 is active: cards 1 and 5 are the visible neighbours, the rest are offscreen.
   assert.equal(cards[0].style.getPropertyValue('--card-opacity'), '1');
-  assert.equal(cards[0].style.getPropertyValue('--card-shade'), '0');
-  assert.equal(cards[1].style.getPropertyValue('--card-opacity'), '1');
-  assert.equal(cards[1].style.getPropertyValue('--card-shade'), '0.35');
-  assert.equal(cards[5].style.getPropertyValue('--card-opacity'), '1');
-  assert.equal(cards[5].style.getPropertyValue('--card-shade'), '0.35');
-  assert.equal(cards[2].style.getPropertyValue('--card-opacity'), '0');
-  assert.equal(cards[3].hasAttribute('data-far'), true);
-  assert.equal(cards.filter(card => card.hasAttribute('data-far')).length, 1);
+  assert.equal(cards[0].style.getPropertyValue('--caption'), '1');
+  for (const index of [1, 5]) {
+    assert.equal(cards[index].style.getPropertyValue('--card-opacity'), '0.6');
+    assert.equal(cards[index].style.getPropertyValue('--caption'), '0', 'only the centred card shows its caption');
+    assert.equal(cards[index].hasAttribute('data-far'), false);
+  }
+  assert.deepEqual(cards.map(card => card.hasAttribute('data-far')), [false, false, true, true, true, false]);
+  // The curved surface is decoration: each card keeps its real link, image and alt text.
+  cards.forEach(card => {
+    const strips = card.querySelector('.project-image-link .ribbon-strips');
+    assert.equal(strips.getAttribute('aria-hidden'), 'true');
+    assert.ok(strips.querySelectorAll('.ribbon-strip').length >= 10);
+    assert.ok(card.querySelector('.project-image-link img').getAttribute('alt').length > 20);
+  });
 });
 
 test('gallery keyboard arrows and horizontal swipes browse while vertical swipes scroll the page', () => {
@@ -261,21 +267,31 @@ test('every anchor the first-visit entrance targets still exists in the markup',
   }
 });
 
-test('dragging moves the cards with the pointer, and a short drag settles back onto the same project', () => {
+test('dragging moves the ribbon with the pointer, and a short drag settles back onto the same project', () => {
   const { document, dispatch, state } = setup();
   const stage = document.querySelector('.gallery-stage');
   const cards = [...document.querySelectorAll('.project-card')];
+  const offset = card => Number(card.style.getPropertyValue('--o'));
   dispatch(stage, 'pointerdown', { button: 0, pointerId: 7, clientX: 300, clientY: 120 });
   dispatch(stage, 'pointermove', { pointerId: 7, clientX: 270, clientY: 121 });
   assert.ok(stage.classList.contains('is-dragging'));
-  assert.ok(Number(cards[0].style.getPropertyValue('--offset')) < 0, 'active card follows the pointer left');
-  assert.ok(Number(cards[1].style.getPropertyValue('--card-shade')) < 0.35, 'next card brightens as it approaches');
-  // The active card and the approaching neighbour overlap mid-drag: both stay opaque.
-  for (const card of [cards[0], cards[1]]) assert.equal(card.style.getPropertyValue('--card-opacity'), '1', 'overlapping cards stay opaque mid-drag');
-  assert.ok(Number(cards[5].style.getPropertyValue('--card-opacity')) < 1, 'only the card moving behind the neighbours fades');
+  assert.ok(offset(cards[0]) < 0, 'active card follows the pointer left');
+  assert.ok(offset(cards[1]) < 1, 'next card approaches the centre');
+  assert.ok(Number(cards[1].style.getPropertyValue('--card-opacity')) > 0.6, 'next card brightens as it approaches');
+  assert.ok(Number(cards[0].style.getPropertyValue('--caption')) < 1, 'outgoing caption starts to fade');
   dispatch(stage, 'pointerup', { pointerId: 7, clientX: 270, clientY: 121 });
   assert.equal(state.index, 0);
   assert.equal(stage.classList.contains('is-dragging'), false);
-  assert.equal(cards[0].style.getPropertyValue('--offset'), '0');
-  assert.equal(cards[1].style.getPropertyValue('--card-shade'), '0.35');
+  assert.equal(offset(cards[0]), 0);
+  assert.equal(cards[1].style.getPropertyValue('--card-opacity'), '0.6');
+});
+
+test('tapping a visible neighbour selects it instead of opening it', () => {
+  const { document, dispatch, state } = setup(false, true);
+  const strip = document.querySelector('.project-card[data-project="bci"] .ribbon-strip');
+  const click = dispatch(strip, 'click', { button: 0 });
+  assert.equal(click.defaultPrevented, true);
+  assert.equal(state.index, 1);
+  assert.equal(document.querySelector('.project-dialog').hasAttribute('open'), false);
+  assert.match(document.querySelector('.gallery-count').textContent, /^02 \/ 06 — Thoughts-to-Text BCI$/);
 });
