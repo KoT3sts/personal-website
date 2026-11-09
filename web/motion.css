@@ -1,5 +1,6 @@
-/* Motion pass: section reveals, control feedback, gallery coordination and
-   the contact close. Layered into `motion` (order declared in styles.css). */
+/* Motion pass: section reveals, headline masks, control feedback, gallery
+   coordination, hero depth and the contact close. Layered into `motion`
+   (order declared in styles.css). */
 @layer motion {
   /* ---- Section reveals. Hidden states exist only after motion.js marks
      content that is still below the fold. ---- */
@@ -12,6 +13,17 @@
   [data-reveal="pending"] .tag-list li { opacity: 0; transform: translate3d(0, 8px, 0) scale(.96); }
   [data-reveal="in"] .tag-list li { transition: opacity .4s cubic-bezier(.33,1,.68,1), transform .5s cubic-bezier(.16,1,.3,1); transition-delay: calc(var(--reveal-delay, 0ms) + 140ms + var(--chip, 0) * 24ms); }
   @media print { [data-reveal], [data-reveal] .tag-list li { opacity: 1 !important; transform: none !important; } }
+
+  /* ---- Headlines: each line rises from behind its own edge. motion.js wraps
+     lines (or words) only for headlines still below the fold, checks that no
+     glyph moved, and unwraps them once they land. Light scenes: a crisp rise.
+     Dark scenes: shorter travel, lit from dim as it surfaces. ---- */
+  [data-headline-unit="line"] { display: block; }
+  [data-headline-unit="word"] { display: inline-block; }
+  [data-headline="pending"] [data-headline-unit] { transform: translate3d(0, 125%, 0); clip-path: inset(-.3em -.5em calc(125% - .18em) -.5em); }
+  [data-headline="pending"][data-headline-tone="dark"] [data-headline-unit] { opacity: 0; transform: translate3d(0, 60%, 0); clip-path: inset(-.3em -.5em calc(60% - .18em) -.5em); filter: brightness(.35); }
+  [data-headline="in"] [data-headline-unit] { will-change: transform, clip-path; }
+  @media print { [data-headline] [data-headline-unit] { opacity: 1 !important; transform: none !important; clip-path: none !important; filter: none !important; } }
 
   /* ---- Control feedback: arrows lean toward their destination, presses give. ---- */
   .pill-button, .scene-pill, .contact-button, .circle-button, .project-open, .scroll-cue, .about-discover, .main-nav a, .header-contact, .project-selectors button, .dialog-close {
@@ -33,8 +45,6 @@
   :is(.hero-links a, .contact-links a, .work-end a, .section-top a):is(:hover, :focus-visible)::after { transform: scaleX(1); transform-origin: left center; }
 
   /* ---- Gallery: the active caption settles after its card; selector underline travels. ---- */
-  .js-enabled .project-card-bottom > div { transition: opacity .5s cubic-bezier(.33,1,.68,1) .22s, transform .7s cubic-bezier(.16,1,.3,1) .22s; }
-  .js-enabled .project-card[aria-hidden="true"] .project-card-bottom > div { opacity: .5; transform: translate3d(0, 6px, 0); transition-duration: .3s; transition-delay: 0s; }
   .project-selectors button { position: relative; }
   .project-selectors button[aria-pressed="true"] { border-bottom-color: transparent; }
   .project-selectors button::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--ink); transform: scaleX(0); transition: transform .6s cubic-bezier(.16,1,.3,1); }
@@ -43,7 +53,8 @@
   /* ---- Disclosures and dialog. ---- */
   .details-icon { display: inline-block; transition: transform .4s cubic-bezier(.16,1,.3,1); }
   details[open] > p { animation: detail-open .45s cubic-bezier(.16,1,.3,1); }
-  .project-dialog[open] { animation: dialog-open .5s cubic-bezier(.16,1,.3,1); }
+  /* motion.js marks the dialog and grows it from the clicked card instead. */
+  .project-dialog[open]:not([data-motion]) { animation: dialog-open .5s cubic-bezier(.16,1,.3,1); }
   .project-dialog[open]::backdrop { animation: backdrop-open .4s ease-out; }
   @keyframes detail-open { from { opacity: 0; transform: translate3d(0, -6px, 0); } }
   @keyframes dialog-open { from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.98); } }
@@ -54,6 +65,20 @@
   .closing-note[data-loop="paused"] .note-orbit i { animation-play-state: paused; }
   @keyframes note-orbit { to { transform: rotate(360deg); } }
 
+  /* ---- Hero depth: motion.js eases --depth-x/-y (-1..1) and --depth-near
+     (0..1) toward the pointer; the art drifts with it and leans closer, its
+     ground shadow slides the other way. app.js owns the image's `rotate`. ---- */
+  .hero-art { translate: calc(var(--depth-x, 0) * 14px) calc(var(--depth-y, 0) * 9px); scale: calc(1 + var(--depth-near, 0) * .022); }
+  /* The ground shadow (moved here from sculpture.svg) sits under the sphere:
+     560x98 at (103, 540) of the 760x660 artwork. */
+  .hero-art::before { content: ""; position: absolute; z-index: -1; top: 0; left: 13.553%; width: 73.684%; margin-top: 71.053%; aspect-ratio: 560 / 98; border-radius: 50%; background: radial-gradient(closest-side, #15161233, #15161200); pointer-events: none; transform: translate3d(calc(var(--depth-x, 0) * -22px), calc(var(--depth-y, 0) * -2px), 0) scale(calc(1 + var(--depth-near, 0) * .06), 1); transition: opacity .6s cubic-bezier(.33,1,.68,1); animation: hero-shadow-idle 12s ease-in-out infinite; }
+  .hero[data-loop="paused"] .hero-art::before, html.agentic-running .hero-art::before { animation-play-state: paused; }
+  /* While the entrance has not placed the sculpture, its shadow waits too. */
+  .hero-art:has(> .sculpture[data-build-state="pending"])::before { opacity: 0; }
+  /* The sculpture floats up 7px mid-breath; its shadow thins in step (via
+     filter, so `opacity` stays free for the entrance hand-off above). */
+  @keyframes hero-shadow-idle { 0%, 100% { filter: opacity(1); } 50% { filter: opacity(.72); } }
+
   /* ---- Contact close: a soft light rises behind the headline, then breathes. ---- */
   .contact { position: relative; isolation: isolate; }
   .contact::before, .contact::after { content: ""; position: absolute; z-index: -1; left: 50%; pointer-events: none; border-radius: 50%; }
@@ -61,6 +86,34 @@
   .contact::after { top: 150px; width: min(560px, 60vw); height: min(240px, 26vw); margin-left: max(-280px, -30vw); background: radial-gradient(closest-side, #f2f7e41c, transparent); animation: contact-breathe 9s ease-in-out infinite; }
   .contact[data-loop="paused"]::after { animation-play-state: paused; }
   @keyframes contact-breathe { 0%, 100% { opacity: .55; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
+  /* Pointer-led: the light drifts toward the pointer (the wide halo less so),
+     and the email pill leans in with a springy return. motion.js sets the
+     variables; touch and reduced motion never set them. */
+  .contact::after { translate: var(--glow-x, 0px) var(--glow-y, 0px); }
+  .contact::before { translate: calc(var(--glow-x, 0px) * .35) calc(var(--glow-y, 0px) * .35); }
+  .contact-button { translate: var(--magnet-x, 0px) var(--magnet-y, 0px); }
+  .contact-button > span { translate: calc(var(--magnet-x, 0px) * .35) calc(var(--magnet-y, 0px) * .35); }
+
+  /* Email pill + injected "Copy email" button. The row takes over the pill's
+     top margin (the pill's own is reset, also over the responsive layer). */
+  .contact-actions { position: relative; display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 10px; margin-top: 45px; }
+  .contact-actions > .contact-button { margin: 0 !important; }
+  .contact-copy { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 22px; border: 1px solid #bec9ad59; border-radius: 50px; color: #d7deca; font: inherit; font-size: 13px; line-height: 1; cursor: pointer; transition: background-color .25s, color .25s, border-color .25s, transform .18s cubic-bezier(.2,.8,.2,1); }
+  .contact-copy:hover { border-color: #d7deca; background: #e2e8d80f; color: #f7ffec; }
+  .contact-copy:active { transform: scale(.965); transition-duration: .25s, .25s, .25s, .08s; }
+  .contact-copy:focus-visible { outline: 2px solid var(--green); outline-offset: 4px; }
+  .contact-copy[data-state="copied"] { border-color: #c7d2a8; color: #f7ffec; }
+  .contact-copy-icon { flex: none; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  .contact-copy .icon-done, .contact-copy[data-state="copied"] .icon-copy { display: none; }
+  .contact-copy[data-state="copied"] .icon-done { display: inline; }
+  .contact-toast { position: absolute; bottom: calc(100% + 10px); left: 50%; padding: 7px 14px; border-radius: 50px; background: #e2e8d8; color: #20271b; font-size: 11px; line-height: 1.2; white-space: nowrap; box-shadow: 0 10px 24px -14px #000c; pointer-events: none; opacity: 0; translate: -50% 6px; transition: opacity .2s cubic-bezier(.33,1,.68,1), translate .45s cubic-bezier(.16,1,.3,1); }
+  .contact-toast[data-state] { opacity: 1; translate: -50% 0; }
+  .contact-toast[data-state="error"] { background: #2a2d26; color: #f2f5ea; border: 1px solid #50564a; white-space: normal; width: max-content; max-width: min(320px, 86vw); text-align: center; }
+  @media (max-width: 760px) {
+    .contact-actions { margin-top: 35px; }
+    .contact-copy { padding: 0 20px; font-size: 12px; }
+    .contact-toast { bottom: calc(100% + 5px); padding: 6px 13px; }
+  }
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .contact { view-timeline: --contact-scene block; }
@@ -71,11 +124,16 @@
       .sculpture { animation: hero-idle 12s ease-in-out infinite, hero-depart linear both; animation-timeline: auto, --hero-scene; animation-range: normal, exit 0% exit 100%; }
       .hero[data-loop="paused"] .sculpture { animation-play-state: paused, running; }
       html.agentic-running .sculpture { animation-play-state: paused, paused; }
+      .hero-art::before { animation: hero-shadow-idle 12s ease-in-out infinite, hero-shadow-depart linear both; animation-timeline: auto, --hero-scene; animation-range: normal, exit 0% exit 100%; }
+      .hero[data-loop="paused"] .hero-art::before { animation-play-state: paused, running; }
+      html.agentic-running .hero-art::before { animation-play-state: paused, paused; }
     }
   }
   @keyframes contact-glow-rise { from { opacity: 0; transform: translate3d(0, 18%, 0) scale(.72); } to { opacity: 1; transform: none; } }
   @keyframes contact-title-rise { from { transform: translate3d(0, 42px, 0) scale(.97); } to { transform: none; } }
   @keyframes hero-depart { from { translate: 0 0; scale: 1; } to { translate: 0 64px; scale: .97; } }
+  /* The ground sits low on the image, so it travels a little less. */
+  @keyframes hero-shadow-depart { from { translate: 0 0; scale: 1; } to { translate: 0 58px; scale: .97; } }
   @supports not (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .contact::before { transition: opacity 1.1s cubic-bezier(.33,1,.68,1), transform 1.4s cubic-bezier(.16,1,.3,1); }
@@ -85,5 +143,9 @@
 
   @media (prefers-reduced-motion: reduce) {
     [data-reveal], [data-reveal] .tag-list li { opacity: 1 !important; transform: none !important; }
+    [data-headline] [data-headline-unit] { opacity: 1 !important; transform: none !important; clip-path: none !important; filter: none !important; }
+    .hero-art, .hero-art::before, .contact::before, .contact::after, .contact-button, .contact-button > span { translate: none !important; }
+    .hero-art { scale: none !important; }
+    .contact-toast { translate: -50% 0; }
   }
 }
