@@ -265,7 +265,7 @@ const SECTION_PLAN = [
 export const SECTION_TARGETS = SECTION_PLAN.map(spec => spec.sel).join(', ');
 
 // The dock lifts itself above these so it never covers résumé/contact controls.
-const PROTECTED = '.hero-actions .pill-button, .hero-links a, .contact-button, .contact-links a, .footer-bottom > *';
+const PROTECTED = '.hero-actions .pill-button, .hero-links a, .contact-button, .contact-copy, .contact-links a, .footer-bottom > *';
 
 const HIDES = new Set(['reveal', 'type', 'wipe', 'place']);
 const OPTIONAL = new Set(['frame', 'review', 'orbit', 'caret']);
