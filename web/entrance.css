@@ -19,6 +19,25 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-guide.is-box { border: 1px dashed var(--guide); }
 .agentic-guide-label { position: absolute; left: 0; top: 0; padding: 2px 5px 1px; border-radius: 3px; background: rgb(16 17 20 / .88); color: var(--guide); font: 700 9.5px/1.2 var(--agentic-mono); white-space: nowrap; opacity: 0; transition: opacity .25s ease; }
 .agentic-guide-label.is-on { opacity: 1; }
+/* Lower sections still below the fold start as a wireframe over the section:
+   a near-black fill (wiped by the paint agent, clip-path from JS), margin
+   guides, a dashed outline and grey skeleton blocks. The whole overlay moves
+   with one transform; it sits under frames and cursors. */
+.agentic-wire { position: absolute; left: 0; top: 0; --guide: #4cc3ff; will-change: transform; }
+.agentic-wire-base, .agentic-wire-fill, .agentic-wire-guides { position: absolute; inset: 0; }
+.agentic-wire-fill { background: #101114; }
+.agentic-skeleton { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid rgb(255 255 255 / .12); border-radius: 6px; background: rgb(255 255 255 / .07); transition: opacity .25s ease; }
+/* Light sections: the blocks left on the paper once the fill is painted away. */
+.agentic-wire.is-light > .agentic-wire-base > .agentic-skeleton { border-color: rgb(29 30 27 / .13); background: rgb(29 30 27 / .05); }
+.agentic-skeleton.is-out { opacity: 0; }
+.agentic-wire-guides { transition: opacity .5s ease; }
+.agentic-wire-guides.is-fading { opacity: 0; }
+.agentic-wire-line { position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: var(--guide); opacity: .75; }
+.agentic-wire-outline { position: absolute; inset: 0; border: 1px dashed var(--guide); opacity: .75; }
+.agentic-wire-label { position: absolute; left: 0; top: 0; padding: 2px 5px 1px; border-radius: 3px; background: rgb(16 17 20 / .88); color: var(--guide); font: 700 9.5px/1.2 var(--agentic-mono); white-space: nowrap; }
+/* The paint stroke's leading edge, so the wipe also reads on dark sections. */
+.agentic-wire-edge { position: absolute; left: -1px; top: 0; width: 2px; height: 100%; background: var(--agent-color, #a98cff); box-shadow: 0 0 10px var(--agent-color, #a98cff); opacity: 0; }
+.agentic-wire-edge.is-on { opacity: .85; }
 .agentic-stage.is-leaving .agentic-layer > * { opacity: 0; transition: opacity .2s ease; }
 /* Fallback launch row when the dock was dismissed: measured, never seen. */
 .agentic-home { position: absolute; left: 50%; bottom: 30px; display: flex; gap: 4px; translate: -50% 0; opacity: 0; }

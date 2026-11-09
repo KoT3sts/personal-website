@@ -33,6 +33,12 @@ const PASS_BASE = 1000; // manual (post-cancel) tracing passes
 // away, and only then does the build start. Real ms at the desktop hero pace;
 // scaled with the hero run (so short test timings and 2x both hold).
 const INTRO = { crew: 300, crewEnd: 620, guides: 700, guidesEnd: 2400, paint: 2400, paintEnd: 3180, end: 3300, fade: 600 };
+// Lower sections still wholly below the fold when their stop is planned start
+// as a wireframe (near-black fill, margin guides, outline, skeleton blocks).
+// Virtual ms, scaled with the stop's animation pace except `grace`: the most
+// the fill may stay on screen after the section's top enters, unpainted.
+// `focus`: the guides fade once the section's top is this high in the view.
+const WIRE = { paint: 800, skeleton: 250, guides: 500, grace: 250, focus: 0.35, lines: 8 };
 
 // Real durations in ms. Hero ~1.8x the original 4.6 s so each agent's work
 // stays readable; each lower section gets a ~3-5 s work budget (x `weight`),
@@ -377,6 +383,7 @@ export function initAgenticEntrance(document, window, config = {}) {
         if (run !== current) return;
       }
       if (current.kind === 'build') guardBlanks(current, t);
+      if (current.wire) updateWire(current, t);
       if (current.guides) updateIntro(current, t);
       current.active.forEach(job => job.update(t));
       current.agents.forEach(agent => placeAgent(current, agent, t));
@@ -889,6 +896,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     current.cw = root.clientWidth || current.vw;
     current.sy0 = current.sy = readScrollY();
     current.dy = 0;
+    current.measures = (current.measures || 0) + 1;
     current.view.clear();
     current.live.clear();
     current.watch.forEach(element => {
@@ -1267,6 +1275,8 @@ export function initAgenticEntrance(document, window, config = {}) {
 
     job.begin = () => {
       job.begun = true;
+      // The item starts to appear: its wireframe skeleton fades.
+      job.onPlace?.();
       const k = job.kind;
       if (k === 'frame') {
         job.frame = frame(`is-drag${spec.cross ? ' has-cross' : ''}`);
@@ -1410,6 +1420,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     job.downgrade = () => {
       if (job.late) return;
       job.late = true;
+      job.onPlace?.();
       job.reveals.forEach(element => {
         element.style.setProperty('--agentic-d', `${realMs(360)}ms`);
         element.style.removeProperty('transition-delay');
@@ -1421,6 +1432,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     };
 
     job.finish = () => {
+      job.onPlace?.();
       job.reveals.forEach(element => cleanTarget(element));
       if (current.kind === 'pass') target.dataset.buildState = 'tracing';
       job.ui.forEach(element => { if (element !== job.frame) element.remove(); });
@@ -1470,7 +1482,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     agent.queue.forEach((job, index) => {
       const entry = job.entry();
       if (index > 0 && job.wave) t = Math.max(t, job.wave * current.scale);
-      const travel = travelMs(current, position, entry) * factor;
+      // Jobs may bring their own travel time (the paint agent hurries).
+      const travel = (job.travelFrom ? job.travelFrom(position) : travelMs(current, position, entry)) * factor;
       // On spanning stops, arrive as the item scrolls into view.
       if (job.readyAt) t = Math.max(t, job.readyAt - travel);
       job.start = t;
@@ -1943,6 +1956,13 @@ export function initAgenticEntrance(document, window, config = {}) {
     const deadline = Math.max(lead + current.budget - 400 * s, lastReady + 1400 * anim);
     const gap = Math.min(220 * anim, (current.budget * 0.25) / Math.max(1, crew.length));
     crew.forEach(agent => agent.queue.sort((a, b) => (a.readyAt || 0) - (b.readyAt || 0)));
+    // The paint sweep comes before the painter's other work, and it leaves at once.
+    const paint = current.wire?.paint;
+    if (paint) {
+      const queue = paint.agent.queue;
+      queue.splice(queue.indexOf(paint), 1);
+      queue.unshift(paint);
+    }
     let fresh = 0;
     let carried = 0;
     crew.forEach(agent => {
@@ -1953,11 +1973,16 @@ export function initAgenticEntrance(document, window, config = {}) {
         agent.firstStart = 200 * s + fresh++ * gap;
         agent.from = home(agent)();
       }
+      if (paint && agent === paint.agent) agent.firstStart = Math.min(agent.firstStart, 16 * s);
       agent.free = agent.queue.length ? fitQueue(current, agent, agent.firstStart, agent.from, deadline) : 0;
     });
-    // Content that would sit on screen still hidden is shown now instead.
+    // Content that would sit on screen still hidden is shown now instead
+    // (in a wired section, content is only seen once the paint uncovers it).
+    const shownAt = job => (paint && Number.isFinite(paint.arrive) && current.wire.section.contains(job.target)
+      ? Math.max(job.readyAt, wipeTime(current, job.target, paint.arrive, paint.work))
+      : job.readyAt);
     current.jobs.forEach(job => {
-      if (job.reveals.length && job.agent !== orchestrator && Number.isFinite(job.readyAt) && job.arrive > job.readyAt + 200 * anim) {
+      if (job.reveals.length && job.agent !== orchestrator && Number.isFinite(job.readyAt) && job.arrive > shownAt(job) + 200 * anim) {
         job.downgrade();
         if (tour) tour.late++;
       }
@@ -2081,6 +2106,243 @@ export function initAgenticEntrance(document, window, config = {}) {
     addEvent(current, current.total - 180 * s, () => current.stage.classList.add('is-leaving'));
   }
 
+  // ---- lower sections: wireframe, paint, skeletons ------------------------
+  // A stop whose section is still wholly below the fold when it is planned
+  // builds it from scratch: a near-black fill over the section with margin
+  // guides, a dashed outline and grey skeleton blocks where this stop's
+  // builder jobs will place content. As the section's top enters, a paint
+  // agent sweeps across it and the fill is wiped (clip-path following the
+  // agent, as in the hero), showing the section's own background. Each
+  // skeleton fades as its item is placed; the guides fade once the builders
+  // are done or the section reaches the focus band. Everything sits in the
+  // run's stage (above the page, below frames and cursors) and is positioned
+  // from the bounds cache: one transform per frame for the whole overlay.
+  function planWire(current, stopInfo) {
+    const section = stopInfo.section;
+    const r = box(current, section);
+    // The continuous scroll often has the section's top a few dozen px into
+    // view when its stop is planned; a thin entering edge at the bottom may
+    // still be wireframed (it is painted within about a second).
+    const edge = Math.min(120, current.vh * 0.15);
+    if (!current.measurable || !current.traj || !(r.w > 0 && r.h > 0) || r.y < current.vh - edge) return;
+    const top = r.y + current.sy0;
+    const entry = trajTime(current.traj, y => top - y < current.vh);
+    if (!Number.isFinite(entry)) return;
+    const anim = current.anim;
+    const wire = { section, top, entry, light: !section.classList.contains('dark-section'), skeletons: [], fill: null };
+    // The sweep runs along the section's visible top, left to right.
+    wire.sweep = e => {
+      const b = box(current, section);
+      const y = clamp(Math.max(b.y, 0) + 64, 64, current.vh - 72) + Math.sin(e * Math.PI * 2) * 10;
+      return { x: b.x - 12 + (b.w + 24) * e, y };
+    };
+    const paint = {
+      kind: 'paint', role: 'art', act: `painting ${stopInfo.name.toLowerCase()}`, decor: true,
+      target: section, reveals: [], ui: [], readyAt: entry, baseWork: WIRE.paint * anim, baseType: 0,
+    };
+    paint.entry = () => wire.sweep(0);
+    paint.cursorAt = p => wire.sweep(easeInOut(p));
+    paint.exit = () => wire.sweep(1);
+    paint.travelFrom = from => clamp(90 + distance(from, wire.sweep(0)) * 0.12, 120, 180) * anim;
+    paint.begin = () => { paint.begun = true; wire.edge?.classList.add('is-on'); };
+    paint.update = now => paintWire(current, clamp01((now - paint.arrive) / Math.max(1, paint.work)));
+    paint.finish = () => wipeWire(wire);
+    wire.paint = paint;
+    current.wire = wire;
+    // Items under the fill are not seen before the wipe passes them: agents
+    // aim for that moment (estimated now; checked against the planned sweep).
+    const start = Math.max(entry, 200 * anim);
+    current.jobs.forEach(job => {
+      if (Number.isFinite(job.readyAt) && section.contains(job.target)) job.readyAt = Math.max(job.readyAt, wipeTime(current, job.target, start, paint.baseWork));
+    });
+    // Staffed like any job (so the crew has a painter), then handed to the
+    // art/motion agent least needed elsewhere when the section enters.
+    current.jobs.unshift(paint);
+  }
+
+  // When a sweep starting at `start` and lasting `work` passes an element's left edge.
+  function wipeTime(current, element, start, work) {
+    const s = box(current, current.wire.section);
+    const f = clamp01((box(current, element).x - (s.x - 12)) / (s.w + 24));
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 16; i++) { const mid = (lo + hi) / 2; if (easeInOut(mid) < f) lo = mid; else hi = mid; }
+    return start + work * hi;
+  }
+  // Whether an element is still entirely under the unpainted fill.
+  function underFill(current, element, r) {
+    const wire = current.wire;
+    if (!wire?.fill || !wire.section.contains(element)) return false;
+    const s = box(current, wire.section);
+    return r.x >= s.x + (wire.wipeX || 0) - 0.5 && r.y >= s.y - 0.5;
+  }
+
+  function settlePainter(current) {
+    const paint = current.wire.paint;
+    current.jobs = current.jobs.filter(job => job !== paint);
+    const crew = current.agents.filter(agent => agent.role !== 'orchestrator');
+    const pool = crew.filter(agent => agent.role === 'art' || agent.role === 'motion');
+    const options = pool.length ? pool : crew;
+    const firstOther = agent => Math.min(Infinity, ...agent.queue.filter(job => job !== paint).map(job => (Number.isFinite(job.readyAt) ? job.readyAt : 0)));
+    const rank = agent => [firstOther(agent), agent === paint.agent ? 2 : agent.carry ? 1 : 0];
+    const best = options.reduce((a, b) => {
+      const [fa, ka] = rank(a);
+      const [fb, kb] = rank(b);
+      return fb > fa || (fb === fa && kb > ka) ? b : a;
+    }, options[0]);
+    if (!best) { current.wire = null; return; }
+    if (paint.agent && paint.agent !== best) paint.agent.queue.splice(paint.agent.queue.indexOf(paint), 1);
+    if (paint.agent !== best) best.queue.unshift(paint);
+    paint.agent = best;
+  }
+
+  // The overlay's DOM, skeletons for this stop's builder jobs, and the guide fade.
+  function buildWire(current) {
+    const wire = current.wire;
+    const s = current.scale;
+    const anim = current.anim;
+    const paint = wire.paint;
+    const root = make('div', `agentic-wire${wire.light ? ' is-light' : ''}`);
+    current.layer.before(root);
+    wire.root = root;
+    wire.base = make('div', 'agentic-wire-base', root);
+    wire.fill = make('div', 'agentic-wire-fill', root);
+    // Blocks show over the black (a copy inside the fill, wiped with it) and on
+    // the section's own background below it (darker on light sections).
+    const shell = make('div', 'agentic-wire-base', wire.fill);
+    wire.edge = make('div', 'agentic-wire-edge', root);
+    wire.edge.style.setProperty('--agent-color', ROLES[paint.agent.role].color);
+    wire.guides = make('div', 'agentic-wire-guides', root);
+    wire.lines = ['left', 'right'].map(side => {
+      const line = make('div', 'agentic-wire-line', wire.guides);
+      line.dataset.guide = `margin-${side}`;
+      return line;
+    });
+    wire.outline = make('div', 'agentic-wire-outline', wire.guides);
+    wire.labels = ['margin-left', 'size', 'margin-right'].map(id => {
+      const label = make('b', 'agentic-wire-label', wire.guides);
+      label.dataset.guide = id;
+      return label;
+    });
+    current.jobs.forEach(job => {
+      if (!job.reveals.length || job.decor) return;
+      const text = TEXT_KINDS.has(job.kind);
+      const elements = [job.target, ...job.reveals.filter(element => element !== job.target && !job.target.contains(element))];
+      const blocks = [];
+      elements.forEach(element => {
+        const b = text ? textBox(current, element) : box(current, element);
+        if (!(b.w > 0 && b.h > 0)) return;
+        // Text gets one bar per rendered line (a few at most), anything else one block.
+        const parts = text && b.lines && b.lines.length <= WIRE.lines ? b.lines.length : 1;
+        for (let line = 0; line < parts; line++) {
+          const nodes = [make('div', 'agentic-skeleton', wire.base), make('div', 'agentic-skeleton', shell)];
+          // Lets tests (and debugging) map a block back to its item.
+          nodes[0].agenticTarget = element;
+          blocks.push({ element, text, line: parts > 1 ? line : -1, nodes });
+        }
+      });
+      if (!blocks.length) return;
+      wire.skeletons.push(...blocks);
+      job.onPlace = () => {
+        if (job.placed) return;
+        job.placed = true;
+        const ms = `${realMs(WIRE.skeleton * anim)}ms`;
+        blocks.forEach(block => block.nodes.forEach(node => { node.style.transitionDuration = ms; node.classList.add('is-out'); }));
+      };
+    });
+    // Guides fade once the builders are done or the section reaches the
+    // focus band (never before the paint), and are gone before the stop ends.
+    const builders = current.jobs.filter(job => job.reveals.length && Number.isFinite(job.end));
+    const built = builders.length ? Math.max(...builders.map(job => job.end)) : paint.end;
+    const focusAt = trajTime(current.traj, y => wire.top - y <= current.vh * WIRE.focus);
+    const fadeMs = WIRE.guides * anim;
+    const fadeAt = Math.max(0, Math.min(Math.max(paint.end, Math.min(built, focusAt)), current.total - fadeMs - 40 * s));
+    addEvent(current, fadeAt, () => {
+      wire.guides.style.transitionDuration = `${realMs(fadeMs)}ms`;
+      wire.guides.classList.add('is-fading');
+    });
+    addEvent(current, fadeAt + fadeMs, () => { wire.guides.remove(); wire.guides = null; });
+  }
+
+  // Sizes and children, relative to the section (only after a measurement).
+  function placeWire(current, wire, r) {
+    wire.measures = current.measures;
+    wire.root.style.width = `${Math.max(1, r.w)}px`;
+    wire.root.style.height = `${Math.max(1, r.h)}px`;
+    const set = (element, x, y, w, h) => {
+      element.style.translate = `${x.toFixed(1)}px ${y.toFixed(1)}px`;
+      if (w !== undefined) { element.style.width = `${Math.max(1, w).toFixed(1)}px`; element.style.height = `${Math.max(1, h).toFixed(1)}px`; }
+    };
+    if (wire.guides) {
+      const column = current.column || { left: current.vw * 0.06, right: current.vw * 0.94 };
+      const [left, right] = wire.lines;
+      set(left, column.left - r.x, 0);
+      set(right, column.right - r.x, 0);
+      const [marginLeft, size, marginRight] = wire.labels;
+      marginLeft.textContent = `margin ${Math.round(column.left)}`;
+      size.textContent = `${Math.round(r.w)} × ${Math.round(r.h)}`;
+      marginRight.textContent = `margin ${Math.round((current.cw || current.vw) - column.right)}`;
+      const fit = (x, text) => clamp(x, 4, Math.max(4, r.w - labelWidth(text) - 4));
+      const lx = fit(column.left - r.x + 6, marginLeft.textContent);
+      set(marginLeft, lx, 8);
+      set(size, fit(lx + labelWidth(marginLeft.textContent) + 8, size.textContent), 8);
+      set(marginRight, fit(column.right - r.x - 6 - labelWidth(marginRight.textContent), marginRight.textContent), 8);
+    }
+    wire.skeletons.forEach(block => {
+      const t = block.text ? textBox(current, block.element) : box(current, block.element);
+      const b = block.line >= 0 && t.lines ? t.lines[block.line] : t;
+      block.nodes.forEach(node => set(node, b.x - r.x, b.y - r.y, b.w, b.h));
+    });
+    wire.clipX = undefined;
+  }
+
+  // Per frame: one transform for the overlay, and the no-blank guard. The
+  // fill may cover the visible page only while it is being painted: if the
+  // paint agent has not started `grace` ms after the section's top entered,
+  // or has not finished by then plus its paint time, the fill goes at once.
+  function updateWire(current, t) {
+    const wire = current.wire;
+    const r = box(current, wire.section);
+    if (wire.measures !== current.measures) placeWire(current, wire, r);
+    const x = Math.round(r.x * 10) / 10;
+    const y = Math.round(r.y * 10) / 10;
+    if (x !== wire.x || y !== wire.y) { wire.x = x; wire.y = y; wire.root.style.translate = `${x}px ${y}px`; }
+    if (!wire.fill) return;
+    if (wire.enteredAt === undefined) {
+      if (r.y >= current.vh) return;
+      wire.enteredAt = t;
+    }
+    const paint = wire.paint;
+    const since = t - wire.enteredAt;
+    const painting = paint.begun && Number.isFinite(paint.end);
+    if ((!painting && since > WIRE.grace) || (painting && since > WIRE.grace + (paint.end - paint.arrive))) {
+      wipeWire(wire);
+      wire.forced = true;
+    }
+  }
+
+  // The fill's wipe follows the paint agent's sweep (the same path).
+  function paintWire(current, p) {
+    const wire = current.wire;
+    if (!wire?.fill) return;
+    const r = box(current, wire.section);
+    const x = Math.round(clamp(wire.sweep(easeInOut(p)).x - r.x, 0, r.w) * 10) / 10;
+    if (x === wire.clipX) return;
+    wire.clipX = x;
+    wire.wipeX = x;
+    wire.fill.style.clipPath = `inset(0 0 0 ${x}px)`;
+    wire.edge.style.translate = `${x}px 0`;
+  }
+
+  function wipeWire(wire) {
+    if (!wire.fill) return;
+    wire.fill.remove();
+    wire.fill = null;
+    wire.edge?.remove();
+    wire.edge = null;
+    wire.root.classList.add('is-painted');
+  }
+
   function planSection(current) {
     const s = current.scale;
     current.agents.forEach((agent, index) => {
@@ -2116,6 +2378,8 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (job.begun || job.late) { current.guarded.delete(job); return; }
       const r = box(current, job.target);
       if (!(r.h > 0 && r.y < edge && r.y + r.h > 0)) return;
+      // Still under a section's unpainted fill: not seen yet (the fill has its own guard).
+      if (underFill(current, job.target, r)) return;
       if (job.seenAt === undefined) job.seenAt = t;
       else if (t - job.seenAt > 220) { job.downgrade(); current.guarded.delete(job); if (tour) tour.late++; }
     });
@@ -2125,7 +2389,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (current.active.has(job)) job.update(job.end);
     current.active.delete(job);
     job.finish();
-    current.done++;
+    // Decorative work (the paint sweep) is not a counted target.
+    if (!job.decor) current.done++;
   }
 
   function dispatchLine(current, orchestrator, agent, job, now) {
@@ -2352,6 +2617,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     // first paint, so the crew never blinks out between stops.
     while (current.next < current.events.length && current.events[current.next].at <= 0) current.events[current.next++].fn(0);
     if (current.guides) updateIntro(current, 0);
+    if (current.wire) updateWire(current, 0);
     current.agents.forEach(agent => placeAgent(current, agent, 0));
     schedule();
   }
@@ -2568,7 +2834,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (current.measurable) planScroll(current, stopInfo, following);
     current.jobs = collect(current, stopInfo.jobs || [], section);
     current.jobs.forEach(job => { job.readyAt = readyAt(current, job.target); });
+    planWire(current, stopInfo);
     buildCrew(current);
+    if (current.wire) settlePainter(current);
     if (handoff && (!current.measurable || willShow(current, handoff))) {
       current.handoffJob = createJob(current, { kind: 'review', role: 'orchestrator', act: 'handing off', size: true, color: '#e6eed6' }, handoff, []);
       current.handoffMs = handoffDuration;
@@ -2577,6 +2845,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     buildStage(current);
     remeasureDots(current);
     planBuild(current, stopInfo);
+    if (current.wire) buildWire(current);
     if (stopInfo.note) addEvent(current, current.total * 0.5, () => showNote(stopInfo.note));
     launch(current, advanceTour);
   }

@@ -733,6 +733,15 @@ test('after the hero the page keeps moving until Contact, within the acceleratio
   assert.ok(maxStep <= 3, `crew count jumped by ${maxStep}`);
 });
 
+// Wholly inside a section's black fill, right of the paint wipe's edge.
+function coveredByFill(document, rect) {
+  const fill = document.querySelector('.agentic-wire-fill');
+  if (!fill) return false;
+  const r = fill.getBoundingClientRect();
+  const clip = +(/inset\(0px 0px 0px ([\d.]+)px\)/.exec(fill.style.clipPath || '')?.[1] || 0);
+  return rect.left >= r.left + clip - 0.5 && rect.top >= r.top - 0.5 && rect.bottom <= r.bottom + 0.5;
+}
+
 test('content the visitor can see is never left hidden for more than a moment', t => {
   const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
   const since = new Map();
@@ -749,6 +758,8 @@ test('content the visitor can see is never left hidden for more than a moment', 
       if (owner && owner !== element && owner.dataset.buildState !== 'pending') continue;
       const rect = element.getBoundingClientRect();
       if (!(rect.height > 0 && rect.top < window.innerHeight * 0.97 && rect.bottom > 0)) continue;
+      // Still under a section's unpainted black fill: the visitor sees the wireframe, not a blank.
+      if (coveredByFill(document, rect)) continue;
       seen.add(element);
       if (!since.has(element)) since.set(element, now);
       const held = now - since.get(element);
@@ -981,4 +992,242 @@ test('the intro runs on the tour clock, so 2x halves it', t => {
   assert.ok(veilGone >= 1400 && veilGone <= 1800, `veil gone at ${veilGone}ms at 2x`);
   controller.skip();
   assertNoResidue(document);
+});
+
+// ---- lower sections: wireframe, paint sweep, skeletons ---------------------
+// The paint sweep at the slowest stop pace (800 ms x 1.15), the no-blank
+// grace after a section's top enters, and one frame of slack.
+const PAINT_MAX = 920;
+const GRACE = 250;
+const FRAME = 16;
+const sectionOf = (document, name) => document.querySelector(TOUR_STOPS.find(stop => stop.name === name).sel);
+const fillClip = fill => { const m = /inset\(0px 0px 0px ([\d.]+)px\)/.exec(fill.style.clipPath || ''); return m ? +m[1] : null; };
+// Any unpainted part of the fill inside the viewport.
+const fillOnScreen = (document, window) => {
+  const fill = document.querySelector('.agentic-wire-fill');
+  if (!fill) return false;
+  const r = fill.getBoundingClientRect();
+  const left = r.left + (fillClip(fill) || 0);
+  return Math.min(r.bottom, window.innerHeight) > Math.max(r.top, 0) && Math.min(r.right, window.innerWidth) > Math.max(left, 0);
+};
+// Steps a whole tour and calls `frame` after every frame with the current stop.
+function eachFrame(controller, clock, document, frame, step = FRAME) {
+  let index = -1;
+  while (controller.touring && clock.now() < 120000) {
+    clock.step(step);
+    if (!controller.touring) break;
+    const fresh = controller.tour.index !== index;
+    index = controller.tour.index;
+    const { name } = controller.tour;
+    frame({ name, index, fresh, now: clock.now(), section: sectionOf(document, name) });
+  }
+}
+
+test('a lower section still below the fold starts as a wireframe: black fill, measured guides and skeletons', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  const wired = [];
+  const skipped = [];
+  eachFrame(controller, clock, document, ({ name, index, fresh, section }) => {
+    if (!fresh || index === 0) return;
+    // The stop has just been planned; nothing has scrolled yet.
+    const rect = section.getBoundingClientRect();
+    const wire = document.querySelector('.agentic-wire');
+    const fill = document.querySelector('.agentic-wire-fill');
+    if (rect.top < window.innerHeight) {
+      // Already partly visible: no fill and no skeletons over it.
+      assert.equal(fill, null, `${name}: no fill over a visible section`);
+      assert.equal(document.querySelector('.agentic-skeleton'), null, `${name}: no skeletons`);
+      skipped.push(name);
+      return;
+    }
+    assert.ok(wire && fill, `${name}: wireframe before it enters`);
+    const f = fill.getBoundingClientRect();
+    for (const side of ['left', 'top', 'width', 'height']) assert.ok(Math.abs(f[side] - rect[side]) <= 1, `${name}: fill ${side} ${f[side]} vs section ${rect[side]}`);
+    assert.ok(f.top >= window.innerHeight - 1, `${name}: the fill is not on screen yet`);
+    assert.equal(window.getComputedStyle(fill).backgroundColor, 'rgb(16, 17, 20)');
+    assert.equal(fillClip(fill), null, `${name}: not painted yet`);
+    const blocks = wire.querySelectorAll('.agentic-skeleton');
+    assert.ok(blocks.length >= 1, `${name}: skeletons`);
+    // The blocks show over the black: a copy rides inside the fill (and is wiped with it).
+    const onBlack = fill.querySelector('.agentic-skeleton');
+    assert.ok(onBlack, `${name}: skeletons drawn over the black fill`);
+    const block = window.getComputedStyle(onBlack);
+    assert.equal(block.backgroundColor, 'rgba(255, 255, 255, 0.07)');
+    assert.ok(parseFloat(block.borderRadius) > 0, 'rounded');
+    // Each block sits on an item this stop will build, still hidden.
+    const bases = [...wire.querySelectorAll(':scope > .agentic-wire-base > .agentic-skeleton')];
+    assert.ok(bases.every(node => node.agenticTarget && section.contains(node.agenticTarget) && node.agenticTarget.dataset.buildState === 'pending'), `${name}: blocks map to pending items`);
+    // Guides: margins at the content column's edges, the outline and its size, measured live.
+    const header = document.querySelector('.site-header').getBoundingClientRect();
+    const lines = [...wire.querySelectorAll('.agentic-wire-line')];
+    assert.equal(lines.length, 2);
+    assert.ok(Math.abs(translateOf(lines[0]).x + rect.left - header.left) <= 1, `${name}: left margin line`);
+    assert.ok(Math.abs(translateOf(lines[1]).x + rect.left - header.right) <= 1, `${name}: right margin line`);
+    assert.ok(wire.querySelector('.agentic-wire-outline'), `${name}: outline`);
+    const label = id => wire.querySelector(`.agentic-wire-label[data-guide="${id}"]`).textContent;
+    assert.match(label('margin-left'), /^margin \d+$/);
+    assert.ok(Math.abs(numbersIn(label('margin-left'))[0] - header.left) <= 1, `${name}: ${label('margin-left')}`);
+    assert.ok(Math.abs(numbersIn(label('margin-right'))[0] - (document.documentElement.clientWidth - header.right)) <= 1, `${name}: ${label('margin-right')}`);
+    assert.match(label('size'), /^\d+ × \d+$/);
+    const [w, h] = numbersIn(label('size'));
+    assert.ok(Math.abs(w - rect.width) <= 1 && Math.abs(h - rect.height) <= 1, `${name}: ${label('size')} vs ${rect.width} × ${rect.height}`);
+    // Decoration above the section, below frames and cursors.
+    assert.equal(wire.closest('[aria-hidden="true"]')?.classList.contains('agentic-decoration'), true);
+    assert.equal(window.getComputedStyle(wire).pointerEvents, 'none');
+    assert.ok(wire.compareDocumentPosition(document.querySelector('.agentic-layer')) & 4, 'frames draw above the wireframe');
+    assert.ok(wire.compareDocumentPosition(document.querySelector('.agentic-cursors')) & 4, 'cursors draw above the wireframe');
+    wired.push(name);
+  });
+  assertNoResidue(document);
+  if (!measurable(document)) return;
+  assert.ok(wired.length >= 2, `wired ${wired} / skipped ${skipped}`);
+});
+
+test('the paint agent wipes the fill as the section enters, and the fill is gone within the grace plus the paint time', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  const stops = new Map();
+  eachFrame(controller, clock, document, ({ name, fresh, now, section }) => {
+    if (fresh && document.querySelector('.agentic-wire-fill')) stops.set(name, { painted: 0, off: 0 });
+    const stop = stops.get(name);
+    if (!stop || stop.gone) return;
+    if (stop.entered === undefined && section.getBoundingClientRect().top < window.innerHeight) stop.entered = now;
+    const fill = document.querySelector('.agentic-wire-fill');
+    if (!fill) { stop.gone = now; return; }
+    const clip = fillClip(fill);
+    const painter = [...document.querySelectorAll('.agentic-cursor.is-working')].find(cursor => / · painting [a-z]+$/.test(cursor.textContent));
+    if (clip !== null && painter) {
+      const r = fill.getBoundingClientRect();
+      const x = cursorPoint(painter).x + 2;
+      if (clip > 0 && clip < r.width && x > 4 && x < window.innerWidth - 16) { stop.painted++; stop.off = Math.max(stop.off, Math.abs(r.left + clip - x)); }
+    }
+  });
+  assertNoResidue(document);
+  if (!measurable(document)) return;
+  assert.ok(stops.size >= 2, `${stops.size} wired sections`);
+  for (const [name, stop] of stops) {
+    assert.ok(stop.entered !== undefined && stop.gone !== undefined, `${name}: entered and painted`);
+    assert.ok(stop.gone - stop.entered <= GRACE + PAINT_MAX + FRAME, `${name}: fill gone ${stop.gone - stop.entered}ms after entering`);
+    assert.ok(stop.painted >= 5, `${name}: ${stop.painted} frames of paint sweep`);
+    assert.ok(stop.off <= 30, `${name}: the wipe follows the paint agent (off by ${stop.off.toFixed(1)}px)`);
+  }
+});
+
+test('each skeleton block fades as its item is placed, never before', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  let blocks = 0;
+  let faded = 0;
+  const early = [];
+  const late = [];
+  const seen = new Set();
+  eachFrame(controller, clock, document, ({ name }) => {
+    for (const node of document.querySelectorAll('.agentic-wire > .agentic-wire-base > .agentic-skeleton')) {
+      const target = node.agenticTarget;
+      if (!seen.has(node)) { seen.add(node); blocks++; }
+      const placed = target.dataset.buildState !== 'pending';
+      const out = node.classList.contains('is-out');
+      if (out && !node.counted) { node.counted = true; faded++; }
+      if (out && !placed) early.push(`${name}: ${target.className}`);
+      if (placed && !out) late.push(`${name}: ${target.className}`);
+    }
+  });
+  assertNoResidue(document);
+  if (!measurable(document)) return;
+  assert.ok(blocks >= 5, `${blocks} skeleton blocks`);
+  assert.ok(faded >= 5, `${faded} faded as items were placed`);
+  assert.deepEqual(early.slice(0, 3), [], 'a block never fades before its item is placed');
+  assert.deepEqual(late.slice(0, 3), [], 'a placed item never keeps its block');
+});
+
+test('the section guides fade once the builders are done or the section is in focus, and are gone before the stop ends', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  const stops = new Map();
+  let previous = null;
+  eachFrame(controller, clock, document, ({ name, fresh, now }) => {
+    if (fresh) {
+      if (previous) assert.ok(previous.gone !== undefined, `${previous.name}: guides still up at the end of the stop`);
+      previous = document.querySelector('.agentic-wire-guides') ? { name } : null;
+      if (previous) stops.set(name, previous);
+    }
+    if (!previous || previous.gone !== undefined) return;
+    if (!previous.fillGone && !document.querySelector('.agentic-wire-fill')) previous.fillGone = now;
+    const guides = document.querySelector('.agentic-wire-guides');
+    if (guides?.classList.contains('is-fading') && previous.fading === undefined) previous.fading = now;
+    if (!guides) previous.gone = now;
+  });
+  if (previous) assert.ok(previous.gone !== undefined, `${previous.name}: guides gone at the end`);
+  assertNoResidue(document);
+  if (!measurable(document)) return;
+  assert.ok(stops.size >= 2, `${stops.size} wired sections`);
+  for (const [name, stop] of stops) {
+    assert.ok(stop.fading !== undefined && stop.gone - stop.fading >= 400 && stop.gone - stop.fading <= 700, `${name}: faded from ${stop.fading}ms, gone ${stop.gone}ms`);
+    assert.ok(stop.fading >= stop.fillGone - FRAME, `${name}: guides stay up while the section is painted`);
+  }
+});
+
+test('cancelling, skipping or reduced motion mid-section removes every overlay and reveals the content', t => {
+  for (const action of ['wheel', 'skip', 'reduced', 'wheel-wireframe']) {
+    let listener;
+    const query = { matches: false, addEventListener: (_, callback) => { listener = callback; }, removeEventListener() {} };
+    const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true, media: () => query });
+    // Mid-paint, or (wireframe) while the black fill is still untouched.
+    const ready = () => {
+      const fill = document.querySelector('.agentic-wire-fill');
+      if (!fill || !document.querySelector('.agentic-skeleton')) return false;
+      return action === 'wheel-wireframe' ? fillClip(fill) === null && controller.tour.index > 0 : fillClip(fill) > 20;
+    };
+    while (controller.touring && clock.now() < 90000 && !ready()) clock.step(FRAME);
+    if (!measurable(document)) { controller.skip(); continue; }
+    assert.ok(ready(), `${action}: reached a section wireframe`);
+    const section = sectionOf(document, controller.tour.name);
+    assert.ok(section.querySelector('[data-build-state="pending"]'), `${action}: content still waiting`);
+    if (action.startsWith('wheel')) document.querySelector('#main').dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 120 }));
+    else if (action === 'skip') document.querySelector('[data-agentic-skip]').click();
+    else { query.matches = true; listener(); }
+    assert.equal(controller.touring, false, action);
+    assert.equal(document.querySelector('.agentic-wire, .agentic-wire-fill, .agentic-skeleton, .agentic-wire-guides, .agentic-wire-edge'), null, `${action}: no overlay left`);
+    assertNoResidue(document, { dock: action === 'reduced' ? 'none' : 'pill' });
+    clock.step(2000);
+    assert.equal(document.querySelector('.agentic-wire, .agentic-skeleton'), null, `${action}: nothing comes back`);
+  }
+});
+
+test('an unpainted fill never stays on screen past the grace plus the paint time, even when the paint agent is late', t => {
+  for (const late of [false, true]) {
+    const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+    let entered = null;
+    let worst = 0;
+    let worstName = '';
+    let name = '';
+    let forced = null;
+    eachFrame(controller, clock, document, frame => {
+      if (frame.fresh) {
+        entered = null;
+        name = frame.name;
+        // A layout shift pulls the next wired section into view at once,
+        // while its paint agent is still on the way.
+        if (late && !forced && frame.index > 1 && document.querySelector('.agentic-wire-fill')) {
+          const top = frame.section.getBoundingClientRect().top;
+          frame.section.style.marginTop = `${-Math.ceil(top - window.innerHeight + 240)}px`;
+          window.dispatchEvent(new window.Event('resize'));
+          forced = { name };
+        }
+      }
+      if (entered === null && frame.section.getBoundingClientRect().top < window.innerHeight) entered = frame.now;
+      if (entered === null) return;
+      const fill = document.querySelector('.agentic-wire-fill');
+      if (forced?.name === name && forced.gone === undefined) {
+        if (fill && fillClip(fill) !== null && forced.painted === undefined) forced.painted = frame.now - entered;
+        if (!fill) forced.gone = frame.now - entered;
+      }
+      if (fillOnScreen(document, window) && frame.now - entered > worst) { worst = frame.now - entered; worstName = name; }
+    });
+    assertNoResidue(document);
+    if (!measurable(document)) return;
+    assert.ok(worst <= GRACE + PAINT_MAX + FRAME, `${late ? 'late painter: ' : ''}${worstName} fill on screen ${worst}ms after it entered`);
+    if (!late) continue;
+    assert.ok(forced && forced.gone !== undefined, 'a wired section was brought into view early');
+    // Unless the sweep had already begun within the grace, the fill goes at once.
+    assert.ok(!(forced.painted <= GRACE + FRAME), `${forced.name}: the paint agent was not there in time`);
+    assert.ok(forced.gone <= GRACE + 2 * FRAME, `${forced.name}: fill wiped ${forced.gone}ms after it came into view`);
+  }
 });
