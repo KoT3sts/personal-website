@@ -65,8 +65,19 @@ const RIDE_ALONG = { desktop: 13, tablet: 6, phone: 4 };
 const MAX_CREW = { desktop: 16, tablet: 8, phone: 5 };
 const MIN_CREW = { desktop: 12, tablet: 6, phone: 4 };
 const ROTATE = { desktop: 2, tablet: 1, phone: 1 };
+// Spare roster agents each stop keeps in the dock for rescues (on top of
+// its builders), and on narrow screens the most agents out idling or
+// rescuing at once.
+const RESERVE = { desktop: 0, tablet: 2, phone: 3 };
+const NARROW_SPARE = 4;
 // Idle agents kept on screen when the side margins are too narrow (phones).
-const NARROW_IDLE = 2;
+const NARROW_IDLE = 3;
+// Rescues (virtual ms): content whose planned agent would be late, or that no
+// planned job covers, waits hidden for the nearest idle margin agent, which
+// flies in and builds it. `cap`: the longest it may sit hidden on screen;
+// `lead`: how early an agent is reserved before the item comes into view;
+// travel is quicker than a planned move (`travel` min/max).
+export const RESCUE = { cap: 450, lead: 420, travel: [200, 420], spare: 120 };
 
 export const ROLES = {
   orchestrator: { label: 'orchestrator', color: '#1d1e1b' },
@@ -88,7 +99,8 @@ export const ROLES = {
 export const CREWS = {
   desktop: { layout: 2, nav: 2, type: 3, copy: 4, art: 2, motion: 1, links: 3, a11y: 1, qa: 2 },
   tablet: { layout: 1, nav: 1, type: 2, copy: 2, art: 1, links: 1, qa: 1 },
-  phone: { layout: 1, type: 1, copy: 1, art: 1, qa: 1 },
+  // Phones: five builders plus three spare hands for rescues.
+  phone: { layout: 1, type: 2, copy: 2, art: 1, links: 1, qa: 1 },
 };
 const SECTION_CREW = { desktop: 5, tablet: 4, phone: 3 };
 // When a viewport class has no agent for a role, the job goes to the next role.
@@ -174,11 +186,15 @@ export const TOUR_STOPS = [
     { sel: '.capability', roles: ['copy', 'type', 'links', 'copy', 'type', 'links', 'copy', 'qa'], kind: 'place', multi: 8, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li' },
     { sel: '.capabilities-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
   ] },
-  { sel: '#experience', name: 'Experience', weight: 1.55, span: 1.25, note: 'layout → copy · roles framed', jobs: [
+  { sel: '#experience', name: 'Experience', weight: 1.85, span: 1.5, note: 'layout → copy · roles framed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#experience-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.experience-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
-    { sel: '.role-header', role: 'layout', kind: 'frame', multi: 2, act: 'framing role header' },
+    // Each role: company typed, then every title, its dates and the location.
+    { sel: '.role-header > h3', roles: ['type', 'type'], kind: 'type', multi: 2, label: true, act: 'setting', charMs: 50 },
+    { sel: '.role-title', roles: ['type', 'copy', 'type'], kind: 'type', multi: 3, label: true, act: 'typing', charMs: 40 },
+    { sel: '.role-date', roles: ['copy', 'links', 'copy'], kind: 'type', multi: 3, label: true, act: 'writing dates', charMs: 40 },
+    { sel: '.role-place', role: 'copy', kind: 'type', label: true, act: 'writing', charMs: 45 },
     { sel: '.role-group-head', role: 'nav', kind: 'place', multi: 4, label: true, name: 'h4', act: 'placing' },
     { sel: '.role-points > li', roles: ['copy', 'type', 'links', 'copy', 'type', 'qa', 'copy', 'links'], kind: 'wipe', multi: 8, rest: true, label: true, act: 'writing' },
     { sel: '.role-group > .tag-list', roles: ['art', 'a11y', 'art', 'links'], kind: 'place', multi: 4, act: 'tagging tools', kids: 'li' },
@@ -187,7 +203,11 @@ export const TOUR_STOPS = [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#work-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.work-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
-    { sel: '.project-card', role: 'art', kind: 'place', multi: 4, shown: true, byX: true, label: true, name: 'h3', act: 'placing' },
+    // Tall cards: the cover pops in as the card enters; its caption is
+    // written when it comes into view (a whole-card pop would show the
+    // caption long before anyone sees it being placed).
+    { sel: '.project-card', role: 'art', kind: 'place', multi: 4, shown: true, byX: true, label: true, name: 'h3', act: 'placing', pop: '.project-image-link' },
+    { sel: '.project-card-bottom h3', roles: ['type', 'copy'], kind: 'type', multi: 4, shown: true, byX: true, label: true, act: 'titling', charMs: 45 },
     { sel: '.gallery-controls', role: 'links', kind: 'place', act: 'wiring gallery controls', kids: 'button, .gallery-count' },
     { sel: '.work-end > *', roles: ['copy', 'links'], kind: 'wipe', multi: 2, act: 'writing footer line' },
     { sel: '.gallery-ground', role: 'motion', kind: 'reveal', act: 'drawing card shadows', work: 700 },
@@ -199,15 +219,22 @@ export const TOUR_STOPS = [
     { sel: '#skills-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.skill-list > div', roles: ['copy', 'type', 'links', 'copy', 'type'], kind: 'place', multi: 5, label: true, name: 'dt', act: 'listing', kids: 'li' },
     { sel: '.education-layout > h3', role: 'nav', kind: 'type', multi: 2, act: 'setting heading', charMs: 50 },
-    { sel: '.education-list > li', roles: ['copy', 'links'], kind: 'place', multi: 2, label: true, name: '.school', act: 'placing', kids: '.degree, .school-meta' },
+    // Each school: its name typed, then its degree and dates written.
+    { sel: '.education-list .school', roles: ['type', 'type'], kind: 'type', multi: 2, label: true, act: 'writing', charMs: 45 },
+    { sel: '.education-list .degree', roles: ['copy', 'copy'], kind: 'wipe', multi: 2, label: true, act: 'writing' },
+    { sel: '.education-list .school-meta', roles: ['links', 'links'], kind: 'type', multi: 2, label: true, act: 'writing dates', charMs: 40 },
     { sel: '.spoken-languages', role: 'copy', kind: 'wipe', act: 'writing languages' },
     { sel: '.skills-layout', role: 'a11y', kind: 'review', act: 'checking tag lists' },
   ] },
+  // The closing note between Approach and Contact is built on the Approach
+  // stop (`within` looks outside the stop's own section).
   { sel: '#approach', name: 'Approach', weight: 0.9, span: 0.3, note: 'type → copy · rows set', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#approach-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.approach-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
     { sel: '.approach-list > details', roles: ['copy', 'type', 'links'], kind: 'place', multi: 3, label: true, name: 'summary > span:nth-child(2)', act: 'placing', sub: ':scope > p' },
+    { sel: '.closing-note > .mono', within: '#notes', role: 'copy', kind: 'type', act: 'writing note line', charMs: 35 },
+    { sel: '.closing-note > p', within: '#notes', role: 'type', kind: 'type', act: 'setting closing line', charMs: 80 },
     { sel: '.approach-list', role: 'a11y', kind: 'review', act: 'checking disclosures' },
     { sel: '.approach-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
   ] },
@@ -382,12 +409,13 @@ export function initAgenticEntrance(document, window, config = {}) {
         current.events[current.next++].fn(t);
         if (run !== current) return;
       }
-      if (current.kind === 'build') guardBlanks(current, t);
+      if (current.kind === 'build') { guardBlanks(current, t); rescueTick(current, t); }
       if (current.wire) updateWire(current, t);
       if (current.guides) updateIntro(current, t);
       current.active.forEach(job => job.update(t));
       current.agents.forEach(agent => placeAgent(current, agent, t));
-      if (t >= current.total) {
+      // A rescue still under way finishes first (briefly), so nothing pops in.
+      if (t >= current.total && !(current.rescuing.size && t < current.total + 2500)) {
         // Hand the ride-along crew's positions (and the tour clock) to the
         // next stop, so nothing jumps between runs.
         carry = tour && current.stayers?.size
@@ -395,7 +423,15 @@ export function initAgenticEntrance(document, window, config = {}) {
             role: agent.role, label: agent.label, x: agent.x, y: agent.y, anchor: agent.anchor || null, goal: agent.goal || null,
           }))
           : null;
-        if (tour) tour.vt += t;
+        if (tour) {
+          tour.vt += t;
+          // Pool items still waiting stay hidden into the next stop, which
+          // re-marks them in this same task (nothing is painted between) and
+          // keeps counting how long they have been in view.
+          const waiting = current.pool.filter(job => !job.agent && !job.late && job.reveals.length);
+          tour.pending = new Map(waiting.map(job => [job.target, job.seenAt === undefined ? undefined : job.seenAt - t]));
+          tour.wasHidden = new Set(waiting.flatMap(job => [job.target, ...job.reveals]));
+        }
         const complete = current.onComplete;
         clearVisuals();
         complete();
@@ -594,7 +630,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   function statsOf(current) {
     const subagents = current.agents.filter(agent => agent.role !== 'orchestrator').length;
     const visible = current.agents.filter(agent => agent.cursor?.classList.contains('is-in') && !agent.cursor.classList.contains('is-docked')).length;
-    return { agents: subagents, cursors: current.agents.length, targets: current.jobs.length, done: current.done, working: current.working.size, visible };
+    return { agents: subagents, cursors: current.agents.length, targets: current.jobs.length + current.rescues.length, done: current.done, working: current.working.size, visible };
   }
 
   // ---- dock ---------------------------------------------------------------
@@ -899,12 +935,21 @@ export function initAgenticEntrance(document, window, config = {}) {
     current.measures = (current.measures || 0) + 1;
     current.view.clear();
     current.live.clear();
+    // Sticky elements (and their contents) do not move with the scroll:
+    // re-read them instead.
+    const sticky = new Map();
+    const inSticky = element => {
+      for (let node = element; node && node !== document.body; node = node.parentElement) {
+        if (!sticky.has(node)) sticky.set(node, window.getComputedStyle?.(node).position === 'sticky');
+        if (sticky.get(node)) return true;
+      }
+      return false;
+    };
     current.watch.forEach(element => {
       const entry = readRect(element);
       if (current.textTargets.has(element)) entry.text = readText(element);
       current.cache.set(element, entry);
-      // Sticky elements do not move with the scroll: re-read them instead.
-      if (window.getComputedStyle?.(element).position === 'sticky') current.live.add(element);
+      if (inSticky(element)) current.live.add(element);
     });
     measureColumn(current);
     if (current.gapProbe) {
@@ -949,6 +994,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     let view = current.view.get(element);
     if (!view && current.live.has(element)) {
       view = readRect(element);
+      if (raw.text) view.text = readText(element) || undefined;
       current.view.set(element, view);
     }
     if (!view) {
@@ -961,13 +1007,13 @@ export function initAgenticEntrance(document, window, config = {}) {
   const textBox = (current, element) => box(current, element).text || box(current, element);
   const isMeasurable = (current, elements) => elements.some(element => { const r = box(current, element); return r.w > 0 || r.h > 0; });
   const inView = (current, element) => { const r = box(current, element); return r.w > 0 && r.h > 0 && r.y < current.vh && r.y + r.h > 0; };
-  // In view by the end of the stop's planned scroll (`dyFinal`), below the
-  // fixed header.
+  // In view at some point during the stop's planned scroll (from now to
+  // `dyFinal`), below the fixed header. Items the scroll carries past (a
+  // section's header row on a tall stop) count too: they are seen on the way.
   const willShow = (current, element) => {
     if (!current.measurable) return true;
     const r = box(current, element);
-    const y = r.y - current.dyFinal;
-    return r.w > 0 && r.h > 0 && y < current.vh * 0.92 && y + r.h > Math.min(90, current.vh * 0.1);
+    return r.w > 0 && r.h > 0 && r.y - current.dyFinal < current.vh * 0.92 && r.y + r.h > Math.min(90, current.vh * 0.1);
   };
   // When the planned scroll brings an item's top just inside the bottom edge:
   // its agent arrives then, so content is built as it slides in.
@@ -1067,7 +1113,8 @@ export function initAgenticEntrance(document, window, config = {}) {
       const { vw, vh } = current;
       const column = current.column || { left: vw * 0.06, right: vw * 0.94, narrow: vw * 0.06 < 40 };
       if (column.narrow) {
-        return { x: vw * (k % 2 ? 0.78 : 0.22), y: vh - 110, lo: 10, hi: vw - 10, fx: 0.4, fy: 0.35 };
+        const slot = k % NARROW_IDLE;
+        return { x: vw * [0.2, 0.8, 0.5][slot % 3], y: vh - (slot === 2 ? 150 : 110), lo: 10, hi: vw - 10, fx: 0.4, fy: 0.35 };
       }
       const right = k % 2 === 1;
       const lo = right ? column.right + 8 : 10;
@@ -1149,6 +1196,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   // ---- jobs ---------------------------------------------------------------
   function createJob(current, spec, target, reveals) {
     const job = { ...spec, target, reveals, agent: null, ui: [] };
+    job.spec = spec;
     const s = current.scale;
     const kind = current.kind;
     const r = () => box(current, target);
@@ -1431,6 +1479,16 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (run === current) job.target.dataset.agenticJob = job.kind;
     };
 
+    // Handed to a rescuing agent: the rescue job takes the content (and the
+    // skeleton); this one keeps only a decorative pass when its agent arrives.
+    job.release = () => {
+      job.late = true;
+      job.handed = true;
+      job.reveals = [];
+      job.onPlace = null;
+      job.kind = DEMOTE[job.kind] || job.kind;
+    };
+
     job.finish = () => {
       job.onPlace?.();
       job.reveals.forEach(element => cleanTarget(element));
@@ -1484,6 +1542,8 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (index > 0 && job.wave) t = Math.max(t, job.wave * current.scale);
       // Jobs may bring their own travel time (the paint agent hurries).
       const travel = (job.travelFrom ? job.travelFrom(position) : travelMs(current, position, entry)) * factor;
+      // A rescue at the head of a queue leaves at once (no start stagger).
+      if (index === 0 && job.rescue) t = Math.min(t, 40 * current.scale);
       // On spanning stops, arrive as the item scrolls into view.
       if (job.readyAt) t = Math.max(t, job.readyAt - travel);
       job.start = t;
@@ -1501,10 +1561,12 @@ export function initAgenticEntrance(document, window, config = {}) {
   function fitQueue(current, agent, firstStart, from, deadline) {
     const gaps = () => agent.queue.length * current.jobGap;
     let factor = 1;
+    agent.factor = 1;
     let free = simulate(current, agent, firstStart, from, factor);
     if (free > deadline) {
       factor = Math.max(0.8, (deadline - firstStart - gaps()) / Math.max(1, free - firstStart - gaps()));
       free = simulate(current, agent, firstStart, from, factor);
+      agent.factor = factor;
     }
     while (free > deadline && agent.queue.length > 1 && agent.queue.some(job => OPTIONAL.has(job.kind))) {
       const drop = [...agent.queue].reverse().find(job => OPTIONAL.has(job.kind));
@@ -1516,6 +1578,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       factor *= Math.max(0.1, (deadline - firstStart - gaps()) / Math.max(1, free - firstStart - gaps()));
       free = simulate(current, agent, firstStart, from, factor);
     }
+    agent.factor = factor;
     return free;
   }
 
@@ -1981,11 +2044,74 @@ export function initAgenticEntrance(document, window, config = {}) {
     const shownAt = job => (paint && Number.isFinite(paint.arrive) && current.wire.section.contains(job.target)
       ? Math.max(job.readyAt, wipeTime(current, job.target, paint.arrive, paint.work))
       : job.readyAt);
-    current.jobs.forEach(job => {
-      if (job.reveals.length && job.agent !== orchestrator && Number.isFinite(job.readyAt) && job.arrive > shownAt(job) + 200 * anim) {
-        job.downgrade();
-        if (tour) tour.late++;
+    // A job whose agent would arrive after its item is seen is rescued at
+    // plan time: the crew agent that can get there first (an idle carried
+    // agent in the margins if it can) flies in at rescue speed, as long as
+    // nothing else it does gets later. Only if nobody can does the job go to
+    // the run's pool, where an agent freed up later may still take it. Pool
+    // items (content no planned job covers) are offered to the crew the same way.
+    const allowance = job => (job.rescue ? RESCUE.cap - 50 * anim : 200 * anim);
+    const isLate = job => job.reveals.length && !job.decor && job.agent && job.agent !== orchestrator && Number.isFinite(job.readyAt) && job.arrive > shownAt(job) + allowance(job);
+    const resim = agent => { agent.free = agent.queue.length ? simulate(current, agent, agent.firstStart, agent.from, agent.factor || 1) : 0; };
+    const order = agent => agent.queue.sort((a, b) => (a === paint ? -1 : b === paint ? 1 : (a.readyAt || 0) - (b.readyAt || 0)));
+    const assign = (job, skip, until = Infinity) => {
+      job.rescue = true;
+      job.travelFrom = from => rescueTravel(current, from, job.entry());
+      let best = null;
+      crew.forEach(agent => {
+        if (agent === skip) return;
+        const saved = agent.queue.map(other => [other, other.start, other.arrive, other.end, other.work, other.typeMs]);
+        const free = agent.free;
+        agent.queue.push(job);
+        job.agent = agent;
+        order(agent);
+        const after = simulate(current, agent, agent.firstStart, agent.from, agent.factor || 1);
+        const fits = job.arrive <= shownAt(job) + allowance(job)
+          && saved.every(([other, , arrive]) => !(Number.isFinite(other.readyAt) && other.reveals.length) || other.arrive <= Math.max(arrive, shownAt(other) + allowance(other)))
+          && after <= Math.max(deadline, free) && job.end <= until;
+        const score = job.arrive + (agent.carry && !agent.queue.some(other => other !== job) ? 0 : 150 * anim);
+        if (fits && (!best || score < best.score)) best = { agent, score };
+        agent.queue.splice(agent.queue.indexOf(job), 1);
+        saved.forEach(([other, ...times]) => { [other.start, other.arrive, other.end, other.work, other.typeMs] = times; });
+        agent.free = free;
+      });
+      if (!best) {
+        job.agent = null;
+        job.rescue = false;
+        delete job.travelFrom;
+        job.start = job.arrive = job.end = undefined;
+        job.work = job.baseWork;
+        job.typeMs = job.baseType;
+        return false;
       }
+      best.agent.queue.push(job);
+      job.agent = best.agent;
+      order(best.agent);
+      resim(best.agent);
+      if (tour) tour.rescued++;
+      return true;
+    };
+    for (let guard = current.jobs.length; guard > 0; guard--) {
+      const job = current.jobs.filter(isLate).sort((a, b) => a.readyAt - b.readyAt)[0];
+      if (!job) break;
+      const owner = job.agent;
+      owner.queue.splice(owner.queue.indexOf(job), 1);
+      resim(owner);
+      if (assign(job, owner)) continue;
+      current.jobs.splice(current.jobs.indexOf(job), 1);
+      job.pooled = true;
+      current.pool.push(job);
+    }
+    // Pool items only fill gaps: the stop does not get longer for them
+    // (except the last stop, which settles anyway).
+    const horizon = Math.max(deadline, lead + current.budget);
+    const builtBy = last ? Infinity : Math.max(0, ...current.jobs.filter(job => job.agent && job.agent !== orchestrator && HIDES.has(job.kind)).map(job => job.end));
+    current.pool.filter(job => Number.isFinite(job.readyAt) && shownAt(job) <= horizon).sort((a, b) => shownAt(a) - shownAt(b)).forEach(job => {
+      job.readyAt = shownAt(job);
+      if (!assign(job, null, builtBy)) return;
+      current.pool.splice(current.pool.indexOf(job), 1);
+      job.pooled = false;
+      current.jobs.push(job);
     });
 
     // Hand over once the builders are done.
@@ -2224,10 +2350,11 @@ export function initAgenticEntrance(document, window, config = {}) {
       label.dataset.guide = id;
       return label;
     });
-    current.jobs.forEach(job => {
-      if (!job.reveals.length || job.decor) return;
+    [...current.jobs, ...current.pool].forEach(job => {
+      if (!job.reveals.length || job.decor || !wire.section.contains(job.target)) return;
       const text = TEXT_KINDS.has(job.kind);
-      const elements = [job.target, ...job.reveals.filter(element => element !== job.target && !job.target.contains(element))];
+      // A block per hidden piece (a place job may hide only part of its item).
+      const elements = job.reveals.filter(element => !job.reveals.some(other => other !== element && other.contains(element)));
       const blocks = [];
       elements.forEach(element => {
         const b = text ? textBox(current, element) : box(current, element);
@@ -2369,8 +2496,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     addEvent(current, current.total - 90 * s, () => current.stage.classList.add('is-leaving'));
   }
 
-  // Never leave content hidden on screen: if an item is visible for more
-  // than a moment before its agent gets there, show it and downgrade the job.
+  // Never leave content hidden on screen for long: an item that is in view
+  // before its agent gets there waits while that agent is due within the
+  // rescue cap; otherwise the nearest idle margin agent takes it over. Only
+  // when no agent can make it within the cap is it shown at once.
   function guardBlanks(current, t) {
     if (!current.measurable || !current.guarded.size) return;
     const edge = current.vh * 0.97;
@@ -2381,8 +2510,329 @@ export function initAgenticEntrance(document, window, config = {}) {
       // Still under a section's unpainted fill: not seen yet (the fill has its own guard).
       if (underFill(current, job.target, r)) return;
       if (job.seenAt === undefined) job.seenAt = t;
-      else if (t - job.seenAt > 220) { job.downgrade(); current.guarded.delete(job); if (tour) tour.late++; }
+      if (Number.isFinite(job.arrive) && job.arrive <= job.seenAt + RESCUE.cap - 24 * current.anim) return;
+      if (handOver(current, job, t)) { current.guarded.delete(job); return; }
+      if (t - job.seenAt >= giveUpAfter(current)) {
+        job.downgrade();
+        current.guarded.delete(job);
+        if (tour) { tour.late++; tour.instant++; }
+      }
     });
+  }
+
+  // ---- rescues: idle margin agents build what nobody else will in time -----
+  // Content that no planned job covers (or whose job was judged late) waits
+  // hidden in the run's pool. As each item is about to come into view, the
+  // nearest idle agent flies in from the margin and types or places it, then
+  // drifts back to its spot. Agents are taken only while they idle and have
+  // nothing planned until well after the rescue (`spare`).
+  const POOL_SKIP = '[hidden], .project-stories, dialog, .agentic-stage, .agentic-dock, [data-agentic-replay]';
+  const ownText = element => [...element.childNodes].some(node => node.nodeType === 3 && node.nodeValue.trim());
+  // How long an on-screen item may wait for a rescuer before it is shown.
+  const giveUpAfter = current => RESCUE.cap - RESCUE.travel[0] * 0.6 * current.anim;
+
+  // The roots of every section the tour has reached (and the next one) that
+  // is not wholly above the view, plus their `within` roots: their unbuilt
+  // content may still come in.
+  function poolScope() {
+    if (!tour) return [];
+    const scope = [];
+    // The next section too: its top often comes in while this stop runs.
+    tour.stops.slice(1, tour.index + 2).forEach(stopInfo => {
+      const roots = [stopInfo.section, ...(stopInfo.jobs || []).filter(spec => spec.within).map(spec => document.querySelector(spec.within))];
+      roots.forEach(rootNode => {
+        if (!rootNode || scope.some(entry => entry.root === rootNode)) return;
+        const r = rootNode.getBoundingClientRect();
+        if (!(r.height > 0) || r.bottom > 0) scope.push({ stopInfo, root: rootNode });
+      });
+    });
+    return scope;
+  }
+
+  // Candidates, measured with everything else: every builder spec's items in
+  // scope, then any other text block (an element with its own text, outside
+  // those items), so nothing with words in it just appears.
+  function gatherPool(current, scope) {
+    const items = [];
+    const blocks = [];
+    const covered = new Set();
+    // Items hidden whole (a place job with `pop` hides only part of its item).
+    const whole = new Set();
+    scope.forEach(({ stopInfo, root: rootNode }) => {
+      (stopInfo.jobs || []).forEach(spec => {
+        if (!HIDES.has(spec.kind) || spec.group) return;
+        if ((spec.within ? document.querySelector(spec.within) : stopInfo.section) !== rootNode) return;
+        specNodes(spec, stopInfo.section).forEach(node => {
+          if (covered.has(node)) return;
+          covered.add(node);
+          if (!spec.pop) whole.add(node);
+          items.push({ spec, node });
+          // Bounds only for now; text lines are read for the items pooled.
+          current.watch.add(node);
+          const sub = spec.sub ? node.querySelector(spec.sub) : null;
+          if (sub) current.watch.add(sub);
+          if (spec.kids) node.querySelectorAll(spec.kids).forEach(kid => current.watch.add(kid));
+        });
+      });
+    });
+    scope.forEach(({ root: rootNode }) => {
+      for (const element of rootNode.querySelectorAll('*')) {
+        if (covered.has(element) || !ownText(element) || element.closest(POOL_SKIP)) continue;
+        let inside = false;
+        for (let node = element.parentElement; node && node !== rootNode; node = node.parentElement) if (whole.has(node) || blocks.includes(node)) { inside = true; break; }
+        if (inside) continue;
+        covered.add(element);
+        blocks.push(element);
+        current.watch.add(element);
+      }
+    });
+    return { items, blocks };
+  }
+
+  // Laid out and visible (gallery back cards and closed content are not).
+  function rendered(current, element) {
+    const r = box(current, element);
+    if (!(r.w > 0 && r.h > 0)) return false;
+    for (let node = element; node && node !== document.body; node = node.parentElement) {
+      const style = window.getComputedStyle?.(node);
+      if (!style) return true;
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      // Items handed over hidden were just un-marked: their own opacity may
+      // still be on its way up from our pending state.
+      if (style.opacity === '0' && !node.hasAttribute('data-reveal') && !current.wasHidden.has(node)) return false;
+    }
+    return true;
+  }
+
+  // Pool jobs for candidates still below the fold that no planned job claims.
+  function makePool(current, gathered) {
+    const pool = [];
+    if (!current.measurable || !tour) return pool;
+    const claimed = [];
+    // What planned jobs hide (a place job may hide only part of its item).
+    current.jobs.forEach(job => { if (HIDES.has(job.spec?.kind)) claimed.push(...job.reveals); });
+    const taken = element => claimed.some(other => other === element || other.contains(element) || element.contains(other));
+    const waiting = current.waiting;
+    const usable = node => !taken(node) && (belowFold(current, node) || waiting.has(node)) && rendered(current, node);
+    // Text lines (read now, in the same batch as the bounds) for text jobs and sub lines.
+    const lines = element => {
+      if (current.textTargets.has(element)) return;
+      current.textTargets.add(element);
+      const entry = current.cache.get(element);
+      if (entry) entry.text = readText(element);
+    };
+    const add = (spec, node, reveals) => {
+      if (TEXT_KINDS.has(spec.kind)) lines(node);
+      if (spec.parts?.sub) lines(spec.parts.sub);
+      const job = createJob(current, { ...spec, pooled: true }, node, reveals);
+      job.pooled = true;
+      job.readyAt = readyAt(current, node);
+      // Carried over still hidden: its time in view so far counts.
+      const seen = waiting.get(node);
+      if (seen !== undefined) { job.seenAt = seen; job.readyAt = seen; }
+      claimed.push(...reveals);
+      pool.push(job);
+    };
+    gathered.items.forEach(({ spec, node }, index) => {
+      if (!usable(node)) return;
+      const item = itemSpec(current, spec, node, index);
+      add(item, node, item.parts ? item.parts.all : [node]);
+    });
+    gathered.blocks.forEach(node => {
+      if (!usable(node)) return;
+      const short = cleanName(node.textContent).length <= 60;
+      add(itemSpec(current, { role: 'copy', kind: short ? 'type' : 'wipe', act: 'writing', label: true, charMs: 40 }, node, 0), node, [node]);
+    });
+    return pool.sort((a, b) => box(current, a.target).y - box(current, b.target).y);
+  }
+
+  // When each pool item is first seen (after the paint wipe in a wired
+  // section), and when its rescuer should be reserved.
+  function readyPool(current) {
+    const paint = current.wire?.paint;
+    current.pool.forEach(job => {
+      if (paint && Number.isFinite(paint.arrive) && current.wire.section.contains(job.target)) {
+        job.readyAt = Math.max(job.readyAt, wipeTime(current, job.target, paint.arrive, paint.work));
+      }
+      job.dueAt = job.readyAt - RESCUE.lead * current.anim;
+    });
+  }
+
+  function insertEvent(current, at, fn) {
+    let index = current.events.length;
+    while (index > current.next && current.events[index - 1].at > at) index--;
+    current.events.splice(index, 0, { at, fn });
+  }
+
+  // Agents that may take a rescue now, with `until` their next planned move:
+  // idle ones drifting at a standby spot (or on their way back from a
+  // rescue), then agents resting in the dock with nothing left to do. On
+  // narrow screens the dock is only called on while fewer than
+  // NARROW_SPARE agents are out idling or rescuing.
+  function freeAgents(current, t) {
+    const free = [];
+    let spare = 0;
+    const docked = [];
+    current.agents.forEach(agent => {
+      if (agent.role === 'orchestrator' || !agent.cursor) return;
+      const classes = agent.cursor.classList;
+      const out = classes.contains('is-in') && !classes.contains('is-docked');
+      if (agent.segs.length) segPoint(agent, t, current);
+      const seg = agent.segs[agent.si];
+      if (out && (agent.rescueBusy > t || seg?.dyn || seg?.kind === 'drift')) spare++;
+      if (agent.rescueBusy > t) return;
+      if (!out) {
+        // Docked for good: no planned move left, and back at its dot.
+        if (agent.segs.some(other => !other.dyn && other.t0 > t) || (seg && t < seg.t1)) return;
+        docked.push({ agent, seg: null, docked: true, until: Infinity });
+        return;
+      }
+      if (!seg || !(seg.ret || (seg.kind === 'drift' && t >= seg.t0))) return;
+      const next = agent.segs.slice(agent.si + 1).find(other => !other.dyn);
+      free.push({ agent, seg, until: next ? next.t0 : Infinity });
+    });
+    if (!current.column?.narrow || spare < NARROW_SPARE) free.push(...docked);
+    return free;
+  }
+
+  const rescueTravel = (current, from, to) => clamp(160 + distance(from, to) * 0.3, RESCUE.travel[0], RESCUE.travel[1]) * current.anim;
+  const returnTravel = (current, from, to) => clamp(320 + distance(from, to) * 0.35, 450, 800) * current.anim;
+
+  // The nearest free agent that can reach the item in time (before it shows,
+  // or within the cap once it is on screen) and be back before its next move.
+  function pickRescuer(current, job, t, free, limit = Infinity) {
+    const to = job.entry();
+    let best = null;
+    free.forEach(option => {
+      const from = option.docked ? dotPoint(current, option.agent) : option.agent.position || segPoint(option.agent, t, current);
+      let travel = rescueTravel(current, from, to);
+      let start = t;
+      if (job.seenAt !== undefined) {
+        // Aim a frame inside the cap (work begins on the next frame after arrival).
+        const room = job.seenAt + RESCUE.cap - 24 * current.anim - t;
+        if (room < RESCUE.travel[0] * 0.6 * current.anim) return;
+        travel = Math.min(travel, room);
+      } else if (Number.isFinite(job.readyAt)) {
+        start = Math.max(t, job.readyAt - travel);
+      }
+      const home = option.seg?.kind === 'drift' ? option.seg.point() : from;
+      const back = returnTravel(current, to, home) + RESCUE.spare * current.anim;
+      // A tight window is met by working a little faster (down to 0.7x).
+      const room = Math.min(limit, option.until - back) - start - travel;
+      const pace = room >= job.baseWork ? 1 : room / job.baseWork;
+      if (pace < 0.7) return;
+      // Idle agents first; the dock only when none of them can make it.
+      const score = distance(from, to) + (option.docked ? 400 : 0) + (pace < 1 ? 120 : 0);
+      if (!best || score < best.score) best = { option, from, travel, start, score, pace };
+    });
+    return best;
+  }
+
+  function dispatchRescue(current, pick, job, t) {
+    const { agent, seg, docked } = pick.option;
+    const fixed = { ...pick.from };
+    let home;
+    let from = () => fixed;
+    let anchor = null;
+    if (docked) {
+      // Called out of the dock: it goes back there afterwards.
+      home = () => dotPoint(current, agent);
+      from = home;
+    } else {
+      const anchorSeg = seg.kind === 'drift' ? seg : agent.segs.slice(agent.si + 1).find(other => other.dyn && other.kind === 'drift') || [...agent.segs.slice(0, agent.si + 1)].reverse().find(other => other.kind === 'drift');
+      anchor = anchorSeg?.anchor || (() => fixed);
+      home = drifting(current, agent, anchor);
+      if (seg.kind === 'drift') from = seg.point;
+    }
+    job.agent = agent;
+    job.start = pick.start;
+    job.arrive = pick.start + pick.travel;
+    job.work = job.baseWork * pick.pace;
+    job.typeMs = job.baseType * pick.pace;
+    job.end = job.arrive + job.work;
+    const backAt = job.end + returnTravel(current, job.exit(), home());
+    // Replace any earlier rescue's way home; keep every planned move.
+    agent.segs = [
+      ...agent.segs.slice(0, agent.si + 1),
+      { t0: job.start, t1: job.arrive, kind: 'travel', dyn: true, point: p => curve(from(), job.entry(), agent.bend, easeInOut(p)) },
+      { t0: job.arrive, t1: job.end, kind: 'work', dyn: true, point: p => job.cursorAt(p) },
+      { t0: job.end, t1: backAt, kind: 'travel', dyn: true, ret: true, point: p => curve(job.exit(), home(), agent.bend, easeInOut(p)) },
+      docked ? { t0: backAt, t1: backAt, kind: 'hold', dyn: true, point: home } : { t0: backAt, t1: backAt, kind: 'drift', dyn: true, point: home, anchor },
+      ...agent.segs.slice(agent.si + 1).filter(other => !other.dyn),
+    ];
+    const token = {};
+    agent.rescueToken = token;
+    agent.rescueBusy = job.end;
+    current.rescues.push(job);
+    current.rescuing.add(job);
+    if (tour) tour.rescued++;
+    insertEvent(current, job.start, () => {
+      if (docked) { agent.cursor.classList.remove('is-docked'); agent.cursor.classList.add('is-in'); agent.dot?.classList.remove('is-done'); }
+      startWorking(current, agent);
+      agent.cursor.classList.remove('is-idle');
+      agent.cursor.classList.add('is-working');
+      say(agent, job.act);
+    });
+    insertEvent(current, job.arrive, now => { job.begin(now); current.active.add(job); });
+    insertEvent(current, job.end, () => {
+      completeJob(current, job);
+      current.rescuing.delete(job);
+      if (agent.rescueToken === token) { agent.cursor.classList.remove('is-working'); say(agent, ''); }
+    });
+    insertEvent(current, backAt, () => {
+      if (agent.rescueToken !== token) return;
+      if (docked) dockAgent(current, agent);
+      else agent.cursor.classList.add('is-idle');
+    });
+  }
+
+  // A planned job whose agent will be late: an idle agent takes it over, and
+  // the planned agent only passes by for a decorative check.
+  function handOver(current, job, t) {
+    const free = freeAgents(current, t).filter(option => option.agent !== job.agent);
+    if (!free.length) return false;
+    const rescue = createJob(current, { ...job.spec, pooled: true }, job.target, job.reveals);
+    rescue.readyAt = t;
+    rescue.seenAt = job.seenAt;
+    const pick = pickRescuer(current, rescue, t, free);
+    if (!pick) return false;
+    rescue.onPlace = job.onPlace;
+    job.release();
+    dispatchRescue(current, pick, rescue, t);
+    return true;
+  }
+
+  // Per frame: reserve rescuers for pool items about to come into view; show
+  // an item at once only when nobody can reach it within the cap.
+  function rescueTick(current, t) {
+    if (!current.measurable || !current.pool.length) return;
+    const ending = t >= current.total;
+    let free = null;
+    for (const job of current.pool) {
+      if (job.agent || job.late) continue;
+      const r = box(current, job.target);
+      const onScreen = r.h > 0 && r.y < current.vh && r.y + r.h > 0 && !underFill(current, job.target, r);
+      if (onScreen && job.seenAt === undefined) job.seenAt = t;
+      if (!onScreen && !(t >= job.dueAt)) continue;
+      // Once the stop is over only items already in view are taken, and a
+      // rescue that would run on well past the stop is left to the next one
+      // (the item stays hidden into it).
+      if (!ending || current.lastStop || onScreen) {
+        free ??= freeAgents(current, t);
+        // In view already: better to run on past the stop than to pop it in.
+        const limit = current.lastStop ? Infinity : current.total + (onScreen ? 2300 : 0);
+        const pick = free.length ? pickRescuer(current, job, t, free, limit) : null;
+        if (pick) {
+          free.splice(free.indexOf(pick.option), 1);
+          dispatchRescue(current, pick, job, t);
+          continue;
+        }
+      }
+      if (onScreen && t - job.seenAt >= giveUpAfter(current)) {
+        job.downgrade();
+        if (tour) { tour.late++; tour.instant++; }
+      }
+    }
   }
 
   function completeJob(current, job) {
@@ -2423,6 +2873,8 @@ export function initAgenticEntrance(document, window, config = {}) {
   }
 
   function placeAgent(current, agent, t) {
+    // A fresh agent whose every job went to the rescue pool stays in the dock.
+    if (!agent.segs.length) return;
     const point = segPoint(agent, t, current);
     agent.position = point;
     const seg = agent.segs[agent.si];
@@ -2457,7 +2909,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       jobs.push(createJob(current, spec, target, reveals));
     };
     plan.forEach(spec => {
-      const nodes = [...rootNode.querySelectorAll(spec.sel)];
+      const nodes = specNodes(spec, rootNode);
       if (!nodes.length) return;
       if (current.kind === 'pass') {
         nodes.filter(node => !used.has(node) && (!current.measurable || inView(current, node)))
@@ -2472,7 +2924,7 @@ export function initAgenticEntrance(document, window, config = {}) {
           push(hidden.length ? spec : { ...spec, kind: DEMOTE[spec.kind] || spec.kind }, container, hidden);
         } else {
           // One job per item, up to `multi`; `rest` cascades the others.
-          let shown = nodes.filter(node => !used.has(node) && willShow(current, node) && (!spec.shown || isShown(node)));
+          let shown = nodes.filter(node => !used.has(node) && willShow(current, node) && (!spec.shown || rendered(current, node)));
           if (spec.byX) shown = shown.sort((a, b) => box(current, a).x - box(current, b).x);
           const own = shown.slice(0, spec.multi || 1);
           own.forEach((node, index) => {
@@ -2481,7 +2933,10 @@ export function initAgenticEntrance(document, window, config = {}) {
             else if (belowFold(current, node)) push(item, node, item.parts ? item.parts.all : [node]);
             else push({ ...item, kind: DEMOTE[item.kind], parts: null }, node, []);
           });
-          const rest = spec.rest ? shown.slice(own.length).filter(node => belowFold(current, node)) : [];
+          // The cascade only takes items close below the first one: farther
+          // ones would appear long after the agent left (the pool builds them).
+          let rest = spec.rest ? shown.slice(own.length).filter(node => belowFold(current, node)) : [];
+          if (rest.length && current.measurable) { const top = box(current, rest[0]).y; rest = rest.filter(node => box(current, node).y <= top + current.vh * 0.3); }
           if (rest.length) push({ ...spec, role: spec.role || spec.roles[0], kind: 'reveal', act: `placing ${rest.length} more` }, rest[0], rest);
         }
       } else if (spec.each && spec.group && current.tier !== 'desktop') {
@@ -2497,10 +2952,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     return cap ? jobs.slice(0, cap) : jobs;
   }
 
-  // Rendered at all (the gallery keeps back cards transparent or hidden).
-  function isShown(element) {
-    const style = window.getComputedStyle?.(element);
-    return !style || (style.visibility !== 'hidden' && style.opacity !== '0');
+  // A spec's items: inside the stop's section, or under `within` elsewhere.
+  function specNodes(spec, rootNode) {
+    const scope = spec.within ? document.querySelector(spec.within) : rootNode;
+    return scope ? [...scope.querySelectorAll(spec.sel)] : [];
   }
 
   const cleanName = text => (text || '').replace(/[↗↓↑→←]/g, '').replace(/\s+/g, ' ').trim();
@@ -2558,6 +3013,12 @@ export function initAgenticEntrance(document, window, config = {}) {
       working: new Set(),
       agents: [],
       jobs: [],
+      pool: [],
+      rescues: [],
+      rescuing: new Set(),
+      // Pool items the previous stop handed over still hidden (and when each was first seen).
+      waiting: new Map(),
+      wasHidden: new Set(),
       dots: [],
       watch: new Set(),
       live: new Set(),
@@ -2574,7 +3035,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   function gather(current, plan, rootNode) {
     const candidates = new Set();
     plan.forEach(spec => {
-      rootNode.querySelectorAll(spec.sel).forEach(node => {
+      specNodes(spec, rootNode).forEach(node => {
         candidates.add(node);
         if (TEXT_KINDS.has(spec.kind)) current.textTargets.add(node);
         const sub = spec.sub ? node.querySelector(spec.sub) : null;
@@ -2592,7 +3053,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     current.events.forEach(event => { if (!Number.isFinite(event.at)) event.at = 0; });
     if (!Number.isFinite(current.total) || current.total <= 0) current.total = current.budget;
     current.events.sort((a, b) => a.at - b.at);
-    current.jobs.forEach(job => {
+    [...current.jobs, ...current.pool].forEach(job => {
       current.marked.add(job.target);
       job.target.dataset.agenticJob = job.kind;
       const parts = job.parts;
@@ -2631,7 +3092,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     observer?.disconnect();
     clearVisuals();
     const stops = TOUR_STOPS.map(stopInfo => ({ ...stopInfo, section: document.querySelector(stopInfo.sel) })).filter(stopInfo => stopInfo.section);
-    tour = { stops, index: 0, firstVisit: !replay, realStart: clock(), hiddenMs: 0, workers: new Set(), vt: 0, late: 0 };
+    tour = { stops, index: 0, firstVisit: !replay, realStart: clock(), hiddenMs: 0, workers: new Set(), vt: 0, late: 0, rescued: 0, instant: 0 };
     planSteps = stops.map(stopInfo => ({ label: planName(stopInfo.name), state: 'planned', agents: 0 }));
     carry = null;
     sectionsEligible = false;
@@ -2815,6 +3276,12 @@ export function initAgenticEntrance(document, window, config = {}) {
         return false;
       });
     }
+    // Spare hands: roster agents waiting in the dock for rescues.
+    for (let k = 0; k < RESERVE[current.tier]; k++) {
+      const role = Object.keys(counts).find(name => freshLabel(name));
+      if (!role) break;
+      freshAgent(role).reserve = true;
+    }
   }
 
   function startBuild(stopInfo) {
@@ -2824,7 +3291,12 @@ export function initAgenticEntrance(document, window, config = {}) {
     showTourDock(tour.index);
     const tier = crewTier(width());
     const current = prepare('build', buildDuration(tier) * (stopInfo.weight || 1));
+    current.waiting = tour.pending || new Map();
+    current.wasHidden = tour.wasHidden || new Set();
+    tour.pending = tour.wasHidden = null;
     const candidates = gather(current, stopInfo.jobs || [], section);
+    // Everything else still to come in (this section and earlier ones).
+    const gathered = gatherPool(current, poolScope());
     current.heading = section.querySelector('h2');
     const handoff = stopInfo.handoff ? section.querySelector(stopInfo.handoff) : null;
     const following = nextStop();
@@ -2834,6 +3306,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (current.measurable) planScroll(current, stopInfo, following);
     current.jobs = collect(current, stopInfo.jobs || [], section);
     current.jobs.forEach(job => { job.readyAt = readyAt(current, job.target); });
+    current.pool = makePool(current, gathered);
     planWire(current, stopInfo);
     buildCrew(current);
     if (current.wire) settlePainter(current);
@@ -2845,6 +3318,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     buildStage(current);
     remeasureDots(current);
     planBuild(current, stopInfo);
+    readyPool(current);
     if (current.wire) buildWire(current);
     if (stopInfo.note) addEvent(current, current.total * 0.5, () => showNote(stopInfo.note));
     launch(current, advanceTour);
@@ -3011,8 +3485,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     get tour() { return tour ? { index: tour.index, total: tour.stops.length, name: tour.stops[tour.index]?.name } : null; },
     get stats() { return run ? statsOf(run) : { ...lastStats, working: 0, visible: 0 }; },
     get speed() { return speed; },
-    // The tour's scroll model (px, px/s) and how many jobs were shown early.
-    get scroll() { return { y: tourScroll.y, v: tourScroll.v, late: tour ? tour.late : 0 }; },
+    // The tour's scroll model (px, px/s); how many jobs were shown early, how
+    // many of those with no agent at all, and how many idle agents rescued.
+    get scroll() { return { y: tourScroll.y, v: tourScroll.v, late: tour ? tour.late : 0, instant: tour ? tour.instant : 0, rescued: tour ? tour.rescued : 0 }; },
     get crewTier() { return crewTier(width()); },
     get crewSize() { return crewSize(width()); },
     whenTourEnds(callback) { if (tour) tourEndCallbacks.push(callback); else callback(); },

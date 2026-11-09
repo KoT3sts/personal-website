@@ -4,6 +4,8 @@ Updated: November 8, 2026 (America/New_York), recruiter content integrated.
 
 ## Confirmed state
 
+- November 8 (source Mac), latest: no text appears without an agent on desktop (117 unbuilt reveals → 0 at 1280; phone 146 → 26). Added jobs for Experience role lines (company, title, dates, place), Education entries (school typed, degree, dates), project captions, the closing note, and headings or rows the scroll passes. Late items are rescued by the nearest idle margin agent (hard cap of 450 ms hidden on screen, instant reveal only if nobody can reach it in time). Uncovered text below the fold waits in a rescue pool. Phones use 8 agents (up to 3 idle at the bottom edge). Tour ≈ 53 s desktop and 52.5 s phone at 1×, ≈ 26.5 s at 2×; slowest scroll 59 px/s, no errors or leftovers. Entrance tests 45/45 in the Chrome harness (not under node; run `npm test` before publishing). Note: the tour-length test allows ≤ 56 s and harness runs at 1280 are 54–55.6 s.
+
 - November 8 (source Mac), build-from-scratch tour (commits add4255, eb2b6f2 and the section-wireframe commit):
   - **No pause after the hero:** the hero hands over to the scroll as soon as its builder jobs end (measured 117 ms gap, was 1–1.5 s); reviews are dropped or shortened; the orchestrator leads instead of docking.
   - **Idle cursors in the side margins:** two flocks outside the content column (0 of ~14k samples over content at 1280). Margins under 40 px (phones, and tablets below ~870 px) keep at most 2 idle cursors at the bottom edge.

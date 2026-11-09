@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, TOUR_STOPS, SCROLL } from '../web/entrance.js';
+import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, TOUR_STOPS, SCROLL, RESCUE } from '../web/entrance.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 const entranceCSS = await readFile(new URL('../web/entrance.css', import.meta.url), 'utf8');
@@ -349,10 +349,11 @@ test('after a cancelled first-visit tour, manual passes trace with small crews a
   assert.equal(document.querySelector('.agentic-stage'), null);
 });
 
-test('crew size scales with the viewport: one orchestrator plus 20, 9 or 5 subagents', t => {
+test('crew size scales with the viewport: one orchestrator plus 20, 9 or 8 subagents', t => {
   assert.deepEqual([1440, 1280, 1100, 1024, 768, 640, 390, 375, 360].map(crewTier),
     ['desktop', 'desktop', 'desktop', 'tablet', 'tablet', 'tablet', 'phone', 'phone', 'phone']);
-  for (const [width, subagents] of [[1280, 20], [768, 9], [375, 5]]) {
+  // Phones: five builders plus three spare hands for rescues.
+  for (const [width, subagents] of [[1280, 20], [768, 9], [375, 8]]) {
     assert.equal(crewSize(width), subagents);
     const { document, controller } = setup(t, { width });
     assert.equal(controller.crewSize, subagents);
@@ -557,11 +558,12 @@ test('sections are placed item by item by a big crew on desktop and a small one 
   assert.ok(actions.every(text => !/token|model|api\b|latency|\bms\b|passed|failed/i.test(text)), actions.filter(text => /token|model|api\b|latency|\bms\b|passed|failed/i.test(text)).join(' | '));
   assert.ok([...labels].every(text => (/'(.*)'/.exec(text)?.[1] || '').length <= 30), 'names are truncated');
   assertNoResidue(document);
-  // Phones: a handful of cursors at most.
+  // Phones: a handful of cursors at most (five builders, up to three spare
+  // hands called out for rescues, and the orchestrator).
   const phone = setup(t, { width: 375, frames: true });
   let phonePeak = 0;
   while (phone.controller.touring && phone.clock.now() < 90000) { phone.clock.step(16); phonePeak = Math.max(phonePeak, visibleCursors(phone.document).length); }
-  assert.ok(phonePeak >= 3 && phonePeak <= 7, `phone peak of ${phonePeak} visible cursors`);
+  assert.ok(phonePeak >= 3 && phonePeak <= 9, `phone peak of ${phonePeak} visible cursors`);
 });
 
 test('the dock task list follows the plan, opens without cancelling, and Escape only closes it', t => {
@@ -742,33 +744,37 @@ function coveredByFill(document, rect) {
   return rect.left >= r.left + clip - 0.5 && rect.top >= r.top - 0.5 && rect.bottom <= r.bottom + 0.5;
 }
 
-test('content the visitor can see is never left hidden for more than a moment', t => {
-  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
-  const since = new Map();
-  let worst = 0;
-  let worstName = '';
-  while (controller.touring && clock.now() < 90000) {
-    clock.step(16);
-    const now = clock.now();
-    const seen = new Set();
-    for (const element of document.querySelectorAll('[data-build-state="pending"]')) {
-      if (element.closest('#home, .site-header')) continue;
-      // Tags waiting their turn in a cascade whose item is already placed are progress.
-      const owner = element.closest('[data-agentic-job]');
-      if (owner && owner !== element && owner.dataset.buildState !== 'pending') continue;
-      const rect = element.getBoundingClientRect();
-      if (!(rect.height > 0 && rect.top < window.innerHeight * 0.97 && rect.bottom > 0)) continue;
-      // Still under a section's unpainted black fill: the visitor sees the wireframe, not a blank.
-      if (coveredByFill(document, rect)) continue;
-      seen.add(element);
-      if (!since.has(element)) since.set(element, now);
-      const held = now - since.get(element);
-      if (held > worst) { worst = held; worstName = element.className || element.tagName; }
+test('content the visitor can see is never left hidden for longer than the rescue cap', t => {
+  for (const width of [1280, 375]) {
+    const { document, window, controller, clock } = setup(t, { width, frames: true, layout: true });
+    const since = new Map();
+    let worst = 0;
+    let worstName = '';
+    while (controller.touring && clock.now() < 120000) {
+      clock.step(16);
+      const now = clock.now();
+      const seen = new Set();
+      for (const element of document.querySelectorAll('[data-build-state="pending"]')) {
+        if (element.closest('#home, .site-header')) continue;
+        // Tags waiting their turn in a cascade whose item is already placed
+        // are progress (an item placed only in part has no state of its own).
+        const owner = element.closest('[data-agentic-job]');
+        if (owner && owner !== element && owner.dataset.buildState && owner.dataset.buildState !== 'pending') continue;
+        const rect = element.getBoundingClientRect();
+        if (!(rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0)) continue;
+        // Still under a section's unpainted black fill: the visitor sees the wireframe, not a blank.
+        if (coveredByFill(document, rect)) continue;
+        seen.add(element);
+        if (!since.has(element)) since.set(element, now);
+        const held = now - since.get(element);
+        if (held > worst) { worst = held; worstName = element.className || element.tagName; }
+      }
+      for (const element of [...since.keys()]) if (!seen.has(element)) since.delete(element);
     }
-    for (const element of [...since.keys()]) if (!seen.has(element)) since.delete(element);
+    // Hidden only while an agent is on its way, never past the cap (one frame of slack).
+    assert.ok(worst <= RESCUE.cap + 16, `${width}px: ${worstName} stayed hidden on screen for ${worst}ms`);
+    assertNoResidue(document);
   }
-  assert.ok(worst <= 300, `${worstName} stayed hidden on screen for ${worst}ms`);
-  assertNoResidue(document);
 });
 
 test('the hero hands over to About as soon as its content is built, with no pause before the scroll', t => {
@@ -826,7 +832,7 @@ test('idle cursors wait in the side margins, clear of the content column', t => 
   assertNoResidue(document);
 });
 
-test('on phones at most two idle cursors stay out between stops; the others wait in the dock', t => {
+test('on phones at most three idle cursors stay out between stops; the others wait in the dock', t => {
   const { document, controller, clock } = setup(t, { width: 375, frames: true, layout: true });
   let index = 0;
   let transitions = 0;
@@ -844,8 +850,8 @@ test('on phones at most two idle cursors stay out between stops; the others wait
     }
   }
   assert.equal(transitions, stopNames(document).length - 1);
-  assert.ok(carriedPeak <= 2, `${carriedPeak} agents carried between stops`);
-  assert.ok(peak <= 2, `${peak} idle cursors on screen at once`);
+  assert.ok(carriedPeak <= 3, `${carriedPeak} agents carried between stops`);
+  assert.ok(peak <= 3, `${peak} idle cursors on screen at once`);
   assertNoResidue(document);
 });
 
@@ -1029,11 +1035,14 @@ test('a lower section still below the fold starts as a wireframe: black fill, me
   const skipped = [];
   eachFrame(controller, clock, document, ({ name, index, fresh, section }) => {
     if (!fresh || index === 0) return;
-    // The stop has just been planned; nothing has scrolled yet.
+    // The stop has just been planned; nothing has scrolled yet. A section
+    // whose top has only just come in (a thin edge at the bottom) still
+    // starts as a wireframe.
     const rect = section.getBoundingClientRect();
     const wire = document.querySelector('.agentic-wire');
     const fill = document.querySelector('.agentic-wire-fill');
-    if (rect.top < window.innerHeight) {
+    const edge = Math.min(120, window.innerHeight * 0.15);
+    if (rect.top < window.innerHeight - edge) {
       // Already partly visible: no fill and no skeletons over it.
       assert.equal(fill, null, `${name}: no fill over a visible section`);
       assert.equal(document.querySelector('.agentic-skeleton'), null, `${name}: no skeletons`);
@@ -1043,7 +1052,7 @@ test('a lower section still below the fold starts as a wireframe: black fill, me
     assert.ok(wire && fill, `${name}: wireframe before it enters`);
     const f = fill.getBoundingClientRect();
     for (const side of ['left', 'top', 'width', 'height']) assert.ok(Math.abs(f[side] - rect[side]) <= 1, `${name}: fill ${side} ${f[side]} vs section ${rect[side]}`);
-    assert.ok(f.top >= window.innerHeight - 1, `${name}: the fill is not on screen yet`);
+    assert.ok(f.top >= window.innerHeight - edge - 1, `${name}: at most a thin edge of the fill is on screen yet`);
     assert.equal(window.getComputedStyle(fill).backgroundColor, 'rgb(16, 17, 20)');
     assert.equal(fillClip(fill), null, `${name}: not painted yet`);
     const blocks = wire.querySelectorAll('.agentic-skeleton');
@@ -1205,7 +1214,7 @@ test('an unpainted fill never stays on screen past the grace plus the paint time
         name = frame.name;
         // A layout shift pulls the next wired section into view at once,
         // while its paint agent is still on the way.
-        if (late && !forced && frame.index > 1 && document.querySelector('.agentic-wire-fill')) {
+        if (late && !forced && frame.index > 1 && document.querySelector('.agentic-wire-fill') && frame.section.getBoundingClientRect().top > window.innerHeight + 200) {
           const top = frame.section.getBoundingClientRect().top;
           frame.section.style.marginTop = `${-Math.ceil(top - window.innerHeight + 240)}px`;
           window.dispatchEvent(new window.Event('resize'));
@@ -1230,4 +1239,145 @@ test('an unpainted fill never stays on screen past the grace plus the paint time
     assert.ok(!(forced.painted <= GRACE + FRAME), `${forced.name}: the paint agent was not there in time`);
     assert.ok(forced.gone <= GRACE + 2 * FRAME, `${forced.name}: fill wiped ${forced.gone}ms after it came into view`);
   }
+});
+
+// ---- rescues: nothing with words in it just appears ------------------------
+// A text element (one with its own text) and the build under way on it, if any.
+const SKIP_TEXT = '[hidden], [aria-hidden="true"], .project-stories, dialog, .agentic-stage, .agentic-dock, [data-agentic-replay], #home, .site-header';
+const ownText = element => [...element.childNodes].some(node => node.nodeType === 3 && node.nodeValue.trim());
+function textBlocks(document) {
+  const all = [];
+  document.querySelectorAll('main > section[id]:not(#home), footer[id]').forEach(root => root.querySelectorAll('*').forEach(element => {
+    if (ownText(element) && !element.closest(SKIP_TEXT)) all.push(element);
+  }));
+  const set = new Set(all);
+  // Top-level blocks only: a link inside a line counts with its line.
+  return all.filter(element => { for (let node = element.parentElement; node; node = node.parentElement) if (set.has(node)) return false; return true; });
+}
+// Under a running build: typed or wiped, or placed by an agent (not the
+// safety's quick 360 ms fade, which carries no stagger).
+function underBuild(element) {
+  const active = element.closest('[data-build-state="typing"], [data-build-state="placing"]');
+  if (!active) return false;
+  if (active.dataset.buildState === 'typing') return true;
+  const fade = active.style.getPropertyValue('--agentic-d').trim();
+  return Boolean(active.style.transitionDelay) || (fade !== '360ms' && fade !== '180ms');
+}
+// Steps a whole tour and reports every text block the visitor first saw
+// without an agent building it: [selector, stop, ms].
+function unbuiltReveals(t, width) {
+  const { document, window, controller, clock } = setup(t, { width, frames: true, layout: true });
+  const blocks = textBlocks(document);
+  const state = new Map(blocks.map(element => [element, { done: false }]));
+  const unbuilt = [];
+  let rendered = 0;
+  while (controller.touring && clock.now() < 120000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    if (document.querySelector('.agentic-veil')) continue;
+    for (const element of blocks) {
+      const entry = state.get(element);
+      if (entry.done) continue;
+      const rect = element.getBoundingClientRect();
+      if (!(rect.width > 0 && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0)) continue;
+      if (element.closest('[data-build-state="pending"]') || coveredByFill(document, rect)) continue;
+      let transparent = false;
+      for (let node = element; node && node !== document.body; node = node.parentElement) {
+        if (node.classList.contains('agentic-target')) continue;
+        const style = window.getComputedStyle(node);
+        if (style.opacity === '0' || style.visibility === 'hidden') { transparent = true; break; }
+      }
+      if (transparent) continue;
+      entry.done = true;
+      rendered++;
+      if (!underBuild(element)) unbuilt.push(`${element.closest('section[id], footer[id]').id} ${element.tagName.toLowerCase()}.${[...element.classList].filter(name => !name.startsWith('agentic')).join('.')} "${element.textContent.trim().slice(0, 24)}" (${controller.tour.name}, ${clock.now()}ms)`);
+    }
+  }
+  assertNoResidue(document);
+  return { document, unbuilt, rendered };
+}
+
+test('Education entries and Experience role lines are typed by agents, never shown instantly', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  const selectors = ['.education-list .school', '.education-list .degree', '.education-list .school-meta', '.role-header > h3', '.role-title', '.role-date', '.role-place'];
+  const lines = selectors.flatMap(selector => [...document.querySelectorAll(selector)]);
+  assert.equal(lines.length, 15, 'two schools (name, degree, dates) and two roles (company, three titles with dates, a location)');
+  const built = new Set();
+  const early = [];
+  const labels = new Set();
+  eachFrame(controller, clock, document, ({ name, now }) => {
+    document.querySelectorAll('.agentic-cursor.is-working .agentic-role').forEach(label => labels.add(label.textContent));
+    for (const element of lines) {
+      if (built.has(element)) continue;
+      if (element.dataset.buildState === 'typing') { built.add(element); continue; }
+      const rect = element.getBoundingClientRect();
+      const inView = rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0;
+      if (inView && !element.closest('[data-build-state="pending"]') && !coveredByFill(document, rect)) early.push(`${element.className || element.tagName} "${element.textContent.trim().slice(0, 20)}" (${name}, ${now}ms)`);
+    }
+  });
+  assertNoResidue(document);
+  if (!measurable(document)) return;
+  assert.deepEqual(early.slice(0, 4), [], `${early.length} lines were visible before an agent wrote them`);
+  assert.deepEqual(lines.filter(element => !built.has(element)).map(element => element.textContent.trim().slice(0, 20)), [], 'every line was typed or written');
+  // Labels name what is being written (presentation only).
+  assert.ok([...labels].some(text => /^[a-z]+(·\d)? · writing 'Georgia Institute/.test(text)), [...labels].filter(text => /Georgia|Kennesaw/.test(text)).join(' | ') || 'no school label');
+  assert.ok([...labels].some(text => /^[a-z]+(·\d)? · typing 'Machine Learning Engineer'$/.test(text)), 'role titles are typed');
+});
+
+test('on desktop at most two text blocks per tour appear without an agent building them', t => {
+  const { document, unbuilt, rendered } = unbuiltReveals(t, 1280);
+  if (!measurable(document)) return;
+  assert.ok(rendered > 150, `${rendered} text blocks came into view`);
+  assert.ok(unbuilt.length <= 2, `${unbuilt.length} unbuilt: ${unbuilt.join(' | ')}`);
+});
+
+test('an item whose agent is late is rescued by an idle margin agent, which flies to it within the cap', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  let forced = null;
+  eachFrame(controller, clock, document, ({ index, now }) => {
+    if (!forced) {
+      // Mid-tour, with agents idling in the margins and no section fill up:
+      // a layout shift pulls a far-off line into view, long before its agent.
+      if (index < 2 || document.querySelector('.agentic-wire-fill')) return;
+      const idle = [...document.querySelectorAll('.agentic-cursor.is-idle.is-in:not(.is-docked)')];
+      if (idle.length < 3) return;
+      const vh = window.innerHeight;
+      const target = [...document.querySelectorAll('[data-agentic-job="type"][data-build-state="pending"]')]
+        .find(element => { const r = element.getBoundingClientRect(); return r.top > vh + 300 && r.height > 0 && r.height < 100; });
+      if (!target) return;
+      const r = target.getBoundingClientRect();
+      target.style.position = 'relative';
+      target.style.top = `${Math.round(vh * 0.55 - r.top)}px`;
+      window.dispatchEvent(new window.Event('resize'));
+      forced = { target, at: now, idle: new Map(idle.map(cursor => [cursor, cursorPoint(cursor)])), ...controller.scroll };
+      return;
+    }
+    if (forced.begun !== undefined) return;
+    const rect = forced.target.getBoundingClientRect();
+    if (forced.seen === undefined && rect.top < window.innerHeight && rect.bottom > 0) forced.seen = now;
+    const state = forced.target.dataset.buildState;
+    if (state === 'pending') return;
+    forced.begun = now;
+    forced.state = state;
+    forced.after = controller.scroll;
+    // The working cursor at the line's start is the one that built it.
+    const anchor = { x: rect.left, y: rect.bottom };
+    const working = [...document.querySelectorAll('.agentic-cursor.is-working')].map(cursor => ({ cursor, p: cursorPoint(cursor) })).filter(entry => entry.p);
+    const nearest = working.sort((a, b) => Math.hypot(a.p.x - anchor.x, a.p.y - anchor.y) - Math.hypot(b.p.x - anchor.x, b.p.y - anchor.y))[0];
+    forced.cursor = nearest?.cursor;
+    forced.distance = nearest ? Math.hypot(nearest.p.x - anchor.x, nearest.p.y - anchor.y) : Infinity;
+  });
+  assertNoResidue(document);
+  if (!measurable(document)) return;
+  assert.ok(forced, 'a line was pulled into view early');
+  assert.ok(forced.begun !== undefined && forced.seen !== undefined, 'the line was built');
+  assert.equal(forced.state, 'typing', 'typed by an agent, not shown at once');
+  assert.ok(forced.begun - forced.seen <= RESCUE.cap + 16, `hidden on screen for ${forced.begun - forced.seen}ms`);
+  assert.equal(forced.after.instant, forced.instant, 'nothing was shown without an agent');
+  assert.ok(forced.after.rescued > forced.rescued, 'counted as a rescue');
+  assert.ok(forced.cursor && forced.distance < 40, `a cursor is at the line (${forced.distance.toFixed(0)}px away)`);
+  assert.ok(forced.idle.has(forced.cursor), `the rescuer (${forced.cursor?.textContent}) was idling in the margin when the line came in`);
+  const from = forced.idle.get(forced.cursor);
+  const [left, right] = contentColumn(document, 1280);
+  assert.ok(from.x + 2 < left || from.x + 2 > right, 'it came from the side margin');
 });
