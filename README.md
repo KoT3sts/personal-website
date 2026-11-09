@@ -37,6 +37,18 @@ npm run build
 
 Open the printed local URL. Source lives in `web/`; the build copies it into `dist/`. Sites hosting configuration is in `.openai/hosting.json`.
 
+### Build output and asset optimization
+
+`npm run build` copies `web/` to `dist/`, then minifies every CSS file in `dist/` with `scripts/minify-css.mjs` and prints per-file and total byte counts. The minifier is dependency-free and conservative: it removes comments and whitespace only, never touches strings, `url()` bodies, escapes, spaces around `+`/`-` or before `(`, and falls back to the original file if a token check fails. JavaScript and HTML are shipped exactly as authored.
+
+`web/assets/about-flow.svg` is already optimized in the source tree. To regenerate it from an authored original, run once:
+
+```sh
+node scripts/optimize-svg.mjs web/assets/about-flow.svg --simplify 0.15
+```
+
+The script removes comments and editor metadata, compacts path data at 1-decimal precision (rounded against absolute positions, so there is no drift), moves repeated stroke colours, widths and opacities into one-rule classes, and with `--simplify` drops polyline vertices within 0.15 user units of the line. Simplification is lossy, so run it on the original drawing, not on an already optimized file. Use `--out <path>` to write elsewhere and `--simplify 0` for a pixel-identical result. Tests for both tools live in `scripts/build-tools.test.mjs`.
+
 The design includes original SVG artwork, a draggable perspective gallery with keyboard and button controls, project dialogs, reduced motion support, and inline fallbacks. Project covers are illustrations; biography and copy remain open to owner review.
 
 Page sections: hero (role, location, résumé/LinkedIn/email actions), About, Experience (ADP, Kennesaw State University research), Selected projects, Skills & education, Approach, and Contact.
