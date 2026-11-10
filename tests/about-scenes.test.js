@@ -10,7 +10,6 @@ const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 
 const html = await read('../web/index.html');
 const css = await read('../web/about-scenes.css');
-const figure = await read('../web/assets/beam-figure.svg');
 const about = html.match(/<section id="about"[\s\S]*?<\/section>/)?.[0] ?? '';
 const intro = html.match(/<section id="introduction"[\s\S]*?<\/section>/)?.[0] ?? '';
 const art = intro.match(/<div class="cinematic-art"[\s\S]*?(?=<div class="cinematic-topline"|<\/section>)/)?.[0] ?? '';
@@ -60,30 +59,29 @@ test('the light scene keeps only Icarus, his halo and loose feathers: no signal 
   for (let i = 1; i <= count; i++) assert.match(css, new RegExp(`\\.beam-feathers > :nth-child\\(${i}\\) \\{ --x: [-\\d.]+%; --y: [-\\d.]+%; --s: [\\d.]+; --r: [-\\d.]+deg; --o: [\\d.]+; --d: [\\d.]+; --dx: [-\\d.]+px; --spin: [-\\d.]+deg; \\}`), `feather ${i}`);
 });
 
-test('the figure is an original, self-contained, decorative asset within budget', async () => {
-  const info = await stat(new URL('../web/assets/beam-figure.svg', import.meta.url));
-  assert.ok(info.size < 60 * 1024, `${info.size} B`);
-  const [, w, h] = figure.match(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 (\d+) (\d+)"/) ?? [];
-  assert.ok(w && h, 'viewBox');
-  assert.doesNotMatch(figure, /<script|<image|<foreignObject|href="(?!#)|url\((?!#)/i, 'nothing embedded or linked except its own defs');
-  for (const hex of figure.match(/#[0-9a-f]{6}\b/gi) ?? []) {
-    const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
-    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 24, `${hex} is a neutral grey`);
+test('the figure is the owner-supplied drawing, cut out, decorative and within budget', async () => {
+  for (const [name, max] of [['icarus-560.webp', 110], ['icarus-960.webp', 200]]) {
+    const info = await stat(new URL(`../web/assets/${name}`, import.meta.url));
+    assert.ok(info.size < max * 1024, `${name}: ${info.size} B`);
   }
-  assert.equal(html.split('assets/beam-figure.svg').length - 1, 1, 'referenced once');
   const img = art.match(/<img class="beam-figure"[^>]*>/)?.[0] ?? '';
   assert.ok(img, 'figure sits in .cinematic-art (aria-hidden)');
   assert.match(art, /^<div class="cinematic-art" aria-hidden="true">/);
+  assert.equal(attr(img, 'src'), './assets/icarus-960.webp');
+  assert.match(attr(img, 'srcset'), /icarus-560\.webp 560w, \.\/assets\/icarus-960\.webp 960w/);
   assert.equal(attr(img, 'alt'), '');
-  assert.equal(attr(img, 'width'), w);
-  assert.equal(attr(img, 'height'), h);
+  assert.equal(attr(img, 'width'), '960');
+  assert.equal(attr(img, 'height'), '1130');
+  assert.doesNotMatch(html, /beam-figure\.svg/, 'the generated drawing is gone');
+  assert.match(css, /\.cinematic-art \{[^}]*--fig-ratio: 1\.177;/, 'ratio matches 1130 / 960');
   assert.match(css, /\.cinematic-art \{[^}]*pointer-events: none/);
   // Form and shadow come from the drawing: no overexposing filter on the image.
   assert.doesNotMatch(css.match(/\.beam-figure \{[^}]*\}/)?.[0] ?? '', /grayscale|brightness/);
 });
 
 test('the swap variables match the drawing, and the art sits between the topline and the copy', () => {
-  const [, w, h] = figure.match(/viewBox="0 0 (\d+) (\d+)"/);
+  const img = art.match(/<img class="beam-figure"[^>]*>/)?.[0] ?? '';
+  const [w, h] = [attr(img, 'width'), attr(img, 'height')].map(Number);
   const rule = css.match(/\.cinematic-art \{[^}]*\}/)?.[0] ?? '';
   const num = name => Number(rule.match(new RegExp(`${name}: ([\\d.]+)`))?.[1]);
   assert.ok(Math.abs(num('--fig-ratio') - h / w) < .005, `--fig-ratio ${h / w}`);

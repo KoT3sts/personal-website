@@ -210,8 +210,10 @@ export const TOUR_STOPS = [
     { sel: '.about-transition-foot', role: 'a11y', kind: 'review', act: 'checking contrast' },
   ] },
   // Its copy sits at the bottom of a tall scene: stop with the section's end in view.
-  { sel: '#introduction', name: 'Introduction', weight: 0.9, align: 'end', note: 'art → copy · scene lit', jobs: [
-    { sel: '.beam-figure', role: 'art', kind: 'reveal', act: 'placing figure in the light', art: true, work: 820 },
+  // The figure gets about a second longer: the stop opens on the scene's top
+  // (the falling figure) and only then cruises down to the copy.
+  { sel: '#introduction', name: 'Introduction', weight: 0.8, span: 0.45, note: 'art → copy · scene lit', jobs: [
+    { sel: '.beam-figure', role: 'art', kind: 'reveal', act: 'placing figure in the light', art: true, work: 1100 },
     { sel: '.cinematic-topline > span', roles: ['layout', 'copy'], kind: 'wipe', multi: 2, act: 'setting topline' },
     { sel: '.cinematic-copy > .mono', role: 'type', kind: 'type', act: 'setting kicker', charMs: 26 },
     { sel: '#introduction-title', role: 'type', kind: 'type', act: 'setting headline', charMs: 40 },
@@ -303,7 +305,7 @@ export const TOUR_STOPS = [
   ] },
   // The closing note between Approach and Contact is built on the Approach
   // stop (`within` looks outside the stop's own section).
-  { sel: '#approach', name: 'Approach', weight: 0.55, span: 0.3, note: 'type → copy · rows set', jobs: [
+  { sel: '#approach', name: 'Approach', weight: 0.45, span: 0.3, note: 'type → copy · rows set', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#approach-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.approach-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
