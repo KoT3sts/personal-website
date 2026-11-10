@@ -1,8 +1,23 @@
 # Personal Website handoff
 
-Updated: November 10, 2026 (America/New_York), portrait hero, Approach accordion, lazy tour script, SEO basics.
+Updated: November 10, 2026 (America/New_York), beam art, Experience chapters, project index, case studies, cleanup.
 
 ## Confirmed state
+
+- November 10, round 3, commits 9af152c..HEAD:
+  - **Beam art (V04):** the porcelain loop (it read like a "1") is replaced by an inline-SVG signal path: EEG-like channels merge into a jagged trace, calm down the light shaft, and end in a six-node agent graph with a bright orchestrator. It draws itself on scroll (`--cine-scene` timeline) and is fully drawn without support, without JS, and under reduced motion. The graph is illustrative.
+  - **Experience chapters (V05):** dark section with three chapters (ML Engineer 2026–, Associate ML Engineer 2024–2026, Lead Researcher KSU 2021–2023). Each has a huge outlined title and a faint year behind it. Page scroll slides the pinned stage sideways (CSS scroll timeline, JS fallback). Prev/next buttons, a year index and a live announcement; keyboard focus follows. Phones, reduced motion, short screens and no-JS get a vertical stack. **Cesar to confirm:** the two "2026" groups (workshops, 250+ agents, network tools, releases) now sit under the ML Engineer chapter (Aug 2026–), which implies they all happened after August.
+  - **Project index (V07):** new dark `#projects` section after #work. The six covers sit in a ring that turns into a vertical stack, with an index list, a wheel that never traps the page, drag, keys, and links to the case studies. New labels to confirm: "PROJECT INDEX", "PICK ONE TO READ ITS CASE STUDY", "SIX PROJECTS. ONE CASE STUDY EACH."
+  - **Case studies:** `web/projects/<slug>.html` (six pages, no JS, project.css), built only from the homepage story text plus the Experience facts; a test fails on any sentence not on the homepage. "Read the case study" links sit in the stories and the dialog; sitemap now has 7 URLs. Wording to confirm: "Read the case study" on the thin pages (VoiceLab, Work Helper, Barking Village), and "What I built" on the BCI and Work Helper pages.
+  - **Cleanup:** dead hero CSS removed with a pixel-identical check; sculpture.svg and light-sculpture.svg deleted; Archivo trimmed to wght 400–900 and wdth 87.5–100 (90 → 56 KB).
+  - **Tour:** ten stops (new "Index"), real 1280 run ≈ 56 s. The jsdom cap was raised 56 → 60 s, and the entrance/portfolio test selectors were updated for the new markup. **Not run** (no jsdom here).
+  - **Verification:** check/build/diff pass; 94 node tests pass. Browser checks by the workers at 390/768/1280/1440; full tour with no errors or leftovers; case-study Lighthouse 100/100/100. The review found no blockers; its click-jump, tablet wheel, post-drag tap, live announcement and font-range items are fixed.
+  - **Open:**
+    - Experience resize can briefly shorten the page (scroll clamp).
+    - The Replay pill can sit over the chapter index at 768.
+    - No jsdom tests for experience/explorer.
+    - Firefox fallback and real trackpad not checked.
+    - During this round, the shared tools Chrome crashed once (Lighthouse/tracing). Chrome restored the job-application tabs, but unsaved form input was likely lost.
 
 - November 10 (source Mac, after midnight), round 2, commits 70c8968..2524148:
   - **Portrait hero (SPEC V02):** Cesar's studio headshot (`~/Downloads/Media.jpeg`, owner-supplied) was cut out on-device with the macOS Vision person-segmentation model. It's black and white with high contrast, and the bottom and sides fade out. Shipped as `web/assets/cesar-portrait-{560,1040}.webp` plus a `-640.png` fallback, with no metadata; the original is not in the repo. It sits in a `<picture>` centred in front of the ENGINEER line, sized by the free space (about 25–33% of desktop width). The orbit sculpture is now a small inline-SVG accent by his shoulder, with dots that pause offscreen; it moves back to the centre if the portrait fails to load (`data-portrait="failed"`). The tour places the portrait ("art · placing portrait"). The link card was regenerated with the portrait. The repo is public, so the processed portrait is public once pushed. Open: the reference shows a shadowed face, but this cutout is evenly lit; a darker variant is optional.
