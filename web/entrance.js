@@ -156,9 +156,45 @@ const HERO_PLAN = [
 // - `label`: append the item's name (`name` selector) to the action label.
 // - kind `place`: the item pops in when the agent drops it; then its `sub`
 //   line is written and its `kids` (tags) cascade in.
+// - kind `copy` outlines an item and shows a small ⌘C tag; kind `paste` drags
+//   a ghost of the item before it (`from: 'prev'`, or a selector) onto its
+//   item and drops it with ⌘V. `holes` leaves placeholder bars where the
+//   later jobs inside that item will write (they wait for it: `after`).
+// - kind `pin` leaves a QA comment pin (`note`); a later `resolve` job
+//   (`after` the pin) turns it into a check mark.
+// - `key` / `after`: a job waits for the keyed job inside the same item (or
+//   the first keyed job); work passes between them with a thin handoff line.
+//   `afterAt`: the share of that job to wait for; `after: '*'`: every builder
+//   inside the item (`overlap`: ms before the last one ends).
+// - `only`: 'wide' (desktop and tablet) or 'phone'.
+// - `slide`: the item is carried in sideways by a pinned stage (Experience),
+//   so it is checked for visibility when its agent sets off, not when planned.
+//   `shown`: only items on the stage when the stop is planned (chapters still
+//   off to the right are left to the stops that bring them in).
+// Every job follows the visible-target rule (see perceivable).
 // `weight` scales the build budget; `span` keeps scrolling through a tall
 // section (up to span x viewport height) while items are placed; `note` is the
-// stop's decorative handoff line beside the dock.
+// stop's decorative handoff line beside the dock. `sub` stops continue the
+// previous stop's section (same plan step in the dock) and only run while
+// their section matches `when` (checked as they come up); `chapter` aims the
+// scroll at that Experience chapter when its stage travels sideways, and
+// `dwell` is the creep (px/s) while the stage holds on it.
+const chapterJobs = n => {
+  const ch = `.xp-chapter:nth-child(${n})`;
+  const at = { slide: true, after: 'paste' };
+  return [
+    { sel: ch, role: 'copy', kind: 'paste', from: 'prev', holes: true, slide: true, key: 'paste', act: `pasting chapter 0${n}`, work: 1100 },
+    { sel: `${ch} .xp-title`, role: 'type', kind: 'type', label: true, act: 'setting', charMs: 42, ...at },
+    { sel: `${ch} .xp-org, ${ch} .xp-when`, roles: ['copy', 'links'], kind: 'type', multi: 2, label: true, act: 'writing', charMs: 32, ...at },
+    { sel: `${ch} .xp-year`, role: 'art', kind: 'reveal', act: 'setting year marker', work: 700, ...at },
+    { sel: `${ch} .xp-marks`, role: 'nav', kind: 'place', act: 'marking milestones', kids: 'li', ...at },
+    { sel: `${ch} .xp-group-head`, role: 'nav', kind: 'place', label: true, name: 'h4', act: 'placing', ...at },
+    { sel: `${ch} .xp-points > li`, roles: ['copy', 'type', 'links'], kind: 'wipe', multi: 3, label: true, act: 'writing', ...at },
+    { sel: `${ch} .xp-group > .tag-list`, role: 'art', kind: 'place', act: 'swapping tags', kids: 'li', ...at },
+    { sel: ch, role: 'qa', kind: 'review', act: 'checking chapter', ...at },
+  ];
+};
+
 export const TOUR_STOPS = [
   { sel: '#home', name: 'Hero', note: 'type → qa · headline ready' },
   { sel: '#about', name: 'About', weight: 0.9, align: 'start', note: 'motion → type · flow drawn', jobs: [
@@ -172,8 +208,8 @@ export const TOUR_STOPS = [
     { sel: '.about-transition-foot', role: 'a11y', kind: 'review', act: 'checking contrast' },
   ] },
   // Its copy sits at the bottom of a tall scene: stop with the section's end in view.
-  { sel: '#introduction', name: 'Introduction', weight: 1.0, align: 'end', note: 'art → copy · scene lit', jobs: [
-    { sel: '.cinematic-art', role: 'art', kind: 'reveal', act: 'drawing signal path', art: true, work: 820 },
+  { sel: '#introduction', name: 'Introduction', weight: 0.9, align: 'end', note: 'art → copy · scene lit', jobs: [
+    { sel: '.beam-figure', role: 'art', kind: 'reveal', act: 'placing figure in the light', art: true, work: 820 },
     { sel: '.cinematic-topline > span', roles: ['layout', 'copy'], kind: 'wipe', multi: 2, act: 'setting topline' },
     { sel: '.cinematic-copy > .mono', role: 'type', kind: 'type', act: 'setting kicker', charMs: 26 },
     { sel: '#introduction-title', role: 'type', kind: 'type', act: 'setting headline', charMs: 40 },
@@ -183,49 +219,74 @@ export const TOUR_STOPS = [
     { sel: '.scene-pill', roles: ['links', 'links'], kind: 'place', multi: 2, label: true, act: 'wiring' },
     { sel: '.cinematic-caption > span', roles: ['a11y', 'qa'], kind: 'wipe', multi: 2, act: 'writing caption' },
   ] },
-  { sel: '#capabilities', name: 'Capabilities', weight: 1.2, span: 0.9, note: 'copy → qa · cards placed', jobs: [
+  // Wide screens: the first card is placed and copied, and pasted into the
+  // rest of the first rows; editors write each pasted card's name and proof
+  // over its placeholders and a tag agent swaps its tags. The cards further
+  // down (and every card on phones) are placed directly.
+  { sel: '#capabilities', name: 'Capabilities', weight: 1.0, span: 1.0, note: 'copy → type · cards pasted', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#capabilities-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
-    { sel: '.capabilities-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
-    { sel: '.capability', roles: ['copy', 'type', 'links', 'copy', 'type', 'links', 'copy', 'qa'], kind: 'place', multi: 8, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li' },
+    { sel: '.capabilities-heading > p', role: 'a11y', kind: 'wipe', act: 'writing summary' },
+    { sel: '.capability', roles: ['copy', 'type', 'links', 'copy', 'type', 'links', 'copy', 'qa'], kind: 'place', multi: 8, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'phone' },
+    { sel: '.capability:first-child', role: 'nav', kind: 'place', label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', key: 'first', only: 'wide' },
+    { sel: '.capability:first-child', role: 'copy', kind: 'copy', act: 'copying card', key: 'copy', after: 'first', afterAt: 0.25, only: 'wide' },
+    { sel: '.capability:nth-child(-n+4):not(:first-child)', roles: ['copy', 'copy', 'copy'], kind: 'paste', multi: 3, from: 'prev', holes: true, act: 'pasting card', key: 'paste', after: 'copy', afterAt: 0.5, work: 480, only: 'wide' },
+    { sel: '.capability:nth-child(-n+4):not(:first-child) > h3', roles: ['type', 'links', 'type'], kind: 'type', multi: 3, label: true, act: 'writing', charMs: 36, after: 'paste', afterAt: 0.6, only: 'wide' },
+    { sel: '.capability:nth-child(-n+4):not(:first-child) > .capability-proof', roles: ['layout', 'links', 'layout'], kind: 'wipe', multi: 3, act: 'writing proof', after: 'paste', afterAt: 0.6, only: 'wide' },
+    { sel: '.capability:nth-child(-n+4):not(:first-child) > .tag-list', roles: ['art', 'a11y', 'art'], kind: 'place', multi: 3, act: 'swapping tags', kids: 'li', after: 'paste', afterAt: 0.6, only: 'wide' },
+    { sel: '.capability:nth-child(n+5)', roles: ['nav', 'type', 'links', 'motion'], kind: 'place', multi: 4, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'wide' },
+    { sel: '.capability-list', role: 'qa', kind: 'pin', note: 'tighten spacing', key: 'pin', act: 'leaving a note', only: 'wide' },
+    { sel: '.capability-list', role: 'layout', kind: 'resolve', act: 'tightening spacing', after: 'pin', only: 'wide' },
     { sel: '.capabilities-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
   ] },
   // Wide screens pin the chapter stage and the scroll carries its track
-  // sideways (experience.js): agents build what is on the stage (`shown`);
-  // chapters still off to the right wait unseen and slide in already set
-  // (experience.css), so the cruise (`span`) runs through the lateral travel.
-  // Phones stack the chapters and every item is built in place.
-  { sel: '#experience', name: 'Experience', weight: 1.4, span: 2.4, note: 'layout → copy · chapters set', jobs: [
-    { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
+  // sideways (experience.js). The first stop builds chapter 1 (laid out as a
+  // frame with placeholder fields, then filled) and the stage pins on it; two
+  // `sub` stops then hold the stage on chapters 2 and 3 in turn: a copy agent
+  // copies chapter 1, drags a ghost of it in as the page slides and drops it
+  // as the next chapter; editors write over its placeholders, a tag agent
+  // swaps its tags and QA checks it. Chapters still off to the right wait
+  // unseen (experience.css). Phones and tablets stack the chapters and every
+  // item is built in place on the first stop (`span` cruises through them).
+  { sel: '#experience', name: 'Experience', weight: 1.05, stackWeight: 1.4, span: 2.4, chapter: 0, dwell: 16, note: 'layout → copy · first chapter set', jobs: [
+    { sel: '.section-top > span', roles: ['copy', 'nav'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#experience-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.experience-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
-    { sel: '.xp-year', role: 'art', kind: 'reveal', multi: 3, shown: true, act: 'setting year marker', work: 700 },
-    { sel: '.xp-title', roles: ['type', 'type', 'type'], kind: 'type', multi: 3, shown: true, label: true, act: 'setting', charMs: 45 },
-    { sel: '.xp-org, .xp-when', roles: ['copy', 'links'], kind: 'type', multi: 6, shown: true, label: true, act: 'writing', charMs: 35 },
-    { sel: '.xp-marks', role: 'nav', kind: 'place', multi: 3, shown: true, act: 'marking milestones', kids: 'li' },
-    { sel: '.xp-group-head', role: 'nav', kind: 'place', multi: 4, shown: true, label: true, name: 'h4', act: 'placing' },
-    { sel: '.xp-points > li', roles: ['copy', 'type', 'links', 'copy', 'type', 'qa', 'copy', 'links'], kind: 'wipe', multi: 8, rest: true, shown: true, label: true, act: 'writing' },
-    { sel: '.xp-group > .tag-list', roles: ['art', 'a11y', 'art', 'links'], kind: 'place', multi: 4, shown: true, act: 'tagging tools', kids: 'li' },
-    { sel: '.xp-controls', role: 'links', kind: 'place', shown: true, act: 'wiring chapter controls', kids: 'button, .xp-count' },
+    { sel: '[data-xp="travel"] .xp-chapter:first-child', role: 'layout', kind: 'frame', holes: true, key: 'frame', act: 'drawing chapter frame' },
+    { sel: '.xp-year', role: 'art', kind: 'reveal', multi: 3, act: 'setting year marker', work: 700, after: 'frame', afterAt: 0.4, shown: true },
+    { sel: '.xp-title', roles: ['type', 'type', 'type'], kind: 'type', multi: 3, label: true, act: 'setting', charMs: 45, after: 'frame', afterAt: 0.4, shown: true },
+    { sel: '.xp-org, .xp-when', roles: ['copy', 'links'], kind: 'type', multi: 6, label: true, act: 'writing', charMs: 35, after: 'frame', afterAt: 0.4, shown: true },
+    { sel: '.xp-marks', role: 'nav', kind: 'place', multi: 3, act: 'marking milestones', kids: 'li', after: 'frame', afterAt: 0.4, shown: true },
+    { sel: '.xp-group-head', role: 'nav', kind: 'place', multi: 4, label: true, name: 'h4', act: 'placing', after: 'frame', afterAt: 0.4, shown: true },
+    { sel: '.xp-points > li', roles: ['copy', 'type', 'links', 'copy', 'type', 'qa', 'copy', 'links'], kind: 'wipe', multi: 8, rest: true, label: true, act: 'writing', after: 'frame', afterAt: 0.4, shown: true },
+    { sel: '.xp-group > .tag-list', roles: ['a11y', 'links', 'a11y', 'links'], kind: 'place', multi: 4, act: 'tagging tools', kids: 'li', after: 'frame', afterAt: 0.4, shown: true },
+    { sel: '.xp-controls', role: 'links', kind: 'place', act: 'wiring chapter controls', kids: 'button, .xp-count', shown: true },
     { sel: '.xp-stage', role: 'a11y', kind: 'review', act: 'checking chapter keys' },
+    // Once chapter 1 is written, it is copied for the next two.
+    { sel: '[data-xp="travel"] .xp-chapter:first-child', role: 'copy', kind: 'copy', after: '*', overlap: 600, act: 'copying chapter 01' },
   ] },
-  // The explorer (explorer.js), the one project gallery: the covers are placed
-  // round the ring (it holds still while the tour runs), the centre label
-  // typed, the index wired.
-  { sel: '#work', name: 'Projects', weight: 2.4, span: 1.2, note: 'art → a11y · ring placed', jobs: [
+  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 1, dwell: 16, weight: 1.0, note: 'copy → type · second chapter pasted', jobs: chapterJobs(2) },
+  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 2, dwell: 16, weight: 1.0, note: 'copy → type · third chapter pasted', jobs: chapterJobs(3) },
+  // The explorer (explorer.js), the one project gallery. It holds still while
+  // the tour runs, so its rotated card names and the hidden caption are never
+  // written: art agents place the six covers round the ring one at a time, a
+  // links agent fills in the index list, and QA leaves a contrast pin that
+  // a11y resolves.
+  { sel: '#work', name: 'Projects', weight: 1.0, span: 0.8, note: 'art → links · ring placed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#work-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.work-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
     { sel: '#explorer-title', role: 'type', kind: 'type', act: 'setting label', charMs: 50 },
-    // Six covers, six hands: they land round the ring together.
-    { sel: '.explorer-item', roles: ['art', 'copy', 'links', 'art', 'type', 'copy'], kind: 'place', multi: 6, label: true, name: '.explorer-card-name', act: 'placing', pop: '.explorer-cover' },
-    { sel: '.explorer-index', role: 'links', kind: 'place', act: 'wiring index', kids: '.explorer-pick' },
+    { sel: '.explorer-item', roles: ['art', 'art', 'art', 'art', 'art', 'art'], kind: 'place', multi: 6, label: true, name: '.explorer-card-name', act: 'placing cover', pop: '.explorer-cover' },
+    { sel: '.explorer-index-label', role: 'links', kind: 'type', act: 'writing index label', charMs: 35 },
+    { sel: '.explorer-pick', roles: ['links', 'links', 'links', 'links', 'links', 'links'], kind: 'place', multi: 6, label: true, name: '.explorer-pick-name', act: 'listing', sub: '.explorer-pick-name' },
     { sel: '.explorer-hint', role: 'motion', kind: 'wipe', act: 'writing drag hint' },
     { sel: '.work-end > *', roles: ['copy', 'links'], kind: 'wipe', multi: 2, act: 'writing footer line' },
+    { sel: '.explorer-index', role: 'qa', kind: 'pin', note: 'check contrast', key: 'pin', act: 'leaving a note' },
+    { sel: '.explorer-index', role: 'a11y', kind: 'resolve', act: 'fixing contrast', after: 'pin' },
     { sel: '.explorer-covers', role: 'a11y', kind: 'review', act: 'checking keys and labels', size: true },
-    { sel: '.explorer-item.is-active .explorer-cover', role: 'qa', kind: 'review', act: 'checking cover alt text', size: true },
   ] },
-  { sel: '#skills', name: 'Skills', weight: 1.0, span: 0.75, note: 'copy → a11y · tags listed', jobs: [
+  { sel: '#skills', name: 'Skills', weight: 0.85, span: 0.6, note: 'copy → a11y · tags listed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#skills-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.skill-list > div', roles: ['copy', 'type', 'links', 'copy', 'type'], kind: 'place', multi: 5, label: true, name: 'dt', act: 'listing', kids: 'li' },
@@ -239,7 +300,7 @@ export const TOUR_STOPS = [
   ] },
   // The closing note between Approach and Contact is built on the Approach
   // stop (`within` looks outside the stop's own section).
-  { sel: '#approach', name: 'Approach', weight: 0.7, span: 0.3, note: 'type → copy · rows set', jobs: [
+  { sel: '#approach', name: 'Approach', weight: 0.55, span: 0.3, note: 'type → copy · rows set', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#approach-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.approach-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
@@ -249,7 +310,7 @@ export const TOUR_STOPS = [
     { sel: '.approach-list', role: 'a11y', kind: 'review', act: 'checking disclosures' },
     { sel: '.approach-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
   ] },
-  { sel: '#contact', name: 'Contact', weight: 0.9, handoff: '.contact-button', note: 'links → qa · links wired', jobs: [
+  { sel: '#contact', name: 'Contact', weight: 0.8, handoff: '.contact-button', note: 'links → qa · links wired', jobs: [
     { sel: '.section-top > *', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '.contact-intro', role: 'copy', kind: 'type', act: 'writing intro line', charMs: 32 },
     { sel: '#contact-title', role: 'type', kind: 'type', act: 'setting headline', charMs: 80 },
@@ -266,9 +327,21 @@ export const TOUR_STOPS = [
 const PROTECTED = '.hero-actions .pill-button, .hero-links a, .contact-button, .contact-copy, .contact-links a, .footer-bottom > *';
 
 const HIDES = new Set(['reveal', 'type', 'wipe', 'place']);
-const OPTIONAL = new Set(['frame', 'review', 'orbit', 'caret']);
+const OPTIONAL = new Set(['frame', 'review', 'orbit', 'caret', 'pin', 'resolve']);
 const TEXT_KINDS = new Set(['type', 'wipe', 'caret']);
 const DEMOTE = { reveal: 'frame', type: 'caret', wipe: 'review', place: 'review' };
+// Decorative kinds that may share an element with its builder.
+const SHARED = new Set(['copy', 'paste', 'pin', 'resolve']);
+// The visible-target rule: below this opacity (the product along the
+// element's ancestors) content counts as invisible.
+const OPACITY_MIN = 0.05;
+// Content waiting under a placeholder bar (after a paste or a chapter frame)
+// may wait this long for its editor (virtual ms) before it is rescued.
+export const HOLE_CAP = 2600;
+// Occasional typos while typing: about one word in TYPO_EVERY is mistyped and
+// fixed with a backspace (only plain lowercase words; see typoFor).
+const TYPO_EVERY = 8;
+const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const ZERO = { x: 0, y: 0, w: 0, h: 0 };
 const SVG = '<svg viewBox="0 0 20 26" width="17" height="22" aria-hidden="true"><path d="M2.5 1.8v19.4l5.2-4.9 3.5 7.9 3.2-1.4-3.4-7.8h7.1z"/></svg>';
 
@@ -306,6 +379,35 @@ export function swarm(anchor, g, agent, amp = 1) {
 
 export function shouldPlayEntrance({ seen, reducedMotion, storageAvailable, hash, navigationType }) {
   return !seen && !reducedMotion && storageAvailable && (!hash || hash === '#home') && navigationType !== 'back_forward';
+}
+
+// The one typo (if any) an agent makes while typing `text`: { at, ch }, the
+// index of the mistyped character and the wrong key (a neighbour on the
+// keyboard). Deterministic (seeded by the text), about one plain word in
+// TYPO_EVERY. Conservative: never in text with digits, an @, a capitalised
+// word after the first (names, acronyms, proper nouns), or a CSS text
+// transform; only in lowercase words of four letters or more.
+export function typoFor(text, { transform = 'none' } = {}) {
+  const value = String(text || '');
+  if (!value.trim() || (transform && transform !== 'none') || /[\d@#/]/.test(value)) return null;
+  const words = [...value.matchAll(/[A-Za-zÀ-ÿ'’-]+/g)];
+  // A capital is fine only where a sentence starts.
+  const sentenceStart = match => match.index === words[0].index || /[.!?]\s*$/.test(value.slice(0, match.index));
+  if (words.some(match => /^[A-ZÀ-Þ]/.test(match[0]) && !sentenceStart(match))) return null;
+  // About one typo per TYPO_EVERY words typed, always in a plain word.
+  const plain = words.filter(match => /^[a-z]{4,}$/.test(match[0]));
+  if (!plain.length) return null;
+  let h = 2166136261;
+  for (const char of value) h = Math.imul(h ^ char.charCodeAt(0), 16777619) >>> 0;
+  if (h % TYPO_EVERY >= words.length) return null;
+  const match = plain[(h >>> 4) % plain.length];
+  const word = match[0];
+  const offset = 1 + ((h >>> 9) % (word.length - 2));
+  const right = word[offset];
+  const row = KEY_ROWS.find(keys => keys.includes(right)) || KEY_ROWS[0];
+  const k = row.indexOf(right);
+  const ch = row[k + 1] || row[k - 1] || 'e';
+  return { at: match.index + offset, ch };
 }
 
 export function initAgenticEntrance(document, window, config = {}) {
@@ -411,6 +513,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (current.wire) updateWire(current, t);
       if (current.guides) updateIntro(current, t);
       current.active.forEach(job => job.update(t));
+      updateHoles(current);
       current.agents.forEach(agent => placeAgent(current, agent, t));
       // A rescue still under way finishes first (briefly), so nothing pops in.
       if (t >= current.total && !(current.rescuing.size && t < current.total + 2500)) {
@@ -704,7 +807,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     dock.working = n;
     dock.count.textContent = String(n);
     dock.unit.innerHTML = `<span class="agentic-dock-agents">${n === 1 ? 'agent' : 'agents'} </span>working`;
-    if (tour && planSteps[tour.index]?.state === 'building') { planSteps[tour.index].agents = n; renderPlan(); }
+    const step = tour ? tour.stops[tour.index]?.step : -1;
+    if (tour && planSteps[step]?.state === 'building') { planSteps[step].agents = n; renderPlan(); }
   }
 
   function announce(text) {
@@ -792,12 +896,13 @@ export function initAgenticEntrance(document, window, config = {}) {
     d.root.dataset.state = 'tour';
     d.root.classList.remove('is-busy');
     const stopInfo = tour.stops[stopIndex];
+    const step = stopInfo.step ?? stopIndex;
     d.where.textContent = stopInfo.name;
-    d.progress.textContent = `${stopIndex + 1} / ${tour.stops.length}`;
-    setPlanStep(stopIndex, 'building');
+    d.progress.textContent = `${step + 1} / ${planSteps.length}`;
+    if (planSteps[step]?.state !== 'building') setPlanStep(step, 'building');
     announce(stopIndex === 0
       ? `Build tour: agents are assembling the page, starting with the ${stopInfo.name.toLowerCase()}. Skip tour is available.`
-      : `Building ${stopInfo.name}, section ${stopIndex + 1} of ${tour.stops.length}.`);
+      : `Building ${stopInfo.name}, section ${step + 1} of ${planSteps.length}.`);
   }
 
   function collapseDock(message, summary) {
@@ -1015,11 +1120,34 @@ export function initAgenticEntrance(document, window, config = {}) {
   };
   // When the planned scroll brings an item's top just inside the bottom edge:
   // its agent arrives then, so content is built as it slides in.
-  function readyAt(current, element) {
+  // On a travelling Experience stage, an item off to the right is ready when
+  // the planned scroll has carried it in far enough (`edge`: a share of the
+  // view its left edge must pass; by default half the item, up to 30% of the view).
+  function readyAt(current, element, edge = null) {
     if (!current.traj || !current.measurable) return 0;
-    const need = box(current, element).y + current.sy0 - current.vh * 0.97;
-    if (current.traj.ys[0] >= need) return 0;
-    return trajTime(current.traj, y => y >= need);
+    const b = box(current, element);
+    const need = b.y + current.sy0 - current.vh * 0.97;
+    let ready = current.traj.ys[0] >= need ? 0 : trajTime(current.traj, y => y >= need);
+    // Inside a motion.js reveal still waiting (it fades in once its top is
+    // 8% above the bottom edge, after a short stagger): arrive as it shows.
+    const reveal = element.closest?.('[data-reveal="pending"]');
+    if (reveal) {
+      const top = reveal.getBoundingClientRect().top + current.sy0 - current.vh * 0.92 + 2;
+      const shows = current.traj.ys[0] >= top ? 0 : trajTime(current.traj, y => y >= top);
+      if (Number.isFinite(shows)) ready = Math.max(Number.isFinite(ready) ? ready : 0, shows + 380 * current.anim);
+    }
+    const xp = current.xp;
+    if (xp && xp.track.contains(element)) {
+      const line = edge ? current.vw * edge : current.vw - Math.min(b.w * 0.5, current.vw * 0.3);
+      if (b.x > line) {
+        const progress = y => clamp01((y - xp.top) / xp.distance);
+        const p0 = progress(current.sy0);
+        let side = trajTime(current.traj, y => b.x - (progress(y) - p0) * xp.shift <= line);
+        if (!Number.isFinite(side)) side = (current.lead || 0) + current.budget;
+        ready = Math.max(Number.isFinite(ready) ? ready : 0, side);
+      }
+    }
+    return ready;
   }
   // Hidden assembly only for content the visitor cannot see yet.
   const belowFold = (current, element) => !current.measurable || box(current, element).y >= current.vh;
@@ -1030,6 +1158,95 @@ export function initAgenticEntrance(document, window, config = {}) {
     const bottom = Math.min(r.y + r.h, current.vh);
     return bottom > y ? { x: r.x, y, w: r.w, h: bottom - y } : r;
   };
+
+  // A rect clipped to the viewport.
+  const clipView = (current, r) => {
+    const x = Math.max(r.x, 0);
+    const y = Math.max(r.y, 0);
+    const right = Math.min(r.x + r.w, current.vw);
+    const bottom = Math.min(r.y + r.h, current.vh);
+    return right > x && bottom > y ? { x, y, w: right - x, h: bottom - y } : { x: clamp(r.x, 0, current.vw), y: clamp(r.y, 0, current.vh), w: 0, h: 0 };
+  };
+
+  // ---- the visible-target rule ----------------------------------------------
+  // An agent only works on content a visitor could actually see: connected,
+  // not inside [hidden] or [inert], not display:none or visibility:hidden,
+  // with a real box, an opacity chain above OPACITY_MIN (our own pending
+  // state and motion.js's pending reveals do not count), and not clipped
+  // away by an overflow ancestor. `slide` content (chapters a pinned stage
+  // carries in sideways) is not judged on visibility or clipping until its
+  // agent sets off; `view` also requires part of it on screen. Everything is
+  // read live (a handful of reads per job), so it is right wherever the
+  // element is now.
+  const ownPending = (current, node) => node.classList?.contains('agentic-target') || node.hasAttribute?.('data-reveal') || current.wasHidden.has(node);
+  function perceivable(current, element, { slide = false, view = false } = {}) {
+    if (!element?.isConnected) return false;
+    if (element.closest?.('[hidden], [inert]')) return false;
+    const read = node => window.getComputedStyle?.(node) || null;
+    const style = read(element);
+    if (!style) return true;
+    if (!slide && (style.visibility === 'hidden' || style.visibility === 'collapse')) return false;
+    let opacity = 1;
+    for (let node = element; node && node !== root; node = node.parentElement) {
+      const s = node === element ? style : read(node);
+      if (!s) break;
+      if (s.display === 'none') return false;
+      if (ownPending(current, node)) continue;
+      const value = parseFloat(s.opacity);
+      if (Number.isFinite(value)) opacity *= value;
+    }
+    // A slide chapter fades in as it arrives (experience.css).
+    if (opacity < OPACITY_MIN && !slide) return false;
+    if (!current.measurable) return true;
+    const r = element.getBoundingClientRect();
+    if (!(r.width >= 1 && r.height >= 1)) return false;
+    if (slide && !view) return true;
+    let x0 = r.left;
+    let y0 = r.top;
+    let x1 = r.right;
+    let y1 = r.bottom;
+    for (let node = element.parentElement; node && node !== root && node !== document.body; node = node.parentElement) {
+      const s = read(node);
+      if (!s) break;
+      const clipX = s.overflowX !== 'visible';
+      const clipY = s.overflowY !== 'visible';
+      if (clipX || clipY) {
+        const c = node.getBoundingClientRect();
+        if (clipX) { x0 = Math.max(x0, c.left); x1 = Math.min(x1, c.right); }
+        if (clipY) { y0 = Math.max(y0, c.top); y1 = Math.min(y1, c.bottom); }
+      }
+      if (s.position === 'fixed') break;
+    }
+    if (view) {
+      x0 = Math.max(x0, 0);
+      y0 = Math.max(y0, 0);
+      x1 = Math.min(x1, current.vw);
+      y1 = Math.min(y1, current.vh);
+    }
+    const w = x1 - x0;
+    const h = y1 - y0;
+    if (!(w >= Math.min(4, r.width) && h >= Math.min(4, r.height))) return false;
+    // A meaningful part of it: a quarter, or a few lines' worth of a big block.
+    return w * h >= Math.min(r.width * r.height * 0.25, 1200);
+  }
+  // At plan time: everything but the viewport (the scroll brings it in).
+  const plannable = (current, element, spec) => perceivable(current, element, { slide: Boolean(spec?.slide) && !spec?.shown });
+  // When the agent sets off and when it arrives. On arrival the item must be
+  // in view, or entering it (the planned scroll brings items to the bottom
+  // edge as their agents arrive).
+  function targetReady(current, job, phase) {
+    const target = job.target;
+    if (phase === 'start') return perceivable(current, target, { slide: Boolean(job.spec?.slide) });
+    // A pasted ghost is drawn by the agent itself, as its chapter slides in.
+    if (job.kind === 'paste') return perceivable(current, target, { slide: true });
+    // Content the stage carries in sideways: some of it inside the stage and
+    // the view (it may still be fading in as it arrives).
+    if (job.spec?.slide) return perceivable(current, target, { slide: true, view: true });
+    if (!perceivable(current, target)) return false;
+    if (!current.measurable) return true;
+    const r = target.getBoundingClientRect();
+    return r.bottom > 0 && r.top < current.vh + 24 && r.right > 0 && r.left < current.vw;
+  }
 
   // ---- stage --------------------------------------------------------------
   function make(tag, className, parent) {
@@ -1086,7 +1303,9 @@ export function initAgenticEntrance(document, window, config = {}) {
   }
 
   // ---- ride-along crew between tour stops ----------------------------------
-  const nextStop = () => (tour ? tour.stops[tour.index + 1] : null);
+  // A `when` stop only runs if its section matches it by the time it comes up.
+  const stopActive = stopInfo => !stopInfo.when || Boolean(stopInfo.section.matches?.(stopInfo.when));
+  const nextStop = () => (tour ? tour.stops.slice(tour.index + 1).find(stopActive) || null : null);
   // The hero keeps most of its crew on screen for About: agents whose role
   // About needs first, then the rest, up to the ride-along cap.
   // `first` (agents still busy when the hero hands over) ride along before
@@ -1199,10 +1418,19 @@ export function initAgenticEntrance(document, window, config = {}) {
     const kind = current.kind;
     const r = () => box(current, target);
     const text = () => textBox(current, target);
-    const chars = Math.max(1, (target.textContent || '').trim().length);
+    const raw = (target.textContent || '').trim();
+    const chars = Math.max(1, raw.length);
     const build = kind === 'build';
     // Tour stops type at >= 35 ms per character, up to 1.6 s per job.
-    const typeMs = build ? clamp(chars * Math.max(35, spec.charMs || 35), 420, 1600) : Math.min(760, Math.max(300, chars * (spec.charMs || 40)));
+    const charsMs = build ? clamp(chars * Math.max(35, spec.charMs || 35), 420, 1600) : Math.min(760, Math.max(300, chars * (spec.charMs || 40)));
+    // Now and then a word is mistyped and fixed: the wrong key shows after
+    // the caret, then a backspace takes it away (about four keystrokes long).
+    let typo = null;
+    if (build && spec.kind === 'type' && !spec.pooled && window.getComputedStyle) {
+      const found = typoFor(raw, { transform: window.getComputedStyle(target).textTransform });
+      if (found && found.at > 0 && found.at < chars - 1) typo = { ...found, ms: Math.max(320, (charsMs / chars) * 4.5) };
+    }
+    const typeMs = charsMs + (typo ? typo.ms : 0);
     // `place`: pop the item, write its sub line, then cascade its kids. The
     // phases are fractions of the job's work so compression keeps them.
     const parts = spec.parts || {};
@@ -1229,6 +1457,10 @@ export function initAgenticEntrance(document, window, config = {}) {
       orbit: build ? 1000 : 1050,
       review: build ? 700 : kind === 'pass' ? 280 : 440,
       caret: build ? 520 : 300,
+      copy: 620,
+      paste: spec.work || 900,
+      pin: 620,
+      resolve: 700,
     }[job.kind];
     // Tour stops keep near-real durations; only budgets scale with `weight`.
     const anim = build ? current.anim : s;
@@ -1237,7 +1469,31 @@ export function initAgenticEntrance(document, window, config = {}) {
     job.work = job.baseWork;
     job.typeMs = job.baseType;
     job.chars = chars;
-    job.entry = () => {
+    job.typo = typo;
+    // A job dropped on the way (its target was not there to see) keeps its
+    // cursor where it was, with no label: entry, path and exit all hold.
+    const held = () => job.voidAt || { x: current.vw * 0.5, y: current.vh * 0.8 };
+    // Paste ghosts: from the item before (`from`) to the item, both as they are now.
+    const source = () => {
+      if (spec.from === 'prev') return target.previousElementSibling;
+      return spec.from ? document.querySelector(spec.from) : null;
+    };
+    const ghostRect = p => {
+      const to = box(current, target);
+      const src = source();
+      const s0 = src ? box(current, src) : null;
+      const from = s0 && s0.w > 0 ? s0 : { x: to.x - Math.min(to.w, current.vw * 0.4), y: to.y, w: to.w, h: to.h };
+      const e = easeInOut(clamp01(p));
+      return { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e, w: from.w + (to.w - from.w) * e, h: from.h + (to.h - from.h) * e };
+    };
+    // Where a ghost or outline is held: inside the view, near its top left.
+    const grip = rect => ({ x: clamp(rect.x + 22, 12, current.vw - 60), y: clamp(rect.y + 34, 118, current.vh - 90) });
+    // The pin's note reads to its right: keep room for it.
+    const pinPoint = () => {
+      const v = visible(current, target);
+      return { x: clamp(v.x + v.w - 26, 16, current.vw - 170), y: clamp(v.y + 18, 110, current.vh - 90) };
+    };
+    const entryOf = () => {
       const b = r();
       if (job.kind === 'frame' || job.kind === 'review') { const v = visible(current, target); return { x: v.x + 2, y: v.y + 2 }; }
       if (job.kind === 'type') { const t = text(); const l = t.lines?.[0] || t; return { x: l.x, y: l.y + l.h * 0.92 }; }
@@ -1245,8 +1501,12 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (job.kind === 'orbit') return { x: b.x + b.w * 0.5 + b.w * 0.42, y: b.y + b.h * 0.42 };
       if (job.kind === 'caret') { const l = text().last || text(); return { x: l.x + l.w + 6, y: l.y + l.h * 0.8 }; }
       if (job.kind === 'place') return { x: b.x + Math.min(18, b.w * 0.25), y: b.y + Math.min(b.h * 0.4, 34) };
+      if (job.kind === 'copy') return grip(clipView(current, b));
+      if (job.kind === 'paste') return grip(ghostRect(0));
+      if (job.kind === 'pin' || job.kind === 'resolve') return pinPoint();
       return { x: b.x + Math.min(18, b.w * 0.25), y: b.y + Math.min(b.h * 0.58, 120) };
     };
+    job.entry = () => (job.void ? held() : entryOf());
     // Where the cursor sits while placing: the drop, the sub line's caret,
     // then from tag to tag as each one lands.
     const lineStart = element => { const t = textBox(current, element); const l = t.lines?.[0] || t; return { x: l.x, y: l.y, h: l.h }; };
@@ -1277,7 +1537,17 @@ export function initAgenticEntrance(document, window, config = {}) {
       return lerp(from, kidPoint(next), easeInOut(clamp01((p - t0) / Math.max(1e-6, phases.kids[next] - t0))));
     }
     job.cursorAt = p => {
+      if (job.void) return held();
       const b = r();
+      if (job.kind === 'copy') {
+        // Trace the outline's top edge, then press ⌘C.
+        const v = clipView(current, b);
+        const start = grip(v);
+        return { x: start.x + Math.min(v.w * 0.5, 260) * easeInOut(clamp01(p / 0.7)), y: start.y };
+      }
+      if (job.kind === 'paste') return grip(ghostRect(p));
+      if (job.kind === 'pin') { const at = pinPoint(); return { x: at.x - 6 * (1 - easeOut(p)), y: at.y - 10 * (1 - easeOut(p)) }; }
+      if (job.kind === 'resolve') { const at = pinPoint(); return { x: at.x + 4 * Math.sin(p * Math.PI), y: at.y + 3 * Math.sin(p * Math.PI) }; }
       if (job.kind === 'frame' || job.kind === 'review') {
         const v = visible(current, target);
         const e = job.kind === 'frame' ? easeInOut(p) : easeOut(p);
@@ -1319,11 +1589,53 @@ export function initAgenticEntrance(document, window, config = {}) {
     let version = -1;
     let lastStep = -1;
 
+    // A small key tag (⌘C / ⌘V) or comment bubble, held in the layer.
+    const tag = (text, className) => {
+      const element = make('div', `agentic-tag ${className || ''}`, current.layer);
+      element.style.setProperty('--agent-color', color());
+      element.textContent = text;
+      job.ui.push(element);
+      return element;
+    };
     job.begin = () => {
       job.begun = true;
       // The item starts to appear: its wireframe skeleton fades.
       job.onPlace?.();
       const k = job.kind;
+      if (job.void) return;
+      if (k === 'copy') {
+        job.frame = frame('is-review is-copy');
+        job.keyTag = tag('⌘C', 'is-key');
+        version = -1;
+        job.update(job.arrive);
+        return;
+      }
+      if (k === 'paste') {
+        job.frame = frame('is-review is-ghost');
+        job.frame.classList.add('is-set');
+        job.keyTag = tag('⌘V', 'is-key');
+        version = -1;
+        job.update(job.arrive);
+        return;
+      }
+      if (k === 'pin') {
+        const pin = make('div', 'agentic-pin', current.layer);
+        pin.style.setProperty('--agent-color', color());
+        make('i', 'agentic-pin-dot', pin);
+        make('span', 'agentic-pin-note', pin).textContent = spec.note || 'check';
+        job.pin = pin;
+        current.pins.set(spec.key || 'pin', pin);
+        version = -1;
+        job.update(job.arrive);
+        return;
+      }
+      if (k === 'resolve') {
+        job.pin = current.pins.get(spec.after || 'pin') || null;
+        if (!job.pin) { job.frame = frame('is-review'); }
+        version = -1;
+        job.update(job.arrive);
+        return;
+      }
       if (k === 'frame') {
         job.frame = frame(`is-drag${spec.cross ? ' has-cross' : ''}`);
         job.frame.style.scale = '0.001';
@@ -1398,6 +1710,37 @@ export function initAgenticEntrance(document, window, config = {}) {
       return { x, y: line.y, h: line.h };
     }
 
+    // Characters typed after `elapsed` ms, and whether the wrong key shows.
+    function typeStep(elapsed) {
+      const typoMs = typo ? typo.ms * (job.typeMs / typeMs) : 0;
+      const charTime = Math.max(1, job.typeMs - typoMs) / job.chars;
+      let at = elapsed;
+      if (typo) {
+        const from = typo.at * charTime;
+        if (elapsed >= from && elapsed < from + typoMs) return { step: typo.at, wrong: (elapsed - from) / typoMs < 0.6 };
+        if (elapsed >= from + typoMs) at = elapsed - typoMs;
+      }
+      return { step: Math.min(job.chars, Math.max(0, Math.floor(at / charTime))), wrong: false };
+    }
+    // The wrong key, set in the target's own type right after the caret.
+    function showTypo(point) {
+      if (!point) { if (job.typoEl) job.typoEl.hidden = true; return; }
+      if (!job.typoEl) {
+        job.typoEl = make('span', 'agentic-typo', current.layer);
+        job.ui.push(job.typoEl);
+        const style = window.getComputedStyle?.(target);
+        if (style) {
+          ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'color'].forEach(name => { job.typoEl.style[name] = style[name]; });
+          const size = parseFloat(style.fontSize) || 16;
+          job.typoBox = { w: size * 0.56 };
+        } else job.typoBox = { w: 9 };
+        job.typoEl.textContent = typo.ch;
+      }
+      job.typoEl.hidden = false;
+      job.typoEl.style.lineHeight = `${point.h}px`;
+      job.typoEl.style.translate = `${point.x.toFixed(1)}px ${point.y.toFixed(1)}px`;
+    }
+
     function placeCaret(point) {
       if (!job.caret || !point) return;
       job.caret.style.translate = `${point.x}px ${point.y + point.h * 0.08}px`;
@@ -1405,9 +1748,33 @@ export function initAgenticEntrance(document, window, config = {}) {
     }
 
     job.update = now => {
+      if (job.void) return;
       const p = clamp01((now - job.arrive) / Math.max(1, job.work));
       const geometryChanged = version !== current.version;
       version = current.version;
+      if (job.kind === 'copy' || job.kind === 'paste') {
+        const rect = job.kind === 'copy' ? clipView(current, r()) : ghostRect(Math.min(1, p / 0.86));
+        if (geometryChanged || job.kind === 'paste') place(job.frame, rect);
+        if (job.kind === 'copy' && p > 0.05 && !job.frame.classList.contains('is-set')) job.frame.classList.add('is-set');
+        const pressed = job.kind === 'copy' ? p >= 0.62 : p >= 0.72;
+        const at = grip(rect);
+        job.keyTag.style.translate = `${Math.round(at.x + 16)}px ${Math.round(at.y - 30)}px`;
+        if (pressed !== job.keyTag.classList.contains('is-on')) job.keyTag.classList.toggle('is-on', pressed);
+        if (job.kind === 'paste' && pressed && !job.dropped) { job.dropped = true; job.frame.classList.add('is-dropped'); }
+        return;
+      }
+      if (job.kind === 'pin' || job.kind === 'resolve') {
+        if (job.pin && (geometryChanged || !job.placedPin)) {
+          job.placedPin = true;
+          const at = pinPoint();
+          job.pin.style.translate = `${Math.round(at.x + 8)}px ${Math.round(at.y - 22)}px`;
+        }
+        if (job.kind === 'pin' && p > 0.35 && !job.pin.classList.contains('is-on')) job.pin.classList.add('is-on');
+        if (job.kind === 'resolve' && job.pin && p > 0.45 && !job.pin.classList.contains('is-resolved')) job.pin.classList.add('is-resolved');
+        if (job.kind === 'resolve' && !job.pin && geometryChanged) place(job.frame, visible(current, target));
+        if (job.kind === 'resolve' && !job.pin && p > 0.05) job.frame.classList.add('is-set');
+        return;
+      }
       const b = job.kind === 'frame' || job.kind === 'review' ? visible(current, target) : r();
       if (geometryChanged) {
         if (job.kind === 'orbit') {
@@ -1430,12 +1797,14 @@ export function initAgenticEntrance(document, window, config = {}) {
         if (spec.size) job.frame.classList.add('has-size');
       } else if (job.kind === 'type') {
         const progress = clamp01((now - job.arrive) / Math.max(1, job.typeMs));
-        const step = Math.floor(progress * job.chars);
+        const { step, wrong } = typeStep(now - job.arrive);
         job.typeProgress = progress;
-        if (step !== lastStep || geometryChanged) {
-          lastStep = step;
+        const key = wrong ? -1 - step : step;
+        if (key !== lastStep || geometryChanged) {
+          lastStep = key;
           job.caretPoint = writeClip(step / job.chars);
-          placeCaret(job.caretPoint);
+          showTypo(wrong ? job.caretPoint : null);
+          placeCaret(wrong && job.typoBox ? { ...job.caretPoint, x: job.caretPoint.x + job.typoBox.w } : job.caretPoint);
         }
         if (progress >= 1 && !job.caret.classList.contains('is-idle')) job.caret.classList.add('is-idle');
       } else if (job.kind === 'wipe') {
@@ -1488,13 +1857,63 @@ export function initAgenticEntrance(document, window, config = {}) {
     };
 
     job.finish = () => {
+      job.done = true;
       job.onPlace?.();
       job.reveals.forEach(element => cleanTarget(element));
       if (current.kind === 'pass') target.dataset.buildState = 'tracing';
-      job.ui.forEach(element => { if (element !== job.frame) element.remove(); });
+      job.ui.forEach(element => { if (element !== job.frame && element !== job.keyTag) element.remove(); });
+      job.keyTag?.classList.add('is-out');
       if (job.kind !== 'frame') job.frame?.classList.add('is-out');
+      if (job.kind === 'resolve') job.pin?.classList.add('is-out');
+      // A pasted copy (or a drawn chapter frame) leaves placeholder bars where
+      // its editors will write.
+      if (spec.holes && !job.void) makeHoles(current, job);
     };
     return job;
+  }
+
+  // ---- placeholders ---------------------------------------------------------
+  // Grey bars over the hidden content inside `job.target` that later jobs will
+  // write: one per rendered text line (a few at most), one block otherwise.
+  // Each bar follows its element (read live inside a pinned stage) and fades
+  // as that element's job starts.
+  function makeHoles(current, job) {
+    const owners = [...current.jobs, ...current.pool].filter(other => other !== job && !other.begun && !other.late && !other.void && other.reveals.length && job.target.contains(other.target));
+    owners.forEach(other => {
+      const top = other.reveals.filter(element => !other.reveals.some(parent => parent !== element && parent.contains(element)));
+      const bars = [];
+      top.forEach(element => {
+        const text = TEXT_KINDS.has(other.kind);
+        const t = text ? textBox(current, element) : box(current, element);
+        if (!(t.w > 0 && t.h > 0)) return;
+        const lines = text && t.lines && t.lines.length <= WIRE.lines ? t.lines.length : 1;
+        for (let line = 0; line < lines; line++) {
+          const node = make('div', `agentic-skeleton agentic-hole${current.light ? ' is-light' : ''}`, current.layer);
+          bars.push({ element, text, line: lines > 1 ? line : -1, node });
+        }
+      });
+      if (!bars.length) return;
+      current.holes.push(...bars);
+      const before = other.onPlace;
+      other.onPlace = () => {
+        before?.();
+        bars.forEach(bar => { bar.node.style.transitionDuration = `${realMs(WIRE.skeleton * current.anim)}ms`; bar.node.classList.add('is-out'); bar.done = true; });
+      };
+    });
+    current.holesVersion = -1;
+    updateHoles(current);
+  }
+  function updateHoles(current) {
+    if (!current.holes.length || current.holesVersion === current.version) return;
+    current.holesVersion = current.version;
+    current.holes.forEach(bar => {
+      if (bar.done) return;
+      const t = bar.text ? textBox(current, bar.element) : box(current, bar.element);
+      const b = bar.line >= 0 && t.lines ? t.lines[bar.line] : t;
+      bar.node.style.translate = `${b.x.toFixed(1)}px ${b.y.toFixed(1)}px`;
+      bar.node.style.width = `${Math.max(1, b.w).toFixed(1)}px`;
+      bar.node.style.height = `${Math.max(1, b.h).toFixed(1)}px`;
+    });
   }
 
   // ---- planning -----------------------------------------------------------
@@ -1583,15 +2002,64 @@ export function initAgenticEntrance(document, window, config = {}) {
   // Shared per-job events: dispatch line, label, begin, complete, frame fade.
   function scheduleQueue(current, orchestrator, agent, lineEvery) {
     const s = current.scale;
+    const checked = current.kind === 'build';
     agent.queue.forEach((job, jobIndex) => {
       travelSeg(agent, job.start, job.arrive, job.entry);
       workSeg(agent, job);
-      if (orchestrator && (lineEvery || jobIndex === 0)) addEvent(current, job.start, now => dispatchLine(current, orchestrator, agent, job, now));
-      addEvent(current, job.start, () => { startWorking(current, agent); agent.cursor.classList.remove('is-idle'); agent.cursor.classList.add('is-working'); say(agent, job.act); });
-      addEvent(current, job.arrive, now => { job.begin(now); current.active.add(job); });
+      addEvent(current, job.start, now => {
+        // The visible-target rule, again as the agent sets off.
+        if (checked && !targetReady(current, job, 'start')) { voidJob(current, job, agent); return; }
+        if (orchestrator && (lineEvery || jobIndex === 0)) dispatchLine(current, orchestrator, agent, job, now);
+        handoffLine(current, job, agent, now);
+        startWorking(current, agent);
+        agent.cursor.classList.remove('is-idle');
+        agent.cursor.classList.add('is-working');
+        agent.cursor.agenticTarget = job.target;
+        agent.job = job;
+        say(agent, job.act);
+      });
+      addEvent(current, job.arrive, now => {
+        if (job.void) return;
+        // Not there to see after all (scrolled past, clipped, hidden): show it
+        // and move on without a label.
+        if (checked && !targetReady(current, job, 'arrive')) { voidJob(current, job, agent); return; }
+        job.begin(now);
+        current.active.add(job);
+      });
       addEvent(current, job.end, () => completeJob(current, job));
       if (job.kind === 'frame') addEvent(current, job.end + (current.kind === 'build' ? 520 : 620) * s, () => job.frame?.classList.add('is-out'));
     });
+  }
+
+  // A job whose target a visitor could not see: its content (if any) is shown
+  // at once, and its agent stays where it is, with no label, until its next
+  // job. Counted with the tour's instant reveals.
+  function voidJob(current, job, agent) {
+    if (job.void) return;
+    const point = agent?.position || segPoint(agent, current.now, current);
+    job.voidAt = { x: point.x, y: point.y };
+    const hid = job.reveals.length > 0;
+    job.downgrade?.();
+    job.void = true;
+    if (hid && tour) { tour.late++; tour.instant++; }
+    current.voided = (current.voided || 0) + 1;
+    current.guarded.delete(job);
+    // Its label goes (the agent is not on to anything else yet).
+    if (agent?.cursor && (!agent.job || agent.job === job || agent.job.done || agent.job.void)) {
+      agent.cursor.classList.remove('is-working');
+      agent.cursor.agenticTarget = null;
+      agent.job = null;
+      say(agent, '');
+    }
+  }
+
+  // Work passing between agents (a pasted copy to its editor, a QA pin to
+  // whoever resolves it): a thin line from one cursor to the other, once per hand-off.
+  function handoffLine(current, job, agent, now) {
+    const from = job.afterJob;
+    if (!from?.agent || from.agent === agent || from.void || (from.lines || 0) >= 2 || !from.agent.position || !agent.position) return;
+    from.lines = (from.lines || 0) + 1;
+    drawLine(current, from.agent.position, agent.position, ROLES[from.agent.role].color, now, 'is-handoff');
   }
 
   function planHero(current) {
@@ -2014,7 +2482,7 @@ export function initAgenticEntrance(document, window, config = {}) {
 
     // Lay out every queue: items are taken as they scroll in (readyAt).
     const lastReady = Math.max(0, ...current.jobs.map(job => (Number.isFinite(job.readyAt) ? job.readyAt : 0)));
-    const deadline = Math.max(lead + current.budget - 400 * s, lastReady + 1400 * anim);
+    let deadline = Math.max(lead + current.budget - 400 * s, lastReady + 1400 * anim);
     const gap = Math.min(220 * anim, (current.budget * 0.25) / Math.max(1, crew.length));
     crew.forEach(agent => agent.queue.sort((a, b) => (a.readyAt || 0) - (b.readyAt || 0)));
     // The paint sweep comes before the painter's other work, and it leaves at once.
@@ -2037,6 +2505,41 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (paint && agent === paint.agent) agent.firstStart = Math.min(agent.firstStart, 16 * s);
       agent.free = agent.queue.length ? fitQueue(current, agent, agent.firstStart, agent.from, deadline) : 0;
     });
+    // Jobs that wait for another (`after`): they start once it is done (a
+    // pasted card's editors once the paste lands). A few passes settle chains;
+    // they run again after any job changes hands below.
+    const settleDeps = fit => {
+      const waiting = current.jobs.filter(job => ((job.afterJob && current.jobs.includes(job.afterJob)) || job.afterJobs?.length) && job.agent);
+      for (let pass = 0; waiting.length && pass < 6; pass++) {
+        let moved = false;
+        waiting.forEach(job => {
+          let ready;
+          if (job.afterJobs) {
+            const ends = job.afterJobs.filter(other => current.jobs.includes(other) && Number.isFinite(other.end)).map(other => other.end);
+            if (!ends.length) return;
+            // `overlap`: start that long before the last of them is done.
+            ready = Math.max(...ends) + (120 - (job.spec?.overlap || 0)) * anim;
+          } else {
+            const dep = job.afterJob;
+            if (!Number.isFinite(dep.end)) return;
+            // `afterAt`: the share of the other job's work to wait for (default all of it).
+            const share = job.spec?.afterAt ?? 1;
+            ready = (share < 1 ? dep.arrive + dep.work * share : dep.end) + 120 * anim;
+          }
+          // From its own readiness each pass, so it follows its dependency both ways.
+          if (job.ownReady === undefined) job.ownReady = Number.isFinite(job.readyAt) ? job.readyAt : 0;
+          const next = Math.max(job.ownReady, ready);
+          if (!(Math.abs((job.readyAt ?? -1) - next) < 1)) { job.readyAt = next; moved = true; deadline = Math.max(deadline, next + 1400 * anim); }
+        });
+        if (!moved) break;
+        crew.forEach(agent => {
+          if (!agent.queue.length) return;
+          agent.queue.sort((a, b) => (a === paint ? -1 : b === paint ? 1 : (a.readyAt || 0) - (b.readyAt || 0)));
+          agent.free = fit ? fitQueue(current, agent, agent.firstStart, agent.from, deadline) : simulate(current, agent, agent.firstStart, agent.from, agent.factor || 1);
+        });
+      }
+    };
+    settleDeps(true);
     // Content that would sit on screen still hidden is shown now instead
     // (in a wired section, content is only seen once the paint uncovers it).
     const shownAt = job => (paint && Number.isFinite(paint.arrive) && current.wire.section.contains(job.target)
@@ -2048,8 +2551,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     // nothing else it does gets later. Only if nobody can does the job go to
     // the run's pool, where an agent freed up later may still take it. Pool
     // items (content no planned job covers) are offered to the crew the same way.
-    const allowance = job => (job.rescue ? RESCUE.cap - 50 * anim : 200 * anim);
-    const isLate = job => job.reveals.length && !job.decor && job.agent && job.agent !== orchestrator && Number.isFinite(job.readyAt) && job.arrive > shownAt(job) + allowance(job);
+    // Content under a placeholder may wait for its editor a little longer.
+    const allowance = job => (job.rescue ? RESCUE.cap - 50 * anim : job.afterJob?.spec?.holes ? HOLE_CAP * anim * 0.6 : 200 * anim);
+    // A copy or paste that others wait for counts too: a late one holds up its whole chain.
+    const isLate = job => (job.reveals.length || (job.leads && !job.kept)) && !job.decor && job.agent && job.agent !== orchestrator && Number.isFinite(job.readyAt) && job.arrive > shownAt(job) + allowance(job);
     const resim = agent => { agent.free = agent.queue.length ? simulate(current, agent, agent.firstStart, agent.from, agent.factor || 1) : 0; };
     const order = agent => agent.queue.sort((a, b) => (a === paint ? -1 : b === paint ? 1 : (a.readyAt || 0) - (b.readyAt || 0)));
     const assign = (job, skip, until = Infinity) => {
@@ -2096,6 +2601,8 @@ export function initAgenticEntrance(document, window, config = {}) {
       owner.queue.splice(owner.queue.indexOf(job), 1);
       resim(owner);
       if (assign(job, owner)) continue;
+      // A late copy or paste nobody can take sooner stays where it was.
+      if (!job.reveals.length) { job.kept = true; job.rescue = false; delete job.travelFrom; owner.queue.push(job); job.agent = owner; order(owner); resim(owner); continue; }
       current.jobs.splice(current.jobs.indexOf(job), 1);
       job.pooled = true;
       current.pool.push(job);
@@ -2112,6 +2619,13 @@ export function initAgenticEntrance(document, window, config = {}) {
       current.jobs.push(job);
     });
 
+    settleDeps(false);
+    // On screen before their agents get there, jobs that wait for another may
+    // stay hidden (under placeholders, if it left some) until `graceUntil`.
+    current.jobs.forEach(job => {
+      const dep = job.afterJob;
+      if (dep && Number.isFinite(dep.end)) job.graceUntil = dep.end + (dep.spec?.holes ? HOLE_CAP : RESCUE.cap) * anim;
+    });
     // Hand over once the builders are done.
     const crewJobs = current.jobs.filter(job => job.agent && job.agent !== orchestrator);
     const builders = crewJobs.filter(job => HIDES.has(job.kind));
@@ -2429,6 +2943,16 @@ export function initAgenticEntrance(document, window, config = {}) {
     const wire = current.wire;
     const r = box(current, wire.section);
     if (wire.measures !== current.measures) placeWire(current, wire, r);
+    // Blocks for content in a pinned (sticky) stage stay on that content.
+    if (wire.liveVersion !== current.version && current.live.size) {
+      wire.liveVersion = current.version;
+      wire.skeletons.forEach(block => {
+        if (!current.live.has(block.element)) return;
+        const t = block.text ? textBox(current, block.element) : box(current, block.element);
+        const b = block.line >= 0 && t.lines ? t.lines[block.line] : t;
+        block.nodes.forEach(node => { node.style.translate = `${(b.x - r.x).toFixed(1)}px ${(b.y - r.y).toFixed(1)}px`; });
+      });
+    }
     const x = Math.round(r.x * 10) / 10;
     const y = Math.round(r.y * 10) / 10;
     if (x !== wire.x || y !== wire.y) { wire.x = x; wire.y = y; wire.root.style.translate = `${x}px ${y}px`; }
@@ -2504,10 +3028,14 @@ export function initAgenticEntrance(document, window, config = {}) {
     current.guarded.forEach(job => {
       if (job.begun || job.late) { current.guarded.delete(job); return; }
       const r = box(current, job.target);
-      if (!(r.h > 0 && r.y < edge && r.y + r.h > 0)) return;
+      if (!(r.h > 0 && r.y < edge && r.y + r.h > 0 && r.x < current.vw && r.x + r.w > 0)) return;
       // Still under a section's unpainted fill: not seen yet (the fill has its own guard).
       if (underFill(current, job.target, r)) return;
       if (job.seenAt === undefined) job.seenAt = t;
+      if (job.graceUntil !== undefined) {
+        if (t < job.graceUntil - RESCUE.cap) return;
+        job.seenAt = Math.max(job.seenAt, job.graceUntil - RESCUE.cap);
+      }
       if (Number.isFinite(job.arrive) && job.arrive <= job.seenAt + RESCUE.cap - 24 * current.anim) return;
       if (handOver(current, job, t)) { current.guarded.delete(job); return; }
       if (t - job.seenAt >= giveUpAfter(current)) {
@@ -2587,19 +3115,11 @@ export function initAgenticEntrance(document, window, config = {}) {
     return { items, blocks };
   }
 
-  // Laid out and visible (gallery back cards and closed content are not).
+  // Laid out and visible (gallery back cards, clipped and closed content are not).
   function rendered(current, element) {
     const r = box(current, element);
     if (!(r.w > 0 && r.h > 0)) return false;
-    for (let node = element; node && node !== document.body; node = node.parentElement) {
-      const style = window.getComputedStyle?.(node);
-      if (!style) return true;
-      if (style.display === 'none' || style.visibility === 'hidden') return false;
-      // Items handed over hidden were just un-marked: their own opacity may
-      // still be on its way up from our pending state.
-      if (style.opacity === '0' && !node.hasAttribute('data-reveal') && !current.wasHidden.has(node)) return false;
-    }
-    return true;
+    return perceivable(current, element);
   }
 
   // Pool jobs for candidates still below the fold that no planned job claims.
@@ -2769,9 +3289,15 @@ export function initAgenticEntrance(document, window, config = {}) {
       startWorking(current, agent);
       agent.cursor.classList.remove('is-idle');
       agent.cursor.classList.add('is-working');
+      agent.cursor.agenticTarget = job.target;
+      agent.job = job;
       say(agent, job.act);
     });
-    insertEvent(current, job.arrive, now => { job.begin(now); current.active.add(job); });
+    insertEvent(current, job.arrive, now => {
+      if (!targetReady(current, job, 'arrive')) { voidJob(current, job, agent); return; }
+      job.begin(now);
+      current.active.add(job);
+    });
     insertEvent(current, job.end, () => {
       completeJob(current, job);
       current.rescuing.delete(job);
@@ -2809,7 +3335,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     for (const job of current.pool) {
       if (job.agent || job.late) continue;
       const r = box(current, job.target);
-      const onScreen = r.h > 0 && r.y < current.vh && r.y + r.h > 0 && !underFill(current, job.target, r);
+      const onScreen = r.h > 0 && r.y < current.vh && r.y + r.h > 0 && r.x < current.vw && r.x + r.w > 0 && !underFill(current, job.target, r);
       if (onScreen && job.seenAt === undefined) job.seenAt = t;
       if (!onScreen && !(t >= job.dueAt)) continue;
       // Once the stop is over only items already in view are taken, and a
@@ -2818,7 +3344,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (!ending || current.lastStop || onScreen) {
         free ??= freeAgents(current, t);
         // In view already: better to run on past the stop than to pop it in.
-        const limit = current.lastStop ? Infinity : current.total + (onScreen ? 2300 : 0);
+        const limit = current.lastStop ? Infinity : current.total + (onScreen ? 1400 : 0);
         const pick = free.length ? pickRescuer(current, job, t, free, limit) : null;
         if (pick) {
           free.splice(free.indexOf(pick.option), 1);
@@ -2843,11 +3369,13 @@ export function initAgenticEntrance(document, window, config = {}) {
 
   function dispatchLine(current, orchestrator, agent, job, now) {
     const from = orchestrator.position || segPoint(orchestrator, now);
-    const to = job.entry();
+    drawLine(current, from, job.entry(), ROLES[agent.role].color, now);
+  }
+  function drawLine(current, from, to, color, now, variant = '') {
     const length = distance(from, to);
     if (length < 24) return;
-    const line = make('div', 'agentic-dispatch', current.layer);
-    line.style.setProperty('--agent-color', ROLES[agent.role].color);
+    const line = make('div', `agentic-dispatch ${variant}`, current.layer);
+    line.style.setProperty('--agent-color', color);
     line.style.width = `${length}px`;
     line.style.translate = `${from.x}px ${from.y}px`;
     line.style.rotate = `${Math.atan2(to.y - from.y, to.x - from.x)}rad`;
@@ -2881,6 +3409,27 @@ export function initAgenticEntrance(document, window, config = {}) {
     agent.goal = seg && seg.kind === 'travel' && after?.kind === 'drift' ? after.anchor() : null;
     const x = Math.max(2, Math.min(current.vw - 14, point.x));
     const y = Math.max(2, Math.min(current.vh - 20, point.y));
+    // A cursor held at the edge (its point is off screen) shows no label:
+    // a label is only ever drawn where its work is.
+    let away = Math.abs(point.x - x) > 10 || Math.abs(point.y - y) > 10;
+    // On the way to work that is not on screen yet (or any more): no label either.
+    const job = agent.job;
+    if (!away && job && !job.void && current.measurable && agent.role !== 'orchestrator') {
+      // At least a few pixels of it on screen: cached bounds every frame, and
+      // the live bounds a few times a second (content can still be settling).
+      const on = r => r.w > 0 && r.h > 0 && r.y < current.vh - 6 && r.y + r.h > 6 && r.x < current.vw - 6 && r.x + r.w > 6;
+      if (!(agent.liveAt > t) || agent.liveJob !== job) {
+        agent.liveAt = t + 140;
+        agent.liveJob = job;
+        agent.liveOn = on(readRect(job.target));
+      }
+      away = !agent.liveOn || !on(box(current, job.target))
+        // Still waiting for motion.js to fade it in.
+        || Boolean(job.target.closest?.('[data-reveal="pending"]'))
+        // Waiting for the copy it is to write in to land.
+        || Boolean(job.afterJob && job.afterJob.kind === 'paste' && !job.afterJob.done && !job.afterJob.void);
+    }
+    if (away !== agent.away) { agent.away = away; agent.cursor.classList.toggle('is-away', away); }
     if (agent.x !== undefined && Math.abs(agent.x - x) < 0.05 && Math.abs(agent.y - y) < 0.05) return;
     if (agent.x !== undefined) {
       // Lean into the direction of travel (smoothed), so cursors feel alive.
@@ -2900,35 +3449,46 @@ export function initAgenticEntrance(document, window, config = {}) {
   // ---- runs ---------------------------------------------------------------
   function collect(current, plan, rootNode, cap) {
     const jobs = [];
-    const used = new Set();
+    // One builder per element; the copy/paste/pin kinds may share an element
+    // with it (one of each kind).
+    const used = new Map();
+    const taken = (target, kind) => {
+      const kinds = used.get(target);
+      if (!kinds) return false;
+      return SHARED.has(kind) ? kinds.has(kind) : [...kinds].some(other => !SHARED.has(other));
+    };
     const push = (spec, target, reveals) => {
-      if (!target || used.has(target)) return;
-      used.add(target);
+      if (!target || taken(target, spec.kind)) return;
+      if (!used.has(target)) used.set(target, new Set());
+      used.get(target).add(spec.kind);
       jobs.push(createJob(current, spec, target, reveals));
     };
     plan.forEach(spec => {
+      if (spec.only && (spec.only === 'phone') !== (current.tier === 'phone')) return;
       const nodes = specNodes(spec, rootNode);
       if (!nodes.length) return;
       if (current.kind === 'pass') {
-        nodes.filter(node => !used.has(node) && (!current.measurable || inView(current, node)))
+        nodes.filter(node => !taken(node, spec.kind) && (!current.measurable || inView(current, node)) && plannable(current, node))
           .slice(0, spec.multi || 1)
           .forEach(node => push(spec, node, []));
       } else if (current.kind === 'build') {
         if (spec.group) {
           const container = rootNode.querySelector(spec.group);
-          const shown = nodes.filter(node => willShow(current, node)).slice(0, spec.max || 6);
+          const shown = nodes.filter(node => willShow(current, node) && plannable(current, node, spec)).slice(0, spec.max || 6);
           if (!container || !shown.length) return;
           const hidden = shown.filter(node => belowFold(current, node));
           push(hidden.length ? spec : { ...spec, kind: DEMOTE[spec.kind] || spec.kind }, container, hidden);
         } else {
           // One job per item, up to `multi`; `rest` cascades the others.
-          let shown = nodes.filter(node => !used.has(node) && willShow(current, node) && (!spec.shown || rendered(current, node)));
+          // Only items a visitor could see get an agent (the visible-target rule).
+          let shown = nodes.filter(node => !taken(node, spec.kind) && willShow(current, node) && plannable(current, node, spec));
           if (spec.byX) shown = shown.sort((a, b) => box(current, a).x - box(current, b).x);
           const own = shown.slice(0, spec.multi || 1);
           own.forEach((node, index) => {
             const item = itemSpec(current, spec, node, index);
+            // Slide content is still off stage: it is prepared hidden and built as it comes in.
             if (!HIDES.has(item.kind)) push(item, node, []);
-            else if (belowFold(current, node)) push(item, node, item.parts ? item.parts.all : [node]);
+            else if (belowFold(current, node) || spec.slide) push(item, node, item.parts ? item.parts.all : [node]);
             else push({ ...item, kind: DEMOTE[item.kind], parts: null }, node, []);
           });
           // The cascade only takes items close below the first one: farther
@@ -2970,8 +3530,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (spec.kind === 'place') {
       const pops = spec.pop ? [...node.querySelectorAll(spec.pop)] : [node];
       let sub = spec.sub ? node.querySelector(spec.sub) : null;
-      if (sub && current.measurable) { const r = box(current, sub); if (!(r.w > 0 && r.h > 0)) sub = null; }
-      const kids = spec.kids ? [...node.querySelectorAll(spec.kids)] : [];
+      if (sub && current.measurable) { const r = box(current, sub); if (!(r.w > 0 && r.h > 0) || !perceivable(current, sub, { slide: Boolean(spec.slide) })) sub = null; }
+      let kids = spec.kids ? [...node.querySelectorAll(spec.kids)] : [];
+      // The cursor visits each tag: only ones that are really there.
+      if (current.measurable) kids = kids.filter(kid => perceivable(current, kid, { slide: Boolean(spec.slide) }));
       item.parts = { pops, sub, kids, all: [...pops, ...(sub ? [sub] : []), ...kids] };
     }
     return item;
@@ -3014,6 +3576,9 @@ export function initAgenticEntrance(document, window, config = {}) {
       pool: [],
       rescues: [],
       rescuing: new Set(),
+      holes: [],
+      holesVersion: -1,
+      pins: new Map(),
       // Pool items the previous stop handed over still hidden (and when each was first seen).
       waiting: new Map(),
       wasHidden: new Set(),
@@ -3090,8 +3655,11 @@ export function initAgenticEntrance(document, window, config = {}) {
     observer?.disconnect();
     clearVisuals();
     const stops = TOUR_STOPS.map(stopInfo => ({ ...stopInfo, section: document.querySelector(stopInfo.sel) })).filter(stopInfo => stopInfo.section);
+    // `sub` stops continue the previous section: one step in the dock's plan.
+    let step = -1;
+    stops.forEach((stopInfo, index) => { if (!stopInfo.sub || index === 0) step++; stopInfo.step = step; });
     tour = { stops, index: 0, firstVisit: !replay, realStart: clock(), hiddenMs: 0, workers: new Set(), vt: 0, late: 0, rescued: 0, instant: 0 };
-    planSteps = stops.map(stopInfo => ({ label: planName(stopInfo.name), state: 'planned', agents: 0 }));
+    planSteps = stops.filter((stopInfo, index) => !stopInfo.sub || index === 0).map(stopInfo => ({ label: planName(stopInfo.name), state: 'planned', agents: 0 }));
     carry = null;
     sectionsEligible = false;
     replayButton.hidden = true;
@@ -3114,6 +3682,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   function advanceTour() {
     if (!tour) return;
     tour.index++;
+    while (tour.index < tour.stops.length && !stopActive(tour.stops[tour.index])) tour.index++;
     if (tour.index >= tour.stops.length) { finishTour(); return; }
     startBuild(tour.stops[tour.index]);
   }
@@ -3171,6 +3740,11 @@ export function initAgenticEntrance(document, window, config = {}) {
   // Where a stop's scroll heads: the section's top clear of the fixed header
   // (like an anchor link), a full-bleed scene's top, or a tall scene's end.
   function stopTarget(current, stopInfo, maxY) {
+    // A travelling Experience stage: hold it on the stop's chapter.
+    const xp = current.xp;
+    if (xp && stopInfo.chapter !== undefined && stopInfo.section === xp.section) {
+      return clamp(xp.top + (xp.at[stopInfo.chapter] ?? 0) * xp.distance, 0, maxY);
+    }
     const r = box(current, stopInfo.section);
     const headerPad = stopInfo.align ? 0 : parseFloat(window.getComputedStyle?.(root).scrollPaddingTop) || 0;
     const offset = stopInfo.align === 'end' ? Math.max(0, r.h - current.vh) : -headerPad;
@@ -3189,12 +3763,22 @@ export function initAgenticEntrance(document, window, config = {}) {
     const to = Math.max(stopTarget(current, stopInfo, maxY), from.y);
     // Tall sections: cruise on through them while their items are placed.
     let span = 0;
-    if (stopInfo.span) {
+    const xp = current.xp;
+    if (xp && stopInfo.chapter !== undefined) {
+      // A chapter wider than the view: pan slowly across it while it is built.
+      const chapter = xp.chapters[stopInfo.chapter];
+      const gutter = xp.chapters[0].offsetLeft || 0;
+      const overflow = chapter ? box(current, chapter).w + 2 * gutter - current.vw : 0;
+      span = Math.min(overflow > 0 ? (overflow / xp.shift) * xp.distance : 0, maxY - to);
+      if (!(span > 40)) span = 0;
+    } else if (stopInfo.span) {
       const r = box(current, stopInfo.section);
       span = Math.min(y0 + r.y + r.h - current.vh - to, current.vh * stopInfo.span, maxY - to);
       if (!(span > 40)) span = 0;
     }
-    const creep = motion.creep;
+    // While a pinned stage holds on a chapter the scroll only drifts (the
+    // track moves ~1.3x as far sideways).
+    const creep = current.xp && stopInfo.dwell ? Math.min(motion.creep, stopInfo.dwell) : motion.creep;
     const cruise = span ? clamp(span / (current.budget * 0.7 / 1000), creep, motion.max * 0.45 * boost) : creep;
     const soft = following ? Math.max(to + span, stopTarget(current, following, maxY)) : maxY;
     current.traj = makeTraj({ accel, brake: accel * 0.55, max: motion.max * boost, floor: motion.floor, creep, cruise, to, until: to + span, cruiseAfter: span ? current.budget * 0.15 : 0, soft, maxY, settle: !following }, from);
@@ -3244,6 +3828,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     const turn = {};
     current.jobs.forEach(job => {
       const role = resolveRole(job.role, counts);
+      // `same`: the agent that did the job this one waits for (copy, then paste).
+      const previous = job.spec?.same ? job.afterJob?.agent : null;
+      if (previous && previous.role === role) { job.agent = previous; previous.queue.push(job); return; }
       const n = turn[role] = (turn[role] || 0) + 1;
       const pool = byRole.get(role) || [];
       const slot = (n - 1) % counts[role];
@@ -3282,13 +3869,52 @@ export function initAgenticEntrance(document, window, config = {}) {
     }
   }
 
+  // The Experience stage while it travels sideways (experience.js sets
+  // data-xp="travel" and the --xp-* custom properties it is laid out by).
+  function travelStage(stopInfo) {
+    const section = stopInfo.section;
+    if (stopInfo.chapter === undefined || section?.dataset.xp !== 'travel') return null;
+    const travel = section.querySelector('.xp-travel');
+    const track = section.querySelector('.xp-track');
+    const chapters = track ? [...track.querySelectorAll('.xp-chapter')] : [];
+    const distance = parseFloat(section.style.getPropertyValue('--xp-distance'));
+    const shift = parseFloat(section.style.getPropertyValue('--xp-shift'));
+    if (!travel || !chapters.length || !(distance > 0) || !(shift > 0)) return null;
+    const at = chapters.map((chapter, k) => {
+      const value = parseFloat(chapter.style.getPropertyValue('--xp-at'));
+      return Number.isFinite(value) ? value : k / Math.max(1, chapters.length - 1);
+    });
+    return { section, travel, track, chapters, distance, shift, at };
+  }
+
+  // `after`: the keyed job inside the same item (or else the first one).
+  function linkJobs(current) {
+    const keyed = current.jobs.filter(job => job.spec?.key);
+    current.jobs.forEach(job => {
+      const want = job.spec?.after;
+      if (!want) return;
+      // '*': every builder inside its element.
+      if (want === '*') {
+        job.afterJobs = current.jobs.filter(other => other !== job && HIDES.has(other.kind) && job.target.contains(other.target));
+        return;
+      }
+      const options = keyed.filter(other => other !== job && other.spec.key === want);
+      job.afterJob = options.find(other => other.target === job.target || other.target.contains(job.target)) || options[0] || null;
+      if (job.afterJob) job.afterJob.leads = true;
+    });
+  }
+
   function startBuild(stopInfo) {
     const section = stopInfo.section;
     phase = 'tour';
     visitedSections.add(section);
     showTourDock(tour.index);
     const tier = crewTier(width());
-    const current = prepare('build', buildDuration(tier) * (stopInfo.weight || 1));
+    // A stacked Experience (phones, tablets, short screens) builds all three
+    // chapters on its one stop: `stackWeight`.
+    const stacked = stopInfo.stackWeight && stopInfo.chapter !== undefined && stopInfo.section.dataset.xp !== 'travel';
+    const current = prepare('build', buildDuration(tier) * ((stacked ? stopInfo.stackWeight : stopInfo.weight) || 1));
+    current.section = section;
     current.waiting = tour.pending || new Map();
     current.wasHidden = tour.wasHidden || new Set();
     tour.pending = tour.wasHidden = null;
@@ -3296,14 +3922,25 @@ export function initAgenticEntrance(document, window, config = {}) {
     // Everything else still to come in (this section and earlier ones).
     const gathered = gatherPool(current, poolScope());
     current.heading = section.querySelector('h2');
+    current.light = !section.classList.contains('dark-section');
     const handoff = stopInfo.handoff ? section.querySelector(stopInfo.handoff) : null;
     const following = nextStop();
-    watchElements(current, [section, following?.section, current.heading, handoff, ...candidates]);
+    const xp = travelStage(stopInfo);
+    watchElements(current, [section, following?.section, current.heading, handoff, xp?.travel, ...candidates]);
     measure(current);
     current.measurable = isMeasurable(current, [...current.watch]);
+    if (xp && current.measurable) current.xp = { ...xp, top: current.sy0 + box(current, xp.travel).y };
     if (current.measurable) planScroll(current, stopInfo, following);
     current.jobs = collect(current, stopInfo.jobs || [], section);
-    current.jobs.forEach(job => { job.readyAt = readyAt(current, job.target); });
+    current.jobs.forEach(job => { job.readyAt = readyAt(current, job.target, job.kind === 'paste' && current.xp ? 0.94 : null); });
+    linkJobs(current);
+    // A chapter's ghost is dragged while the stage slides it in, and lands
+    // as the chapter arrives.
+    current.jobs.forEach(job => {
+      if (job.kind !== 'paste' || !current.xp || !current.measurable) return;
+      const work = clamp((current.lead || 0) - (job.readyAt || 0), 900, 1150) * current.anim;
+      job.baseWork = job.work = work;
+    });
     current.pool = makePool(current, gathered);
     planWire(current, stopInfo);
     buildCrew(current);

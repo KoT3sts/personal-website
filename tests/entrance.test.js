@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, TOUR_STOPS, SCROLL, RESCUE } from '../web/entrance.js';
+import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, typoFor, TOUR_STOPS, SCROLL, RESCUE, HOLE_CAP } from '../web/entrance.js';
+import { initExperience } from '../web/experience.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 const entranceCSS = await readFile(new URL('../web/entrance.css', import.meta.url), 'utf8');
@@ -73,7 +74,8 @@ const dockOf = document => document.querySelector('.agentic-dock');
 const visibleCursors = document => [...document.querySelectorAll('.agentic-cursor.is-in:not(.is-docked)')];
 const cursorPoint = cursor => { const m = /translate3d\(([-\d.]+)px,\s*([-\d.]+)px/.exec(cursor.style.transform || ''); return m ? { x: +m[1], y: +m[2] } : null; };
 const planItems = document => [...dockOf(document).querySelectorAll('.agentic-plan-item')].map(item => [item.querySelector('.agentic-plan-name').textContent, item.querySelector('.agentic-plan-state').textContent]);
-const stopNames = document => TOUR_STOPS.filter(stop => document.querySelector(stop.sel)).map(stop => stop.name);
+// Experience's `sub` stops (wide screens, travelling stage) keep its name: one entry.
+const stopNames = document => TOUR_STOPS.filter(stop => document.querySelector(stop.sel)).map(stop => stop.name).filter((name, index, all) => name !== all[index - 1]);
 const measurable = document => document.querySelector('#about').getBoundingClientRect().height > 0;
 
 // Steps the tour frame by frame until it reaches `index` (and optionally `extra` ms more).
@@ -132,9 +134,11 @@ test('the first visit tours every section in order, then hands off and collapses
   assert.ok(dock.querySelector('[data-agentic-dock-replay]'));
   assert.equal(document.querySelector('[data-agentic-replay]').hidden, false);
   assert.ok(heroEnded >= 7500 && heroEnded <= 10000, `hero took ${heroEnded}ms`);
-  // Nine stops since the one-gallery change (Nov 10: the explorer is built on the
-  // Projects stop, no Index stop); real runs measure ~56 s at 1280.
-  assert.ok(clock.now() >= 36000 && clock.now() <= 60000, `tour took ${clock.now()}ms`);
+  // Nine sections since the one-gallery change (Nov 10: the explorer is built on
+  // the Projects stop, no Index stop). Real runs measure ~55 s at 1280 (the
+  // travelling Experience stage adds two holds); without layout (jsdom) the
+  // stops run on their budgets alone, ~28 s.
+  assert.ok(clock.now() >= 24000 && clock.now() <= 60000, `tour took ${clock.now()}ms`);
   if (measurable(document) && document.documentElement.scrollHeight > window.innerHeight + 10) {
     assert.ok(window.scrollY > 0, 'the tour ends at the contact section, not back at the top');
   }
@@ -307,15 +311,20 @@ test('lower sections are prepared hidden only below the fold, and only while the
   const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
   let index = 0;
   let checked = 0;
+  let before = new Set();
   while (controller.touring && clock.now() < 90000) {
     clock.step(16);
+    const pending = new Set(document.querySelectorAll('[data-build-state="pending"]'));
+    const carried = before;
+    before = pending;
     if (!controller.touring || controller.tour.index === index) continue;
     index = controller.tour.index;
-    // The stop has just launched; nothing has scrolled yet.
-    for (const element of document.querySelectorAll('[data-build-state="pending"]')) {
-      if (element.closest('#home')) continue;
+    // The stop has just launched; nothing has scrolled yet. (Items still
+    // waiting for a rescuer carry over hidden; the rescue-cap test times them.)
+    for (const element of pending) {
+      if (element.closest('#home') || carried.has(element)) continue;
       const rect = element.getBoundingClientRect();
-      if (rect.height > 0) { assert.ok(rect.top >= window.innerHeight - 1, `${element.className || element.id} was visible`); checked++; }
+      if (rect.height > 0) { assert.ok(rect.top >= window.innerHeight - 1, `${element.tagName}.${element.className || element.id} "${element.textContent.trim().slice(0, 24)}" was visible (${controller.tour.name})`); checked++; }
     }
   }
   if (measurable(document)) assert.ok(checked > 0, 'some lower content was assembled');
@@ -750,12 +759,18 @@ test('content the visitor can see is never left hidden for longer than the rescu
   for (const width of [1280, 375]) {
     const { document, window, controller, clock } = setup(t, { width, frames: true, layout: true });
     const since = new Map();
+    const held = new Map();
     let worst = 0;
     let worstName = '';
+    let worstHeld = 0;
     while (controller.touring && clock.now() < 120000) {
       clock.step(16);
       const now = clock.now();
       const seen = new Set();
+      // Placeholder bars a pasted copy left, and a ghost on its way in: the
+      // visitor sees that content coming, so it may wait longer (HOLE_CAP).
+      const marks = [...document.querySelectorAll('.agentic-hole:not(.is-out), .agentic-frame.is-ghost:not(.is-out)')].map(mark => mark.getBoundingClientRect());
+      const marked = rect => marks.some(m => m.left < rect.right && m.right > rect.left && m.top < rect.bottom && m.bottom > rect.top);
       for (const element of document.querySelectorAll('[data-build-state="pending"]')) {
         if (element.closest('#home, .site-header')) continue;
         // Tags waiting their turn in a cascade whose item is already placed
@@ -767,14 +782,20 @@ test('content the visitor can see is never left hidden for longer than the rescu
         // Still under a section's unpainted black fill: the visitor sees the wireframe, not a blank.
         if (coveredByFill(document, rect)) continue;
         seen.add(element);
+        if (!held.has(element)) held.set(element, now);
+        worstHeld = Math.max(worstHeld, now - held.get(element));
+        // Inside a card or chapter a copy agent is pasting: it is on its way.
+        if (marked(rect) || element.closest('[data-agentic-job="paste"]')) { since.delete(element); continue; }
         if (!since.has(element)) since.set(element, now);
-        const held = now - since.get(element);
-        if (held > worst) { worst = held; worstName = element.className || element.tagName; }
+        const blank = now - since.get(element);
+        if (blank > worst) { worst = blank; worstName = `${element.tagName}.${element.className} "${element.textContent.trim().slice(0, 20)}" (${controller.tour?.name})`; }
       }
       for (const element of [...since.keys()]) if (!seen.has(element)) since.delete(element);
+      for (const element of [...held.keys()]) if (!seen.has(element)) held.delete(element);
     }
     // Hidden only while an agent is on its way, never past the cap (one frame of slack).
     assert.ok(worst <= RESCUE.cap + 16, `${width}px: ${worstName} stayed hidden on screen for ${worst}ms`);
+    assert.ok(worstHeld <= HOLE_CAP + RESCUE.cap + 16, `${width}px: something waited ${worstHeld}ms under a placeholder`);
     assertNoResidue(document);
   }
 });
@@ -1338,14 +1359,17 @@ test('an item whose agent is late is rescued by an idle margin agent, which flie
   let forced = null;
   eachFrame(controller, clock, document, ({ index, now }) => {
     if (!forced) {
-      // Mid-tour, with agents idling in the margins and no section fill up:
+      // Mid-tour, with agents idling in the margins, no section fill up and no
+      // copy-paste under way (its editors idle only until the paste lands):
       // a layout shift pulls a far-off line into view, long before its agent.
-      if (index < 2 || document.querySelector('.agentic-wire-fill')) return;
+      if (index < 2 || document.querySelector('.agentic-wire-fill, .agentic-frame.is-ghost, .agentic-frame.is-copy, .agentic-hole')) return;
       const idle = [...document.querySelectorAll('.agentic-cursor.is-idle.is-in:not(.is-docked)')];
       if (idle.length < 3) return;
       const vh = window.innerHeight;
+      // Not inside a clipping box: moved out of it, the line would still be unseen.
+      const clipped = element => { for (let node = element.parentElement; node && node !== document.body; node = node.parentElement) { const style = window.getComputedStyle(node); if (style.overflowX !== 'visible' || style.overflowY !== 'visible') return true; } return false; };
       const target = [...document.querySelectorAll('[data-agentic-job="type"][data-build-state="pending"]')]
-        .find(element => { const r = element.getBoundingClientRect(); return r.top > vh + 300 && r.height > 0 && r.height < 100; });
+        .find(element => { const r = element.getBoundingClientRect(); return r.top > vh + 300 && r.height > 0 && r.height < 100 && !clipped(element); });
       if (!target) return;
       const r = target.getBoundingClientRect();
       target.style.position = 'relative';
@@ -1382,4 +1406,150 @@ test('an item whose agent is late is rescued by an idle margin agent, which flie
   const from = forced.idle.get(forced.cursor);
   const [left, right] = contentColumn(document, 1280);
   assert.ok(from.x + 2 < left || from.x + 2 > right, 'it came from the side margin');
+});
+
+test('the visible-target rule: hidden, transparent, zero-size and clipped items get no agent', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  // Contact is planned last, so its items can be changed before its stop starts.
+  const intro = document.querySelector('.contact-intro');
+  intro.hidden = true;
+  const [faint, flat, plain] = document.querySelectorAll('.contact-links li');
+  faint.style.opacity = '0.02';
+  flat.style.cssText = 'display: block; width: 0; height: 0; overflow: hidden; padding: 0; margin: 0; border: 0';
+  // The footer row clipped down to a pixel: its spans are there but cannot be seen.
+  const footer = document.querySelector('.footer-bottom');
+  footer.style.cssText = 'overflow: hidden; height: 1px; padding: 0';
+  const spans = [...footer.querySelectorAll(':scope > span')];
+  const hiddenText = [...document.querySelectorAll('.explorer-caption *, .project-stories *')];
+  const touched = new Set();
+  const note = element => { if (element) touched.add(element); };
+  while (controller.touring && clock.now() < 120000) {
+    clock.step(16);
+    document.querySelectorAll('[data-agentic-job], [data-build-state]').forEach(note);
+    document.querySelectorAll('.agentic-cursor.is-working').forEach(cursor => note(cursor.agenticTarget));
+  }
+  const reached = element => touched.has(element) || [...touched].some(other => element.contains(other));
+  assert.equal(reached(intro), false, 'nothing inside [hidden]');
+  assert.equal(reached(faint), false, 'nothing transparent');
+  assert.equal(hiddenText.filter(reached).length, 0, 'not the hidden caption or the case-study text');
+  if (measurable(document)) {
+    assert.equal(reached(flat), false, 'nothing without a box');
+    assert.deepEqual(spans.filter(reached).map(span => span.textContent), [], 'nothing clipped away');
+    assert.ok(reached(plain), 'the visible link still gets its agent');
+  }
+  assertNoResidue(document);
+  for (const element of [intro, faint, flat, plain, ...spans]) assert.equal(element.closest('[data-build-state]'), null, 'nothing left hidden');
+});
+
+test('a working label is only shown while its work is on screen', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  let shown = 0;
+  const phantoms = [];
+  while (controller.touring && clock.now() < 120000) {
+    clock.step(16);
+    if (!measurable(document)) continue;
+    for (const cursor of document.querySelectorAll('.agentic-cursor.is-working:not(.is-away):not(.is-docked):not(.is-orchestrator)')) {
+      const target = cursor.agenticTarget;
+      if (!target) continue;
+      shown++;
+      const r = target.getBoundingClientRect();
+      const onScreen = r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
+      const hidden = Boolean(target.closest('[hidden]')) || window.getComputedStyle(target).visibility === 'hidden';
+      if (!onScreen || hidden) phantoms.push(`${cursor.textContent} @${clock.now()}ms`);
+    }
+  }
+  assertNoResidue(document);
+  if (!measurable(document)) return;
+  assert.ok(shown > 500, `${shown} label frames sampled`);
+  // A frame of lag while the page moves is tolerated, nothing more.
+  assert.ok(phantoms.length <= shown * 0.002, `${phantoms.length} labels over nothing: ${phantoms.slice(0, 6).join(' | ')}`);
+});
+
+test('typos are rare, deterministic and only in plain lowercase words', () => {
+  const sentence = 'Email is the fastest way to reach me.';
+  assert.deepEqual(typoFor(sentence), typoFor(sentence));
+  for (const text of ['Georgia Institute of Technology', 'SEP 2021 – MAY 2023', 'Lucenatrujillo.cesar@gmail.com', 'Trace and evaluate LLM systems', 'Run MLOps and model deployment', 'ADP · ROSELAND, NJ', '18+ hands-on workshops']) {
+    assert.equal(typoFor(text), null, text);
+  }
+  assert.equal(typoFor('the quick brown fox jumps over the lazy dog', { transform: 'uppercase' }), null);
+  const words = 'gentle river carries small stones toward quiet meadows where tired travellers rest under ancient willow branches'.split(' ');
+  let typed = 0;
+  let typos = 0;
+  for (let i = 0; i < 400; i++) {
+    const text = Array.from({ length: 3 + (i % 5) }, (_, k) => words[(i * 7 + k * 3 + Math.floor(i / 16)) % words.length]).join(' ');
+    typed += text.split(' ').length;
+    const typo = typoFor(text);
+    if (!typo) continue;
+    typos++;
+    // Inside a word of four letters or more, never its first letter, and a different key.
+    const word = /[a-z]+$/.exec(text.slice(0, typo.at))?.[0] || '';
+    const whole = word + (/^[a-z]+/.exec(text.slice(typo.at))?.[0] || '');
+    assert.ok(word.length >= 1 && whole.length >= 4, `${text} @${typo.at}`);
+    assert.notEqual(typo.ch, text[typo.at]);
+    assert.match(typo.ch, /^[a-z]$/);
+  }
+  const rate = typos / typed;
+  assert.ok(rate > 1 / 14 && rate < 1 / 5, `about one word in eight: ${typos} in ${typed}`);
+});
+
+test('a travelling Experience stage holds on each chapter while it is pasted and written', t => {
+  // Wide screen with motion allowed: experience.js pins the stage and travels it.
+  const media = query => ({ matches: !/motion:\s*reduce\b/.test(query), addEventListener() {}, removeEventListener() {} });
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true, media });
+  // The browser harness lays the page out at 1280 x 800 (the stage needs the
+  // height). Frames are stepped by hand here, so the stage is moved by
+  // experience.js's own script driver, told about each scroll.
+  if (window.frameElement) window.frameElement.style.height = '800px';
+  window.CSS = { supports: () => false };
+  // Stepped frames do not advance CSS animations: chapters arrive without their slide-in.
+  const still = document.createElement('style');
+  still.textContent = '.xp-chapter { animation: none !important; }';
+  document.head.append(still);
+  const xp = initExperience(document, window);
+  const section = document.querySelector('#experience');
+  if (!xp || section.dataset.xp !== 'travel' || !measurable(document)) { controller.skip(); return; }
+  const travel = section.querySelector('.xp-travel');
+  const top = travel.getBoundingClientRect().top + window.scrollY;
+  const distance = parseFloat(section.style.getPropertyValue('--xp-distance'));
+  const chapters = [...section.querySelectorAll('.xp-chapter')];
+  const targets = chapters.map(chapter => top + parseFloat(chapter.style.getPropertyValue('--xp-at')) * distance);
+  const held = chapters.map(() => 0);
+  const xpStops = new Set();
+  let ghosts = 0;
+  let holes = 0;
+  const keys = new Set();
+  const offStage = [];
+  const typed = new Set();
+  const progress = new Set();
+  let last = clock.now();
+  while (controller.touring && clock.now() < 120000) {
+    window.dispatchEvent(new window.Event('scroll'));
+    clock.step(16);
+    if (!controller.touring) break;
+    const dt = clock.now() - last;
+    last = clock.now();
+    if (controller.tour.name !== 'Experience') continue;
+    xpStops.add(controller.tour.index);
+    progress.add(dockOf(document).querySelector('.agentic-dock-progress').textContent);
+    targets.forEach((y, k) => { if (Math.abs(window.scrollY - y) < 120) held[k] += dt; });
+    ghosts = Math.max(ghosts, document.querySelectorAll('.agentic-frame.is-ghost').length);
+    holes = Math.max(holes, document.querySelectorAll('.agentic-hole').length);
+    document.querySelectorAll('.agentic-tag.is-on').forEach(tag => keys.add(tag.textContent));
+    for (const chapter of chapters.slice(1)) {
+      for (const line of chapter.querySelectorAll('.xp-title, .xp-org, .xp-when, .xp-points > li')) {
+        if (typed.has(line) || line.dataset.buildState !== 'typing') continue;
+        typed.add(line);
+        const r = line.getBoundingClientRect();
+        if (!(r.right > 0 && r.left < window.innerWidth)) offStage.push(line.textContent.trim().slice(0, 24));
+      }
+    }
+  }
+  assertNoResidue(document);
+  assert.equal(xpStops.size, 3, 'one stop per chapter');
+  assert.deepEqual([...progress], [`${stopNames(document).indexOf('Experience') + 1} / ${stopNames(document).length}`], 'one plan step in the dock');
+  assert.ok(held.every(ms => ms >= 1200), `the stage holds on each chapter: ${held.map(Math.round)} ms`);
+  assert.ok(ghosts >= 1 && keys.has('⌘C') && keys.has('⌘V'), `copied and pasted (${[...keys]})`);
+  assert.ok(holes >= 3, 'the pasted copy leaves placeholders');
+  assert.ok(chapters.slice(1).every(chapter => typed.has(chapter.querySelector('.xp-title'))), 'chapters 2 and 3 are typed by agents');
+  assert.deepEqual(offStage, [], 'only what is on the stage is written');
 });
