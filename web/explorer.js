@@ -9,7 +9,7 @@
 // announcement. Per frame only transform and opacity are written.
 import {
   explorerGeometry, ringPose, stackPose, blendPose, poseTransform, stackOrder, cascadeMix,
-  easeOutExpo, travelDuration, wheelPixels, wheelAction, wheelWants, wheelOwner, visibleShare,
+  easeOutExpo, travelDuration, wheelPixels, wheelAction, wheelWants, wheelOwner,
   dragTarget, keyTarget, counterLabel, clampIndex,
 } from './explorer-state.js';
 
@@ -277,6 +277,13 @@ export function initExplorer(document, window) {
     const item = event.target.closest?.('.explorer-item');
     if (item && (state.mode === 'ring' || !item.classList.contains('is-active'))) event.preventDefault();
   }, true);
+  // With pointer capture the click after a drag lands on the stage, not the list.
+  stage.addEventListener('click', event => {
+    if (!suppressClick) return;
+    suppressClick = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
   list.addEventListener('click', event => {
     const link = event.target.closest?.('.explorer-card');
     if (!link) return;
@@ -326,7 +333,10 @@ export function initExplorer(document, window) {
     let inView = false;
     if (fresh) {
       const bounds = stage.getBoundingClientRect();
-      inView = visibleShare(bounds.top, bounds.bottom, window.innerHeight || 0) >= IN_VIEW;
+      // A stage taller than the window counts as in view once it fills the window.
+      const viewport = window.innerHeight || 0;
+      const visible = Math.min(bounds.bottom, viewport) - Math.max(bounds.top, 0);
+      inView = visible / Math.max(1, Math.min(bounds.bottom - bounds.top, viewport)) >= IN_VIEW;
     }
     wheel.owner = wheelOwner({ previous: wheel.owner, fresh, inView, wants: wheelWants(context) });
     if (wheel.owner !== 'explorer') return;

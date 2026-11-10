@@ -117,6 +117,11 @@ export function initExperience(document, window) {
     });
     if (current === state.current) return;
     state.current = current;
+    if (announceNext) {
+      announceNext = false;
+      const title = chapters[current]?.querySelector('.xp-title')?.textContent.replace(/\s+/g, ' ').trim();
+      live.textContent = `Chapter ${current + 1} of ${chapters.length}${title ? `, ${title}` : ''}`;
+    }
     chapters.forEach((chapter, index) => chapter.classList.toggle('is-current', index === current));
     indexButtons.forEach((button, index) => {
       if (index === current) button.setAttribute('aria-current', 'true');
@@ -141,15 +146,23 @@ export function initExperience(document, window) {
     return Math.round(top + share * state.distance);
   }
 
+  // Announces the chapter reached after a button press (the counter is aria-hidden).
+  const live = document.createElement('p');
+  live.className = 'visually-hidden';
+  live.setAttribute('aria-live', 'polite');
+  section.append(live);
+  let announceNext = false;
+
   function goTo(index, { behavior = 'smooth' } = {}) {
     if (state.mode !== 'travel') return;
     const target = Math.max(0, Math.min(chapters.length - 1, index));
     window.scrollTo({ top: scrollTargetFor(target), behavior });
   }
 
-  indexButtons.forEach(button => button.addEventListener('click', () => goTo(Number(button.dataset.xpGo))));
+  indexButtons.forEach(button => button.addEventListener('click', () => { announceNext = true; goTo(Number(button.dataset.xpGo)); }));
   stepButtons.forEach(button => button.addEventListener('click', () => {
     if (button.getAttribute('aria-disabled') === 'true') return;
+    announceNext = true;
     goTo(Math.max(0, state.current) + Number(button.dataset.xpStep));
   }));
 
@@ -159,6 +172,8 @@ export function initExperience(document, window) {
     if (state.mode !== 'travel') return;
     const index = chapters.findIndex(chapter => chapter.contains(event.target));
     if (index < 0) return;
+    // Only keyboard focus moves the page; a click or text selection must not.
+    if (!event.target.matches?.(':focus-visible')) return;
     const y = scrollTargetFor(index);
     if (Math.abs((window.scrollY || 0) - y) > 2) goTo(index);
   });
