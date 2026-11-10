@@ -5,6 +5,8 @@ import {
 // entrance.js (the build tour, ~177 KB) is loaded on demand: see bootEntrance().
 import { initMotion } from './motion.js';
 import { initHeader } from './header.js';
+import { initExperience } from './experience.js';
+import { initExplorer } from './explorer.js';
 
 // 1: concave "curved display" ribbon. -1 bends it the other way (a convex drum).
 const RIBBON_BEND = 1;
@@ -518,5 +520,7 @@ function bootEntrance(document, window) {
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   initPortfolio(document, window);
+  try { initExperience(document, window); } catch (error) { console.error(error); }
+  try { initExplorer(document, window); } catch (error) { console.error(error); }
   bootEntrance(document, window);
 }
