@@ -132,7 +132,8 @@ test('the first visit tours every section in order, then hands off and collapses
   assert.ok(dock.querySelector('[data-agentic-dock-replay]'));
   assert.equal(document.querySelector('[data-agentic-replay]').hidden, false);
   assert.ok(heroEnded >= 7500 && heroEnded <= 10000, `hero took ${heroEnded}ms`);
-  assert.ok(clock.now() >= 36000 && clock.now() <= 56000, `tour took ${clock.now()}ms`);
+  // Ten stops since the project index (Nov 10); real runs measure ~56 s at 1280.
+  assert.ok(clock.now() >= 36000 && clock.now() <= 60000, `tour took ${clock.now()}ms`);
   if (measurable(document) && document.documentElement.scrollHeight > window.innerHeight + 10) {
     assert.ok(window.scrollY > 0, 'the tour ends at the contact section, not back at the top');
   }
@@ -542,7 +543,7 @@ test('sections are placed item by item by a big crew on desktop and a small one 
     peak = Math.max(peak, visibleCursors(document).length);
     capabilityJobs = Math.max(capabilityJobs, document.querySelectorAll('#capabilities .capability[data-agentic-job="place"]').length);
     tagKids = Math.max(tagKids, document.querySelectorAll('#capabilities .tag-list li[data-build-kind="kid"]').length);
-    bulletJobs = Math.max(bulletJobs, document.querySelectorAll('#experience .role-points > li[data-agentic-job]').length);
+    bulletJobs = Math.max(bulletJobs, document.querySelectorAll('#experience .xp-points > li[data-agentic-job]').length);
     if (controller.touring && controller.tour.index > 0) document.querySelectorAll('.agentic-cursor.is-working .agentic-role').forEach(label => labels.add(label.textContent));
   }
   if (measurable(document)) {
@@ -1299,9 +1300,9 @@ function unbuiltReveals(t, width) {
 
 test('Education entries and Experience role lines are typed by agents, never shown instantly', t => {
   const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
-  const selectors = ['.education-list .school', '.education-list .degree', '.education-list .school-meta', '.role-header > h3', '.role-title', '.role-date', '.role-place'];
+  const selectors = ['.education-list .school', '.education-list .degree', '.education-list .school-meta', '.xp-title', '.xp-org', '.xp-when'];
   const lines = selectors.flatMap(selector => [...document.querySelectorAll(selector)]);
-  assert.equal(lines.length, 15, 'two schools (name, degree, dates) and two roles (company, three titles with dates, a location)');
+  assert.equal(lines.length, 15, 'two schools (name, degree, dates) and three chapters (title, organisation, dates)');
   const built = new Set();
   const early = [];
   const labels = new Set();
@@ -1321,7 +1322,7 @@ test('Education entries and Experience role lines are typed by agents, never sho
   assert.deepEqual(lines.filter(element => !built.has(element)).map(element => element.textContent.trim().slice(0, 20)), [], 'every line was typed or written');
   // Labels name what is being written (presentation only).
   assert.ok([...labels].some(text => /^[a-z]+(·\d)? · writing 'Georgia Institute/.test(text)), [...labels].filter(text => /Georgia|Kennesaw/.test(text)).join(' | ') || 'no school label');
-  assert.ok([...labels].some(text => /^[a-z]+(·\d)? · typing 'Machine Learning Engineer'$/.test(text)), 'role titles are typed');
+  assert.ok([...labels].some(text => /^[a-z]+(·\d)? · (typing|setting) 'Machine Learning Engineer'$/.test(text)), 'role titles are typed');
 });
 
 test('on desktop at most two text blocks per tour appear without an agent building them', t => {

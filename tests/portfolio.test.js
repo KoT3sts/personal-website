@@ -238,7 +238,7 @@ test('the first heading states the role and the page keeps one h1 with ordered s
 test('About scenes lead into capabilities, then experience, work, skills and approach, with the Currently note in the scene', () => {
   const { document } = new JSDOM(html).window;
   const order = [...document.querySelectorAll('main > section[id]')].map(section => section.id);
-  assert.deepEqual(order, ['home', 'about', 'introduction', 'capabilities', 'experience', 'work', 'skills', 'approach', 'notes']);
+  assert.deepEqual(order, ['home', 'about', 'introduction', 'capabilities', 'experience', 'work', 'projects', 'skills', 'approach', 'notes']);
   assert.ok(document.querySelector('footer#contact'));
   assert.equal(document.querySelector('#introduction').dataset.navSection, 'about');
   const sceneLinks = [...document.querySelectorAll('#introduction .scene-pill')].map(link => link.getAttribute('href'));

@@ -1,1 +1,275 @@
-/* Circular / stacked work explorer (SPECIFICATION V07). Owned by the explorer workstream. */
+/* Circular / stacked work explorer (SPECIFICATION V07). Owned by the explorer workstream.
+   Unlayered, scoped to #projects. Without JavaScript (no .is-ready) the section
+   is a plain grid of case-study links. With it, explorer.js writes transform,
+   opacity and (only when the order changes) z-index on each .explorer-item, and
+   the geometry as custom properties on .explorer-stage on resize.
+
+   The build tour hides and pops .explorer-cover (the tour owns its opacity,
+   translate and scale), so nothing here sets those on it. */
+
+.explorer {
+  --explorer-ink: #f1f0ea;
+  --explorer-quiet: #9a9e92;
+  --explorer-rule: #2a2c31;
+  --explorer-ease: cubic-bezier(.16, 1, .3, 1);
+  position: relative;
+  padding: 0 var(--gutter);
+  overflow: clip;
+  isolation: isolate;
+}
+
+/* ---- Fallback (no script): a readable grid of links. ---- */
+.explorer-hub h2 {
+  font-size: clamp(40px, 5vw, 84px);
+  font-weight: var(--display-weight);
+  font-stretch: var(--display-stretch);
+  letter-spacing: var(--display-tracking);
+  line-height: .9;
+  text-transform: uppercase;
+  word-spacing: .06em;
+}
+.explorer-hub { padding: 64px 0 28px; }
+.explorer-hub-count { display: block; margin-top: 14px; color: var(--explorer-quiet); font-size: 11px; letter-spacing: .08em; }
+.explorer-covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 36px 28px; margin: 0; padding: 12px 0 64px; list-style: none; }
+.explorer-card { display: grid; gap: 14px; color: var(--explorer-ink); }
+.explorer-cover { display: block; overflow: hidden; border-radius: 6px; background: #1b1d21; box-shadow: 0 0 0 1px rgb(255 255 255 / .06), 0 26px 48px -26px rgb(0 0 0 / .9); }
+.explorer-cover img { width: 100%; height: 100%; aspect-ratio: 900 / 620; object-fit: cover; transition: transform .6s var(--explorer-ease); }
+.explorer-card-text { display: grid; gap: 6px; }
+.explorer-card-name { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.explorer-card-category { color: var(--explorer-quiet); }
+.explorer-card-lead { color: #b9bbb1; font-size: 14px; line-height: 1.55; }
+.explorer-card-open { display: none; }
+.explorer-foot { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 18px 0 26px; border-top: 1px solid var(--explorer-rule); color: var(--explorer-quiet); font-size: 9px; }
+.explorer-foot a { display: inline-flex; align-items: center; gap: .6em; min-height: 44px; margin-block: -10px; color: var(--explorer-ink); text-decoration: underline; text-decoration-color: rgb(241 240 234 / .35); text-underline-offset: 4px; }
+.explorer-foot a:hover { text-decoration-color: currentColor; }
+
+/* ---- Enhanced stage ---- */
+.explorer.is-ready .explorer-stage {
+  --explorer-card-w: 384px;
+  --explorer-card-h: 265px;
+  --explorer-stack-x: 0px;
+  --explorer-perspective: 1400px;
+  position: relative;
+  height: clamp(600px, calc(100svh - 150px), 880px);
+  margin-block: clamp(10px, 2vw, 24px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Light pool behind the stack: the covers are lit, the room stays dark. */
+.explorer.is-ready .explorer-stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 calc(-1 * var(--gutter));
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 34% 46% at calc(50% + var(--explorer-stack-x)) 50%, rgb(214 222 230 / .085), transparent 72%),
+    radial-gradient(ellipse 60% 70% at 50% 50%, rgb(199 210 168 / .03), transparent 70%);
+  opacity: .55;
+  transition: opacity .9s var(--explorer-ease);
+}
+.explorer.is-ready [data-explorer-mode="stack"]::before { opacity: 1; }
+
+/* The deck: the covers' box. Covers move only by transform inside it. */
+.explorer.is-ready .explorer-covers {
+  position: absolute;
+  inset: 0;
+  display: block;
+  margin: 0;
+  padding: 0;
+  perspective: var(--explorer-perspective);
+  perspective-origin: calc(50% + var(--explorer-stack-x)) 50%;
+  cursor: grab;
+  touch-action: pan-y;
+  /* Covers above and below fade into the room instead of being cut. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 11%, #000 87%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 11%, #000 87%, transparent);
+}
+.explorer.is-ready .is-dragging .explorer-covers { cursor: grabbing; }
+.explorer.is-ready .explorer-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--explorer-card-w);
+  height: var(--explorer-card-h);
+  margin: calc(var(--explorer-card-h) / -2) 0 0 calc(var(--explorer-card-w) / -2);
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+}
+.explorer.is-ready .is-moving .explorer-item,
+.explorer.is-ready .is-dragging .explorer-item { will-change: transform, opacity; }
+/* Out of sight but still in the accessibility tree: the list stays whole. */
+.explorer.is-ready .explorer-item[data-away] { pointer-events: none; }
+.explorer.is-ready .explorer-card { display: block; position: relative; width: 100%; height: 100%; border-radius: 6px; outline-offset: 8px; -webkit-user-drag: none; }
+.explorer.is-ready .explorer-cover { width: 100%; height: 100%; }
+.explorer.is-ready .explorer-card-text {
+  position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.explorer.is-ready .explorer-card:hover img { transform: scale(1.035); }
+.explorer-shade { position: absolute; inset: 0; border-radius: 6px; background: #0c0d0f; opacity: 0; pointer-events: none; }
+
+/* The active cover carries its own way in. */
+.explorer.is-ready .explorer-card-open {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 13px;
+  border-radius: 30px;
+  background: rgb(16 17 20 / .86);
+  color: var(--explorer-ink);
+  font-size: 9px;
+  letter-spacing: .08em;
+  box-shadow: 0 8px 18px -10px rgb(0 0 0 / .8);
+  opacity: 0;
+  translate: 0 6px;
+  transition: opacity .25s ease, translate .25s ease, background-color .2s ease, color .2s ease;
+  pointer-events: none;
+}
+.explorer.is-ready [data-explorer-mode="stack"] .is-active .explorer-card-open { opacity: 1; translate: none; transition-delay: .25s; }
+.explorer.is-ready [data-explorer-mode="stack"] .is-active .explorer-card:hover .explorer-card-open { background: var(--explorer-ink); color: var(--night); transition-delay: 0s; }
+
+/* Centre label: the section heading, at the hub of the ring. */
+.explorer.is-ready .explorer-hub {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity .45s ease, scale .7s var(--explorer-ease);
+}
+.explorer.is-ready .explorer-hub h2 { max-width: 8.6ch; font-size: clamp(28px, 3vw, 48px); }
+.explorer.is-ready .explorer-hub-count::before { content: "· "; content: "· " / ""; }
+.explorer.is-ready .explorer-hub-count::after { content: " ·"; content: " ·" / ""; }
+.explorer.is-ready [data-explorer-mode="stack"] .explorer-hub { opacity: 0; scale: .9; }
+
+/* Large active title, left. */
+.explorer.is-ready .explorer-caption {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 4;
+  width: max(220px, calc(50% + var(--explorer-stack-x) - var(--explorer-card-w) / 2 - 40px));
+  translate: 0 -50%;
+  container-type: inline-size;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .35s ease, visibility 0s linear .35s;
+}
+.explorer.is-ready [data-explorer-mode="stack"] .explorer-caption { opacity: 1; visibility: visible; transition: opacity .6s ease .18s, visibility 0s; }
+.explorer-caption-title {
+  font-size: min(clamp(38px, 4.4vw, 80px), 12.2cqi);
+  font-weight: var(--display-weight);
+  font-stretch: var(--display-stretch);
+  letter-spacing: var(--display-tracking);
+  line-height: .88;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--explorer-ink);
+}
+.explorer-caption-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 24px; color: var(--explorer-quiet); font-size: 10px; letter-spacing: .08em; }
+.explorer-caption-count { color: var(--green); }
+.explorer-caption-lead { max-width: 32ch; margin-top: 12px; color: #b9bbb1; font-size: 14px; line-height: 1.55; }
+
+/* Compact index, upper right. */
+.explorer.is-ready .explorer-index { position: absolute; top: clamp(16px, 3.5vh, 44px); right: 0; z-index: 4; width: clamp(220px, 19vw, 290px); }
+.explorer-index-label { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--explorer-rule); color: var(--explorer-quiet); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.explorer-index-count { color: var(--green); }
+.explorer-index ol { margin: 0; padding: 0; list-style: none; }
+.explorer-pick {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 22px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #1e2024;
+  background: none;
+  color: #8e9287;
+  font-size: 13px;
+  letter-spacing: -.005em;
+  text-align: left;
+  cursor: pointer;
+  transition: color .25s ease;
+}
+.explorer-pick::after { content: ""; justify-self: end; width: 22px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform .5s var(--explorer-ease); }
+.explorer-pick-no { color: #868b7f; font-size: 10px; transition: color .25s ease; }
+.explorer-pick:hover { color: #d8dad1; }
+.explorer-pick[aria-current="true"] { color: var(--explorer-ink); }
+.explorer-pick[aria-current="true"] .explorer-pick-no { color: var(--green); }
+.explorer-pick[aria-current="true"]::after { transform: none; }
+.explorer-pick:focus-visible { outline-offset: 2px; }
+
+/* Drag / scroll hint, centre bottom. */
+.explorer.is-ready .explorer-hint {
+  position: absolute;
+  bottom: 14px;
+  left: calc(50% + var(--explorer-stack-x));
+  z-index: 4;
+  translate: -50% 0;
+  margin: 0;
+  color: var(--explorer-quiet);
+  font-size: 10px;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.explorer-hint-touch { display: none; }
+@media (pointer: coarse) {
+  .explorer-hint-fine { display: none; }
+  .explorer-hint-touch { display: inline; }
+}
+
+/* ---- Tablet: the deck on top, caption and index side by side below. ---- */
+@media (max-width: 1099px) {
+  .explorer.is-ready .explorer-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: clamp(440px, 60svh, 600px) auto auto;
+    grid-template-areas: "deck deck" "caption index" "hint hint";
+    column-gap: 36px;
+    height: auto;
+  }
+  .explorer.is-ready .explorer-covers { position: relative; inset: auto; grid-area: deck; }
+  .explorer.is-ready .explorer-hub { grid-area: deck; position: relative; inset: auto; }
+  .explorer.is-ready .explorer-caption { grid-area: caption; position: relative; top: auto; width: auto; padding-top: 18px; translate: none; }
+  .explorer.is-ready .explorer-index { grid-area: index; position: relative; top: auto; right: auto; width: auto; padding-top: 24px; }
+  .explorer.is-ready .explorer-hint { grid-area: hint; position: relative; bottom: auto; left: auto; translate: none; justify-self: center; padding: 26px 0 8px; }
+  .explorer-caption-title { font-size: min(clamp(34px, 5.4vw, 56px), 12.2cqi); }
+}
+
+/* ---- Phones: a flat vertical deck (no ring), the same index below. ---- */
+@media (max-width: 699px) {
+  .explorer.is-ready .explorer-stage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto calc(min(420px, max(220px, (100vw - 2 * var(--gutter)) * .86)) * .689 * 2.2) auto auto auto;
+    grid-template-areas: "hub" "deck" "caption" "index" "hint";
+  }
+  .explorer.is-ready .explorer-hub { grid-area: hub; place-items: start; padding: 44px 0 6px; text-align: left; }
+  .explorer.is-ready [data-explorer-mode="stack"] .explorer-hub { opacity: 1; scale: none; }
+  .explorer.is-ready .explorer-hub h2 { max-width: none; font-size: clamp(34px, 10.5vw, 46px); }
+  .explorer.is-ready .explorer-hub-count::before { content: none; }
+  .explorer.is-ready .explorer-hub-count::after { content: none; }
+  .explorer.is-ready .explorer-hub-count { display: inline; margin: 0 0 0 6px; vertical-align: super; font-size: 11px; }
+  .explorer.is-ready .explorer-covers { -webkit-mask-image: linear-gradient(180deg, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(180deg, transparent, #000 9%, #000 91%, transparent); }
+  .explorer.is-ready .explorer-caption { padding-top: 10px; }
+  .explorer.is-ready .explorer-index { padding-top: 28px; }
+  .explorer-pick { font-size: 15px; }
+  .explorer-caption-title { font-size: min(40px, 12.2cqi); }
+  .explorer.is-ready .explorer-hint { padding-top: 20px; }
+  .explorer-foot { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explorer-cover img, .explorer-pick::after, .explorer.is-ready .explorer-hub, .explorer.is-ready .explorer-stage::before { transition: none; }
+  .explorer.is-ready .explorer-card:hover img { transform: none; }
+  .explorer.is-ready .explorer-caption, .explorer.is-ready [data-explorer-mode="stack"] .explorer-caption { transition-duration: .12s; transition-delay: 0s; }
+}

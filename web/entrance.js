@@ -174,7 +174,7 @@ export const TOUR_STOPS = [
   ] },
   // Its copy sits at the bottom of a tall scene: stop with the section's end in view.
   { sel: '#introduction', name: 'Introduction', weight: 1.0, align: 'end', note: 'art → copy · scene lit', jobs: [
-    { sel: '.cinematic-art', role: 'art', kind: 'reveal', act: 'placing light sculpture', art: true, work: 820 },
+    { sel: '.cinematic-art', role: 'art', kind: 'reveal', act: 'drawing signal path', art: true, work: 820 },
     { sel: '.cinematic-topline > span', roles: ['layout', 'copy'], kind: 'wipe', multi: 2, act: 'setting topline' },
     { sel: '.cinematic-copy > .mono', role: 'type', kind: 'type', act: 'setting kicker', charMs: 26 },
     { sel: '#introduction-title', role: 'type', kind: 'type', act: 'setting headline', charMs: 40 },
@@ -191,18 +191,24 @@ export const TOUR_STOPS = [
     { sel: '.capability', roles: ['copy', 'type', 'links', 'copy', 'type', 'links', 'copy', 'qa'], kind: 'place', multi: 8, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li' },
     { sel: '.capabilities-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
   ] },
-  { sel: '#experience', name: 'Experience', weight: 1.5, span: 1.5, note: 'layout → copy · roles framed', jobs: [
+  // Wide screens pin the chapter stage and the scroll carries its track
+  // sideways (experience.js): agents build what is on the stage (`shown`);
+  // chapters still off to the right wait unseen and slide in already set
+  // (experience.css), so the cruise (`span`) runs through the lateral travel.
+  // Phones stack the chapters and every item is built in place.
+  { sel: '#experience', name: 'Experience', weight: 1.4, span: 2.4, note: 'layout → copy · chapters set', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#experience-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.experience-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
-    // Each role: company typed, then every title, its dates and the location.
-    { sel: '.role-header > h3', roles: ['type', 'type'], kind: 'type', multi: 2, label: true, act: 'setting', charMs: 50 },
-    { sel: '.role-title', roles: ['type', 'copy', 'type'], kind: 'type', multi: 3, label: true, act: 'typing', charMs: 40 },
-    { sel: '.role-date', roles: ['copy', 'links', 'copy'], kind: 'type', multi: 3, label: true, act: 'writing dates', charMs: 40 },
-    { sel: '.role-place', role: 'copy', kind: 'type', label: true, act: 'writing', charMs: 45 },
-    { sel: '.role-group-head', role: 'nav', kind: 'place', multi: 4, label: true, name: 'h4', act: 'placing' },
-    { sel: '.role-points > li', roles: ['copy', 'type', 'links', 'copy', 'type', 'qa', 'copy', 'links'], kind: 'wipe', multi: 8, rest: true, label: true, act: 'writing' },
-    { sel: '.role-group > .tag-list', roles: ['art', 'a11y', 'art', 'links'], kind: 'place', multi: 4, act: 'tagging tools', kids: 'li' },
+    { sel: '.xp-year', role: 'art', kind: 'reveal', multi: 3, shown: true, act: 'setting year marker', work: 700 },
+    { sel: '.xp-title', roles: ['type', 'type', 'type'], kind: 'type', multi: 3, shown: true, label: true, act: 'setting', charMs: 45 },
+    { sel: '.xp-org, .xp-when', roles: ['copy', 'links'], kind: 'type', multi: 6, shown: true, label: true, act: 'writing', charMs: 35 },
+    { sel: '.xp-marks', role: 'nav', kind: 'place', multi: 3, shown: true, act: 'marking milestones', kids: 'li' },
+    { sel: '.xp-group-head', role: 'nav', kind: 'place', multi: 4, shown: true, label: true, name: 'h4', act: 'placing' },
+    { sel: '.xp-points > li', roles: ['copy', 'type', 'links', 'copy', 'type', 'qa', 'copy', 'links'], kind: 'wipe', multi: 8, rest: true, shown: true, label: true, act: 'writing' },
+    { sel: '.xp-group > .tag-list', roles: ['art', 'a11y', 'art', 'links'], kind: 'place', multi: 4, shown: true, act: 'tagging tools', kids: 'li' },
+    { sel: '.xp-controls', role: 'links', kind: 'place', shown: true, act: 'wiring chapter controls', kids: 'button, .xp-count' },
+    { sel: '.xp-stage', role: 'a11y', kind: 'review', act: 'checking chapter keys' },
   ] },
   { sel: '#work', name: 'Projects', weight: 0.9, span: 0.45, note: 'art → qa · covers placed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
@@ -218,6 +224,18 @@ export const TOUR_STOPS = [
     { sel: '.gallery-ground', role: 'motion', kind: 'reveal', act: 'drawing card shadows', work: 700 },
     { sel: '.gallery-stage', role: 'a11y', kind: 'review', act: 'checking arrow keys' },
     { sel: '.project-card:not([aria-hidden="true"]) .project-image-link', role: 'qa', kind: 'review', act: 'checking cover alt text', size: true },
+  ] },
+  // Project index (explorer.js): the covers are placed round the ring (it
+  // holds still while the tour runs), the centre label typed, the index wired.
+  { sel: '#projects', name: 'Index', weight: 0.4, span: 0.15, note: 'art → a11y · ring placed', jobs: [
+    { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
+    { sel: '#projects-title', role: 'type', kind: 'type', act: 'setting label', charMs: 50 },
+    // Six covers, six hands: they land round the ring together.
+    { sel: '.explorer-item', roles: ['art', 'copy', 'links', 'art', 'type', 'copy'], kind: 'place', multi: 6, label: true, name: '.explorer-card-name', act: 'placing', pop: '.explorer-cover' },
+    { sel: '.explorer-index', role: 'links', kind: 'place', act: 'wiring index', kids: '.explorer-pick' },
+    { sel: '.explorer-hint', role: 'motion', kind: 'wipe', act: 'writing drag hint' },
+    { sel: '.explorer-foot > *', roles: ['copy', 'links'], kind: 'wipe', multi: 2, act: 'writing footer line' },
+    { sel: '.explorer-covers', role: 'a11y', kind: 'review', act: 'checking keys and labels', size: true },
   ] },
   { sel: '#skills', name: 'Skills', weight: 1.0, span: 0.75, note: 'copy → a11y · tags listed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },

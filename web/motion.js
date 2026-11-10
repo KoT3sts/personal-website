@@ -13,7 +13,7 @@ export const ENTRANCE_TRACED = SECTION_TARGETS;
 // (see HEADLINES).
 export const REVEAL_GROUPS = [
   ['.capabilities-heading > p', 'rise'], ['.capability', 'rise'],
-  ['.experience-heading > p', 'rise'], ['.role-header', 'rise'], ['.role-group', 'rise'],
+  ['.experience-heading > p', 'rise'],
   ['.work-heading > p', 'rise'], ['.gallery-stage', 'stage'], ['.gallery-controls', 'rise'], ['.project-selectors', 'rise'],
   ['.skill-list > div', 'rise'], ['.education-layout > *', 'rise'],
   ['.approach-heading > p', 'rise'], ['.approach-list details', 'rise'],
