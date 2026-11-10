@@ -1,4 +1,4 @@
-// About opening and the #introduction ascending figure (about-scenes.css). Plain
+// About opening and the #introduction falling Icarus (about-scenes.css). Plain
 // text checks on the shipped files plus the pure progress helper, so they run
 // under node without a DOM.
 import test from 'node:test';
@@ -50,38 +50,43 @@ test('openingProgress maps the pinned run to 0..1', () => {
   assert.equal(openingProgress(-1, 600, 800), 1, 'no run, scrolled past');
 });
 
-test('the light scene keeps only the figure, its halo and motes: no signal trace or agent graph', () => {
+test('the light scene keeps only Icarus, his halo and loose feathers: no signal trace, agent graph or motes', () => {
   assert.ok(art, '.cinematic-art');
-  assert.doesNotMatch(intro, /signal-|sig-|<svg/, 'the EEG trace and agent graph markup are gone');
-  assert.doesNotMatch(css, /\.signal-|@keyframes signal-|--head-dx|--art-len|figure-fall/, 'no dead signal or fall rules');
-  assert.match(art, /<div class="beam-motes">(<span><\/span>){6,12}<\/div>/, '6 to 12 motes');
-  assert.match(art, /<div class="beam-ascent">\s*<div class="beam-halo"><\/div>\s*<img class="beam-figure"/);
+  assert.doesNotMatch(intro, /signal-|sig-|<svg|beam-motes|beam-ascent/, 'the EEG trace, agent graph and old motes are gone');
+  assert.doesNotMatch(css, /\.signal-|@keyframes signal-|--head-dx|--art-len|beam-motes|beam-ascent|mote-rise|figure-rise|--head-a[xy]/, 'no dead rules');
+  assert.match(art, /<div class="beam-feathers">(<span><\/span>){8,14}<\/div>/, '8 to 14 loose feathers');
+  assert.match(art, /<div class="beam-fall">\s*<div class="beam-halo"><\/div>\s*<img class="beam-figure"/);
+  const count = art.match(/<div class="beam-feathers">((?:<span><\/span>)+)/)[1].split('<span>').length - 1;
+  for (let i = 1; i <= count; i++) assert.match(css, new RegExp(`\\.beam-feathers > :nth-child\\(${i}\\) \\{ --x: [-\\d.]+%; --y: [-\\d.]+%; --s: [\\d.]+; --r: [-\\d.]+deg; --o: [\\d.]+; --d: [\\d.]+; --dx: [-\\d.]+px; --spin: [-\\d.]+deg; \\}`), `feather ${i}`);
 });
 
-test('the ascending figure is a small, original, decorative asset', async () => {
+test('the figure is an original, self-contained, decorative asset within budget', async () => {
   const info = await stat(new URL('../web/assets/beam-figure.svg', import.meta.url));
-  assert.ok(info.size < 25 * 1024, `${info.size} B`);
-  assert.match(figure, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 200 320"/);
-  assert.doesNotMatch(figure, /<script|<image|href=|<foreignObject/i, 'self-contained vector, nothing embedded or linked');
+  assert.ok(info.size < 60 * 1024, `${info.size} B`);
+  const [, w, h] = figure.match(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 (\d+) (\d+)"/) ?? [];
+  assert.ok(w && h, 'viewBox');
+  assert.doesNotMatch(figure, /<script|<image|<foreignObject|href="(?!#)|url\((?!#)/i, 'nothing embedded or linked except its own defs');
+  for (const hex of figure.match(/#[0-9a-f]{6}\b/gi) ?? []) {
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 24, `${hex} is a neutral grey`);
+  }
   assert.equal(html.split('assets/beam-figure.svg').length - 1, 1, 'referenced once');
   const img = art.match(/<img class="beam-figure"[^>]*>/)?.[0] ?? '';
   assert.ok(img, 'figure sits in .cinematic-art (aria-hidden)');
   assert.match(art, /^<div class="cinematic-art" aria-hidden="true">/);
   assert.equal(attr(img, 'alt'), '');
-  assert.equal(attr(img, 'width'), '200');
-  assert.equal(attr(img, 'height'), '320');
+  assert.equal(attr(img, 'width'), w);
+  assert.equal(attr(img, 'height'), h);
   assert.match(css, /\.cinematic-art \{[^}]*pointer-events: none/);
+  // Form and shadow come from the drawing: no overexposing filter on the image.
+  assert.doesNotMatch(css.match(/\.beam-figure \{[^}]*\}/)?.[0] ?? '', /grayscale|brightness/);
 });
 
 test('the swap variables match the drawing, and the art sits between the topline and the copy', () => {
-  const head = figure.match(/<ellipse cx="([\d.]+)" cy="([\d.]+)"/);
-  assert.ok(head, 'head ellipse');
-  const [ax, ay] = [head[1] / 200, head[2] / 320];
+  const [, w, h] = figure.match(/viewBox="0 0 (\d+) (\d+)"/);
   const rule = css.match(/\.cinematic-art \{[^}]*\}/)?.[0] ?? '';
   const num = name => Number(rule.match(new RegExp(`${name}: ([\\d.]+)`))?.[1]);
-  assert.ok(Math.abs(num('--head-ax') - ax) < .005, `--head-ax ${ax}`);
-  assert.ok(Math.abs(num('--head-ay') - ay) < .005, `--head-ay ${ay}`);
-  assert.ok(Math.abs(num('--fig-ratio') - 320 / 200) < .005, '--fig-ratio');
+  assert.ok(Math.abs(num('--fig-ratio') - h / w) < .005, `--fig-ratio ${h / w}`);
   for (const name of ['--body-ax', '--body-ay']) assert.ok(num(name) > 0 && num(name) < 1, name);
   // Centred in the open area: from --art-top down to --foot-top, the copy's own top margin.
   assert.match(rule, /top: calc\(var\(--art-top\) \+ \(var\(--foot-top\) - var\(--art-top\)\) \* var\(--art-bias/);
@@ -89,22 +94,34 @@ test('the swap variables match the drawing, and the art sits between the topline
   assert.doesNotMatch(css, /\.cinematic-footer \{[^}]*margin-top: \d/, 'one source for the copy offset');
 });
 
-test('the ascent, sway, halo, light and motes only move with motion and scroll timelines; at rest otherwise', () => {
+test('clouds sit behind the art and the copy, and stay decorative', () => {
+  const clouds = css.match(/\.cinematic-stage::before \{[^}]*\}/)?.[0] ?? '';
+  assert.match(clouds, /pointer-events: none/);
+  assert.match(clouds, /z-index: -3/);
+  assert.match(css, /\.cinematic-light \{[^}]*z-index: -4/, 'the light shaft is behind the clouds');
+  assert.match(css, /\.cinematic-art \{[^}]*z-index: -2/, 'the figure is in front of the clouds');
+  assert.ok((clouds.match(/radial-gradient/g) ?? []).length >= 8, 'several overlapping banks');
+});
+
+test('the fall, tumble, halo, light and feathers only move with motion and scroll timelines; at rest otherwise', () => {
   const block = css.match(/@supports \(animation-timeline: view\(\)\) \{\s*@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n {4}\}/)?.[0] ?? '';
-  const moves = { '.beam-ascent': 'figure-rise', '.beam-figure': 'figure-sway', '.beam-halo': 'halo-swell', '.beam-motes > span': 'mote-rise', '.cinematic-light::after': 'cine-heaven' };
+  const moves = { '.beam-fall': 'figure-fall', '.beam-figure': 'figure-tumble', '.beam-halo': 'halo-fade', '.beam-feathers > span': 'feather-shed', '.cinematic-light::after': 'cine-heaven' };
   for (const [sel, name] of Object.entries(moves)) {
     assert.ok(block.includes(`${sel} { animation: ${name} linear both; animation-timeline: --cine-scene;`), sel);
     assert.equal(css.split(`animation: ${name}`).length - 1, 1, `no ungated ${name}`);
   }
-  // The 45% keyframe (where /#introduction lands) is the unanimated layout: no offset, tilt only, full halo and motes.
-  assert.match(css, /@keyframes figure-rise \{[\s\S]*?45% \{ translate: 0 0; \}/);
-  assert.match(css, /@keyframes figure-sway \{[\s\S]*?45% \{ rotate: var\(--fig-tilt, 12deg\); \}/);
-  assert.match(css, /\.beam-figure \{[^}]*rotate: var\(--fig-tilt, 12deg\)/);
-  assert.match(css, /@keyframes halo-swell \{[^\n]*45% \{ opacity: 1; scale: 1; \}/);
-  assert.match(css, /@keyframes mote-rise \{[\s\S]*?45% \{ translate: 0 0; opacity: var\(--o\); \}/);
-  assert.match(css, /\.beam-motes > span \{[^}]*opacity: var\(--o\)/);
-  assert.match(css, /\.cinematic-light::after \{[^}]*opacity: \.8; \}/);
-  assert.match(css, /@keyframes cine-heaven \{[^\n]*45% \{ opacity: \.8; \}/);
-  // Up the shaft is the negative of (cos, sin) of the beam angle.
-  assert.match(css, /100% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--rise, \d+px\) \* -1\.25\)/);
+  // The 45% keyframe (where /#introduction lands) equals the unanimated layout.
+  assert.match(css, /@keyframes figure-fall \{[\s\S]*?45% \{ translate: 0 0; \}/);
+  assert.match(css, /@keyframes figure-tumble \{[\s\S]*?45% \{ rotate: var\(--fig-tilt, 0deg\); \}/);
+  assert.match(css, /\.beam-figure \{[^}]*rotate: var\(--fig-tilt, 0deg\)/);
+  assert.match(css, /@keyframes halo-fade \{[^\n]*45% \{ opacity: 1; scale: 1; \}/);
+  assert.match(css, /@keyframes feather-shed \{[\s\S]*?45% \{ translate: 0 0; rotate: var\(--r\); opacity: var\(--o\); \}/);
+  assert.match(css, /\.beam-feathers > span \{[^}]*rotate: var\(--r\); opacity: var\(--o\)/);
+  assert.match(css, /\.cinematic-light::after \{[^}]*opacity: \.85; \}/);
+  assert.match(css, /@keyframes cine-heaven \{[^\n]*45% \{ opacity: \.85; \}/);
+  // Down the shaft (away from the light) is +(cos, sin) of the beam angle; he starts higher and ends lower.
+  assert.match(css, /@keyframes figure-fall \{\s*0% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--fall, \d+px\) \* -1\)/);
+  assert.match(css, /100% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--fall, \d+px\) \* 1\.1\)/);
+  // Feathers fall slower than he does, so they lag above him.
+  assert.match(css, /@keyframes feather-shed \{[\s\S]*?100% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--fall, \d+px\) \* \.4 \* var\(--d\)/);
 });
