@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cesar-tortolero.cesartortolero.chatgpt.site/sitemap.xml

@@ -1,0 +1,14 @@
+{
+  "name": "Cesar Tortolero — Machine Learning Engineer",
+  "short_name": "Cesar Tortolero",
+  "description": "Cesar Tortolero, Machine Learning Engineer in Morristown, NJ (NYC area).",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#eeede8",
+  "theme_color": "#eeede8",
+  "icons": [
+    { "src": "/assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

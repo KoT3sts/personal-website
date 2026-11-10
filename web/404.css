@@ -1,0 +1,30 @@
+/* Standalone 404 page. Absolute paths: it is served for any unknown URL. */
+@font-face { font-family: "Archivo"; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; src: url("/assets/fonts/archivo-latin.woff2") format("woff2"); }
+@font-face { font-family: "Geist Mono"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("/assets/fonts/geist-mono-latin.woff2") format("woff2"); }
+
+:root { --paper: #eeede8; --ink: #171716; --label: #646a5a; --line: #d1d0c8; --gutter: clamp(22px, 4.6vw, 88px); color-scheme: light; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { min-height: 100vh; min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; background: var(--paper); color: var(--ink); font-family: "Archivo", Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid #627942; outline-offset: 6px; }
+.mono { font-family: "Geist Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--label); }
+
+.lost-top { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px var(--gutter); }
+.lost-wordmark { display: inline-flex; flex-direction: column; gap: 1px; color: var(--ink); font-family: "Archivo", Arial, sans-serif; font-size: 22px; font-weight: 850; font-stretch: 87.5%; letter-spacing: -.045em; text-transform: none; padding: 7px 0; }
+.lost-wordmark-first { display: inline-flex; gap: 5px; align-items: center; }
+.lost-wordmark-last { font-size: 8px; font-weight: 600; font-stretch: 100%; letter-spacing: .11em; }
+.lost-dot { width: 6px; height: 6px; margin-top: 2px; border-radius: 50%; background: currentColor; }
+
+.lost { align-self: center; padding: 6vh var(--gutter) 10vh; }
+.lost-label { margin: 0 0 18px; }
+.lost-title { margin: 0; font-size: clamp(96px, min(28vw, 42vh), 420px); line-height: .8; font-weight: 850; font-stretch: 87.5%; letter-spacing: -.05em; }
+.lost-copy { max-width: 34ch; margin: 34px 0 30px; font-size: clamp(17px, 1.6vw, 22px); line-height: 1.4; }
+.lost-pill { display: inline-flex; align-items: center; gap: 12px; min-height: 48px; padding: 14px 24px; border-radius: 50px; background: var(--ink); color: var(--paper); font-size: 14px; box-shadow: 0 12px 24px -16px #17171699; }
+.lost-pill:hover { background: #32342e; }
+
+.lost-bottom { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; margin: 0 var(--gutter); padding: 15px 0 25px; border-top: 1px solid var(--line); font-size: 9px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .lost-pill { transition: background-color .2s ease; }
+}
