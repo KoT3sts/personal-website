@@ -499,7 +499,7 @@ test('replay is placed inside the footer row without displacing its final item',
   const replay = row.querySelector('[data-agentic-replay]');
   assert.ok(replay);
   assert.notEqual(row.lastElementChild, replay);
-  assert.equal(row.lastElementChild.textContent, 'MADE TO BE EXPLORED.');
+  assert.equal(row.lastElementChild.textContent, 'BUILT IN PLAIN HTML, CSS AND JS.');
 });
 
 test('with fast timing the whole first visit completes without residue', async t => {

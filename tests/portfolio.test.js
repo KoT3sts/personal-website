@@ -184,7 +184,7 @@ test('About scenes lead into capabilities, then experience, work, skills and app
   const labels = [...document.querySelectorAll('.about-transition-meta > :first-child, .section-top > :first-child')].map(label => label.textContent.match(/^(\d{2}) \//)?.[1]).filter(Boolean);
   assert.deepEqual(labels, ['01', '02', '03', '04', '05', '06', '07'], 'mono section labels count up in page order');
   const items = [...document.querySelectorAll('#capabilities .capability')];
-  assert.equal(items.length, 8);
+  assert.equal(items.length, 7);
   for (const item of items) {
     assert.ok(item.querySelector('h3')?.textContent.trim(), 'capability needs a title');
     assert.ok(item.querySelector('.capability-proof')?.textContent.replace('PROOF', '').trim(), 'capability needs a proof line');

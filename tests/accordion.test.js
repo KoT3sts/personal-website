@@ -29,14 +29,14 @@ test('three native disclosures form one exclusive group with the first row open'
   rows.forEach(row => assert.match(row, /^<details[^>]*><summary>/, 'summary is the first child'));
 });
 
-test('row titles and body copy are unchanged', () => {
+test('row titles and body copy carry one real example each', () => {
   const titles = rows.map(row => strip((/<summary>(?:<span[^>]*>[\s\S]*?<\/span>)(<span>[\s\S]*?<\/span>)/.exec(row) || [])[1] || ''));
   assert.deepEqual(titles, ['Start with the question.', 'Build something tangible.', 'Stay curious. Keep refining.']);
   const bodies = rows.map(row => strip((/<\/summary><p>([\s\S]*?)<\/p>/.exec(row) || [])[1] || ''));
   assert.deepEqual(bodies, [
-    "Understand the workflow before adding another feature. What's confusing? What's repetitive? What would make someone's day a little easier?",
-    'A working version makes an idea easier to question. Keep the first step focused, then learn from how it behaves in practice.',
-    'Test assumptions, look closely at the rough edges, and make the next version clearer. The details are part of the work.',
+    'Watch how the work gets done today before adding a feature. Checking firewall rules across our 24 AWS accounts took a developer about a day of manual testing, one account at a time. Asking why led to a diagnostics app that runs the same checks from one screen in minutes.',
+    'A working version makes an idea easier to question. The first firewall checker was a small local app, rough but real. Using it showed which checks mattered, and those became a serverless API that tests accounts in parallel with bounded retries.',
+    'The details are part of the work. Each of the 18+ workshops showed where developers got stuck, such as missing secrets, access groups and network rules, and the onboarding guide changed to match. It has been revised more than 40 times.',
   ]);
 });
 
