@@ -1,5 +1,5 @@
 /* Standalone 404 page. Absolute paths: it is served for any unknown URL. */
-@font-face { font-family: "Archivo"; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; src: url("/assets/fonts/archivo-latin.woff2") format("woff2"); }
+@font-face { font-family: "Archivo"; font-style: normal; font-weight: 400 900; font-stretch: 87.5% 100%; font-display: swap; src: url("/assets/fonts/archivo-latin.woff2") format("woff2"); }
 @font-face { font-family: "Geist Mono"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("/assets/fonts/geist-mono-latin.woff2") format("woff2"); }
 
 :root { --paper: #eeede8; --ink: #171716; --label: #646a5a; --line: #d1d0c8; --gutter: clamp(22px, 4.6vw, 88px); color-scheme: light; }

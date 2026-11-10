@@ -297,12 +297,3 @@ test('the copy button reads the address from the mailto link', () => {
   assert.equal(mailtoAddress('https://example.com'), '');
   assert.equal(mailtoAddress(null), '');
 });
-
-test('the sculpture orbit stops for reduced motion inside the SVG and through #still', async () => {
-  const svg = await read('../web/assets/sculpture.svg');
-  assert.match(svg, /class="orbiter[^"]*"/);
-  assert.match(svg, /offset-path: path\(/);
-  assert.match(svg, /@media \(prefers-reduced-motion: reduce\) \{ \.orbiter \{ animation: none; \} \}/);
-  assert.match(svg, /#still:target ~ \.orbiter \{ animation: none; \}/);
-  assert.match(svg, /<g id="still"\/>/);
-});

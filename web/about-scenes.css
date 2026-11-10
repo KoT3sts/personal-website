@@ -16,7 +16,7 @@
   .about-discover { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid #ffffff65; border-radius: 50%; font-size: 23px; }
   .about-discover:hover { background: var(--paper); color: var(--night); }
 
-  /* V04: a beam-lit sculpture with copy kept on the panel's perimeter. */
+  /* V04: one signal carried by the light shaft, with copy kept on the panel's perimeter. */
   .cinematic { padding: clamp(90px, 6vw, 110px) var(--gutter) 36px; overflow: clip; background: #101114; }
   .cinematic-stage { position: relative; isolation: isolate; min-height: max(750px, 86svh); border: 1px solid #2e3037; border-radius: 14px; overflow: clip; background: radial-gradient(ellipse at 48% 42%, #191b25 0%, #0a0b11 43%, #090a10 80%); box-shadow: inset 0 0 100px #0005; }
   .cinematic-stage::after { content: ""; pointer-events: none; position: absolute; inset: 0; z-index: -1; opacity: .12; background-image: url("./assets/grain.svg"); }
@@ -25,9 +25,11 @@
   .cinematic-topline { position: absolute; left: 32px; right: 32px; top: 30px; display: flex; justify-content: space-between; gap: 38px; font-size: 9px; color: #d8d9de; }
   .cinematic-topline > :first-child { max-width: 330px; }
   .cinematic-topline > :last-child { text-align: right; }
-  .cinematic-art { position: absolute; width: min(42%, 470px); aspect-ratio: 1; top: 15%; left: 50%; transform: translateX(-50%) rotate(-14deg); pointer-events: none; z-index: -2; }
-  .cinematic-art::after { content: ""; position: absolute; width: 55%; height: 7%; top: 87%; left: 24%; border-radius: 50%; background: #0009; filter: blur(17px); transform: rotate(-27deg); }
-  .cinematic-art img { width: 100%; height: 100%; object-fit: contain; }
+  /* The signal art is drawn left to right along its own x axis (EEG leads → calm line → agent graph)
+     and turned onto the shaft: the light's 128deg gradient runs down-left at 128deg. --art-x/--art-y
+     place its centre on the beam's axis, clear of the topline and the copy, per breakpoint. */
+  .cinematic-art { --beam-turn: 128deg; position: absolute; left: calc(50% + var(--art-x, 141px)); top: var(--art-y, 222px); width: var(--art-len, 540px); aspect-ratio: 600 / 240; transform: translate(-50%, -50%) rotate(var(--beam-turn)); pointer-events: none; z-index: -2; }
+  .cinematic-art svg { display: block; width: 100%; height: auto; overflow: visible; }
   .cinematic-footer { position: relative; display: grid; grid-template-columns: minmax(0, 540px) auto; align-items: end; justify-content: space-between; gap: 35px; padding: 32px; margin-top: 440px; }
   .cinematic-copy { padding-top: 20px; border-top: 1px solid #ffffff26; }
   .cinematic-copy > .mono { display: block; font-size: 8px; color: #a7a9b3; margin-bottom: 15px; }
@@ -54,7 +56,7 @@
       .about-transition-meta, .about-transition-foot { animation: about-label-drift linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
       .about-transition-foot { --label-drift: -1; }
 
-      /* V04: the inset stage opens, the light shaft sweeps in and the sculpture rises into it. */
+      /* V04: the inset stage opens, the light shaft sweeps in and the art rises into it. */
       .cinematic { view-timeline: --cine-scene block; }
       .cinematic-stage { animation: cine-stage-open linear both; animation-timeline: --cine-scene; animation-range: entry 0% cover 42%; }
       .cinematic-light { animation: cine-light-sweep linear both; animation-timeline: --cine-scene; animation-range: entry 5% cover 50%; }
@@ -62,8 +64,25 @@
       .cinematic-art { animation: cine-art-rise linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
       .cinematic-topline { animation: cine-edge-settle linear both; animation-timeline: --cine-scene; animation-range: entry 15% cover 45%; }
       .cinematic-footer { animation: cine-copy-settle linear both; animation-timeline: --cine-scene; animation-range: entry 25% cover 50%; }
+
+      /* The focal moment: the signal draws itself down the beam as the scene enters, the orchestrator
+         lights when the line reaches it, then edges and agents follow. Everything completes by the time
+         the scene's top meets the viewport (entry 100%, where /#introduction lands). Dash lengths are
+         normalised with pathLength="1"; the 1-on/2-off pattern keeps the round cap hidden at the start. */
+      .signal-art .signal-draw, .signal-art .signal-edge { stroke-dasharray: 1 2; animation: signal-draw linear both; animation-timeline: --cine-scene; animation-range: entry 30% entry 82%; }
+      .signal-art .signal-leads .signal-draw { animation-name: signal-trace; animation-range: entry 30% entry 67%; }
+      .signal-art .signal-edge { animation-name: signal-trace; animation-range: entry 83% entry 89%; }
+      .signal-art .signal-edge:nth-child(n + 4) { animation-range: entry 87% entry 94%; }
+      .signal-art .signal-hub, .signal-art .signal-node { transform-box: fill-box; transform-origin: center; animation: signal-pop linear both; animation-timeline: --cine-scene; animation-range: entry 79% entry 86%; }
+      .signal-art .signal-node { animation-range: entry 85% entry 91%; }
+      .signal-art .signal-node:nth-child(n + 4) { animation-range: entry 90% entry 96%; }
+      .signal-art .signal-shade { animation: signal-shade linear both; animation-timeline: --cine-scene; animation-range: entry 55% entry 90%; }
     }
   }
+  @keyframes signal-draw { 0% { stroke-dashoffset: 1.01; } 55% { stroke-dashoffset: .38; } 100% { stroke-dashoffset: 0; } }
+  @keyframes signal-trace { from { stroke-dashoffset: 1.01; } to { stroke-dashoffset: 0; } }
+  @keyframes signal-pop { 0% { opacity: 0; scale: .3; } 65% { opacity: 1; scale: 1.18; } 100% { opacity: 1; scale: 1; } }
+  @keyframes signal-shade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes about-dim { 0%, 60% { opacity: 0; } 100% { opacity: .78; } }
   @keyframes about-flow-drift {
     0% { transform: translate3d(0, -3.5%, 0) scale(1.14) rotate(var(--flow-turn, -1.2deg)); }
@@ -79,10 +98,11 @@
   @keyframes cine-stage-open { from { transform: translate3d(0, 46px, 0) scale(.94); } to { transform: none; } }
   @keyframes cine-light-sweep { from { opacity: .12; transform: translate3d(14%, -10%, 0); } to { opacity: 1; transform: none; } }
   @keyframes cine-streak-drift { from { transform: translate3d(-4%, 3%, 0); } to { transform: translate3d(4%, -3%, 0); } }
+  /* Rotation stays small so the signal never leaves the shaft's axis. */
   @keyframes cine-art-rise {
-    0% { translate: 0 var(--art-rise, 90px); scale: .86; rotate: 7deg; }
+    0% { translate: 0 var(--art-rise, 90px); scale: .9; rotate: 3deg; }
     46% { translate: 0 0; scale: 1; rotate: 0deg; }
-    100% { translate: 0 calc(var(--art-rise, 90px) * -.75); scale: 1.04; rotate: -3deg; }
+    100% { translate: 0 calc(var(--art-rise, 90px) * -.75); scale: 1.03; rotate: -1.5deg; }
   }
   @keyframes cine-edge-settle { from { transform: translate3d(0, -18px, 0); } to { transform: none; } }
   @keyframes cine-copy-settle { from { transform: translate3d(0, 52px, 0); } to { transform: none; } }
@@ -98,10 +118,14 @@
 }
 
 @layer responsive {
-  @media (min-width: 1500px) { .cinematic-footer { margin-top: 490px; } }
+  /* --art-x follows the beam axis at --art-y: about 0.49W + 0.38H - 0.78y from the stage's left edge for
+     the 128deg shaft, 0.41W + 0.29H - 0.70y for the phone's 125deg one (W, H = stage size). */
+  @media (min-width: 1500px) { .cinematic-footer { margin-top: 490px; }.cinematic-art { --art-x: 162px; } }
   @media (max-width: 1000px) {
     .cinematic-stage { min-height: 790px; height: auto; }
-    .cinematic-art { width: 390px; max-width: 65%; top: 13%; }
+    /* Tablet: the shaft crosses the topline's right block, so the signal starts just below it. */
+    .cinematic-art { --art-x: 128px; --art-y: 258px; --art-len: 444px; }
+    .signal-art .signal-core { stroke-width: 1.8; }.signal-art .signal-leads { stroke-width: 1.1; }.signal-art .signal-edges { stroke-width: .9; }
     .cinematic-footer { grid-template-columns: minmax(0, 1fr); margin-top: 440px; gap: 24px; }
     .cinematic-copy { max-width: 540px; }
   }
@@ -120,7 +144,10 @@
     .cinematic-stage { min-height: 0; max-height: none; border-radius: 10px; }
     .cinematic-topline { left: 22px; right: 22px; top: 24px; font-size: 7px; gap: 22px; }
     .cinematic-topline > :last-child { max-width: 35%; }
-    .cinematic-art { top: 100px; width: 330px; max-width: 91%; }
+    /* Phone: the 125deg shaft leaves through the right edge; the signal enters there. Strokes thicken so the
+       smaller drawing keeps its weight. --art-x tracks the axis across 360-760px (stage height falls as it widens). */
+    .cinematic-art { --beam-turn: 125deg; --art-x: calc(124px - 15%); --art-y: 235px; --art-len: 369px; }
+    .signal-art .signal-core { stroke-width: 2.3; }.signal-art .signal-bloom { stroke-width: 6.5; }.signal-art .signal-leads { stroke-width: 1.35; }.signal-art .signal-edges { stroke-width: 1.15; }
     .cinematic-light { background: linear-gradient(125deg, transparent 15%, #e2e3ed0a 26%, #f2f2f555 37%, #ffffff74 41%, #e2e3ed21 49%, transparent 61%); mask-image: linear-gradient(#000, transparent 62%); }
     .cinematic-footer { margin-top: 390px; padding: 22px; gap: 25px; }
     .cinematic-copy h2 { font-size: clamp(27px, 7.6vw, 36px); }
