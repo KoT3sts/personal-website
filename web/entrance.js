@@ -166,6 +166,7 @@ const HERO_PLAN = [
 //   the first keyed job); work passes between them with a thin handoff line.
 //   `afterAt`: the share of that job to wait for; `after: '*'`: every builder
 //   inside the item (`overlap`: ms before the last one ends).
+// - `stagger`: ms between the items of one spec waiting on the same job.
 // - `only`: 'wide' (desktop and tablet) or 'phone'.
 // - `slide`: the item is carried in sideways by a pinned stage (Experience),
 //   so it is checked for visibility when its agent sets off, not when planned.
@@ -174,7 +175,8 @@ const HERO_PLAN = [
 // Every job follows the visible-target rule (see perceivable).
 // `weight` scales the build budget; `span` keeps scrolling through a tall
 // section (up to span x viewport height) while items are placed; `note` is the
-// stop's decorative handoff line beside the dock. `sub` stops continue the
+// stop's decorative handoff line beside the dock; `frameMs` fades its tinted
+// placement frames that soon (the item itself keeps building). `sub` stops continue the
 // previous stop's section (same plan step in the dock) and only run while
 // their section matches `when` (checked as they come up); `chapter` aims the
 // scroll at that Experience chapter when its stage travels sideways, and
@@ -223,18 +225,19 @@ export const TOUR_STOPS = [
   // rest of the first rows; editors write each pasted card's name and proof
   // over its placeholders and a tag agent swaps its tags. The cards further
   // down (and every card on phones) are placed directly.
-  { sel: '#capabilities', name: 'Capabilities', weight: 1.0, span: 1.0, note: 'copy → type · cards pasted', jobs: [
+  { sel: '#capabilities', name: 'Capabilities', weight: 1.0, span: 1.0, frameMs: 750, note: 'copy → type · cards pasted', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#capabilities-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.capabilities-heading > p', role: 'a11y', kind: 'wipe', act: 'writing summary' },
     { sel: '.capability', roles: ['copy', 'type', 'links', 'copy', 'type', 'links', 'copy', 'qa'], kind: 'place', multi: 8, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'phone' },
-    { sel: '.capability:first-child', role: 'nav', kind: 'place', label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', key: 'first', only: 'wide' },
-    { sel: '.capability:first-child', role: 'copy', kind: 'copy', act: 'copying card', key: 'copy', after: 'first', afterAt: 0.25, only: 'wide' },
-    { sel: '.capability:nth-child(-n+4):not(:first-child)', roles: ['copy', 'copy', 'copy'], kind: 'paste', multi: 3, from: 'prev', holes: true, act: 'pasting card', key: 'paste', after: 'copy', afterAt: 0.5, work: 480, only: 'wide' },
-    { sel: '.capability:nth-child(-n+4):not(:first-child) > h3', roles: ['type', 'links', 'type'], kind: 'type', multi: 3, label: true, act: 'writing', charMs: 36, after: 'paste', afterAt: 0.6, only: 'wide' },
-    { sel: '.capability:nth-child(-n+4):not(:first-child) > .capability-proof', roles: ['layout', 'links', 'layout'], kind: 'wipe', multi: 3, act: 'writing proof', after: 'paste', afterAt: 0.6, only: 'wide' },
+    { sel: '.capability:first-child', role: 'nav', kind: 'place', label: true, name: 'h3', act: 'placing', sub: '.capability-proof', key: 'first', only: 'wide' },
+    { sel: '.capability:first-child > .tag-list', role: 'art', kind: 'place', act: 'tagging tools', kids: 'li', after: 'first', afterAt: 0.45, only: 'wide' },
+    { sel: '.capability:first-child', role: 'copy', kind: 'copy', act: 'copying card', key: 'copy', after: 'first', only: 'wide' },
+    { sel: '.capability:nth-child(-n+4):not(:first-child)', roles: ['copy', 'copy', 'copy'], kind: 'paste', multi: 3, from: '.capability:first-child', stagger: 140, holes: true, act: 'pasting card', key: 'paste', after: 'copy', work: 480, only: 'wide' },
+    { sel: '.capability:nth-child(-n+4):not(:first-child) > h3', roles: ['type', 'type', 'type'], kind: 'type', multi: 3, label: true, act: 'writing', charMs: 36, after: 'paste', afterAt: 0.6, only: 'wide' },
+    { sel: '.capability:nth-child(-n+4):not(:first-child) > .capability-proof', roles: ['links', 'links', 'links'], kind: 'wipe', multi: 3, act: 'writing proof', after: 'paste', afterAt: 0.6, only: 'wide' },
     { sel: '.capability:nth-child(-n+4):not(:first-child) > .tag-list', roles: ['art', 'a11y', 'art'], kind: 'place', multi: 3, act: 'swapping tags', kids: 'li', after: 'paste', afterAt: 0.6, only: 'wide' },
-    { sel: '.capability:nth-child(n+5)', roles: ['nav', 'type', 'links', 'motion'], kind: 'place', multi: 4, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'wide' },
+    { sel: '.capability:nth-child(n+5)', roles: ['nav', 'motion', 'qa', 'nav'], kind: 'place', multi: 4, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'wide' },
     { sel: '.capability-list', role: 'qa', kind: 'pin', note: 'tighten spacing', key: 'pin', act: 'leaving a note', only: 'wide' },
     { sel: '.capability-list', role: 'layout', kind: 'resolve', act: 'tightening spacing', after: 'pin', only: 'wide' },
     { sel: '.capabilities-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
@@ -332,6 +335,10 @@ const TEXT_KINDS = new Set(['type', 'wipe', 'caret']);
 const DEMOTE = { reveal: 'frame', type: 'caret', wipe: 'review', place: 'review' };
 // Decorative kinds that may share an element with its builder.
 const SHARED = new Set(['copy', 'paste', 'pin', 'resolve']);
+// Kinds whose agent shows its label only while it works (not on the way).
+const QUIET = new Set(['copy', 'paste', 'pin', 'resolve']);
+// Handoff lines: at most this share of the view width long, gone in `ms` (virtual).
+const HANDOFF = { reach: 0.45, ms: 500 };
 // The visible-target rule: below this opacity (the product along the
 // element's ancestors) content counts as invisible.
 const OPACITY_MIN = 0.05;
@@ -1457,7 +1464,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       orbit: build ? 1000 : 1050,
       review: build ? 700 : kind === 'pass' ? 280 : 440,
       caret: build ? 520 : 300,
-      copy: 620,
+      copy: 420,
       paste: spec.work || 900,
       pin: 620,
       resolve: 700,
@@ -1749,6 +1756,11 @@ export function initAgenticEntrance(document, window, config = {}) {
 
     job.update = now => {
       if (job.void) return;
+      // `frameMs` (per stop): tinted placement frames step aside early.
+      if (current.frameMs && job.frame && !job.frameOut && (job.kind === 'place' || job.kind === 'reveal') && now - job.arrive >= current.frameMs) {
+        job.frameOut = true;
+        job.frame.classList.add('is-out');
+      }
       const p = clamp01((now - job.arrive) / Math.max(1, job.work));
       const geometryChanged = version !== current.version;
       version = current.version;
@@ -1756,7 +1768,7 @@ export function initAgenticEntrance(document, window, config = {}) {
         const rect = job.kind === 'copy' ? clipView(current, r()) : ghostRect(Math.min(1, p / 0.86));
         if (geometryChanged || job.kind === 'paste') place(job.frame, rect);
         if (job.kind === 'copy' && p > 0.05 && !job.frame.classList.contains('is-set')) job.frame.classList.add('is-set');
-        const pressed = job.kind === 'copy' ? p >= 0.62 : p >= 0.72;
+        const pressed = job.kind === 'copy' ? p >= 0.55 : p >= 0.86;
         const at = grip(rect);
         job.keyTag.style.translate = `${Math.round(at.x + 16)}px ${Math.round(at.y - 30)}px`;
         if (pressed !== job.keyTag.classList.contains('is-on')) job.keyTag.classList.toggle('is-on', pressed);
@@ -2006,27 +2018,38 @@ export function initAgenticEntrance(document, window, config = {}) {
     agent.queue.forEach((job, jobIndex) => {
       travelSeg(agent, job.start, job.arrive, job.entry);
       workSeg(agent, job);
-      addEvent(current, job.start, now => {
-        // The visible-target rule, again as the agent sets off.
-        if (checked && !targetReady(current, job, 'start')) { voidJob(current, job, agent); return; }
-        if (orchestrator && (lineEvery || jobIndex === 0)) dispatchLine(current, orchestrator, agent, job, now);
-        handoffLine(current, job, agent, now);
-        startWorking(current, agent);
+      // Copy and paste agents come over unlabelled: their label shows only
+      // while they outline, drag and drop.
+      const quiet = QUIET.has(job.kind);
+      const label = () => {
         agent.cursor.classList.remove('is-idle');
         agent.cursor.classList.add('is-working');
         agent.cursor.agenticTarget = job.target;
         agent.job = job;
         say(agent, job.act);
+      };
+      addEvent(current, job.start, now => {
+        // The visible-target rule, again as the agent sets off.
+        if (checked && !targetReady(current, job, 'start')) { voidJob(current, job, agent); return; }
+        if (orchestrator && (lineEvery || jobIndex === 0)) dispatchLine(current, orchestrator, agent, job, now);
+        startWorking(current, agent);
+        if (quiet) agent.cursor.classList.remove('is-idle');
+        else label();
       });
       addEvent(current, job.arrive, now => {
         if (job.void) return;
         // Not there to see after all (scrolled past, clipped, hidden): show it
         // and move on without a label.
         if (checked && !targetReady(current, job, 'arrive')) { voidJob(current, job, agent); return; }
+        if (quiet) label();
+        handoffLine(current, job, agent, now);
         job.begin(now);
         current.active.add(job);
       });
-      addEvent(current, job.end, () => completeJob(current, job));
+      addEvent(current, job.end, () => {
+        completeJob(current, job);
+        if (quiet && agent.job === job) { agent.cursor.classList.remove('is-working'); agent.cursor.agenticTarget = null; say(agent, ''); }
+      });
       if (job.kind === 'frame') addEvent(current, job.end + (current.kind === 'build' ? 520 : 620) * s, () => job.frame?.classList.add('is-out'));
     });
   }
@@ -2055,11 +2078,17 @@ export function initAgenticEntrance(document, window, config = {}) {
 
   // Work passing between agents (a pasted copy to its editor, a QA pin to
   // whoever resolves it): a thin line from one cursor to the other, once per hand-off.
+  // Drawn as the receiving agent arrives, and only when both cursors are on
+  // screen and close together (HANDOFF.reach of the view width at most).
   function handoffLine(current, job, agent, now) {
     const from = job.afterJob;
-    if (!from?.agent || from.agent === agent || from.void || (from.lines || 0) >= 2 || !from.agent.position || !agent.position) return;
+    if (!from?.agent || from.agent === agent || from.void || (from.lines || 0) >= 2) return;
+    const a = from.agent.position;
+    const b = agent.position;
+    const inside = p => p && p.x >= 0 && p.y >= 0 && p.x <= current.vw && p.y <= current.vh;
+    if (!inside(a) || !inside(b) || distance(a, b) > current.vw * HANDOFF.reach) return;
     from.lines = (from.lines || 0) + 1;
-    drawLine(current, from.agent.position, agent.position, ROLES[from.agent.role].color, now, 'is-handoff');
+    drawLine(current, a, b, ROLES[from.agent.role].color, now, 'is-handoff', HANDOFF.ms);
   }
 
   function planHero(current) {
@@ -2526,6 +2555,8 @@ export function initAgenticEntrance(document, window, config = {}) {
             const share = job.spec?.afterAt ?? 1;
             ready = (share < 1 ? dep.arrive + dep.work * share : dep.end) + 120 * anim;
           }
+          // `stagger`: items of one spec take their turn, this far apart.
+          ready += (job.spec?.stagger || 0) * (job.spec?.nth || 0) * anim;
           // From its own readiness each pass, so it follows its dependency both ways.
           if (job.ownReady === undefined) job.ownReady = Number.isFinite(job.readyAt) ? job.readyAt : 0;
           const next = Math.max(job.ownReady, ready);
@@ -3371,7 +3402,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     const from = orchestrator.position || segPoint(orchestrator, now);
     drawLine(current, from, job.entry(), ROLES[agent.role].color, now);
   }
-  function drawLine(current, from, to, color, now, variant = '') {
+  function drawLine(current, from, to, color, now, variant = '', life = 700 * current.scale) {
     const length = distance(from, to);
     if (length < 24) return;
     const line = make('div', `agentic-dispatch ${variant}`, current.layer);
@@ -3380,7 +3411,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     line.style.translate = `${from.x}px ${from.y}px`;
     line.style.rotate = `${Math.atan2(to.y - from.y, to.x - from.x)}rad`;
     // Insert in time order; every processed event is earlier than `now`.
-    const at = now + 700 * current.scale;
+    const at = now + life;
     let index = current.events.length;
     while (index > current.next && current.events[index - 1].at > at) index--;
     current.events.splice(index, 0, { at, fn: () => line.remove() });
@@ -3519,7 +3550,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   const cleanName = text => (text || '').replace(/[↗↓↑→←]/g, '').replace(/\s+/g, ' ').trim();
   // One item's job spec: its role (cycled), its label and its parts.
   function itemSpec(current, spec, node, index) {
-    const item = { ...spec, role: spec.roles ? spec.roles[index % spec.roles.length] : spec.role };
+    const item = { ...spec, role: spec.roles ? spec.roles[index % spec.roles.length] : spec.role, nth: index };
     if (spec.label) {
       let name = cleanName((spec.name && node.querySelector(spec.name)) ? node.querySelector(spec.name).textContent : node.textContent);
       // Narrow screens get shorter names so labels stay on screen.
@@ -3915,6 +3946,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     const stacked = stopInfo.stackWeight && stopInfo.chapter !== undefined && stopInfo.section.dataset.xp !== 'travel';
     const current = prepare('build', buildDuration(tier) * ((stacked ? stopInfo.stackWeight : stopInfo.weight) || 1));
     current.section = section;
+    if (stopInfo.frameMs) current.frameMs = stopInfo.frameMs * current.anim;
     current.waiting = tour.pending || new Map();
     current.wasHidden = tour.wasHidden || new Set();
     tour.pending = tour.wasHidden = null;
