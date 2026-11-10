@@ -7,7 +7,7 @@
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
     "test": "node --test",
-    "check": "node --check web/app.js && node --check web/gallery-state.js && node --check web/motion.js && node --check web/header.js && node --check web/section-plan.js && node --check web/experience.js && node --check web/explorer.js && node --check web/explorer-state.js && node --check web/entrance.js && node --check scripts/build.mjs && node --check scripts/serve.mjs && node --check scripts/optimize-svg.mjs && node --check scripts/minify-css.mjs"
+    "check": "node --check web/app.js && node --check web/motion.js && node --check web/header.js && node --check web/section-plan.js && node --check web/experience.js && node --check web/explorer.js && node --check web/explorer-state.js && node --check web/entrance.js && node --check scripts/build.mjs && node --check scripts/serve.mjs && node --check scripts/optimize-svg.mjs && node --check scripts/minify-css.mjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0"

@@ -49,7 +49,7 @@ node scripts/optimize-svg.mjs web/assets/about-flow.svg --simplify 0.15
 
 The script removes comments and editor metadata, compacts path data at 1-decimal precision (rounded against absolute positions, so there is no drift), moves repeated stroke colours, widths and opacities into one-rule classes, and with `--simplify` drops polyline vertices within 0.15 user units of the line. Simplification is lossy, so run it on the original drawing, not on an already optimized file. Use `--out <path>` to write elsewhere and `--simplify 0` for a pixel-identical result. Tests for both tools live in `scripts/build-tools.test.mjs`.
 
-The design includes original SVG artwork, a draggable perspective gallery with keyboard and button controls, project dialogs, reduced motion support, and inline fallbacks. Project covers are illustrations; biography and copy remain open to owner review.
+The design includes original SVG artwork, one project gallery (a ring of covers that turns into a stack, with wheel, drag, keyboard and index controls, each cover linking to its case study page), reduced motion support, and inline fallbacks. Project covers are illustrations; biography and copy remain open to owner review.
 
 Page sections: hero (role, location, résumé/LinkedIn/email actions), About, Experience (ADP, Kennesaw State University research), Selected projects, Skills & education, Approach, and Contact.
 

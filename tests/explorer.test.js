@@ -4,31 +4,34 @@ import { readFile } from 'node:fs/promises';
 import {
   explorerTier, explorerGeometry, clampIndex, halfTurn, ringPose, stackPose, blendPose, poseTransform,
   stackOrder, cascadeMix, travelDuration, wheelPixels, wheelWants, wheelAction, wheelOwner, visibleShare,
-  dragTarget, keyTarget, counterLabel,
+  dragTarget, keyTarget, counterLabel, RING,
 } from '../web/explorer-state.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 const css = await readFile(new URL('../web/explorer.css', import.meta.url), 'utf8');
 const entrance = await readFile(new URL('../web/entrance.js', import.meta.url), 'utf8');
 const SLUGS = ['agent-workflow', 'thoughts-to-text', 'companion-chatbot', 'voicelab', 'work-helper', 'barking-village'];
-const section = html.match(/<section id="projects"[\s\S]*?\n {4}<\/section>/)?.[0] || '';
+const work = html.match(/<section id="work"[\s\S]*?\n {4}<\/section>/)?.[0] || '';
+const section = work.match(/<div class="explorer">[\s\S]*?\n {6}<\/div>\n/)?.[0] || '';
 
-test('the project index sits between the ribbon gallery and skills, on the Work nav item', () => {
-  assert.ok(section, '#projects section exists');
+test('the explorer is the one project gallery, in #work right under the heading', () => {
+  assert.ok(section, '#work has the explorer');
+  assert.doesNotMatch(html, /id="projects"|project-dialog|class="gallery|project-card|ribbon/, 'no second gallery, ribbon or dialog');
+  assert.ok(work.indexOf('<div class="work-heading">') < work.indexOf('<div class="explorer">'), 'explorer after the heading');
+  assert.ok(work.indexOf('<div class="explorer">') < work.indexOf('<div class="project-stories">'), 'stories stay below');
   const order = [...html.matchAll(/<section id="([^"]+)"/g)].map(match => match[1]).filter(id => !id.startsWith('project-'));
-  assert.deepEqual(order.slice(order.indexOf('work'), order.indexOf('work') + 3), ['work', 'projects', 'skills']);
-  assert.match(section, /^<section id="projects" class="explorer dark-section" data-nav-section="work" aria-labelledby="projects-title">/);
-  assert.match(section, /<h2 id="projects-title">/);
-  // Its mono label is unnumbered, so the 01–07 section labels still count up.
-  assert.doesNotMatch(section, /class="section-top mono"><span>\d{2} \//);
+  assert.deepEqual(order.slice(order.indexOf('work'), order.indexOf('work') + 2), ['work', 'skills']);
+  // The centre label sits under the section's h2.
+  assert.match(section, /<h3 id="explorer-title">/);
+  assert.doesNotMatch(section, /<h2/);
 });
 
-test('every project links to its case study, in order, with a cover and a name', () => {
+test('every project links to its case study, in order, with a described cover and a name', () => {
   const links = [...section.matchAll(/<a class="explorer-card" href="\.\/projects\/([a-z-]+)\.html" aria-label="([^"]+)">/g)];
   assert.deepEqual(links.map(match => match[1]), SLUGS);
   links.forEach(([, slug, label]) => {
     assert.match(label, /Read the case study\.$/);
-    assert.match(section, new RegExp(`src="\\./assets/${slug}\\.svg"`));
+    assert.match(section, new RegExp(`src="\\./assets/${slug}\\.svg" alt="[^"]{40,}"`));
   });
   const names = [...section.matchAll(/<span class="explorer-card-name">([^<]+)<\/span>/g)].map(match => match[1]);
   assert.deepEqual(names, ['Multi-Agent Workflow', 'Thoughts-to-Text BCI', 'Companionship Chatbot', 'VoiceLab', 'Work Helper', 'Barking Village']);
@@ -39,27 +42,53 @@ test('every project links to its case study, in order, with a cover and a name',
 test('the index is a list of buttons, one per project, with a live region beside it', () => {
   const picks = [...section.matchAll(/<button class="explorer-pick" type="button" data-explorer-pick="(\d)">/g)].map(match => Number(match[1]));
   assert.deepEqual(picks, [0, 1, 2, 3, 4, 5]);
-  assert.match(section, /<ol role="list" aria-labelledby="projects-index-label">/);
+  assert.match(section, /<ol role="list" aria-labelledby="explorer-index-label">/);
+  assert.match(section, /id="explorer-index-label"/);
   assert.match(section, /class="explorer-live visually-hidden" aria-live="polite" aria-atomic="true"/);
   // Script-only parts start hidden so the no-script page is a plain list.
   for (const part of ['explorer-caption', 'explorer-index', 'explorer-hint']) assert.match(section, new RegExp(`class="${part}[^"]*"[^>]*hidden>`));
-  assert.match(section, /<a href="#skills">CONTINUE TO SKILLS/);
 });
 
-test('the build tour has an Index stop right after Projects', () => {
+test('the build tour builds the explorer on the Projects stop, with no separate Index stop', () => {
   const work = entrance.indexOf("{ sel: '#work', name: 'Projects'");
-  const index = entrance.indexOf("{ sel: '#projects', name: 'Index'");
   const skills = entrance.indexOf("{ sel: '#skills', name: 'Skills'");
-  assert.ok(work > 0 && index > work && skills > index);
-  // A light stop (the tour's total length is budgeted).
-  const weight = Number(entrance.slice(index, skills).match(/weight: ([\d.]+)/)?.[1]);
-  assert.ok(weight > 0 && weight <= 0.5, `Index weight ${weight}`);
+  assert.ok(work > 0 && skills > work);
+  assert.equal(entrance.indexOf("name: 'Index'"), -1);
+  assert.equal(entrance.indexOf("'#projects'"), -1);
+  const stop = entrance.slice(work, skills);
+  for (const sel of ['#explorer-title', '.explorer-item', '.explorer-index', '.explorer-hint']) assert.ok(stop.includes(`sel: '${sel}'`), `builds ${sel}`);
+  assert.doesNotMatch(stop, /project-card|gallery-/);
+  assert.equal([...entrance.matchAll(/^ {2}\{ sel: '#[a-z]+', name: '/gm)].length, 9, 'nine stops');
 });
 
 test('reduced motion and touch have their own paths in the stylesheet', () => {
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /touch-action: pan-y/);
   assert.match(css, /@media \(max-width: 699px\)/);
+});
+
+test('the ring is about 80% of the window tall and keeps clear of the index column', () => {
+  // 1280x800: deck 1098 wide (band inside the gutters), as tall as the window; index 243 + gap.
+  const g = explorerGeometry(1098, 800, { viewport: 1280, viewportHeight: 800, reserve: 275 });
+  assert.ok(g.ringRadius * 2 >= 800 * 0.74 && g.ringRadius * 2 <= 800 * 0.8, `diameter ${g.ringRadius * 2}`);
+  const cover = g.ringScale * g.cardW;
+  // Top and bottom covers stay inside the deck.
+  assert.ok(2 * g.ringRadius + cover * 620 / 900 <= 800 - 2 * RING.pad + 1);
+  // At any spin a cover's outer corner stays inside the room left of the index.
+  const corner = Math.hypot(g.ringRadius + cover * 620 / 900 / 2, cover / 2);
+  assert.equal(g.ringX, -138);
+  assert.ok(1098 / 2 + g.ringX + corner <= 1098 - 275 + 1, 'clear of the index');
+  assert.ok(1098 / 2 + g.ringX - corner >= -1, 'inside the band on the left');
+  assert.ok(Math.abs(ringPose(0, g).x - g.ringX) < 1e-9, 'the ring is centred in its room');
+  // Covers roughly a third larger than before, never larger than the stack's.
+  assert.ok(cover > 230 && cover < g.cardW);
+  // Tablets have no side column: the width bounds the ring, centred.
+  const tablet = explorerGeometry(657, 647, { viewport: 768, viewportHeight: 1024, reserve: 657 });
+  assert.equal(tablet.ringX, 0);
+  assert.ok(2 * Math.hypot(tablet.ringRadius + tablet.ringScale * tablet.cardW * 620 / 900 / 2, tablet.ringScale * tablet.cardW / 2) <= 657);
+  assert.ok(tablet.ringRadius > 200);
+  // Phones keep the flat deck.
+  assert.equal(explorerGeometry(358, 400, { viewport: 390, viewportHeight: 844 }).ringRadius, 0);
 });
 
 test('tiers: ring on desktop and tablet, flat deck on phones', () => {

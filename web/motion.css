@@ -1,5 +1,5 @@
-/* Motion pass: section reveals, headline masks, control feedback, gallery
-   coordination, hero depth and the contact close. Layered into `motion`
+/* Motion pass: section reveals, headline masks, control feedback, hero
+   depth and the contact close. Layered into `motion`
    (order declared in styles.css). */
 @layer motion {
   /* ---- Section reveals. Hidden states exist only after motion.js marks
@@ -26,15 +26,14 @@
   @media print { [data-headline] [data-headline-unit] { opacity: 1 !important; transform: none !important; clip-path: none !important; filter: none !important; } }
 
   /* ---- Control feedback: arrows lean toward their destination, presses give. ---- */
-  .pill-button, .scene-pill, .contact-button, .circle-button, .project-open, .scroll-cue, .about-discover, .main-nav a, .header-contact, .project-selectors button, .dialog-close {
+  .pill-button, .scene-pill, .contact-button, .scroll-cue, .main-nav a, .header-contact {
     transition: background-color .25s, color .25s, border-color .25s, box-shadow .35s cubic-bezier(.16,1,.3,1), transform .18s cubic-bezier(.2,.8,.2,1);
   }
-  :is(.pill-button, .scene-pill, .contact-button, .circle-button, .project-open, .scroll-cue, .about-discover, .main-nav a):active { transform: scale(.965); transition-duration: .25s, .25s, .25s, .35s, .08s; }
-  :is(.pill-button, .scene-pill, .contact-button, .header-contact, .hero-links a, .contact-links a, .dialog-close) > span[aria-hidden] { display: inline-block; transition: transform .45s cubic-bezier(.16,1,.3,1); }
+  :is(.pill-button, .scene-pill, .contact-button, .scroll-cue, .main-nav a):active { transform: scale(.965); transition-duration: .25s, .25s, .25s, .35s, .08s; }
+  :is(.pill-button, .scene-pill, .contact-button, .header-contact, .hero-links a, .contact-links a) > span[aria-hidden] { display: inline-block; transition: transform .45s cubic-bezier(.16,1,.3,1); }
   @media (hover: hover) and (pointer: fine) {
     :is(.scene-pill, .contact-button, .hero-links a, .contact-links a):hover > span[aria-hidden] { transform: translate3d(2px, -2px, 0); }
     :is(.pill-button, .header-contact, .contact-links a)[download]:hover > span[aria-hidden] { transform: translate3d(0, 3px, 0); }
-    .dialog-close:hover > span[aria-hidden] { transform: rotate(90deg); }
     .pill-button:hover { box-shadow: 0 16px 30px -16px #171716b3; }
     .scene-pill-primary:hover { box-shadow: 0 0 34px #f1edff40; }
     .contact-button:hover { box-shadow: 0 18px 44px -16px #dbe9be66, 0 0 0 4px #e2e8d814; }
@@ -44,21 +43,10 @@
   :is(.hero-links a, .contact-links a, .work-end a, .section-top a)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right center; transition: transform .5s cubic-bezier(.16,1,.3,1); pointer-events: none; }
   :is(.hero-links a, .contact-links a, .work-end a, .section-top a):is(:hover, :focus-visible)::after { transform: scaleX(1); transform-origin: left center; }
 
-  /* ---- Gallery: the active caption settles after its card; selector underline travels. ---- */
-  .project-selectors button { position: relative; }
-  .project-selectors button[aria-pressed="true"] { border-bottom-color: transparent; }
-  .project-selectors button::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--ink); transform: scaleX(0); transition: transform .6s cubic-bezier(.16,1,.3,1); }
-  .project-selectors button[aria-pressed="true"]::after { transform: scaleX(1); }
-
-  /* ---- Disclosures and dialog. ---- */
+  /* ---- Disclosures. ---- */
   .details-icon { display: inline-block; transition: transform .4s cubic-bezier(.16,1,.3,1); }
   details[open] > p { animation: detail-open .45s cubic-bezier(.16,1,.3,1); }
-  /* motion.js marks the dialog and grows it from the clicked card instead. */
-  .project-dialog[open]:not([data-motion]) { animation: dialog-open .5s cubic-bezier(.16,1,.3,1); }
-  .project-dialog[open]::backdrop { animation: backdrop-open .4s ease-out; }
   @keyframes detail-open { from { opacity: 0; transform: translate3d(0, -6px, 0); } }
-  @keyframes dialog-open { from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.98); } }
-  @keyframes backdrop-open { from { opacity: 0; } }
 
   /* ---- Closing note: the orbit point travels its ellipse, only while on screen. ---- */
   .note-orbit i { transform-origin: 105px 0; animation: note-orbit 18s linear infinite; }

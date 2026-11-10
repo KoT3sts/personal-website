@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { ENTRANCE_TRACED, HEADLINES, HEADLINE_TONES, REVEAL_GROUPS, approach, depthTarget, flipGeometry, headlineKeyframes, headlineTiming, initMotion, isEntranceTracing, magnetPull, mailtoAddress, planHeadline, rectInView, sectionAtLine, shouldHold, springStep, staggerDelay } from '../web/motion.js';
+import { ENTRANCE_TRACED, HEADLINES, HEADLINE_TONES, REVEAL_GROUPS, approach, depthTarget, headlineKeyframes, headlineTiming, initMotion, isEntranceTracing, magnetPull, mailtoAddress, planHeadline, sectionAtLine, shouldHold, springStep, staggerDelay } from '../web/motion.js';
 import { SECTION_TARGETS } from '../web/entrance.js';
 
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -261,34 +261,6 @@ test('hero depth leans with the pointer and is nearest over the sculpture', () =
   assert.equal(corner.y, -1);
   assert.equal(corner.near, 0);
   assert.equal(depthTarget(2, -1).x, 1, 'clamped');
-});
-
-// ---- Dialog ------------------------------------------------------------------
-
-const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
-
-test('the dialog FLIP maps the opener image onto the dialog image region', () => {
-  const dialog = rect(330, 40, 620, 720);
-  const image = rect(362, 110, 556, 383);
-  const opener = rect(100, 300, 278, 191.5);
-  const g = flipGeometry(dialog, image, opener, 7);
-  // Map a local point the same way the transform does (origin 0 0).
-  const map = (lx, ly) => [dialog.left + g.x + g.scale * lx, dialog.top + g.y + g.scale * ly];
-  const [left, top] = map(g.inset.left, g.inset.top);
-  const [right, bottom] = map(dialog.width - g.inset.right, dialog.height - g.inset.bottom);
-  assert.ok(Math.abs(left - opener.left) < 0.01 && Math.abs(top - opener.top) < 0.01);
-  assert.ok(Math.abs(right - opener.right) < 0.01 && Math.abs(bottom - opener.bottom) < 0.01);
-  assert.ok(Math.abs(g.radius - 7 / g.scale) < 1e-9, 'the card corner radius survives the scale');
-  // A wider opener crops the dialog image vertically instead of distorting it.
-  const wide = flipGeometry(dialog, image, rect(0, 0, 900, 300));
-  assert.ok(wide.inset.top > image.top - dialog.top);
-});
-
-test('only openers that are mostly on screen are grown from', () => {
-  assert.equal(rectInView(rect(0, 0, 100, 100), 1280, 800), true);
-  assert.equal(rectInView(rect(0, 740, 100, 100), 1280, 800), true, '60% on screen');
-  assert.equal(rectInView(rect(0, 780, 100, 100), 1280, 800), false, 'only 20% on screen');
-  assert.equal(rectInView(rect(0, 0, 4, 4), 1280, 800), false, 'collapsed boxes are ignored');
 });
 
 test('the copy button reads the address from the mailto link', () => {

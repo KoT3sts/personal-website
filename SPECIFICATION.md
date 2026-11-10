@@ -100,6 +100,8 @@ Desktop composition is the primary fidelity target. Use 1440×900 and 1280×800 
 
 ### V06 — Curved horizontal showcase
 
+> **Owner decision, November 10, 2026:** the site has one project gallery, the circle explorer (V07) in #work. The curved ribbon gallery and the project dialog were removed; every cover links straight to its case study (`projects/<slug>.html`). The notes below record the reference scene only.
+
 - Return to warm off-white and place large landscape project/interface screenshots across a wide horizontal band.
 - Match the ribbon's curved outer surfaces, perspective, visible neighboring work, and fluid movement. Keep framing minimal so the interfaces dominate.
 - Show the active project's caption/category and current/total index near the center below the screenshots; keep the large section label lower left.
@@ -109,7 +111,9 @@ Desktop composition is the primary fidelity target. Use 1440×900 and 1280×800 
 
 ### V07 — Circular / vertical work explorer
 
-- This is a second, distinct gallery composition. Do not collapse both reference galleries into the current single coverflow.
+> **November 10, 2026:** this is now the site's only gallery (see V06). It sits in #work under the "LESS TALK. MORE MAKING." heading, as a dark rounded band in the light section. On desktop and tablet the band is as tall as the window and the ring's diameter aims at ~80% of the window height, limited by the width (tablet) and kept clear of the index column (desktop), so the desktop drag/scroll hint sits bottom right under the index; phones keep the flat vertical deck.
+
+- In the reference this is a second, distinct gallery composition (the owner has since chosen a single gallery, above).
 - Reproduce the circular arrangement around a central work label, plus the rotating/stacked state where an active screenshot sits near the center and neighboring screenshots recede above and below it.
 - Include the large active project title toward the left, a compact index/name list toward the upper right, and a subtle drag/scroll hint near the center bottom.
 - Keep card occlusion, rotation axes, active caption, and index synchronized. The precise transition between ring and stack is a visual implementation task, not a fact established by one still frame.
@@ -140,7 +144,7 @@ Desktop composition is the primary fidelity target. Use 1440×900 and 1280×800 
 - Reduced motion bypasses the intro and parallax/pinned motion while preserving content, gallery selection, and navigation. Rendering/JavaScript failure must leave a readable fallback.
 - Mobile was not demonstrated in the reference. At 390×844 and 360×800, preserve the same visual identity, section order, portrait/text hierarchy, and intentional depth with touch controls and readable text. Use 44px minimum targets for essential controls.
 - At 768×1024, adapt layout without clipped content or unreachable controls. No accidental horizontal page overflow at any review size; horizontal movement belongs inside its gallery.
-- Do not hide the portrait, replace both galleries with a generic list, or remove reference-defining scenes merely to pass a mobile width check. Use deliberate, documented responsive versions.
+- Do not hide the portrait, replace the gallery with a generic list, or remove reference-defining scenes merely to pass a mobile width check. Use deliberate, documented responsive versions.
 
 ## 7. Current draft versus target
 
@@ -151,8 +155,8 @@ Desktop composition is the primary fidelity target. Use 1440×900 and 1280×800 
 | About transition | Original vector flow field and centered dark ABOUT ME panel; progressive scroll movement | Tune illustration density and choreography against reference; desktop/mobile first pass reviewed November 8 |
 | Cinematic scene | Inset beam-lit panel, original abstract luminous sculpture, edge-aligned copy and pills | Reference uses a suspended figure; current sculpture is an original adaptation. Continue geometry, lighting and spacing comparison |
 | Experience | Missing | Approved timeline content and horizontal typographic chapters |
-| Curved showcase | Flat perspective coverflow, illustrated covers | Real/sanitized visuals, continuous ribbon curvature and matching motion |
-| Circular work explorer | Missing | Circular arrangement, stacked state, coordinated titles/index/controls |
+| Curved showcase | Removed by owner decision (Nov 10, 2026): one gallery, the explorer | None unless Cesar brings the ribbon back |
+| Circular work explorer | The one gallery, in #work: ring to stack, index, caption, wheel/drag/keys, case-study links | Visual comparison against the reference |
 | Capabilities | Dark approach accordion | Light numbered rows and dark expanded panel |
 | Contact | Dark large-type footer and GitHub action | Reference pill arrangement, approved destinations, spacing/glow tuning |
 | Verification | Unit/DOM checks; no completed browser comparison | Desktop/mobile screenshots, motion recording, and reference review |
@@ -171,7 +175,7 @@ Desktop composition is the primary fidelity target. Use 1440×900 and 1280×800 
 
 1. Approve the reference mapping and gather missing portrait/content/assets. Establish a repeatable screenshot setup.
 2. Match the static desktop hero, About transition, cinematic scene, typography, and section proportions before adding more effects.
-3. Implement and compare the experience motion, ribbon gallery, circular/stacked explorer, and disclosures one scene at a time.
+3. Implement and compare the experience motion, circular/stacked explorer (the one gallery since November 10, 2026), and disclosures one scene at a time.
 4. Adapt and verify mobile/tablet, reduced motion, focus behavior, fallbacks, and performance.
 5. Record a full-page interaction walkthrough and obtain Cesar's visual sign-off against the video.
 
@@ -180,11 +184,11 @@ Existing source is in `web/`; static builds go to `dist/`. Contributors should s
 ## 10. Definition of done
 
 - [ ] All nine scene counterparts exist in the required sequence with approved, truthful content.
-- [ ] Portrait-led hero and both distinct gallery experiences match the reference's composition and depth.
+- [ ] Portrait-led hero and the explorer gallery match the reference's composition and depth (one gallery by owner decision, November 10, 2026).
 - [ ] Static screenshots compare each observed checkpoint with a corresponding implementation state at the agreed desktop viewport. Crop to the website and normalize scale; disclose camera distortion and unknown measurements.
-- [ ] Review also includes a 20–40 second implementation recording showing intro/reveal, page progression, a ribbon drag, ring/stack selection, capability expansion, and contact close. Duration is a QA deliverable, not site autoplay behavior.
+- [ ] Review also includes a 20–40 second implementation recording showing intro/reveal, page progression, ring/stack selection and a drag, capability expansion, and contact close. Duration is a QA deliverable, not site autoplay behavior.
 - [ ] Every major difference is listed as fixed, asset/content-blocked, or explicitly approved. No unmeasured claim of pixel-perfect matching.
-- [ ] Mobile/tablet and reduced-motion checks pass; touch scrolling, keyboard navigation, focus restoration, native dialog Escape, and working links are verified in a real browser.
+- [ ] Mobile/tablet and reduced-motion checks pass; touch scrolling, keyboard navigation, focus restoration, and working links are verified in a real browser.
 - [ ] Screenshots and recording identify commit, viewport, browser, and device; review evidence is linked in the handoff/PR without customer data.
 - [ ] Existing automated tests, syntax checks, build, and diff checks pass; relevant new interaction behavior has meaningful coverage.
 - [ ] Cesar has reviewed the comparison and agreed that the site captures the video closely enough. Passing tests or publishing a URL alone does not satisfy this goal.
@@ -211,7 +215,7 @@ The recording proves an assembly presentation, not that live AI inference or edi
 
 ### Adaptation: the same portfolio, assembled in front of the visitor
 
-- Use the first reel's final design: warm paper hero, Cesar's portrait, monochrome typography, cinematic sections, and both gallery compositions. Do not adopt the second creator's red/black site, portrait, biography, project claims, or metrics.
+- Use the first reel's final design: warm paper hero, Cesar's portrait, monochrome typography, cinematic sections, and the explorer gallery. Do not adopt the second creator's red/black site, portrait, biography, project claims, or metrics.
 - The first home visit builds the hero; the tour then assembles each section in turn as one continuous flow. The page scroll is a single velocity model that persists across sections: each stop sets a target and a cruise speed, and the scroll accelerates or brakes toward it within an acceleration limit (900 px/s² desktop, 800 tablet, 700 phone, at 1×), arrives at cruise speed instead of stopping, keeps creeping (~45–60 px/s, faster through tall sections) while agents work, and only settles fully at Contact before the handoff. The next stop starts as soon as the current stop's builder jobs are done (late review/QA work is left out), so content of the next section is built as it slides in at the bottom edge. Most of the crew stays out: on desktop about 12–15 agents plus the orchestrator stay on screen between sections (tablet ~6, phone ~4), idle ones drifting at standby spots in the lower half of the view; each stop's roster takes the carried agents first, adds a few fresh agents from the dock for roles it needs, and rotates one or two back to the dock near its end, so the dock count moves in small steps (desktop band ~10–16). Animations are deliberately soft: ~650 ms pop-ins, ≥35 ms per typed character (≤1.6 s per job), ~100 ms per cascading tag, ~700 ms frames and reviews, cursor moves ≥450 ms on eased curves. Measured at 1×: hero ~8.4 s, whole tour ~48 s on desktop (1280×800) and ~49 s on phone (375×812); about half at 2×. Content is prepared hidden only while wholly below the viewport; if an item is on screen before its agent arrives it is shown immediately and the job is downgraded to a decorative pass (measured: no on-screen hidden item longer than ~250 ms). If the visitor cancels, sections the tour had not reached may still get one short tracing pass. The tour never runs on deep links, back/forward, reduced motion or unavailable storage; Replay restarts it only on an explicit click.
 - Give agents recognizable visual roles. Proposed roles: **Layout**, **Content**, **Projects**, **Motion**, and **QA**. Names are animation characters, not a claim that five actual models are connected to each visit.
 - Layout frames navigation and major regions; Content fills the approved name/headline/intro; Projects places approved images and cards; Motion aligns the signature graphic; QA performs a final visual alignment sweep.

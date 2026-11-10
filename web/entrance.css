@@ -170,8 +170,6 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-target[data-build-kind="text"][data-build-state="pending"] { opacity: 0; translate: none; }
 .agentic-target[data-build-kind="pop"][data-build-state="placing"] { transition: opacity calc(var(--agentic-d, .65s) * .7) cubic-bezier(.33,1,.68,1); animation: agentic-pop var(--agentic-d, .65s) cubic-bezier(.22,1,.36,1) both; }
 .agentic-target[data-build-kind="kid"][data-build-state="placing"] { transition: opacity calc(var(--agentic-d, .42s) * .7) cubic-bezier(.33,1,.68,1); animation: agentic-pop-kid var(--agentic-d, .42s) cubic-bezier(.22,1,.36,1) both; }
-/* Gallery cards keep their own depth opacity once placed. */
-.project-card.agentic-target[data-build-state="placing"] { opacity: var(--card-opacity, 1); }
 
 /* Replay sits inside the footer's small mono row without changing its height. */
 .agentic-replay { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -16px; padding: 0; color: inherit; font: inherit; text-transform: uppercase; letter-spacing: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }

@@ -14,7 +14,7 @@ export const ENTRANCE_TRACED = SECTION_TARGETS;
 export const REVEAL_GROUPS = [
   ['.capabilities-heading > p', 'rise'], ['.capability', 'rise'],
   ['.experience-heading > p', 'rise'],
-  ['.work-heading > p', 'rise'], ['.gallery-stage', 'stage'], ['.gallery-controls', 'rise'], ['.project-selectors', 'rise'],
+  ['.work-heading > p', 'rise'],
   ['.skill-list > div', 'rise'], ['.education-layout > *', 'rise'],
   ['.approach-heading > p', 'rise'], ['.approach-list details', 'rise'],
   ['.closing-note > .mono', 'rise'], ['.closing-note > p', 'heading'],
@@ -35,9 +35,6 @@ export const HEADLINE_TONES = {
 // Clip extents around each line (em): glyph overshoot above, period/descender
 // room below and generous sides, so nothing is cropped at rest.
 const CLIP = { top: '-.3em', side: '-.5em', bottom: '.18em' };
-
-export const EXPO_OUT = 'cubic-bezier(.16, 1, .3, 1)';
-const DIALOG = { open: 640, close: 460, fade: 220, reduced: 160, closeEase: 'cubic-bezier(.55, 0, .15, 1)' };
 
 const LOOPS = ['.hero', '.closing-note', '.contact'];
 const STAGGER = 85;
@@ -163,38 +160,22 @@ export function depthTarget(fx, fy) {
   return { x, y, near };
 }
 
-// FLIP from the opener's image to the dialog: the region of the dialog image
-// that has the opener's aspect is scaled and moved onto the opener rect.
-// Returns the transform (origin 0 0) and the clip inset in dialog-local px.
-export function flipGeometry(dialog, image, opener, openerRadius = 7) {
-  const aspect = opener.width / opener.height;
-  let width = image.width;
-  let height = width / aspect;
-  if (height > image.height) { height = image.height; width = height * aspect; }
-  const scale = opener.width / width;
-  const cx = image.left - dialog.left + image.width / 2;
-  const cy = image.top - dialog.top + image.height / 2;
-  const x = opener.left + opener.width / 2 - dialog.left - scale * cx;
-  const y = opener.top + opener.height / 2 - dialog.top - scale * cy;
-  return {
-    x, y, scale,
-    inset: { top: cy - height / 2, right: dialog.width - (cx + width / 2), bottom: dialog.height - (cy + height / 2), left: cx - width / 2 },
-    radius: openerRadius / scale,
-  };
-}
-
-// True when at least `share` of the rect is inside the viewport.
-export function rectInView(rect, width, height, share = 0.4) {
-  if (!rect || rect.width < 8 || rect.height < 8) return false;
-  const w = Math.max(0, Math.min(rect.right ?? rect.left + rect.width, width) - Math.max(rect.left, 0));
-  const h = Math.max(0, Math.min(rect.bottom ?? rect.top + rect.height, height) - Math.max(rect.top, 0));
-  return (w * h) / (rect.width * rect.height) >= share;
-}
-
 export function mailtoAddress(href) {
   const match = /^mailto:([^?]+)/i.exec(href || '');
   if (!match) return '';
   try { return decodeURIComponent(match[1]); } catch { return match[1]; }
+}
+
+// The About opening (about-scenes.css): where this matches and JS runs, #about
+// pins and its panel opens onto #introduction. Mirrors the CSS media query.
+export const ABOUT_OPEN_MEDIA = 'screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)';
+
+// Progress (0..1) through a pinned section: 0 while its top is at or below the
+// viewport's top, 1 once its bottom reaches the viewport's bottom.
+export function openingProgress(top, height, viewportHeight) {
+  const range = height - viewportHeight;
+  if (!(range > 0)) return top < 0 ? 1 : 0;
+  return clamp(-top / range, 0, 1);
 }
 
 // ---- Controller -------------------------------------------------------------
@@ -300,6 +281,29 @@ export function initMotion(document, window, { entrance } = {}) {
       });
     }, { threshold: 0.2 });
     scenes.forEach(scene => { scene.dataset.scene = 'pending'; sceneObserver.observe(scene); });
+  }
+
+  // The About opening is CSS only where scroll timelines exist. Elsewhere this
+  // drives the same --about-p from #about's position while it is pinned (the
+  // CSS pins it whenever JS runs on a wide, tall-enough screen with motion).
+  function initAboutOpening() {
+    const about = document.querySelector('#about');
+    if (!about || window.CSS?.supports?.('animation-timeline: view()')) return null;
+    const media = window.matchMedia?.(ABOUT_OPEN_MEDIA);
+    if (!media) return null;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      if (!media.matches) { about.style.removeProperty('--about-p'); return; }
+      const rect = about.getBoundingClientRect();
+      about.style.setProperty('--about-p', openingProgress(rect.top, rect.height, window.innerHeight || root.clientHeight).toFixed(4));
+    };
+    const schedule = () => { if (!frame) frame = raf(update); };
+    listen(window, 'scroll', schedule, { passive: true });
+    listen(window, 'resize', schedule);
+    listen(media, 'change', schedule);
+    update();
+    return null;
   }
 
   // Idle loops (sculpture float and orbit, note orbit, contact glow) run only
@@ -661,148 +665,6 @@ export function initMotion(document, window, { entrance } = {}) {
     });
   }
 
-  // ---- Project dialog: grows from the clicked card's image -------------------
-  function initDialog() {
-    const dialog = document.querySelector('.project-dialog');
-    if (!dialog || typeof dialog.showModal !== 'function' || typeof dialog.animate !== 'function' || !window.MutationObserver) return null;
-    const nativeClose = Object.getPrototypeOf(dialog).close;
-    if (typeof nativeClose !== 'function') return null;
-    dialog.setAttribute('data-motion', 'js');
-    let clicked = null;
-    let opener = null;
-    let running = [];
-    let closing = null;
-    let wasOpen = dialog.open;
-
-    const stop = () => { running.forEach(animation => animation.cancel()); running = []; dialog.style.removeProperty('transform-origin'); };
-    const viewport = () => [window.innerWidth || root.clientWidth, window.innerHeight || root.clientHeight];
-    const radiusOf = element => parseFloat(window.getComputedStyle?.(element).borderTopLeftRadius) || 0;
-    const content = () => [...dialog.querySelectorAll('.dialog-close, .dialog-content > :not(img)')];
-
-    // The opener's image box, if it is on screen to grow from or return to.
-    // The ribbon may paint the cover itself and keep the <img> transparent,
-    // so opacity is judged on the card, not the image.
-    function source() {
-      if (!opener?.isConnected) return null;
-      const card = opener.closest('.project-card');
-      const element = card?.querySelector('img') || opener;
-      if (element.checkVisibility && !element.checkVisibility({ visibilityProperty: true })) return null;
-      if (card?.checkVisibility && !card.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return null;
-      const rect = element.getBoundingClientRect();
-      const [width, height] = viewport();
-      if (!rectInView(rect, width, height)) return null;
-      return { rect, radius: Math.max(radiusOf(element), card ? radiusOf(card) : 0) };
-    }
-
-    function geometry(from) {
-      const image = dialog.querySelector('.dialog-content img');
-      if (!from || !image) return null;
-      const box = dialog.getBoundingClientRect();
-      const picture = image.getBoundingClientRect();
-      if (picture.width < 8 || picture.top < box.top - 1 || picture.bottom > box.bottom + 1) return null;
-      const g = flipGeometry(box, picture, from.rect, from.radius);
-      const { top, right, bottom, left } = g.inset;
-      return {
-        collapsed: { transform: `translate(${g.x.toFixed(2)}px, ${g.y.toFixed(2)}px) scale(${g.scale.toFixed(4)})`, clipPath: `inset(${top.toFixed(2)}px ${right.toFixed(2)}px ${bottom.toFixed(2)}px ${left.toFixed(2)}px round ${g.radius.toFixed(2)}px)` },
-        open: { transform: 'translate(0px, 0px) scale(1)', clipPath: `inset(0px 0px 0px 0px round ${radiusOf(dialog) || 10}px)` },
-      };
-    }
-
-    function backdrop(keyframes, options) {
-      try { return dialog.animate(keyframes, { ...options, pseudoElement: '::backdrop' }); } catch { return null; }
-    }
-
-    function animateOpen() {
-      stop();
-      if (reduced()) {
-        running = [dialog.animate({ opacity: [0, 1] }, { duration: DIALOG.reduced, easing: 'linear' })];
-        return;
-      }
-      const g = geometry(source());
-      if (!g) {
-        running = [dialog.animate([{ opacity: 0, transform: 'translate3d(0, 22px, 0) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 500, easing: EXPO_OUT })];
-        return;
-      }
-      dialog.style.transformOrigin = '0 0';
-      const grow = dialog.animate([g.collapsed, g.open], { duration: DIALOG.open, easing: HEADLINE_EASE });
-      // Words arrive once the picture has most of its size.
-      running = [grow, ...content().map(node => node.animate({ opacity: [0, 0, 1], offset: [0, 0.38, 1] }, { duration: DIALOG.open, easing: 'linear' }))];
-      grow.finished.then(() => { if (running[0] === grow) dialog.style.removeProperty('transform-origin'); }, () => {});
-    }
-
-    function animateClose() {
-      stop();
-      const fade = { opacity: [1, 0] };
-      if (reduced()) {
-        return [dialog.animate(fade, { duration: DIALOG.reduced, easing: 'linear', fill: 'forwards' }), backdrop(fade, { duration: DIALOG.reduced, fill: 'forwards' })].filter(Boolean);
-      }
-      const g = geometry(source());
-      if (!g) {
-        return [
-          dialog.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0, 12px, 0) scale(.98)' }], { duration: DIALOG.fade, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' }),
-          backdrop(fade, { duration: DIALOG.fade, fill: 'forwards' }),
-        ].filter(Boolean);
-      }
-      dialog.style.transformOrigin = '0 0';
-      return [
-        dialog.animate([g.open, g.collapsed], { duration: DIALOG.close, easing: DIALOG.closeEase, fill: 'forwards' }),
-        ...content().map(node => node.animate({ opacity: [1, 0, 0], offset: [0, 0.3, 1] }, { duration: DIALOG.close, fill: 'forwards' })),
-        backdrop({ opacity: [1, 1, 0], offset: [0, 0.35, 1] }, { duration: DIALOG.close, fill: 'forwards' }),
-      ].filter(Boolean);
-    }
-
-    // Every close path (button, backdrop, Escape) ends in dialog.close(); the
-    // native close runs after the exit, so app.js's focus return and scroll
-    // unlock happen exactly as before.
-    function close(...args) {
-      if (!dialog.open) return nativeClose.apply(dialog, args);
-      if (closing) return undefined;
-      const done = () => {
-        if (closing !== done) return;
-        closing = null;
-        nativeClose.apply(dialog, args);
-        stop();
-      };
-      closing = done;
-      running = animateClose();
-      if (!running.length) { done(); return undefined; }
-      Promise.all(running.map(animation => animation.finished)).then(done, () => {});
-      later(done, DIALOG.close + 300);
-      return undefined;
-    }
-    dialog.close = close;
-
-    listen(document, 'click', event => {
-      const link = event.target?.closest?.('[data-open]');
-      if (link) clicked = { link, at: now() };
-    }, true);
-    listen(dialog, 'cancel', event => {
-      if (!dialog.open || !event.cancelable) return;
-      event.preventDefault();
-      dialog.close();
-    });
-    const observer = new window.MutationObserver(() => {
-      if (dialog.open === wasOpen) return;
-      wasOpen = dialog.open;
-      if (wasOpen) {
-        // Runs after app.js filled and opened the dialog, before paint.
-        opener = clicked && now() - clicked.at < 1500 ? clicked.link : null;
-        clicked = null;
-        animateOpen();
-      } else {
-        closing = null;
-        stop();
-      }
-    });
-    observer.observe(dialog, { attributes: true, attributeFilter: ['open'] });
-    return () => {
-      observer.disconnect();
-      stop();
-      if (dialog.close === close) delete dialog.close;
-      dialog.removeAttribute('data-motion');
-    };
-  }
-
   const onFocus = event => {
     const held = event.target.closest?.('[data-reveal="pending"]');
     if (held) revealNow(held);
@@ -841,9 +703,8 @@ export function initMotion(document, window, { entrance } = {}) {
   // Each effect is optional; one failing leaves the others and the content.
   const attempt = init => { try { return init(); } catch { return null; } };
   [initHeroDepth, initContact].forEach(init => { const reset = attempt(init); if (reset) resets.push(reset); });
-  const removeDialog = attempt(initDialog);
-  if (removeDialog) cleanups.push(removeDialog);
   attempt(watchPortrait);
+  attempt(initAboutOpening);
 
   // Measure after load so restored scroll positions and deep links are known.
   if (document.readyState === 'complete') raf(settle);

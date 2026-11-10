@@ -166,7 +166,6 @@ export const TOUR_STOPS = [
     { sel: '.about-transition-meta > span', roles: ['copy', 'layout'], kind: 'wipe', multi: 2, act: 'writing meta line' },
     { sel: '.about-panel-index', role: 'copy', kind: 'type', act: 'setting panel index', charMs: 40 },
     { sel: '#about-title', role: 'type', kind: 'type', act: 'setting title', charMs: 110 },
-    { sel: '.about-discover', role: 'links', kind: 'place', act: 'placing arrow link' },
     { sel: '.about-transition-foot > span', roles: ['copy', 'links'], kind: 'wipe', multi: 2, act: 'writing footer line' },
     { sel: '.about-title-panel', role: 'art', kind: 'frame', act: 'framing panel' },
     { sel: '.about-transition-meta', role: 'qa', kind: 'review', act: 'checking alignment' },
@@ -210,32 +209,21 @@ export const TOUR_STOPS = [
     { sel: '.xp-controls', role: 'links', kind: 'place', shown: true, act: 'wiring chapter controls', kids: 'button, .xp-count' },
     { sel: '.xp-stage', role: 'a11y', kind: 'review', act: 'checking chapter keys' },
   ] },
-  { sel: '#work', name: 'Projects', weight: 0.9, span: 0.45, note: 'art → qa · covers placed', jobs: [
+  // The explorer (explorer.js), the one project gallery: the covers are placed
+  // round the ring (it holds still while the tour runs), the centre label
+  // typed, the index wired.
+  { sel: '#work', name: 'Projects', weight: 2.4, span: 1.2, note: 'art → a11y · ring placed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#work-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.work-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
-    // Tall cards: the cover pops in as the card enters; its caption is
-    // written when it comes into view (a whole-card pop would show the
-    // caption long before anyone sees it being placed).
-    { sel: '.project-card', role: 'art', kind: 'place', multi: 4, shown: true, byX: true, label: true, name: 'h3', act: 'placing', pop: '.project-image-link' },
-    { sel: '.project-card-bottom h3', roles: ['type', 'copy'], kind: 'type', multi: 4, shown: true, byX: true, label: true, act: 'titling', charMs: 45 },
-    { sel: '.gallery-controls', role: 'links', kind: 'place', act: 'wiring gallery controls', kids: 'button, .gallery-count' },
-    { sel: '.work-end > *', roles: ['copy', 'links'], kind: 'wipe', multi: 2, act: 'writing footer line' },
-    { sel: '.gallery-ground', role: 'motion', kind: 'reveal', act: 'drawing card shadows', work: 700 },
-    { sel: '.gallery-stage', role: 'a11y', kind: 'review', act: 'checking arrow keys' },
-    { sel: '.project-card:not([aria-hidden="true"]) .project-image-link', role: 'qa', kind: 'review', act: 'checking cover alt text', size: true },
-  ] },
-  // Project index (explorer.js): the covers are placed round the ring (it
-  // holds still while the tour runs), the centre label typed, the index wired.
-  { sel: '#projects', name: 'Index', weight: 0.4, span: 0.15, note: 'art → a11y · ring placed', jobs: [
-    { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
-    { sel: '#projects-title', role: 'type', kind: 'type', act: 'setting label', charMs: 50 },
+    { sel: '#explorer-title', role: 'type', kind: 'type', act: 'setting label', charMs: 50 },
     // Six covers, six hands: they land round the ring together.
     { sel: '.explorer-item', roles: ['art', 'copy', 'links', 'art', 'type', 'copy'], kind: 'place', multi: 6, label: true, name: '.explorer-card-name', act: 'placing', pop: '.explorer-cover' },
     { sel: '.explorer-index', role: 'links', kind: 'place', act: 'wiring index', kids: '.explorer-pick' },
     { sel: '.explorer-hint', role: 'motion', kind: 'wipe', act: 'writing drag hint' },
-    { sel: '.explorer-foot > *', roles: ['copy', 'links'], kind: 'wipe', multi: 2, act: 'writing footer line' },
+    { sel: '.work-end > *', roles: ['copy', 'links'], kind: 'wipe', multi: 2, act: 'writing footer line' },
     { sel: '.explorer-covers', role: 'a11y', kind: 'review', act: 'checking keys and labels', size: true },
+    { sel: '.explorer-item.is-active .explorer-cover', role: 'qa', kind: 'review', act: 'checking cover alt text', size: true },
   ] },
   { sel: '#skills', name: 'Skills', weight: 1.0, span: 0.75, note: 'copy → a11y · tags listed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },

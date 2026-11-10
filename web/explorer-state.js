@@ -8,6 +8,12 @@ const RAD = Math.PI / 180;
 
 export const COVER_RATIO = 620 / 900;
 export const EXPLORER_TIERS = { phone: 700, desktop: 1100 };
+// The ring: its diameter aims at 80% of the window height, each cover is this
+// share of the radius wide, and it keeps this many px clear of the deck edges.
+export const RING = { view: 0.4, cover: 0.8, pad: 8 };
+// Distance from the ring's centre to a cover's outer corner, per unit radius
+// (covers lie along the circle, so this bounds the ring at any spin).
+const RING_SWEEP = Math.hypot(1 + (RING.cover * COVER_RATIO) / 2, RING.cover / 2);
 
 export function explorerTier(width) {
   return width >= EXPLORER_TIERS.desktop ? 'desktop' : width >= EXPLORER_TIERS.phone ? 'tablet' : 'phone';
@@ -23,7 +29,11 @@ export function clampIndex(index, count) {
 // viewport width (the stylesheet's breakpoints), not the deck. Phones never
 // show the ring: they get a flat vertical deck. `stackX` shifts the stack
 // right of centre on desktop so the large title has the left side to itself.
-export function explorerGeometry(width, height, { count = 6, viewport } = {}) {
+// The ring is as large as the window height allows (diameter ~80% of
+// `viewportHeight`), within the deck's height and, on desktop, within the room
+// left of the index column (`reserve` px wide on the right); `ringX` centres it
+// in that room.
+export function explorerGeometry(width, height, { count = 6, viewport, viewportHeight, reserve = 0 } = {}) {
   const w = Math.max(0, Number(width) || 0);
   const h = Math.max(0, Number(height) || 0);
   const tier = explorerTier(Number.isFinite(viewport) ? viewport : w);
@@ -32,8 +42,14 @@ export function explorerGeometry(width, height, { count = 6, viewport } = {}) {
       : clamp(w * 0.86, 220, 420));
   const cardH = Math.round(cardW * COVER_RATIO);
   const ring = tier !== 'phone';
-  const ringScale = tier === 'desktop' ? 0.46 : 0.5;
-  const ringRadius = ring ? Math.round(Math.max(cardW * 0.5, Math.min(w * (tier === 'desktop' ? 0.27 : 0.3), h * 0.31))) : 0;
+  const side = tier === 'desktop' ? clamp(Number(reserve) || 0, 0, w / 2) : 0;
+  const view = Number(viewportHeight) > 0 ? Number(viewportHeight) : h;
+  const ringRadius = ring ? Math.round(Math.max(0, Math.min(
+    view * RING.view,
+    (h - 2 * RING.pad) / (2 + RING.cover * COVER_RATIO),
+    (w - side - 2 * RING.pad) / (2 * RING_SWEEP),
+  ))) : 0;
+  const ringScale = ringRadius > 0 ? (ringRadius * RING.cover) / cardW : 0.5;
   return {
     tier,
     count,
@@ -45,6 +61,7 @@ export function explorerGeometry(width, height, { count = 6, viewport } = {}) {
     stackX: tier === 'desktop' ? Math.round(w * 0.06) : 0,
     ringRadius,
     ringScale,
+    ringX: side ? -Math.round(side / 2) : 0,
     // Vertical drum: each step turns the next cover this far round the axis.
     drumRadius: Math.round(cardH * 1.12),
     step: 34,
@@ -68,7 +85,7 @@ export function ringPose(index, geometry, spin = 0) {
   const count = geometry.count || 1;
   const angle = -90 + (360 * index) / count + spin;
   return {
-    x: Math.cos(angle * RAD) * geometry.ringRadius,
+    x: Math.cos(angle * RAD) * geometry.ringRadius + (geometry.ringX || 0),
     y: Math.sin(angle * RAD) * geometry.ringRadius,
     z: 0,
     turn: halfTurn(angle + 90),

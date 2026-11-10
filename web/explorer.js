@@ -1,5 +1,6 @@
-// Circular / stacked work explorer (SPECIFICATION V07). Progressive enhancement:
-// without this script the section is a plain list of case-study links.
+// Circular / stacked work explorer (SPECIFICATION V07), the site's one project
+// gallery, in #work. Progressive enhancement: without this script it is a
+// plain list of case-study links.
 //
 // At rest the six covers sit in a ring round the "All projects" label. Any
 // deliberate input (wheel over the stage, drag, arrow keys, the index, a click
@@ -20,9 +21,10 @@ const WHEEL_COOLDOWN = 300; // ms between wheel steps (trackpad momentum)
 const IN_VIEW = 0.86; // share of the stage that must be visible to take the wheel
 const SPIN = 3; // deg/s: the ring's idle drift
 const EASE = 'cubic-bezier(.16, 1, .3, 1)';
+const INDEX_GAP = 32; // px kept between the ring and the index column (desktop)
 
 export function initExplorer(document, window) {
-  const section = document.getElementById('projects');
+  const section = document.querySelector('#work .explorer');
   const stage = section?.querySelector('.explorer-stage');
   const list = stage?.querySelector('.explorer-covers');
   if (!stage || !list) return null;
@@ -36,6 +38,7 @@ export function initExplorer(document, window) {
   const captionCategory = caption?.querySelector('.explorer-caption-category');
   const captionCount = caption?.querySelector('.explorer-caption-count');
   const captionLead = caption?.querySelector('.explorer-caption-lead');
+  const indexBox = stage.querySelector('.explorer-index');
   const indexCount = stage.querySelector('.explorer-index-count');
   const live = stage.querySelector('.explorer-live');
   const root = document.documentElement;
@@ -95,15 +98,22 @@ export function initExplorer(document, window) {
     const width = list.clientWidth || 0;
     const height = list.clientHeight || 0;
     const viewport = window.innerWidth || root.clientWidth || width;
-    if (width === state.width && height === state.height && viewport === state.viewport) return;
+    const viewportHeight = window.innerHeight || root.clientHeight || height;
+    // Desktop keeps the ring clear of the index column on the right.
+    const reserve = indexBox?.offsetWidth ? indexBox.offsetWidth + INDEX_GAP : 0;
+    if (width === state.width && height === state.height && viewport === state.viewport
+      && viewportHeight === state.viewportHeight && reserve === state.reserve) return;
     state.width = width;
     state.height = height;
     state.viewport = viewport;
-    const geometry = explorerGeometry(width, height, { count, viewport });
+    state.viewportHeight = viewportHeight;
+    state.reserve = reserve;
+    const geometry = explorerGeometry(width, height, { count, viewport, viewportHeight, reserve });
     state.geometry = geometry;
     const vars = {
       '--explorer-card-w': `${geometry.cardW}px`, '--explorer-card-h': `${geometry.cardH}px`,
-      '--explorer-stack-x': `${geometry.stackX}px`, '--explorer-perspective': `${geometry.perspective}px`,
+      '--explorer-stack-x': `${geometry.stackX}px`, '--explorer-ring-x': `${geometry.ringX}px`,
+      '--explorer-perspective': `${geometry.perspective}px`,
     };
     Object.entries(vars).forEach(([name, value]) => stage.style.setProperty(name, value));
     stage.dataset.explorerTier = geometry.tier;

@@ -132,7 +132,8 @@ test('the first visit tours every section in order, then hands off and collapses
   assert.ok(dock.querySelector('[data-agentic-dock-replay]'));
   assert.equal(document.querySelector('[data-agentic-replay]').hidden, false);
   assert.ok(heroEnded >= 7500 && heroEnded <= 10000, `hero took ${heroEnded}ms`);
-  // Ten stops since the project index (Nov 10); real runs measure ~56 s at 1280.
+  // Nine stops since the one-gallery change (Nov 10: the explorer is built on the
+  // Projects stop, no Index stop); real runs measure ~56 s at 1280.
   assert.ok(clock.now() >= 36000 && clock.now() <= 60000, `tour took ${clock.now()}ms`);
   if (measurable(document) && document.documentElement.scrollHeight > window.innerHeight + 10) {
     assert.ok(window.scrollY > 0, 'the tour ends at the contact section, not back at the top');
