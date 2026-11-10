@@ -1,8 +1,28 @@
 # Personal Website handoff
 
-Updated: November 9, 2026 (America/New_York), typeface, header, ribbon gallery, motion and performance pass.
+Updated: November 10, 2026 (America/New_York), portrait hero, Approach accordion, lazy tour script, SEO basics.
 
 ## Confirmed state
+
+- November 10 (source Mac, after midnight), round 2, commits 70c8968..2524148:
+  - **Portrait hero (SPEC V02):** Cesar's studio headshot (`~/Downloads/Media.jpeg`, owner-supplied) was cut out on-device with the macOS Vision person-segmentation model. It's black and white with high contrast, and the bottom and sides fade out. Shipped as `web/assets/cesar-portrait-{560,1040}.webp` plus a `-640.png` fallback, with no metadata; the original is not in the repo. It sits in a `<picture>` centred in front of the ENGINEER line, sized by the free space (about 25–33% of desktop width). The orbit sculpture is now a small inline-SVG accent by his shoulder, with dots that pause offscreen; it moves back to the centre if the portrait fails to load (`data-portrait="failed"`). The tour places the portrait ("art · placing portrait"). The link card was regenerated with the portrait. The repo is public, so the processed portrait is public once pushed. Open: the reference shows a shadowed face, but this cutout is evenly lit; a darker variant is optional.
+  - **Approach accordion (SPEC V08):** a light section with a centred heading and numbered `<details name="approach">` rows (one open at a time); the open row becomes a dark rounded panel with a short phrase line and a link (#experience / #work / #contact). The phrases are taken from the existing copy, but **Cesar should confirm the new link labels and phrase lines.**
+  - **Loading:** `web/section-plan.js` now holds the shared tour target list, so motion.js no longer imports entrance.js. app.js loads entrance.js with a dynamic import only when the tour will play. An inline head script decides early (`data-tour`), covers the first paint (`html.agentic-pending`) and preloads the module. The wait budget is counted from navigation start, any input during the wait shows the page without the tour, and a failed fetch is retried with a fresh URL. Deep links and reduced motion save about 171 KB raw (about 47 KB gzipped). The full tour still plays on every normal load.
+  - **SEO and sharing:** canonical link, JSON-LD Person (with portrait, LinkedIn and GitHub), apple-touch-icon, manifest, robots.txt, sitemap.xml (update `lastmod` by hand on each publish), and a 404.html (noindex) that serve.mjs returns with status 404. Whether the Sites host serves 404.html is unknown.
+  - **Polish:** contact toast spacing at 390, contact glow held until the reveal lands, orbit pause.
+  - **Tour length:** section weights trimmed (Capabilities 1.2, Experience 1.5, Projects 0.9, Skills 1.0, Approach 0.7, Contact 0.9); the real 1280 run is about 55–56.5 s (it was 58 s before the trim). The jsdom entrance test allows ≤56 s, so **run `npm test` at home**; if it fails on length, trim the Experience span or the weights further.
+  - **Verification:**
+    - `npm run check`, `npm run build` and `git diff --check` pass; 65 node tests pass. The only failures are the entrance and portfolio jsdom suites, which can't load jsdom here.
+    - Independent browser pass: the first frame is dark with no hero flash; deep links don't request entrance.js; Replay loads it on demand; reduced motion works; Approach keyboard behaviour works; /does-not-exist returns 404; JSON-LD parses.
+    - Lighthouse on /#work: 100/100/100 desktop and mobile.
+    - Code review: no blockers; its medium items (slow-network re-blackout, serial module chain, input during the wait) and the low items are fixed.
+    - Safari renders /#work correctly (console not checked).
+    - Screenshots: `verify2-2026-11-10-*`, `portrait-*`, `accordion-*`, `hardening-*` in `~/Documents/Work/Screenshots/personal-website/`.
+  - **Open:**
+    - Dead hero rules remain in styles.css; the list is in the worker report: base `.hero-art` top/width/transform, the ≥1700 `.hero-art`, and the 1100/760 hero-art/hero-bottom/orbit-label/art-coordinate offsets.
+    - `web/assets/sculpture.svg` is unused except by one motion test.
+    - After Skip on phones, the dock pill briefly overlaps the hero's secondary intro line.
+    - Safari console and Firefox not checked.
 
 - November 9 (source Mac), polish + motion session, commits e9ed04e..cedd9c8 on `feat/recruiter-integrated` (5 commits on top of 74e2231; not pushed — the ADP Mac can't reach personal GitHub, so these need a new transfer bundle):
   - **Type:** self-hosted Archivo (variable, wght 100–900, wdth 62–125) + Geist Mono, latin woff2 in `web/assets/fonts/` with OFL texts (provenance in docs/assets.md). Display = Archivo 850 at 87.5% width, −0.05em; body Archivo 400; labels Geist Mono. Arrow glyphs (↗ ↘ ← → ↔) fall back to the system font.
