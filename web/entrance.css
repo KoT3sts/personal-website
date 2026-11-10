@@ -220,3 +220,8 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 /* Ride-along agents carry over between tour stops without re-animating in. */
 .agentic-cursor.is-carried .agentic-cursor-body,
 .agentic-cursor.is-carried .agentic-role { transition: none; }
+
+/* Set by the inline head script when the tour will play: black from the first
+   paint until the tour's own veil takes over (self-clears after 4 s). */
+html.agentic-pending body::before { content: ""; position: fixed; inset: 0; z-index: 60; background: #101114; pointer-events: none; animation: agentic-pending-out 0s 4s forwards; }
+@keyframes agentic-pending-out { to { visibility: hidden; } }

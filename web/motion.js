@@ -1,7 +1,7 @@
 // Section reveals, idle-loop control and pointer-led motion. Progressive
 // enhancement only: content is complete and visible without this file, and
 // nothing the visitor can already see is ever hidden.
-import { SECTION_TARGETS } from './entrance.js';
+import { SECTION_TARGETS } from './section-plan.js';
 
 // Elements the first-visit entrance may trace with cursor frames after a
 // cancelled tour. While it may still trace sections, these elements and their
@@ -154,8 +154,8 @@ export function magnetPull(dx, dy, halfWidth, halfHeight, { reach = 72, max = 9,
 }
 
 // Pointer position (viewport fractions, 0..1) to the hero's depth response:
-// lean (-1..1 per axis) and nearness to the sculpture (0..1, it sits low and
-// centred).
+// lean (-1..1 per axis) and nearness to the art (0..1, the portrait and its
+// orbit accent stand low and centred).
 export function depthTarget(fx, fy) {
   const x = clamp(fx * 2 - 1, -1, 1);
   const y = clamp(fy * 2 - 1, -1, 1);
@@ -302,8 +302,8 @@ export function initMotion(document, window, { entrance } = {}) {
     scenes.forEach(scene => { scene.dataset.scene = 'pending'; sceneObserver.observe(scene); });
   }
 
-  // Idle loops (sculpture float, note orbit, contact glow) run only on screen
-  // and while the page is visible.
+  // Idle loops (sculpture float and orbit, note orbit, contact glow) run only
+  // on screen and while the page is visible.
   function applyLoop(element) {
     element.dataset.loop = loopState.get(element) && !document.hidden ? 'run' : 'paused';
   }
@@ -473,21 +473,22 @@ export function initMotion(document, window, { entrance } = {}) {
     };
   })();
 
-  // The orbit points inside sculpture.svg travel on their own. Chrome does not
-  // pass the page's reduced-motion preference into SVG images, so the page
-  // asks for the still variant (#still) itself.
-  function syncSculpture() {
-    const image = document.querySelector('.sculpture');
-    const src = image?.getAttribute?.('src');
-    if (!src || !/sculpture\.svg/.test(src)) return;
-    const base = src.replace(/#still$/, '');
-    const wanted = reduced() ? `${base}#still` : base;
-    if (wanted !== src) image.setAttribute('src', wanted);
+  // If Cesar's portrait cannot load, the orbital sculpture takes the centre of
+  // the hero again (portrait.css), instead of a broken image and alt text.
+  function watchPortrait() {
+    const hero = document.querySelector('.hero');
+    const image = hero?.querySelector?.('.hero-portrait img');
+    if (!image) return;
+    const fail = () => { hero.dataset.portrait = 'failed'; };
+    if (image.complete && image.currentSrc && !image.naturalWidth) { fail(); return; }
+    listen(image, 'error', fail, { once: true });
+    listen(image, 'load', () => { if (hero.dataset.portrait === 'failed') delete hero.dataset.portrait; });
   }
 
-  // ---- Hero: the sculpture leans into the pointer's depth --------------------
-  // app.js tilts the image (`rotate`); this moves the art box (`translate`,
-  // `scale`) and the ground shadow (motion.css) the other way.
+  // ---- Hero: portrait and orbit accent lean into the pointer's depth --------
+  // app.js tilts the sculpture (`rotate`); this sets the depth variables on
+  // the art box, which motion.css turns into a small drift of the portrait
+  // and a trailing, nearer-leaning orbit (and the fallback ground shadow).
   function initHeroDepth() {
     const hero = document.querySelector('.hero');
     const art = hero?.querySelector?.('.hero-art');
@@ -842,9 +843,7 @@ export function initMotion(document, window, { entrance } = {}) {
   [initHeroDepth, initContact].forEach(init => { const reset = attempt(init); if (reset) resets.push(reset); });
   const removeDialog = attempt(initDialog);
   if (removeDialog) cleanups.push(removeDialog);
-  syncSculpture();
-  reduce?.addEventListener?.('change', syncSculpture);
-  cleanups.push(() => reduce?.removeEventListener?.('change', syncSculpture));
+  attempt(watchPortrait);
 
   // Measure after load so restored scroll positions and deep links are known.
   if (document.readyState === 'complete') raf(settle);

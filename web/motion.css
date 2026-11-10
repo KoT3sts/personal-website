@@ -66,15 +66,27 @@
   @keyframes note-orbit { to { transform: rotate(360deg); } }
 
   /* ---- Hero depth: motion.js eases --depth-x/-y (-1..1) and --depth-near
-     (0..1) toward the pointer; the art drifts with it and leans closer, its
-     ground shadow slides the other way. app.js owns the image's `rotate`. ---- */
-  .hero-art { translate: calc(var(--depth-x, 0) * 14px) calc(var(--depth-y, 0) * 9px); scale: calc(1 + var(--depth-near, 0) * .022); }
-  /* The ground shadow (moved here from sculpture.svg) sits under the sphere:
-     560x98 at (103, 540) of the 760x660 artwork. */
-  .hero-art::before { content: ""; position: absolute; z-index: -1; top: 0; left: 13.553%; width: 73.684%; margin-top: 71.053%; aspect-ratio: 560 / 98; border-radius: 50%; background: radial-gradient(closest-side, #15161233, #15161200); pointer-events: none; transform: translate3d(calc(var(--depth-x, 0) * -22px), calc(var(--depth-y, 0) * -2px), 0) scale(calc(1 + var(--depth-near, 0) * .06), 1); transition: opacity .6s cubic-bezier(.33,1,.68,1); animation: hero-shadow-idle 12s ease-in-out infinite; }
+     (0..1) toward the pointer. The portrait is the nearest plane and drifts
+     only a few pixels; the orbit accent behind his shoulder trails it (half
+     the travel, so the two separate like layers) and leans in when the
+     pointer comes close. app.js owns the sculpture's `rotate`. ---- */
+  .hero-art { translate: calc(var(--depth-x, 0) * 8px) calc(var(--depth-y, 0) * 5px); }
+  .hero-orbit { translate: calc(var(--depth-x, 0) * -4px) calc(var(--depth-y, 0) * -2.5px); scale: calc(1 + var(--depth-near, 0) * .05); }
+  /* The orbit points travel the tilted ring a fixed arc apart, passing behind
+     the sphere. They are page DOM (not an <img>), so they stop with the hero
+     loop: offscreen, hidden tab, during the build tour, and reduced motion
+     (styles.css) leaves them where they are drawn. */
+  .hero-orbit .orbiter { transform-box: fill-box; offset-anchor: center; offset-rotate: 0deg; offset-path: path("M621.9 150.2A290 93 -34 1 1 138.1 469.8A290 93 -34 1 1 621.9 150.2Z"); offset-distance: 0%; animation: hero-orbit 96s linear infinite; }
+  .hero-orbit .orbiter-trail { offset-path: path("M139.9 425A290 93 -34 1 1 620.1 195A290 93 -34 1 1 139.9 425Z"); }
+  .hero[data-loop="paused"] .orbiter, html.agentic-running .orbiter { animation-play-state: paused; }
+  @keyframes hero-orbit { to { offset-distance: 100%; } }
+  /* Ground shadow, only when the sculpture is the centrepiece again (no
+     portrait): 560x98 at (103, 540) of the 760x660 artwork. */
+  .hero-art::before { content: ""; display: none; position: absolute; z-index: -1; top: 0; left: 13.553%; width: 73.684%; margin-top: 71.053%; aspect-ratio: 560 / 98; border-radius: 50%; background: radial-gradient(closest-side, #15161233, #15161200); pointer-events: none; transform: translate3d(calc(var(--depth-x, 0) * -22px), calc(var(--depth-y, 0) * -2px), 0) scale(calc(1 + var(--depth-near, 0) * .06), 1); transition: opacity .6s cubic-bezier(.33,1,.68,1); animation: hero-shadow-idle 12s ease-in-out infinite; }
+  .hero[data-portrait="failed"] .hero-art::before { display: block; }
   .hero[data-loop="paused"] .hero-art::before, html.agentic-running .hero-art::before { animation-play-state: paused; }
   /* While the entrance has not placed the sculpture, its shadow waits too. */
-  .hero-art:has(> .sculpture[data-build-state="pending"])::before { opacity: 0; }
+  .hero-art:has(.sculpture[data-build-state="pending"])::before { opacity: 0; }
   /* The sculpture floats up 7px mid-breath; its shadow thins in step (via
      filter, so `opacity` stays free for the entrance hand-off above). */
   @keyframes hero-shadow-idle { 0%, 100% { filter: opacity(1); } 50% { filter: opacity(.72); } }
@@ -85,6 +97,10 @@
   .contact::before { top: 60px; width: min(1100px, 92vw); height: min(520px, 52vw); margin-left: max(-550px, -46vw); background: radial-gradient(closest-side, #e3eac522, #e3eac50c 55%, transparent); }
   .contact::after { top: 150px; width: min(560px, 60vw); height: min(240px, 26vw); margin-left: max(-280px, -30vw); background: radial-gradient(closest-side, #f2f7e41c, transparent); animation: contact-breathe 9s ease-in-out infinite; }
   .contact[data-loop="paused"]::after { animation-play-state: paused; }
+  /* The headline's own glow would be cut by the rising line masks, so it
+     waits until the words have landed and then warms up. */
+  .contact h2 { transition: text-shadow 1.4s cubic-bezier(.33,1,.68,1); }
+  .contact h2[data-headline] { text-shadow: 0 0 40px #e3eac500; }
   @keyframes contact-breathe { 0%, 100% { opacity: .55; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
   /* Pointer-led: the light drifts toward the pointer (the wide halo less so),
      and the email pill leans in with a springy return. motion.js sets the
@@ -110,17 +126,20 @@
   .contact-toast[data-state] { opacity: 1; translate: -50% 0; }
   .contact-toast[data-state="error"] { background: #2a2d26; color: #f2f5ea; border: 1px solid #50564a; white-space: normal; width: max-content; max-width: min(320px, 86vw); text-align: center; }
   @media (max-width: 760px) {
-    .contact-actions { margin-top: 35px; }
+    /* Room above the row for the toast, clear of the headline's glyphs. */
+    .contact-actions { margin-top: 56px; }
     .contact-copy { padding: 0 20px; font-size: 12px; }
-    .contact-toast { bottom: calc(100% + 5px); padding: 6px 13px; }
+    .contact-toast { bottom: calc(100% + 10px); padding: 6px 13px; }
   }
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .contact { view-timeline: --contact-scene block; }
       .contact::before { animation: contact-glow-rise linear both; animation-timeline: --contact-scene; animation-range: entry 0% entry 90%; }
       .contact h2 { animation: contact-title-rise linear both; animation-timeline: --contact-scene; animation-range: entry 0% entry 80%; }
-      /* Hero depth: the sculpture lags as the hero scrolls away. */
+      /* Hero depth: the portrait and the sculpture lag as the hero scrolls
+         away (the portrait a little less, it is the nearer plane). */
       .hero { view-timeline: --hero-scene block; }
+      .hero-portrait { animation: portrait-depart linear both; animation-timeline: --hero-scene; animation-range: exit 0% exit 100%; }
       .sculpture { animation: hero-idle 12s ease-in-out infinite, hero-depart linear both; animation-timeline: auto, --hero-scene; animation-range: normal, exit 0% exit 100%; }
       .hero[data-loop="paused"] .sculpture { animation-play-state: paused, running; }
       html.agentic-running .sculpture { animation-play-state: paused, paused; }
@@ -132,6 +151,7 @@
   @keyframes contact-glow-rise { from { opacity: 0; transform: translate3d(0, 18%, 0) scale(.72); } to { opacity: 1; transform: none; } }
   @keyframes contact-title-rise { from { transform: translate3d(0, 42px, 0) scale(.97); } to { transform: none; } }
   @keyframes hero-depart { from { translate: 0 0; scale: 1; } to { translate: 0 64px; scale: .97; } }
+  @keyframes portrait-depart { from { translate: 0 0; } to { translate: 0 48px; } }
   /* The ground sits low on the image, so it travels a little less. */
   @keyframes hero-shadow-depart { from { translate: 0 0; scale: 1; } to { translate: 0 58px; scale: .97; } }
   @supports not (animation-timeline: view()) {
@@ -144,8 +164,8 @@
   @media (prefers-reduced-motion: reduce) {
     [data-reveal], [data-reveal] .tag-list li { opacity: 1 !important; transform: none !important; }
     [data-headline] [data-headline-unit] { opacity: 1 !important; transform: none !important; clip-path: none !important; filter: none !important; }
-    .hero-art, .hero-art::before, .contact::before, .contact::after, .contact-button, .contact-button > span { translate: none !important; }
-    .hero-art { scale: none !important; }
+    .hero-art, .hero-orbit, .hero-portrait, .hero-art::before, .contact::before, .contact::after, .contact-button, .contact-button > span { translate: none !important; }
+    .hero-orbit { scale: none !important; }
     .contact-toast { translate: -50% 0; }
   }
 }

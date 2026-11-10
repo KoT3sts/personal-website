@@ -25,6 +25,7 @@
   <link rel="canonical" href="https://cesar-tortolero.cesartortolero.chatgpt.site/">
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <link rel="manifest" href="./site.webmanifest">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -39,6 +40,26 @@
     "sameAs": ["https://www.linkedin.com/in/cesar-tortolero", "https://github.com/KoT3sts"]
   }
   </script>
+  <script>
+  // Decide synchronously whether the build tour will play, so the page starts
+  // behind a dark veil and entrance.js downloads early. Mirrors
+  // entranceWillPlay() in app.js and shouldPlayEntrance() in entrance.js.
+  // app.js follows the decision recorded in data-tour.
+  (() => {
+    const root = document.documentElement;
+    let play = false;
+    try {
+      const key = 'cesar:portfolio:agentic-intro:v1:probe';
+      localStorage.setItem(key, '1'); localStorage.removeItem(key);
+      const nav = performance.getEntriesByType?.('navigation')?.[0];
+      play = !(matchMedia('(prefers-reduced-motion: reduce)').matches || (location.hash && location.hash !== '#home') || nav?.type === 'back_forward');
+    } catch { play = false; }
+    root.dataset.tour = play ? 'play' : 'skip';
+    if (!play) return;
+    root.classList.add('agentic-pending');
+    const link = document.createElement('link'); link.rel = 'modulepreload'; link.href = './entrance.js'; document.head.append(link);
+  })();
+  </script>
   <link rel="preload" href="./assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="./assets/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./styles.css">
@@ -48,13 +69,16 @@
   <link rel="stylesheet" href="./accordion.css">
   <link rel="stylesheet" href="./motion.css">
   <link rel="stylesheet" href="./entrance.css">
-  <link rel="preload" href="./assets/sculpture.svg" as="image" type="image/svg+xml">
+  <link rel="modulepreload" href="./motion.js">
+  <link rel="modulepreload" href="./section-plan.js">
+  <link rel="modulepreload" href="./header.js">
+  <link rel="modulepreload" href="./gallery-state.js">
   <script type="module" src="./app.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="wordmark" href="#home" aria-label="Cesar Tortolero home"><span class="wordmark-first">CESAR<span class="brand-dot"></span></span><span class="wordmark-last">TORTOLERO</span></a>
+    <a class="wordmark" href="#home" aria-label="Cesar Tortolero home"><span class="wordmark-first">CESAR<span class="brand-dot"></span></span> <span class="wordmark-last">TORTOLERO</span></a>
     <nav class="main-nav" aria-label="Main navigation">
       <a href="#about">About</a>
       <a href="#experience">Experience</a>
@@ -69,10 +93,44 @@
     <section id="home" class="hero" aria-labelledby="hero-title">
       <div class="hero-kicker mono"><span class="status-dot" aria-hidden="true"></span> MORRISTOWN, NJ — NYC AREA</div>
       <h1 id="hero-title"><span class="visually-hidden">Cesar Tortolero, </span><span class="hero-line"><span>Machine</span> <span>Learning</span></span> <span class="hero-fade">Engineer</span></h1>
-      <div class="hero-art" aria-hidden="true">
-        <div class="orbit-label orbit-label-top mono">TRACE / EVALUATE / SHIP</div>
-        <img class="sculpture" src="./assets/sculpture.svg" alt="" width="760" height="660" fetchpriority="high">
-        <div class="art-coordinate mono">C — 01</div>
+      <div class="hero-art">
+        <!-- The orbital "C" stays as a small accent behind the shoulder (and is
+             the centrepiece again if the portrait cannot load). Inline so the
+             orbit points can pause with the hero loop (motion.css). -->
+        <div class="hero-orbit" aria-hidden="true">
+          <svg class="sculpture" viewBox="0 0 760 660" width="760" height="660" fill="none" focusable="false">
+            <defs>
+              <radialGradient id="sculpture-core" cx=".33" cy=".2" r=".85"><stop stop-color="#555954"/><stop offset=".35" stop-color="#222420"/><stop offset=".75" stop-color="#0c0d0c"/><stop offset="1" stop-color="#343630"/></radialGradient>
+              <linearGradient id="sculpture-metal" x1="140" y1="100" x2="600" y2="570" gradientUnits="userSpaceOnUse"><stop stop-color="#6f736a"/><stop offset=".22" stop-color="#fafbf2"/><stop offset=".42" stop-color="#62675b"/><stop offset=".57" stop-color="#12150e"/><stop offset=".76" stop-color="#b7bcae"/><stop offset="1" stop-color="#30352a"/></linearGradient>
+              <linearGradient id="sculpture-letter" x1="310" y1="250" x2="450" y2="415" gradientUnits="userSpaceOnUse"><stop stop-color="#f8f8ee"/><stop offset=".6" stop-color="#c9cec0"/><stop offset="1" stop-color="#656c5d"/></linearGradient>
+              <clipPath id="sculpture-ball"><circle cx="380" cy="310" r="180"/></clipPath>
+            </defs>
+            <g stroke="url(#sculpture-metal)">
+              <ellipse cx="380" cy="310" rx="290" ry="93" transform="rotate(-34 380 310)" stroke-width="13"/>
+              <ellipse cx="380" cy="310" rx="266" ry="99" transform="rotate(53 380 310)" stroke-width="9"/>
+            </g>
+            <circle class="orbiter" cx="621.9" cy="150.2" r="24" fill="url(#sculpture-metal)"/>
+            <circle class="orbiter orbiter-trail" cx="139.9" cy="425" r="9" fill="#20241b"/>
+            <circle cx="380" cy="310" r="180" fill="url(#sculpture-core)"/>
+            <g clip-path="url(#sculpture-ball)" stroke="#a7b09d" stroke-opacity=".18" stroke-width=".8">
+              <ellipse cx="380" cy="310" rx="50" ry="180"/><ellipse cx="380" cy="310" rx="105" ry="180"/><ellipse cx="380" cy="310" rx="153" ry="180"/>
+              <ellipse cx="380" cy="310" rx="180" ry="46"/><ellipse cx="380" cy="310" rx="180" ry="99"/><ellipse cx="380" cy="310" rx="180" ry="149"/>
+              <path d="M200 310h360M380 130v360"/>
+            </g>
+            <path d="M438 248a87 87 0 1 0 0 124" stroke="#030403" stroke-width="35" transform="translate(3 7)"/>
+            <path d="M438 248a87 87 0 1 0 0 124" stroke="url(#sculpture-letter)" stroke-width="31"/>
+            <circle cx="458" cy="311" r="12" fill="#c7d2a8"/>
+            <path d="M140 460C206 493 393 405 546 283" stroke="url(#sculpture-metal)" stroke-width="13" stroke-linecap="round"/>
+            <path d="M500 496c41-47 17-149-48-247" stroke="url(#sculpture-metal)" stroke-width="9" stroke-linecap="round"/>
+            <path d="M166 128v17m-8-8h17M614 442v17m-8-8h17" stroke="#858c7c" stroke-width="1.2"/>
+          </svg>
+        </div>
+        <picture class="hero-portrait">
+          <source type="image/webp" srcset="./assets/cesar-portrait-560.webp 560w, ./assets/cesar-portrait-1040.webp 1040w" sizes="(max-width: 760px) min(66vw, 300px), (max-width: 1100px) min(46vw, 440px), min(36vw, 600px)">
+          <img src="./assets/cesar-portrait-640.png" alt="Cesar Tortolero" width="560" height="671" fetchpriority="high">
+        </picture>
+        <div class="orbit-label orbit-label-top mono" aria-hidden="true">TRACE / EVALUATE / SHIP</div>
+        <div class="art-coordinate mono" aria-hidden="true">C — 01</div>
       </div>
       <div class="hero-bottom">
         <div class="hero-intro">
@@ -321,13 +379,13 @@
       </div>
     </section>
 
-    <section id="approach" class="approach dark-section" aria-labelledby="approach-title">
+    <section id="approach" class="approach" aria-labelledby="approach-title">
       <div class="section-top mono"><span>06 / THE APPROACH</span><span>HOW I THINK ABOUT BUILDING</span></div>
       <div class="approach-heading"><h2 id="approach-title">MAKE IT WORK.<br><span>MAKE IT MATTER.</span></h2><p>The interesting part is connecting the idea to the person who will actually use it.</p></div>
       <div class="approach-list">
-        <details open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>Understand the workflow before adding another feature. What's confusing? What's repetitive? What would make someone's day a little easier?</p></details>
-        <details><summary><span class="mono approach-number">02</span><span>Build something tangible.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>A working version makes an idea easier to question. Keep the first step focused, then learn from how it behaves in practice.</p></details>
-        <details><summary><span class="mono approach-number">03</span><span>Stay curious. Keep refining.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>Test assumptions, look closely at the rough edges, and make the next version clearer. The details are part of the work.</p></details>
+        <details name="approach" open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true"></span></summary><p>Understand the workflow before adding another feature. What's confusing? What's repetitive? What would make someone's day a little easier?</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>The workflow</li><li>What's confusing</li><li>What's repetitive</li></ul><a class="approach-link mono" href="#experience">See the experience <span aria-hidden="true">↑</span></a></div></details>
+        <details name="approach"><summary><span class="mono approach-number">02</span><span>Build something tangible.</span><span class="details-icon" aria-hidden="true"></span></summary><p>A working version makes an idea easier to question. Keep the first step focused, then learn from how it behaves in practice.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>A working version</li><li>A focused first step</li><li>Learn in practice</li></ul><a class="approach-link mono" href="#work">See the work <span aria-hidden="true">↑</span></a></div></details>
+        <details name="approach"><summary><span class="mono approach-number">03</span><span>Stay curious. Keep refining.</span><span class="details-icon" aria-hidden="true"></span></summary><p>Test assumptions, look closely at the rough edges, and make the next version clearer. The details are part of the work.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Test assumptions</li><li>The rough edges</li><li>A clearer next version</li></ul><a class="approach-link mono" href="#contact">Say hello <span aria-hidden="true">↓</span></a></div></details>
       </div>
     </section>
 

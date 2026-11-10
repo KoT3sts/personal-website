@@ -1,3 +1,5 @@
+import { SECTION_PLAN, SECTION_TARGETS } from './section-plan.js';
+export { SECTION_TARGETS };
 // First-visit "agent crew" entrance and guided build tour.
 //
 // One orchestrator dispatches role-coloured subagents that appear to assemble
@@ -126,9 +128,12 @@ const HERO_PLAN = [
   { sel: '.hero-kicker', role: 'copy', kind: 'type', wave: 600, charMs: 24, act: 'writing location' },
   { sel: '.hero-line > span', role: 'type', kind: 'type', wave: 820, each: true, charMs: 66, act: 'setting headline' },
   { sel: '.hero-fade', role: 'type', kind: 'type', wave: 820, charMs: 66, act: 'setting headline' },
-  { sel: '.sculpture', role: 'art', kind: 'reveal', wave: 760, work: 720, art: true, act: 'placing sculpture' },
-  { sel: '.orbit-label', role: 'art', kind: 'reveal', wave: 760, act: 'labelling orbit' },
-  { sel: '.art-coordinate', role: 'art', kind: 'reveal', wave: 760, act: 'marking coordinate' },
+  // The portrait develops from the hair down as ENGINEER is being set
+  // (portrait.css styles the reveal); the small orbit accent follows.
+  { sel: '.hero-portrait', role: 'art', kind: 'reveal', wave: 760, work: 1100, art: true, act: 'placing portrait' },
+  { sel: '.sculpture', role: 'art', kind: 'reveal', wave: 980, work: 620, art: true, act: 'placing orbit accent' },
+  { sel: '.orbit-label', role: 'art', kind: 'reveal', wave: 980, act: 'labelling orbit' },
+  { sel: '.art-coordinate', role: 'art', kind: 'reveal', wave: 980, act: 'marking coordinate' },
   { sel: '.hero-intro .small-label', role: 'copy', kind: 'type', wave: 1050, charMs: 22, act: 'writing greeting' },
   { sel: '.hero-intro > p:not(.hero-scope)', role: 'copy', kind: 'wipe', wave: 1050, act: 'writing intro' },
   { sel: '.hero-scope', role: 'copy', kind: 'wipe', wave: 1050, act: 'writing scope' },
@@ -136,7 +141,7 @@ const HERO_PLAN = [
   { sel: '.scroll-cue', role: 'links', kind: 'reveal', wave: 1180, act: 'wiring scroll cue' },
   { sel: '.hero-actions .pill-button', role: 'links', kind: 'reveal', wave: 1180, act: 'wiring résumé' },
   { sel: '.hero-links a', role: 'links', kind: 'reveal', wave: 1180, each: true, group: '.hero-links', act: 'wiring links' },
-  { sel: '.hero-art', role: 'motion', kind: 'orbit', wave: 1650, act: 'aligning orbit' },
+  { sel: '.hero-orbit', role: 'motion', kind: 'orbit', wave: 1650, act: 'aligning orbit' },
   { sel: '.main-nav', role: 'a11y', kind: 'review', wave: 2150, size: true, act: 'checking targets' },
   { sel: '.hero-actions', role: 'a11y', kind: 'review', wave: 2150, size: true, act: 'checking hit areas' },
   { sel: '.hero-line', role: 'qa', kind: 'review', wave: 2250, act: 'checking contrast' },
@@ -179,14 +184,14 @@ export const TOUR_STOPS = [
     { sel: '.scene-pill', roles: ['links', 'links'], kind: 'place', multi: 2, label: true, act: 'wiring' },
     { sel: '.cinematic-caption > span', roles: ['a11y', 'qa'], kind: 'wipe', multi: 2, act: 'writing caption' },
   ] },
-  { sel: '#capabilities', name: 'Capabilities', weight: 1.3, span: 0.9, note: 'copy → qa · cards placed', jobs: [
+  { sel: '#capabilities', name: 'Capabilities', weight: 1.2, span: 0.9, note: 'copy → qa · cards placed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#capabilities-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.capabilities-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
     { sel: '.capability', roles: ['copy', 'type', 'links', 'copy', 'type', 'links', 'copy', 'qa'], kind: 'place', multi: 8, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li' },
     { sel: '.capabilities-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
   ] },
-  { sel: '#experience', name: 'Experience', weight: 1.85, span: 1.5, note: 'layout → copy · roles framed', jobs: [
+  { sel: '#experience', name: 'Experience', weight: 1.5, span: 1.5, note: 'layout → copy · roles framed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#experience-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.experience-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
@@ -199,7 +204,7 @@ export const TOUR_STOPS = [
     { sel: '.role-points > li', roles: ['copy', 'type', 'links', 'copy', 'type', 'qa', 'copy', 'links'], kind: 'wipe', multi: 8, rest: true, label: true, act: 'writing' },
     { sel: '.role-group > .tag-list', roles: ['art', 'a11y', 'art', 'links'], kind: 'place', multi: 4, act: 'tagging tools', kids: 'li' },
   ] },
-  { sel: '#work', name: 'Projects', weight: 1, span: 0.45, note: 'art → qa · covers placed', jobs: [
+  { sel: '#work', name: 'Projects', weight: 0.9, span: 0.45, note: 'art → qa · covers placed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#work-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.work-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
@@ -214,7 +219,7 @@ export const TOUR_STOPS = [
     { sel: '.gallery-stage', role: 'a11y', kind: 'review', act: 'checking arrow keys' },
     { sel: '.project-card:not([aria-hidden="true"]) .project-image-link', role: 'qa', kind: 'review', act: 'checking cover alt text', size: true },
   ] },
-  { sel: '#skills', name: 'Skills', weight: 1.1, span: 0.75, note: 'copy → a11y · tags listed', jobs: [
+  { sel: '#skills', name: 'Skills', weight: 1.0, span: 0.75, note: 'copy → a11y · tags listed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#skills-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.skill-list > div', roles: ['copy', 'type', 'links', 'copy', 'type'], kind: 'place', multi: 5, label: true, name: 'dt', act: 'listing', kids: 'li' },
@@ -228,17 +233,17 @@ export const TOUR_STOPS = [
   ] },
   // The closing note between Approach and Contact is built on the Approach
   // stop (`within` looks outside the stop's own section).
-  { sel: '#approach', name: 'Approach', weight: 0.9, span: 0.3, note: 'type → copy · rows set', jobs: [
+  { sel: '#approach', name: 'Approach', weight: 0.7, span: 0.3, note: 'type → copy · rows set', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#approach-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.approach-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
-    { sel: '.approach-list > details', roles: ['copy', 'type', 'links'], kind: 'place', multi: 3, label: true, name: 'summary > span:nth-child(2)', act: 'placing', sub: ':scope > p' },
+    { sel: '.approach-list > details', roles: ['copy', 'type', 'links'], kind: 'place', multi: 3, label: true, name: 'summary > span:nth-child(2)', act: 'placing', sub: ':scope > p', kids: '.approach-focus li, .approach-link' },
     { sel: '.closing-note > .mono', within: '#notes', role: 'copy', kind: 'type', act: 'writing note line', charMs: 35 },
     { sel: '.closing-note > p', within: '#notes', role: 'type', kind: 'type', act: 'setting closing line', charMs: 80 },
     { sel: '.approach-list', role: 'a11y', kind: 'review', act: 'checking disclosures' },
     { sel: '.approach-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
   ] },
-  { sel: '#contact', name: 'Contact', weight: 1, handoff: '.contact-button', note: 'links → qa · links wired', jobs: [
+  { sel: '#contact', name: 'Contact', weight: 0.9, handoff: '.contact-button', note: 'links → qa · links wired', jobs: [
     { sel: '.section-top > *', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '.contact-intro', role: 'copy', kind: 'type', act: 'writing intro line', charMs: 32 },
     { sel: '#contact-title', role: 'type', kind: 'type', act: 'setting headline', charMs: 80 },
@@ -250,19 +255,6 @@ export const TOUR_STOPS = [
   ] },
 ];
 
-// Manual-scroll passes (after a cancelled tour) only trace content: nothing
-// is hidden. Targets stay within elements that motion.js keeps still while
-// such passes are possible (see SECTION_TARGETS).
-const SECTION_PLAN = [
-  { sel: 'h2:not(.cinematic-copy h2)', role: 'type', kind: 'caret', act: 'checking heading' },
-  { sel: '.about-title-panel, .cinematic-art, .project-card:not([aria-hidden="true"]) .project-image-link', role: 'art', kind: 'frame', cross: true, act: 'framing artwork' },
-  { sel: '.cinematic-copy, .approach-heading > p', role: 'copy', kind: 'review', act: 'reviewing copy' },
-  { sel: '.section-top, .about-transition-meta, .cinematic-topline', role: 'layout', kind: 'frame', act: 'framing layout' },
-  { sel: '.scene-actions, .contact-button', role: 'links', kind: 'review', size: true, act: 'checking links' },
-  { sel: '.approach-list details, .capability-list, .role, .skill-list', role: 'qa', kind: 'review', multi: 2, act: 'checking spacing' },
-];
-// Everything a manual pass may frame; motion.js keeps these still meanwhile.
-export const SECTION_TARGETS = SECTION_PLAN.map(spec => spec.sel).join(', ');
 
 // The dock lifts itself above these so it never covers résumé/contact controls.
 const PROTECTED = '.hero-actions .pill-button, .hero-links a, .contact-button, .contact-copy, .contact-links a, .footer-bottom > *';
@@ -1831,7 +1823,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       const text = `col ${k}/12 · x ${Math.round(x)}${i === 0 && g.gap ? ` · gutter ${Math.round(g.gap)}` : ''}`;
       return { x, y: 0, w: 1, h: current.vh, text, lx: x + 6, ly: current.vh * 0.17 + i * 22 };
     }));
-    [['box-title', '#hero-title', 'boxing headline'], ['box-art', '.hero-art', 'boxing artwork'], ['box-intro', '.hero-bottom', 'boxing intro row']].forEach(([id, sel, act]) => {
+    [['box-title', '#hero-title', 'boxing headline'], ['box-art', '.hero-art', 'boxing portrait'], ['box-intro', '.hero-bottom', 'boxing intro row']].forEach(([id, sel, act]) => {
       const element = document.querySelector(sel);
       // Only blocks that start well inside the first screen get a box.
       if (!element || !inView(current, element) || box(current, element).y > current.vh * 0.8) return;
@@ -3148,7 +3140,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     const candidates = gather(current, HERO_PLAN, document);
     // The intro's guides measure the header and the hero's main blocks.
     current.gapProbe = document.querySelector('.hero-bottom');
-    watchElements(current, [...candidates, document.querySelector('.hero-kicker'), ...['.site-header', '#hero-title', '.hero-art', '.hero-bottom'].map(sel => document.querySelector(sel))]);
+    watchElements(current, [...candidates, document.querySelector('.hero-kicker'), ...['.site-header', '#hero-title', '.hero-art', '.hero-portrait', '.hero-orbit', '.hero-bottom'].map(sel => document.querySelector(sel))]);
     measure(current);
     current.measurable = isMeasurable(current, [...current.watch]);
     current.jobs = collect(current, HERO_PLAN, document);
