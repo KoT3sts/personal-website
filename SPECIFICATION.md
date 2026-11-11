@@ -153,7 +153,7 @@ Desktop composition is the primary fidelity target. Use 1440×900 and 1280×800 
 | Intro | No reference-style opening | Wavy luminous outline, point orbit, brand reveal |
 | Hero | Large type and original orbital SVG | Cesar portrait, silhouette/overlap/fade, closer type and peripheral layout |
 | About transition | Original vector flow field and centered dark ABOUT ME panel; progressive scroll movement | Tune illustration density and choreography against reference; desktop/mobile first pass reviewed November 8 |
-| Cinematic scene | Inset beam-lit panel, original abstract luminous sculpture, edge-aligned copy and pills | Reference uses a suspended figure; current sculpture is an original adaptation. Continue geometry, lighting and spacing comparison |
+| Cinematic scene | Inset beam-lit panel with a falling Icarus cut out of Cesar's own pen drawing, loose feathers, cloud banks, copy with pills beside it | Reference uses a suspended figure; ours falls on scroll. Continue geometry, lighting and spacing comparison |
 | Experience | Missing | Approved timeline content and horizontal typographic chapters |
 | Curved showcase | Removed by owner decision (Nov 10, 2026): one gallery, the explorer | None unless Cesar brings the ribbon back |
 | Circular work explorer | The one gallery, in #work: ring to stack, index, caption, wheel/drag/keys, case-study links | Visual comparison against the reference |
