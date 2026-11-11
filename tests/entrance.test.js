@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
 import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, typoFor, TOUR_STOPS, SCROLL, RESCUE, HOLE_CAP } from '../web/entrance.js';
 import { initExperience } from '../web/experience.js';
+import { initExplorer } from '../web/explorer.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 const entranceCSS = await readFile(new URL('../web/entrance.css', import.meta.url), 'utf8');
@@ -31,10 +32,11 @@ function manualFrames(window) {
   };
 }
 
-function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = false, observeSections = false, width, frames = false, media, navigationType, layout = false } = {}) {
+function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = false, observeSections = false, width, height, frames = false, media, navigationType, layout = false, config: extra = {} } = {}) {
   const { window } = new JSDOM(html, { url: `https://portfolio.test/${hash}` });
   // In a real layout engine (the browser harness), lay the page out at `width`.
   if (layout && width && window.frameElement) window.frameElement.style.width = `${width}px`;
+  if (layout && height && window.frameElement) window.frameElement.style.height = `${height}px`;
   window.matchMedia = media || (() => ({ matches: reduced }));
   if (width) Object.defineProperty(window, 'innerWidth', { value: width, configurable: true });
   if (navigationType) window.performance.getEntriesByType = () => [{ type: navigationType }];
@@ -54,7 +56,7 @@ function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = f
   if (storageBlocked) Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage denied'); } });
   const clock = frames ? manualFrames(window) : null;
   // Manual frames use the real production timing; real frames use tiny durations.
-  const config = clock ? { now: clock.now, pillDuration: 600000 } : { ...fast };
+  const config = { ...(clock ? { now: clock.now, pillDuration: 600000 } : { ...fast }), ...extra };
   const controller = initAgenticEntrance(window.document, window, config);
   t.after(() => window.close());
   // Like a real observer entry: an intersecting section is on screen.
@@ -89,6 +91,7 @@ function stepTo(controller, clock, index, extra = 0, step = 16) {
 function assertNoResidue(document, { dock = 'pill' } = {}) {
   assert.equal(document.querySelector('.agentic-stage'), null);
   assert.equal(document.querySelectorAll('.agentic-cursor, .agentic-frame, .agentic-caret, .agentic-dispatch').length, 0);
+  assert.equal(document.querySelectorAll('.agentic-tag, .agentic-pin, .agentic-hole, .agentic-typo, .agentic-skeleton').length, 0, 'no key tags, pins, placeholders, typos or skeletons');
   assert.equal(document.querySelector('[data-build-state], [data-agentic-job], .agentic-target'), null);
   assert.equal(document.querySelector('[style*="clip-path"]'), null);
   assert.equal(document.documentElement.classList.contains('agentic-running'), false);
@@ -133,7 +136,8 @@ test('the first visit tours every section in order, then hands off and collapses
   assert.equal(+seconds, Math.round(clock.now() / 1000), 'measured tour time');
   assert.ok(dock.querySelector('[data-agentic-dock-replay]'));
   assert.equal(document.querySelector('[data-agentic-replay]').hidden, false);
-  assert.ok(heroEnded >= 7500 && heroEnded <= 10000, `hero took ${heroEnded}ms`);
+  // The intro is short (the build follows the paint wipe): ~5.5 s.
+  assert.ok(heroEnded >= 5000 && heroEnded <= 7500, `hero took ${heroEnded}ms`);
   // Nine sections since the one-gallery change (Nov 10: the explorer is built on
   // the Projects stop, no Index stop). Real runs measure ~55 s at 1280 (the
   // travelling Experience stage adds two holds); without layout (jsdom) the
@@ -394,7 +398,8 @@ test('working cursors say what they are doing, and the hero completes every coun
     if (controller.tour.index === 0) done = controller.stats.done;
   }
   assert.equal(done, total, 'every hero target was worked');
-  assert.ok([...actions].every(text => /^[a-z0-9]+ · [a-zé ]+$/.test(text)), [...actions].join(' | '));
+  // An action, and for the headline's words the word being set.
+  assert.ok([...actions].every(text => /^[a-z0-9]+ · [a-zé ]+( '[A-Za-z]+')?$/.test(text)), [...actions].join(' | '));
   for (const expected of ['layout · framing header', 'qa · checking contrast', 'orchestrator · dispatching']) {
     assert.ok(actions.has(expected), `missing "${expected}"`);
   }
@@ -658,7 +663,7 @@ test('2x speed finishes the tour faster without cancelling it, and is remembered
   assertNoResidue(document);
 });
 
-test('the summary pill reports measured time without hidden-tab pauses, and cancel keeps the old wording', t => {
+test('the summary pill reports measured time without hidden-tab pauses, and a cancel says the tour was skipped', t => {
   const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
   let hidden = false;
   Object.defineProperty(document, 'hidden', { get: () => hidden, configurable: true });
@@ -674,7 +679,7 @@ test('the summary pill reports measured time without hidden-tab pauses, and canc
   const cancelled = setup(t, { width: 1280, frames: true });
   stepTo(cancelled.controller, cancelled.clock, 1, 200);
   cancelled.document.querySelector('#main').dispatchEvent(new cancelled.window.WheelEvent('wheel', { bubbles: true, deltaY: 100 }));
-  assert.equal(dockOf(cancelled.document).querySelector('.agentic-dock-summary').textContent, `${crewSize(1280)} agents built this page`);
+  assert.equal(dockOf(cancelled.document).querySelector('.agentic-dock-summary').textContent, 'Tour skipped ·');
 });
 
 test('handoff notes appear one at a time, beside the dock, hidden from assistive technology', t => {
@@ -908,22 +913,31 @@ test('the hero opens on a black screen: the veil is opaque and no hero content s
   assertNoResidue(document);
 });
 
-test('guides are drawn before the first content job, labelled with measured numbers, and the paint wipe clears the veil first', t => {
+test('guides are drawn before the first content job, labelled briefly with measured numbers, and the build follows the paint wipe', t => {
   const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
   let firstJob = 0;
   let veilGone = 0;
   let guidesDone = 0;
   let painted = 0;
   let wipeOff = 0;
-  let snapshot = null;
-  while (controller.touring && controller.tour.index === 0 && !firstJob) {
+  // Each label's text when first shown, and how long it stayed up.
+  const text = {};
+  const onFor = {};
+  const onAt = {};
+  const early = [];
+  const started = new Set();
+  let labelsAfterVeil = 0;
+  while (controller.touring && controller.tour.index === 0 && clock.now() < 4000) {
     clock.step(16);
     const now = clock.now();
     const labels = [...document.querySelectorAll('.agentic-guide-label')];
-    if (!guidesDone && labels.length && labels.every(label => label.classList.contains('is-on'))) {
-      guidesDone = now;
-      snapshot = labels.map(label => [label.dataset.guide, label.textContent]);
+    for (const label of labels) {
+      const id = label.dataset.guide;
+      const on = label.classList.contains('is-on');
+      if (on && onAt[id] === undefined) { onAt[id] = now; text[id] = label.textContent; }
+      if (!on && onAt[id] !== undefined && onFor[id] === undefined) onFor[id] = now - onAt[id];
     }
+    if (!guidesDone && labels.length && labels.every(label => onAt[label.dataset.guide] !== undefined)) guidesDone = now;
     const veil = document.querySelector('.agentic-veil');
     const painter = [...document.querySelectorAll('.agentic-cursor.is-working')].find(cursor => /painting canvas$/.test(cursor.textContent));
     const clip = veil && /inset\(0px 0px 0px ([\d.]+)px\)/.exec(veil.style.clipPath || '');
@@ -933,22 +947,35 @@ test('guides are drawn before the first content job, labelled with measured numb
       if (edge > 0 && edge < window.innerWidth) { painted++; wipeOff = Math.max(wipeOff, Math.abs(edge - x)); }
     }
     if (!veil && !veilGone) veilGone = now;
-    if (heroStarted(document)) firstJob = now;
+    if (!veil) labelsAfterVeil += document.querySelectorAll('.agentic-guide-label.is-on').length;
+    if (!firstJob && heroStarted(document)) firstJob = now;
+    // Nothing is built under the black: an item starts once the wipe has passed its left edge.
+    if (measurable(document)) {
+      for (const element of document.querySelectorAll('#home [data-build-state="typing"], #home [data-build-state="placing"], .site-header [data-build-state="placing"]')) {
+        if (started.has(element)) continue;
+        started.add(element);
+        const left = element.getBoundingClientRect().left;
+        if (veil && !(clip && +clip[1] >= left - 1)) early.push(`${element.className || element.tagName} at ${now}ms`);
+      }
+    }
   }
   assert.ok(firstJob > 0, 'the build started');
-  assert.ok(guidesDone > 0 && guidesDone < firstJob, `guides drawn at ${guidesDone}ms, first job at ${firstJob}ms`);
-  assert.ok(veilGone > guidesDone && veilGone <= firstJob, `veil gone at ${veilGone}ms (guides ${guidesDone}ms, first job ${firstJob}ms)`);
-  assert.ok(firstJob >= 3000, `the build waits for the intro (${firstJob}ms)`);
+  assert.ok(guidesDone > 0 && guidesDone < firstJob, `guides drawn by ${guidesDone}ms, first job at ${firstJob}ms`);
+  assert.ok(veilGone > guidesDone && veilGone <= 1800, `veil gone at ${veilGone}ms (guides ${guidesDone}ms)`);
+  assert.ok(firstJob >= 1000, `the build waits for the wipe (${firstJob}ms)`);
+  assert.equal(labelsAfterVeil, 0, 'no guide label is left over the page once the black is gone');
   if (!measurable(document)) return;
+  assert.deepEqual(early, [], 'nothing is built under the black');
   assert.ok(painted > 10, `${painted} frames of paint wipe`);
   assert.ok(wipeOff <= 30, `the wipe follows the paint agent (off by ${wipeOff.toFixed(1)}px)`);
+  // Labels are brief (a moment each, at most ~0.55 s).
+  assert.ok(Object.values(onFor).every(ms => ms <= 560), `labels up for ${JSON.stringify(onFor)}`);
   // Every label is a measurement of the live layout (±1 px).
-  const ids = snapshot.map(([id]) => id);
-  for (const id of ['margin-left', 'margin-right', 'baseline', 'col-3', 'col-6', 'col-9', 'box-title', 'box-art']) assert.ok(ids.includes(id), `${id} guide in ${ids}`);
+  const ids = Object.keys(text);
+  for (const id of ['margin-left', 'margin-right', 'baseline', 'col-3', 'col-9', 'box-title', 'box-art']) assert.ok(ids.includes(id), `${id} guide in ${ids}`);
   const header = document.querySelector('.site-header').getBoundingClientRect();
   const [left, right] = [header.left, header.right];
   const near = (actual, expected, what) => assert.ok(Math.abs(actual - expected) <= 1, `${what}: label ${actual} vs measured ${expected.toFixed(1)}`);
-  const text = Object.fromEntries(snapshot);
   near(numbersIn(text['margin-left'])[0], left, 'left margin');
   near(numbersIn(text['margin-right'])[0], document.documentElement.clientWidth - right, 'right margin');
   near(numbersIn(text.baseline)[0], header.bottom, 'header baseline');
@@ -956,14 +983,14 @@ test('guides are drawn before the first content job, labelled with measured numb
   const gap = gutter ? +gutter[1] : 0;
   if (gutter) near(gap, parseFloat(window.getComputedStyle(document.querySelector('.hero-bottom')).columnGap), 'gutter');
   const colW = (right - left - 11 * gap) / 12;
-  for (const k of [3, 6, 9]) {
+  for (const k of [3, 9]) {
     const [n, of, x] = numbersIn(text[`col-${k}`]);
     assert.deepEqual([n, of], [k, 12]);
     near(x, left + k * colW + (k - 0.5) * gap, `column ${k}`);
     const line = document.querySelector(`.agentic-guide[data-guide="col-${k}"]`);
     near(translateOf(line).x, x, `column ${k} line`);
   }
-  for (const [id, sel] of [['box-title', '#hero-title'], ['box-art', '.hero-art'], ['box-intro', '.hero-bottom']]) {
+  for (const [id, sel] of [['box-title', '#hero-title'], ['box-art', '.hero-art']]) {
     if (!text[id]) continue;
     const r = document.querySelector(sel).getBoundingClientRect();
     assert.match(text[id], /^\d+ × \d+$/);
@@ -988,7 +1015,7 @@ test('the guides fade as the hero hands over and are gone when the hero run ends
     if (!fading && document.querySelector('.agentic-guides.is-fading')) fading = clock.now();
     if (controller.tour?.index === 1) { handover = clock.now(); break; }
   }
-  assert.ok(handover >= 7000 && handover <= 10000, `the hero took ${handover}ms`);
+  assert.ok(handover >= 5000 && handover <= 7500, `the hero took ${handover}ms`);
   assert.ok(fading > 0 && handover - fading >= 400 && handover - fading <= 800, `guides faded from ${fading}ms, handover ${handover}ms`);
   assert.equal(document.querySelector('.agentic-guides, .agentic-guide, .agentic-veil'), null, 'no guides or veil after the hero');
   controller.skip();
@@ -997,7 +1024,7 @@ test('the guides fade as the hero hands over and are gone when the hero run ends
 test('cancelling during the guide phase removes the veil and guides and reveals everything', t => {
   for (const action of ['wheel', 'skip']) {
     const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
-    clock.run(1600);
+    clock.run(900);
     assert.ok(document.querySelector('.agentic-veil'), `${action}: veil still up`);
     assert.ok(document.querySelector('.agentic-guide-label.is-on'), `${action}: guides being drawn`);
     if (action === 'wheel') document.querySelector('#main').dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 120 }));
@@ -1018,7 +1045,8 @@ test('the intro runs on the tour clock, so 2x halves it', t => {
   assert.equal(controller.speed, 2);
   let veilGone = 0;
   while (controller.touring && clock.now() < 6000 && !veilGone) { clock.step(16); if (!document.querySelector('.agentic-veil')) veilGone = clock.now(); }
-  assert.ok(veilGone >= 1400 && veilGone <= 1800, `veil gone at ${veilGone}ms at 2x`);
+  // The wipe ends at 1.65 s at 1x.
+  assert.ok(veilGone >= 780 && veilGone <= 880, `veil gone at ${veilGone}ms at 2x`);
   controller.skip();
   assertNoResidue(document);
 });
@@ -1370,14 +1398,14 @@ test('an item whose agent is late is rescued by an idle margin agent, which flie
       // under way (its editors idle only until the paste lands): a layout
       // shift pulls a far-off line into view, long before its agent.
       if (trials.length >= 4 || trials.some(trial => trial.index === index)) return;
-      if (index < 2 || now - stopAt < 2200 || document.querySelector('.agentic-wire-fill, .agentic-frame.is-ghost:not(.is-out), .agentic-frame.is-copy:not(.is-out), .agentic-hole:not(.is-out)')) return;
+      if (index < 2 || now - stopAt < 1600 || document.querySelector('.agentic-wire-fill, .agentic-frame.is-ghost:not(.is-out), .agentic-frame.is-copy:not(.is-out), .agentic-hole:not(.is-out)')) return;
       const idle = [...document.querySelectorAll('.agentic-cursor.is-idle.is-in:not(.is-docked)')];
       if (idle.length < 3) return;
       const vh = window.innerHeight;
       // Not inside a clipping box: moved out of it, the line would still be unseen.
       const clipped = element => { for (let node = element.parentElement; node && node !== document.body; node = node.parentElement) { const style = window.getComputedStyle(node); if (style.overflowX !== 'visible' || style.overflowY !== 'visible') return true; } return false; };
-      const target = [...document.querySelectorAll('[data-agentic-job="type"][data-build-state="pending"]')]
-        // A short line, so a margin agent between jobs has time to type it.
+      const target = [...document.querySelectorAll('[data-agentic-job="type"][data-build-state="pending"], [data-agentic-job="wipe"][data-build-state="pending"]')]
+        // A short line, so a margin agent between jobs has time to write it.
         .find(element => { const r = element.getBoundingClientRect(); return r.top > vh + 300 && r.height > 0 && r.height < 100 && element.textContent.trim().length <= 28 && !clipped(element); });
       if (!target) return;
       const r = target.getBoundingClientRect();
@@ -1414,11 +1442,13 @@ test('an item whose agent is late is rescued by an idle margin agent, which flie
     if (trial.state !== 'typing') { assert.ok(trial.after.instant > trial.instant, 'shown at once only when nobody was free, and counted'); continue; }
     assert.ok(trial.after.rescued > trial.rescued, 'counted as a rescue');
     assert.ok(trial.cursor && trial.distance < 40, `a cursor is at the line (${trial.distance.toFixed(0)}px away)`);
-    assert.ok(trial.idle.has(trial.cursor), `the rescuer (${trial.cursor?.textContent}) was idling in the margin when the line came in`);
+    // An idle margin agent if one is free long enough; otherwise one called out of the dock.
+    if (!trial.idle.has(trial.cursor)) continue;
     const from = trial.idle.get(trial.cursor);
     const [left, right] = contentColumn(document, 1280);
     assert.ok(from.x + 2 < left || from.x + 2 > right, 'it came from the side margin');
   }
+  assert.ok(rescued.some(trial => trial.idle.has(trial.cursor)), `an idle margin agent took at least one (${rescued.map(trial => trial.cursor?.textContent).join(', ')})`);
 });
 
 test('the visible-target rule: hidden, transparent, zero-size and clipped items get no agent', t => {
@@ -1560,9 +1590,300 @@ test('a travelling Experience stage holds on each chapter while it is pasted and
   assertNoResidue(document);
   assert.equal(xpStops.size, 3, 'one stop per chapter');
   assert.deepEqual([...progress], [`${stopNames(document).indexOf('Experience') + 1} / ${stopNames(document).length}`], 'one plan step in the dock');
-  assert.ok(held.every(ms => ms >= 1200), `the stage holds on each chapter: ${held.map(Math.round)} ms`);
+  // Pasted chapters are quick (Experience is ~9 s in all); the last one is
+  // written as it slides in and held briefly before Projects.
+  assert.ok(held.every(ms => ms >= 700), `the stage holds on each chapter: ${held.map(Math.round)} ms`);
   assert.ok(ghosts >= 1 && keys.has('⌘C') && keys.has('⌘V'), `copied and pasted (${[...keys]})`);
   assert.ok(holes >= 3, 'the pasted copy leaves placeholders');
   assert.ok(chapters.slice(1).every(chapter => typed.has(chapter.querySelector('.xp-title'))), 'chapters 2 and 3 are typed by agents');
   assert.deepEqual(offStage, [], 'only what is on the stage is written');
+});
+
+// ---- Nov 10 review fixes: pacing, pins, residue, pill ----------------------
+// Every label or badge a visitor can see right now: working cursor labels,
+// guide labels, size and coordinate chips, key tags and QA pins.
+function badges(document, window) {
+  const shown = element => window.getComputedStyle(element).display !== 'none' && parseFloat(window.getComputedStyle(element).opacity) > 0.05;
+  const labels = [...document.querySelectorAll('.agentic-cursor.is-working.is-in:not(.is-away):not(.is-hush):not(.is-docked) .agentic-role')].map(label => label.textContent);
+  const chips = [...document.querySelectorAll('.agentic-frame:not(.is-out):not(.no-size) .agentic-size')].filter(chip => chip.textContent && (chip.closest('.is-drag.is-set, .has-size.is-set, .is-coord')));
+  return {
+    labels,
+    count: labels.length + document.querySelectorAll('.agentic-guide-label.is-on').length + chips.length
+      + document.querySelectorAll('.agentic-tag.is-on:not(.is-out), .agentic-pin.is-on:not(.is-out)').length,
+    chips: chips.map(chip => chip.textContent).filter(text => !/^x \d+ · y \d+$/.test(text)),
+  };
+}
+
+test('the hero keeps at most six labels on screen, no size chips or repeated labels, and the headline reads by ~2.5 s', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  let most = 0;
+  let mostAt = 0;
+  const repeats = [];
+  const chips = new Set();
+  const headline = [...document.querySelectorAll('.hero-line > span, .hero-fade')];
+  let readAt = 0;
+  // Fully typed: no longer pending, and the write clip is open to the end.
+  const typed = element => {
+    if (element.dataset.buildState === 'pending') return false;
+    const clip = /inset\([^ ]+ ([\d.]+)px/.exec(element.style.clipPath || '');
+    return !clip || +clip[1] <= 1.5;
+  };
+  while (controller.touring && controller.tour.index === 0) {
+    clock.step(16);
+    const now = clock.now();
+    if (now <= 3000) {
+      const seen = badges(document, window);
+      if (seen.count > most) { most = seen.count; mostAt = now; }
+      const twice = seen.labels.filter((text, index) => seen.labels.indexOf(text) !== index);
+      if (twice.length) repeats.push(`${twice[0]} @${now}ms`);
+      seen.chips.forEach(text => chips.add(text));
+    }
+    if (!readAt && headline.every(typed)) readAt = now;
+  }
+  controller.skip();
+  assertNoResidue(document);
+  assert.ok(most <= 6, `${most} labels and badges at once (${mostAt}ms)`);
+  assert.deepEqual(repeats.slice(0, 3), [], 'no two agents show the same label at once');
+  assert.deepEqual([...chips], [], 'no measurement chips over the hero');
+  assert.ok(readAt > 0 && readAt <= 2800, `the headline was fully typed at ${readAt}ms`);
+});
+
+// The first Experience `sub` stop (a chapter pasted on the travelling stage).
+const subStopIndex = document => TOUR_STOPS.filter(stop => document.querySelector(stop.sel)).findIndex(stop => stop.sub);
+function travelling(t, extra = {}) {
+  const media = query => ({ matches: !/motion:\s*reduce\b/.test(query), addEventListener() {}, removeEventListener() {} });
+  const env = setup(t, { width: 1280, frames: true, layout: true, media, ...extra });
+  const { window, document } = env;
+  if (window.frameElement) window.frameElement.style.height = '800px';
+  window.CSS = { supports: () => false };
+  const still = document.createElement('style');
+  still.textContent = '.xp-chapter { animation: none !important; } .agentic-dock { transition: none !important; }';
+  document.head.append(still);
+  env.xp = initExperience(document, window);
+  return env;
+}
+
+test('Skip or Escape during the Capabilities paste or an Experience chapter paste leaves nothing behind', t => {
+  for (const action of ['skip', 'escape']) {
+    // Capabilities: while a pasted card's ghost is on its way.
+    const cap = setup(t, { width: 1280, frames: true, layout: true });
+    let reached = false;
+    while (cap.controller.touring && cap.clock.now() < 90000) {
+      cap.clock.step(16);
+      if (cap.controller.tour?.name === 'Capabilities' && cap.document.querySelector('.agentic-frame.is-ghost:not(.is-out)')) { reached = true; break; }
+      if (cap.controller.tour && cap.controller.tour.index > 3) break;
+    }
+    if (measurable(cap.document)) assert.ok(reached, `${action}: reached the Capabilities paste`);
+    if (action === 'skip') cap.document.querySelector('[data-agentic-skip]').click();
+    else cap.document.dispatchEvent(new cap.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    assert.equal(cap.controller.touring, false);
+    assertNoResidue(cap.document);
+    cap.clock.step(2000);
+    assertNoResidue(cap.document);
+    // Experience: a chapter `sub` stop, with its placeholders down.
+    const xp = travelling(t);
+    const sub = subStopIndex(xp.document);
+    let inSub = false;
+    while (xp.controller.touring && xp.clock.now() < 90000) {
+      xp.window.dispatchEvent(new xp.window.Event('scroll'));
+      xp.clock.step(16);
+      if (xp.controller.tour?.index === sub && (xp.document.querySelector('.agentic-hole:not(.is-out)') || xp.document.querySelector('.agentic-frame.is-ghost'))) { inSub = true; break; }
+      if (xp.controller.tour && xp.controller.tour.index > sub) break;
+    }
+    if (xp.xp && xp.document.querySelector('#experience').dataset.xp === 'travel' && measurable(xp.document)) assert.ok(inSub, `${action}: reached a chapter paste`);
+    if (action === 'skip') xp.document.querySelector('[data-agentic-skip]').click();
+    else xp.document.dispatchEvent(new xp.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    assert.equal(xp.controller.touring, false);
+    assertNoResidue(xp.document);
+    assert.equal(xp.document.querySelector('#experience [data-build-state]'), null, `${action}: every chapter is visible`);
+    assert.equal(dockOf(xp.document).querySelector('.agentic-dock-summary').textContent, 'Tour skipped ·', `${action}: the pill says the tour was skipped`);
+  }
+});
+
+test('every QA pin follows its item and is resolved or gone by the end of its stop', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  let pins = 0;
+  let previous = [];
+  let index = 0;
+  const left = [];
+  const frozen = [];
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    if (controller.tour.index !== index) {
+      // The frame before the stop changed: nothing unresolved was still up.
+      left.push(...previous.filter(pin => !pin.resolved && !pin.out).map(pin => `${pin.note} (stop ${index})`));
+      index = controller.tour.index;
+    }
+    const nodes = [...document.querySelectorAll('.agentic-pin')];
+    pins = Math.max(pins, nodes.length);
+    previous = nodes.map(node => ({ note: node.textContent, resolved: node.classList.contains('is-resolved'), out: node.classList.contains('is-out') }));
+    if (!measurable(document)) continue;
+    // A pin that is up sits by its item while the page moves (a frame of lag allowed).
+    for (const node of nodes) {
+      if (!node.classList.contains('is-on') || node.classList.contains('is-out')) continue;
+      const item = /contrast/.test(node.textContent) ? document.querySelector('.explorer-index') : document.querySelector('.capability-list');
+      const r = item.getBoundingClientRect();
+      const y = translateOf(node)?.y ?? NaN;
+      if (r.bottom > 120 && r.top < window.innerHeight - 120 && !(y >= r.top - 60 && y <= r.bottom + 20)) frozen.push(`${node.textContent} at y ${Math.round(y)}, item ${Math.round(r.top)}–${Math.round(r.bottom)} @${clock.now()}ms`);
+    }
+  }
+  assertNoResidue(document);
+  assert.deepEqual(left, [], 'pins left unresolved when their stop ended');
+  if (!measurable(document)) return;
+  assert.ok(pins >= 1, 'QA left a pin');
+  assert.deepEqual(frozen.slice(0, 3), [], 'pins stay on their item');
+});
+
+test('Capabilities placement frames step aside about 750 ms after each card lands', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  const born = new Map();
+  const lives = [];
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    if (controller.tour.name !== 'Capabilities') { if (lives.length) break; continue; }
+    // Tinted placement frames (a place or reveal job): solid, with a size chip.
+    for (const frame of document.querySelectorAll('.agentic-frame.has-size:not(.is-review):not(.is-text)')) {
+      if (!born.has(frame)) born.set(frame, clock.now());
+      if (frame.classList.contains('is-out') && !frame.counted) { frame.counted = true; lives.push(clock.now() - born.get(frame)); }
+    }
+  }
+  controller.skip();
+  assert.ok(lives.length >= 3, `${lives.length} placement frames`);
+  // frameMs 750 at this stop's pace (0.95-1.15x), within a frame either way;
+  // a frame whose job ended sooner goes with its job.
+  assert.ok(lives.every(ms => ms <= 750 * 1.05 + 32), `frames up for ${lives.join(', ')} ms`);
+  assert.ok(lives.filter(ms => ms >= 750 * 0.95 - 32).length >= 3, `most last about 750 ms: ${lives.join(', ')}`);
+});
+
+test('handoff lines are short, on screen and brief', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, layout: true });
+  const seen = new Map();
+  const bad = [];
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    for (const line of document.querySelectorAll('.agentic-dispatch.is-handoff')) {
+      if (seen.has(line)) continue;
+      seen.set(line, clock.now());
+      const w = parseFloat(line.style.width);
+      const from = translateOf(line);
+      const angle = parseFloat(line.style.rotate) || 0;
+      const to = { x: from.x + Math.cos(angle) * w, y: from.y + Math.sin(angle) * w };
+      const inside = p => p.x >= -1 && p.y >= -1 && p.x <= window.innerWidth + 1 && p.y <= window.innerHeight + 1;
+      if (w > window.innerWidth * 0.45 + 1) bad.push(`${Math.round(w)}px long`);
+      if (!inside(from) || !inside(to)) bad.push('off screen');
+    }
+    for (const [line, at] of seen) {
+      if (line.isConnected || line.gone) continue;
+      line.gone = true;
+      if (clock.now() - at > 500 + 32) bad.push(`up ${clock.now() - at}ms`);
+    }
+  }
+  assertNoResidue(document);
+  assert.deepEqual(bad.slice(0, 4), [], `${bad.length} handoff lines out of bounds`);
+});
+
+test('on a short screen the Introduction stop still ends with its copy and pills in view', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, height: 600, frames: true, layout: true });
+  let last = null;
+  while (controller.touring && clock.now() < 60000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    if (controller.tour.name === 'Introduction') {
+      const footer = document.querySelector('.cinematic-footer').getBoundingClientRect();
+      const pills = document.querySelector('.scene-actions').getBoundingClientRect();
+      last = { footer, pills, vh: window.innerHeight };
+    } else if (last) break;
+  }
+  controller.skip();
+  if (!measurable(document) || !last || last.vh > 640) return;
+  assert.ok(last.pills.bottom <= last.vh && last.pills.top >= 0, `scene pills at ${Math.round(last.pills.top)}–${Math.round(last.pills.bottom)} of ${last.vh}`);
+  assert.ok(last.footer.bottom <= last.vh + 1, `copy ends at ${Math.round(last.footer.bottom)} of ${last.vh}`);
+});
+
+test('a single-column Capabilities list (700 px) places its cards directly, without copy and paste', t => {
+  const { document, window, controller, clock } = setup(t, { width: 700, frames: true, layout: true });
+  const list = document.querySelector('.capability-list');
+  const columns = window.getComputedStyle(list).gridTemplateColumns.split(' ').filter(Boolean).length;
+  const kinds = new Set();
+  let placed = 0;
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    if (controller.tour.name !== 'Capabilities') { if (kinds.size) break; continue; }
+    document.querySelectorAll('#capabilities [data-agentic-job]').forEach(element => kinds.add(element.dataset.agenticJob));
+    placed = Math.max(placed, document.querySelectorAll('#capabilities .capability[data-agentic-job="place"]').length);
+    document.querySelectorAll('.agentic-tag').forEach(tag => kinds.add(`tag ${tag.textContent}`));
+  }
+  controller.skip();
+  if (!measurable(document) || columns !== 1) return;
+  assert.ok(!kinds.has('copy') && !kinds.has('paste') && !kinds.has('tag ⌘C') && !kinds.has('tag ⌘V'), `no copy or paste in one column: ${[...kinds]}`);
+  assert.ok(placed >= 3, `${placed} cards placed one by one`);
+});
+
+test('the Projects stop opens the first project (a real click) without ending the tour, and leaves a normal state', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, height: 800, frames: true, layout: true });
+  const explorer = initExplorer(document, window);
+  const stage = document.querySelector('.explorer-stage');
+  let stacked = 0;
+  let chip = false;
+  let title = '';
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    if (controller.tour.name !== 'Projects') { if (stacked) break; continue; }
+    if (!stacked && stage?.dataset.explorerMode === 'stack') {
+      stacked = clock.now();
+      title = document.querySelector('.explorer-caption-title')?.textContent || '';
+      chip = Boolean(document.querySelector('.explorer-item.is-active .explorer-card-open'));
+    }
+  }
+  if (!explorer || !measurable(document)) { controller.skip(); return; }
+  assert.ok(stacked > 0, 'the explorer turned into the drum');
+  assert.equal(controller.touring, true, 'the click did not end the tour');
+  assert.equal(title, 'Multi-Agent Workflow');
+  assert.ok(chip, 'the active cover carries its Case study chip');
+  // The selection is the explorer's first project: where a visitor starts.
+  assert.equal(explorer.state.index, 0);
+  controller.skip();
+  assertNoResidue(document);
+});
+
+test('the dock rises above the Experience chapter bar instead of covering it', t => {
+  const { document, window, controller, clock } = travelling(t);
+  const controls = () => [...document.querySelectorAll('.xp-index-button, .xp-step')];
+  const overlaps = [];
+  let checked = 0;
+  while (controller.touring && clock.now() < 90000) {
+    window.dispatchEvent(new window.Event('scroll'));
+    clock.step(16);
+    if (!controller.touring) break;
+    if (controller.tour.name !== 'Experience') continue;
+    const dock = dockOf(document).getBoundingClientRect();
+    const near = controls().map(element => element.getBoundingClientRect())
+      .filter(r => r.height > 0 && r.top < window.innerHeight && r.bottom > 0 && r.right >= dock.left && r.left <= dock.right);
+    if (!near.length) continue;
+    checked++;
+    const hit = near.find(r => r.top < dock.bottom && r.bottom > dock.top);
+    if (hit) overlaps.push(`${Math.round(dock.top)}–${Math.round(dock.bottom)} over ${Math.round(hit.top)}–${Math.round(hit.bottom)} @${clock.now()}ms`);
+  }
+  controller.skip();
+  if (document.querySelector('#experience').dataset.xp !== 'travel' || !measurable(document)) return;
+  assert.ok(checked > 10, `${checked} control samples`);
+  // A frame of lag while the bar slides in.
+  assert.ok(overlaps.length <= 1, `${overlaps.length} frames with the dock over the chapter bar: ${overlaps.slice(0, 3).join(' | ')}`);
+});
+
+test('the pill goes on its own after Skip, even with focus moved onto it, and says the tour was skipped', async t => {
+  const { document, controller } = setup(t, { width: 1280, config: { pillDuration: 200 } });
+  const skip = document.querySelector('[data-agentic-skip]');
+  skip.focus();
+  skip.click();
+  assert.equal(controller.touring, false);
+  const dock = dockOf(document);
+  assert.equal(dock.dataset.state, 'pill');
+  assert.equal(dock.querySelector('.agentic-dock-summary').textContent, 'Tour skipped ·');
+  assert.ok(dock.contains(document.activeElement), 'focus moved to the pill (Replay)');
+  assert.ok(await until(() => !dockOf(document), 2000), 'the pill dismissed itself');
 });

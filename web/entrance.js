@@ -1,4 +1,5 @@
 import { SECTION_PLAN, SECTION_TARGETS } from './section-plan.js';
+import { HOLD_SHARE, travelPlan, trackAt } from './experience.js';
 export { SECTION_TARGETS };
 // First-visit "agent crew" entrance and guided build tour.
 //
@@ -26,15 +27,23 @@ export { SECTION_TARGETS };
 const VISIT_KEY = 'cesar:portfolio:agentic-intro:v1';
 const SPEED_KEY = 'cesar:portfolio:agentic-tour-speed:v1';
 const NOTE_MS = 1800; // handoff notes stay up this long (real time)
+// The pill's text after Skip or any input stopped the tour (Replay follows it).
+const SKIPPED = 'Tour skipped ·';
 const NAME_MAX = 30; // longest item name quoted in an action label
 const HERO_BASE = 4600; // HERO_PLAN waves are authored against this
 const BUILD_BASE = 3200; // tour section plans are authored against this
 const PASS_BASE = 1000; // manual (post-cancel) tracing passes
 // The hero opens on a black screen: the orchestrator plans alone, the crew
-// pops in, agents draw measured layout guides, a paint agent wipes the black
-// away, and only then does the build start. Real ms at the desktop hero pace;
-// scaled with the hero run (so short test timings and 2x both hold).
-const INTRO = { crew: 300, crewEnd: 620, guides: 700, guidesEnd: 2400, paint: 2400, paintEnd: 3180, end: 3300, fade: 600 };
+// pops in, agents draw measured layout guides (each label shows briefly, over
+// the black only) and a paint agent wipes the black away. The build starts at
+// `end` and follows the wipe: each item is built once the paint has passed
+// it, the name and the headline first, so the headline reads by ~2.5 s.
+// Real ms at the desktop hero pace; scaled with the hero run (so short test
+// timings and 2x both hold). `label`: how long a guide's label stays up.
+const INTRO = { crew: 100, crewEnd: 300, guides: 340, guidesEnd: 1150, paint: 1050, paintEnd: 1650, end: 800, fade: 500, label: 520 };
+// The most labels and badges on screen at once while the hero is built
+// (cursor labels and guide labels): the rest of the crew works unlabelled.
+const HERO_BADGES = 6;
 // Lower sections still wholly below the fold when their stop is planned start
 // as a wireframe (near-black fill, margin guides, outline, skeleton blocks).
 // Virtual ms, scaled with the stop's animation pace except `grace`: the most
@@ -118,23 +127,26 @@ export function crewSize(width) {
 // Hero jobs, authored against a 4.6 s baseline. `wave` is the earliest dispatch.
 // `each` jobs are individual on desktop and grouped under `group` elsewhere.
 // `act` is the short action label shown on the working cursor.
+// Name and role first: the wordmark and the headline go out at once.
 const HERO_PLAN = [
+  // `label`: each word's agent names it, so the three labels differ.
+  { sel: '.hero-line > span', role: 'type', kind: 'type', wave: 0, each: true, charMs: 44, label: true, act: 'setting' },
+  { sel: '.hero-fade', role: 'type', kind: 'type', wave: 0, charMs: 44, label: true, act: 'setting' },
+  { sel: '.wordmark', role: 'nav', kind: 'reveal', wave: 0, act: 'placing wordmark' },
   { sel: '.site-header', role: 'layout', kind: 'frame', wave: 420, act: 'framing header' },
   { sel: '#hero-title', role: 'layout', kind: 'frame', wave: 420, act: 'framing title' },
   { sel: '.hero-bottom', role: 'layout', kind: 'frame', wave: 420, act: 'framing intro row' },
-  { sel: '.wordmark', role: 'nav', kind: 'reveal', wave: 470, act: 'placing wordmark' },
-  { sel: '.main-nav a', role: 'nav', kind: 'reveal', wave: 470, each: true, group: '.main-nav', act: 'linking nav' },
+  // One agent links the whole nav (no stack of identical labels).
+  { sel: '.main-nav a', role: 'nav', kind: 'reveal', wave: 470, each: true, group: '.main-nav', grouped: true, act: 'linking nav' },
   { sel: '.header-contact', role: 'nav', kind: 'reveal', wave: 470, act: 'placing résumé link' },
   { sel: '.hero-kicker', role: 'copy', kind: 'type', wave: 600, charMs: 24, act: 'writing location' },
-  { sel: '.hero-line > span', role: 'type', kind: 'type', wave: 820, each: true, charMs: 66, act: 'setting headline' },
-  { sel: '.hero-fade', role: 'type', kind: 'type', wave: 820, charMs: 66, act: 'setting headline' },
   // The portrait develops from the hair down as ENGINEER is being set
   // (portrait.css styles the reveal); the small orbit accent follows.
   { sel: '.hero-portrait', role: 'art', kind: 'reveal', wave: 760, work: 1100, art: true, act: 'placing portrait' },
   { sel: '.sculpture', role: 'art', kind: 'reveal', wave: 980, work: 620, art: true, act: 'placing orbit accent' },
   { sel: '.orbit-label', role: 'art', kind: 'reveal', wave: 980, act: 'labelling orbit' },
   { sel: '.art-coordinate', role: 'art', kind: 'reveal', wave: 980, act: 'marking coordinate' },
-  { sel: '.hero-intro .small-label', role: 'copy', kind: 'type', wave: 1050, charMs: 22, act: 'writing greeting' },
+  { sel: '.hero-intro .small-label', role: 'copy', kind: 'type', wave: 300, charMs: 22, act: 'writing greeting' },
   { sel: '.hero-intro > p:not(.hero-scope)', role: 'copy', kind: 'wipe', wave: 1050, act: 'writing intro' },
   { sel: '.hero-scope', role: 'copy', kind: 'wipe', wave: 1050, act: 'writing scope' },
   { sel: '.hero-rule > span', role: 'copy', kind: 'wipe', wave: 1180, each: true, group: '.hero-rule', act: 'writing footer rule' },
@@ -142,8 +154,8 @@ const HERO_PLAN = [
   { sel: '.hero-actions .pill-button', role: 'links', kind: 'reveal', wave: 1180, act: 'wiring résumé' },
   { sel: '.hero-links a', role: 'links', kind: 'reveal', wave: 1180, each: true, group: '.hero-links', act: 'wiring links' },
   { sel: '.hero-orbit', role: 'motion', kind: 'orbit', wave: 1650, act: 'aligning orbit' },
-  { sel: '.main-nav', role: 'a11y', kind: 'review', wave: 2150, size: true, act: 'checking targets' },
-  { sel: '.hero-actions', role: 'a11y', kind: 'review', wave: 2150, size: true, act: 'checking hit areas' },
+  { sel: '.main-nav', role: 'a11y', kind: 'review', wave: 2150, act: 'checking targets' },
+  { sel: '.hero-actions', role: 'a11y', kind: 'review', wave: 2150, act: 'checking hit areas' },
   { sel: '.hero-line', role: 'qa', kind: 'review', wave: 2250, act: 'checking contrast' },
   { sel: '.hero-intro', role: 'qa', kind: 'review', wave: 2250, act: 'checking spacing' },
 ];
@@ -165,25 +177,33 @@ const HERO_PLAN = [
 // - `key` / `after`: a job waits for the keyed job inside the same item (or
 //   the first keyed job); work passes between them with a thin handoff line.
 //   `afterAt`: the share of that job to wait for; `after: '*'`: every builder
-//   inside the item (`overlap`: ms before the last one ends).
+//   inside the item, or with `afterOf` every builder of the stop's items
+//   matching that selector (`overlap`: ms before the last one ends).
+// - kind `pick` presses a real control (see PICK).
 // - `stagger`: ms between the items of one spec waiting on the same job.
-// - `only`: 'wide' (desktop and tablet) or 'phone'.
+// - `only`: 'wide' (desktop and tablet) or 'phone'; with the stop's
+//   `columns` set, 'wide' means its grid really has two or more columns.
 // - `slide`: the item is carried in sideways by a pinned stage (Experience),
 //   so it is checked for visibility when its agent sets off, not when planned.
 //   `shown`: only items on the stage when the stop is planned (chapters still
 //   off to the right are left to the stops that bring them in).
 // Every job follows the visible-target rule (see perceivable).
 // `weight` scales the build budget; `span` keeps scrolling through a tall
-// section (up to span x viewport height) while items are placed; `note` is the
-// stop's decorative handoff line beside the dock; `frameMs` fades its tinted
+// section (up to span x viewport height, to its end with `untilEnd`, or until
+// the `spanTo` element sits below the header) while items are placed; `note` is the
+// stop's decorative handoff line beside the dock; `pace` quickens its
+// animation (the pasted Experience chapters); `frameMs` fades its tinted
 // placement frames that soon (the item itself keeps building). `sub` stops continue the
 // previous stop's section (same plan step in the dock) and only run while
 // their section matches `when` (checked as they come up); `chapter` aims the
 // scroll at that Experience chapter when its stage travels sideways, and
 // `dwell` is the creep (px/s) while the stage holds on it.
+// Where a pasted chapter lands: its left edge at this share of the view.
+const XP_LAND = 0.46;
 const chapterJobs = n => {
   const ch = `.xp-chapter:nth-child(${n})`;
-  const at = { slide: true, after: 'paste' };
+  // Editors set off as the ghost drops (the last fifth of its drag).
+  const at = { slide: true, after: 'paste', afterAt: 0.8 };
   return [
     { sel: ch, role: 'copy', kind: 'paste', from: 'prev', holes: true, slide: true, key: 'paste', act: `pasting chapter 0${n}`, work: 1100 },
     { sel: `${ch} .xp-title`, role: 'type', kind: 'type', label: true, act: 'setting', charMs: 42, ...at },
@@ -209,11 +229,13 @@ export const TOUR_STOPS = [
     { sel: '.about-transition-meta', role: 'qa', kind: 'review', act: 'checking alignment' },
     { sel: '.about-transition-foot', role: 'a11y', kind: 'review', act: 'checking contrast' },
   ] },
-  // Its copy sits at the bottom of a tall scene: stop with the section's end in view.
+  // Its copy sits at the bottom of a tall scene: stop with the section's end in view
+  // (`untilEnd`: on short screens too).
   // The figure gets about a second longer: the stop opens on the scene's top
-  // (the falling figure) and only then cruises down to the copy.
-  { sel: '#introduction', name: 'Introduction', weight: 0.8, span: 0.45, note: 'art → copy · scene lit', jobs: [
-    { sel: '.beam-figure', role: 'art', kind: 'reveal', act: 'placing figure in the light', art: true, work: 1100 },
+  // (the falling figure) and only then cruises down to the copy. The whole art
+  // (figure, halo, feathers) is placed together, once the drawing has loaded.
+  { sel: '#introduction', name: 'Introduction', weight: 0.8, span: 0.45, untilEnd: true, note: 'art → copy · scene lit', jobs: [
+    { sel: '.cinematic-art', role: 'art', kind: 'reveal', act: 'placing figure in the light', art: true, work: 1100 },
     { sel: '.cinematic-topline > span', roles: ['layout', 'copy'], kind: 'wipe', multi: 2, act: 'setting topline' },
     { sel: '.cinematic-copy > .mono', role: 'type', kind: 'type', act: 'setting kicker', charMs: 26 },
     { sel: '#introduction-title', role: 'type', kind: 'type', act: 'setting headline', charMs: 40 },
@@ -223,23 +245,25 @@ export const TOUR_STOPS = [
     { sel: '.scene-pill', roles: ['links', 'links'], kind: 'place', multi: 2, label: true, act: 'wiring' },
     { sel: '.cinematic-caption > span', roles: ['a11y', 'qa'], kind: 'wipe', multi: 2, act: 'writing caption' },
   ] },
-  // Wide screens: the first card is placed and copied, and pasted into the
+  // Two-column grids: the first card is placed and copied, and pasted into the
   // rest of the first rows; editors write each pasted card's name and proof
   // over its placeholders and a tag agent swaps its tags. The cards further
-  // down (and every card on phones) are placed directly.
-  { sel: '#capabilities', name: 'Capabilities', weight: 1.0, span: 1.0, frameMs: 750, note: 'copy → type · cards pasted', jobs: [
+  // down (and every card in a single-column list, `columns`) are placed directly.
+  { sel: '#capabilities', name: 'Capabilities', weight: 0.9, span: 1.0, frameMs: 750, columns: '.capability-list', note: 'copy → type · cards pasted', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#capabilities-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.capabilities-heading > p', role: 'a11y', kind: 'wipe', act: 'writing summary' },
-    { sel: '.capability', roles: ['copy', 'type', 'links', 'copy', 'type', 'links', 'copy', 'qa'], kind: 'place', multi: 8, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'phone' },
+    { sel: '.capability', roles: ['copy', 'type', 'links', 'copy', 'type', 'links', 'qa'], kind: 'place', multi: 7, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'phone' },
     { sel: '.capability:first-child', role: 'nav', kind: 'place', label: true, name: 'h3', act: 'placing', sub: '.capability-proof', key: 'first', only: 'wide' },
-    { sel: '.capability:first-child > .tag-list', role: 'art', kind: 'place', act: 'tagging tools', kids: 'li', after: 'first', afterAt: 0.45, only: 'wide' },
+    { sel: '.capability:first-child > .tag-list', role: 'art', kind: 'place', act: 'tagging tools', kids: 'li', after: 'first', afterAt: 0.3, only: 'wide' },
     { sel: '.capability:first-child', role: 'copy', kind: 'copy', act: 'copying card', key: 'copy', after: 'first', only: 'wide' },
     { sel: '.capability:nth-child(-n+4):not(:first-child)', roles: ['copy', 'copy', 'copy'], kind: 'paste', multi: 3, from: '.capability:first-child', stagger: 140, holes: true, act: 'pasting card', key: 'paste', after: 'copy', work: 480, only: 'wide' },
-    { sel: '.capability:nth-child(-n+4):not(:first-child) > h3', roles: ['type', 'type', 'type'], kind: 'type', multi: 3, label: true, act: 'writing', charMs: 36, after: 'paste', afterAt: 0.6, only: 'wide' },
+    // The third name goes to the agent that placed the first card (free by
+    // then), so one type agent never holds up two cards.
+    { sel: '.capability:nth-child(-n+4):not(:first-child) > h3', roles: ['type', 'type', 'nav'], kind: 'type', multi: 3, label: true, act: 'writing', charMs: 36, after: 'paste', afterAt: 0.6, only: 'wide' },
     { sel: '.capability:nth-child(-n+4):not(:first-child) > .capability-proof', roles: ['links', 'links', 'links'], kind: 'wipe', multi: 3, act: 'writing proof', after: 'paste', afterAt: 0.6, only: 'wide' },
     { sel: '.capability:nth-child(-n+4):not(:first-child) > .tag-list', roles: ['art', 'a11y', 'art'], kind: 'place', multi: 3, act: 'swapping tags', kids: 'li', after: 'paste', afterAt: 0.6, only: 'wide' },
-    { sel: '.capability:nth-child(n+5)', roles: ['nav', 'motion', 'qa', 'nav'], kind: 'place', multi: 4, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'wide' },
+    { sel: '.capability:nth-child(n+5)', roles: ['nav', 'motion', 'qa'], kind: 'place', multi: 3, label: true, name: 'h3', act: 'placing', sub: '.capability-proof', kids: '.tag-list li', only: 'wide' },
     { sel: '.capability-list', role: 'qa', kind: 'pin', note: 'tighten spacing', key: 'pin', act: 'leaving a note', only: 'wide' },
     { sel: '.capability-list', role: 'layout', kind: 'resolve', act: 'tightening spacing', after: 'pin', only: 'wide' },
     { sel: '.capabilities-heading', role: 'qa', kind: 'review', act: 'checking alignment' },
@@ -253,7 +277,7 @@ export const TOUR_STOPS = [
   // swaps its tags and QA checks it. Chapters still off to the right wait
   // unseen (experience.css). Phones and tablets stack the chapters and every
   // item is built in place on the first stop (`span` cruises through them).
-  { sel: '#experience', name: 'Experience', weight: 1.05, stackWeight: 1.4, span: 2.4, chapter: 0, dwell: 16, note: 'layout → copy · first chapter set', jobs: [
+  { sel: '#experience', name: 'Experience', weight: 0.9, stackWeight: 1.4, pace: 0.78, span: 2.4, chapter: 0, dwell: 16, note: 'layout → copy · first chapter set', jobs: [
     { sel: '.section-top > span', roles: ['copy', 'nav'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#experience-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.experience-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
@@ -268,16 +292,20 @@ export const TOUR_STOPS = [
     { sel: '.xp-controls', role: 'links', kind: 'place', act: 'wiring chapter controls', kids: 'button, .xp-count', shown: true },
     { sel: '.xp-stage', role: 'a11y', kind: 'review', act: 'checking chapter keys' },
     // Once chapter 1 is written, it is copied for the next two.
-    { sel: '[data-xp="travel"] .xp-chapter:first-child', role: 'copy', kind: 'copy', after: '*', overlap: 600, act: 'copying chapter 01' },
+    { sel: '[data-xp="travel"] .xp-chapter:first-child', role: 'copy', kind: 'copy', after: '*', overlap: 1100, act: 'copying chapter 01' },
   ] },
-  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 1, dwell: 16, weight: 1.0, note: 'copy → type · second chapter pasted', jobs: chapterJobs(2) },
-  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 2, dwell: 16, weight: 1.0, note: 'copy → type · third chapter pasted', jobs: chapterJobs(3) },
+  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 1, dwell: 16, weight: 0.6, pace: 0.72, note: 'copy → type · second chapter pasted', jobs: chapterJobs(2) },
+  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 2, dwell: 16, weight: 0.6, pace: 0.72, note: 'copy → type · third chapter pasted', jobs: chapterJobs(3) },
   // The explorer (explorer.js), the one project gallery. It holds still while
-  // the tour runs, so its rotated card names and the hidden caption are never
-  // written: art agents place the six covers round the ring one at a time, a
-  // links agent fills in the index list, and QA leaves a contrast pin that
-  // a11y resolves.
-  { sel: '#work', name: 'Projects', weight: 1.0, span: 0.8, note: 'art → links · ring placed', jobs: [
+  // the tour builds it, so its rotated card names and the hidden caption are
+  // never written: art agents place the six covers round the ring one at a
+  // time, a links agent fills in the index list, and QA leaves a contrast pin
+  // that a11y resolves. Then a links agent presses the first project in the
+  // index (a real click, as a visitor would): the ring turns into the drum and
+  // the project's title and "Case study" chip come up before the tour moves on.
+  // It was already the selected project, so after the tour (the explorer
+  // turns back into a ring offscreen) the page is as it was.
+  { sel: '#work', name: 'Projects', weight: 1.0, span: 0.8, spanTo: '.explorer-stage', creep: 24, note: 'art → links · ring placed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#work-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.work-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
@@ -290,8 +318,9 @@ export const TOUR_STOPS = [
     { sel: '.explorer-index', role: 'qa', kind: 'pin', note: 'check contrast', key: 'pin', act: 'leaving a note' },
     { sel: '.explorer-index', role: 'a11y', kind: 'resolve', act: 'fixing contrast', after: 'pin' },
     { sel: '.explorer-covers', role: 'a11y', kind: 'review', act: 'checking keys and labels', size: true },
+    { sel: '.explorer-pick[data-explorer-pick="0"]', role: 'links', kind: 'pick', label: true, name: '.explorer-pick-name', act: 'opening', after: '*', afterOf: '.explorer-item, .explorer-pick', work: 2300, only: 'wide' },
   ] },
-  { sel: '#skills', name: 'Skills', weight: 0.85, span: 0.6, note: 'copy → a11y · tags listed', jobs: [
+  { sel: '#skills', name: 'Skills', weight: 0.7, pace: 0.85, span: 0.6, note: 'copy → a11y · tags listed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#skills-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.skill-list > div', roles: ['copy', 'type', 'links', 'copy', 'type'], kind: 'place', multi: 5, label: true, name: 'dt', act: 'listing', kids: 'li' },
@@ -305,7 +334,7 @@ export const TOUR_STOPS = [
   ] },
   // The closing note between Approach and Contact is built on the Approach
   // stop (`within` looks outside the stop's own section).
-  { sel: '#approach', name: 'Approach', weight: 0.45, span: 0.3, note: 'type → copy · rows set', jobs: [
+  { sel: '#approach', name: 'Approach', weight: 0.45, pace: 0.8, span: 0.3, note: 'type → copy · rows set', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#approach-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.approach-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
@@ -328,17 +357,26 @@ export const TOUR_STOPS = [
 ];
 
 
-// The dock lifts itself above these so it never covers résumé/contact controls.
-const PROTECTED = '.hero-actions .pill-button, .hero-links a, .contact-button, .contact-copy, .contact-links a, .footer-bottom > *';
+// The dock lifts itself above these so it never covers in-page controls near
+// the bottom edge: résumé/contact links, the introduction's scene pills and
+// the Experience chapter bar (year index, previous/next).
+const PROTECTED = '.hero-actions .pill-button, .hero-links a, .scene-pill, .xp-index-button, .xp-step, .contact-button, .contact-copy, .contact-links a, .footer-bottom > *';
 
 const HIDES = new Set(['reveal', 'type', 'wipe', 'place']);
 const OPTIONAL = new Set(['frame', 'review', 'orbit', 'caret', 'pin', 'resolve']);
 const TEXT_KINDS = new Set(['type', 'wipe', 'caret']);
 const DEMOTE = { reveal: 'frame', type: 'caret', wipe: 'review', place: 'review' };
-// Decorative kinds that may share an element with its builder.
-const SHARED = new Set(['copy', 'paste', 'pin', 'resolve']);
+// Decorative kinds that may share an element with its builder (`pick`
+// presses a real control once it is built: see PICK).
+const SHARED = new Set(['copy', 'paste', 'pin', 'resolve', 'pick']);
 // Kinds whose agent shows its label only while it works (not on the way).
 const QUIET = new Set(['copy', 'paste', 'pin', 'resolve']);
+// The longest an art reveal waits for its image to load (virtual ms).
+const IMAGE_WAIT = 260;
+// Kind `pick`: an agent presses a real control (a click on it, exactly as a
+// visitor's would, so the page is left in a state a visitor can reach) at
+// `at` of its work and stays on it while the page responds.
+const PICK = { at: 0.22 };
 // Handoff lines: at most this share of the view width long, gone in `ms` (virtual).
 const HANDOFF = { reach: 0.45, ms: 500 };
 // The visible-target rule: below this opacity (the product along the
@@ -358,6 +396,13 @@ const clamp01 = value => (value < 0 ? 0 : value > 1 ? 1 : value);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const easeInOut = p => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 const easeOut = p => 1 - Math.pow(1 - p, 4);
+// The progress at which easeInOut reaches `e`.
+const easeInverse = e => {
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 16; i++) { const mid = (lo + hi) / 2; if (easeInOut(mid) < e) lo = mid; else hi = mid; }
+  return hi;
+};
 const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
 const positive = (value, fallback) => (Number.isFinite(value) && value > 0 ? value : fallback);
 
@@ -460,6 +505,8 @@ export function initAgenticEntrance(document, window, config = {}) {
   let dirty = false;
   let dock = null;
   let liftFrame = 0;
+  // The visitor's last kind of input: 'key' keeps the pill while focus is in it.
+  let lastInput = '';
   let lastStats = { ...idleStats };
   let builtCount = 0;
   // Agents that stay on screen between tour stops: [{ role, label, x, y }].
@@ -523,7 +570,9 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (current.guides) updateIntro(current, t);
       current.active.forEach(job => job.update(t));
       updateHoles(current);
+      updatePins(current, t);
       current.agents.forEach(agent => placeAgent(current, agent, t));
+      if (current.kind === 'hero') hushLabels(current);
       // A rescue still under way finishes first (briefly), so nothing pops in.
       if (t >= current.total && !(current.rescuing.size && t < current.total + 2500)) {
         // Hand the ride-along crew's positions (and the tour clock) to the
@@ -698,7 +747,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     replayButton.hidden = false;
     if (save) persist();
     if (wasTouring) {
-      if (keepDock) collapseDock('Tour skipped. All content is visible.');
+      if (keepDock) collapseDock('Tour skipped. All content is visible.', SKIPPED);
       else removeDock();
       flushTourEnd();
     } else if (!keepDock) {
@@ -722,7 +771,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     replayButton.hidden = false;
     sectionsEligible = allowPasses;
     persist();
-    collapseDock('Tour stopped. All content is visible.');
+    collapseDock('Tour stopped. All content is visible.', SKIPPED);
     flushTourEnd();
     if (sectionsEligible) watchSections();
     restoreFocus(focusInDock);
@@ -909,6 +958,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     d.where.textContent = stopInfo.name;
     d.progress.textContent = `${step + 1} / ${planSteps.length}`;
     if (planSteps[step]?.state !== 'building') setPlanStep(step, 'building');
+    // A `sub` stop continues its section: it is not announced again.
+    if (stopInfo.sub && stopIndex > 0) return;
     announce(stopIndex === 0
       ? `Build tour: agents are assembling the page, starting with the ${stopInfo.name.toLowerCase()}. Skip tour is available.`
       : `Building ${stopInfo.name}, section ${step + 1} of ${planSteps.length}.`);
@@ -928,22 +979,26 @@ export function initAgenticEntrance(document, window, config = {}) {
     placeDock();
   }
 
+  // The pill goes on its own after `pillMs` on every screen. It stays while
+  // the plan is open, while the pointer is on it, or while focus is in it
+  // after keyboard use (focus moved there after a click or tap does not hold it).
   function armPill() {
     if (!dock) return;
     clearTimeout(dock.timer);
     dock.timer = window.setTimeout(() => {
       if (run || tour || !dock) return;
-      // Keep it while the visitor is reading the plan or using the pill.
-      if (planOpen || dock.root.contains(document.activeElement)) { armPill(); return; }
+      if (planOpen || hovered(dock.root) || (lastInput === 'key' && dock.root.contains(document.activeElement))) { armPill(); return; }
       removeDock();
     }, pillMs);
   }
+  const hovered = element => { try { return element.matches(':hover'); } catch { return false; } };
 
   function removeDock() {
     if (!dock) return;
     const hadFocus = dock.root.contains(document.activeElement);
     clearTimeout(dock.timer);
     clearTimeout(dock.noteTimer);
+    clearTimeout(dock.liftTimer);
     dock.root.remove();
     dock = null;
     planOpen = false;
@@ -962,16 +1017,18 @@ export function initAgenticEntrance(document, window, config = {}) {
     });
   }
 
-  // Keep the dock clear of résumé and contact controls near the bottom edge.
+  // Keep the dock clear of in-page controls near the bottom edge. The lift is
+  // a translate (entrance.css eases it), so `bottom` stays the resting base.
   function placeDock() {
     if (!dock || dock.root.hidden) return false;
     const vh = window.innerHeight || 768;
     const rect = dock.root.getBoundingClientRect();
     if (!rect.height) return false;
-    const base = (parseFloat(window.getComputedStyle?.(dock.root).bottom) || 14) - dock.lift;
-    let lift = 0;
+    const base = parseFloat(window.getComputedStyle?.(dock.root).bottom) || 14;
+    // Horizontal extent at rest (the lift only moves it up).
     const boxes = [...document.querySelectorAll(PROTECTED)].map(element => element.getBoundingClientRect())
       .filter(r => r.height > 0 && r.top < vh && r.bottom > 0 && r.right > rect.left - 8 && r.left < rect.right + 8);
+    let lift = 0;
     for (let pass = 0; pass < 6; pass++) {
       const bottom = vh - base - lift;
       const top = bottom - rect.height;
@@ -983,6 +1040,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (Math.abs(lift - dock.lift) < 1) return false;
     dock.lift = lift;
     dock.root.style.setProperty('--agentic-dock-lift', `${lift}px`);
+    // The dots move with the eased lift: read them again once it has settled.
+    window.clearTimeout(dock.liftTimer);
+    dock.liftTimer = window.setTimeout(() => { if (run) remeasureDots(run); }, 400);
     return true;
   }
 
@@ -1149,9 +1209,11 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (xp && xp.track.contains(element)) {
       const line = edge ? current.vw * edge : current.vw - Math.min(b.w * 0.5, current.vw * 0.3);
       if (b.x > line) {
-        const progress = y => clamp01((y - xp.top) / xp.distance);
-        const p0 = progress(current.sy0);
-        let side = trajTime(current.traj, y => b.x - (progress(y) - p0) * xp.shift <= line);
+        // The track's position at a scroll position (it rests on each chapter
+        // for part of the pinned stretch: experience.js's own map).
+        const track = y => trackAt(xp.plan, clamp01((y - xp.top) / xp.distance));
+        const p0 = track(current.sy0);
+        let side = trajTime(current.traj, y => b.x - (track(y) - p0) * xp.shift <= line);
         if (!Number.isFinite(side)) side = (current.lead || 0) + current.budget;
         ready = Math.max(Number.isFinite(ready) ? ready : 0, side);
       }
@@ -1388,7 +1450,10 @@ export function initAgenticEntrance(document, window, config = {}) {
   // on to its spot (or slot `k` of `n`) instead of waiting over the content.
   function holdCarried(current, agent, k = 0, n = 1) {
     const c = agent.carry;
-    if (c.anchor) idleSeg(current, agent, 0, () => c.anchor);
+    // `parked`: when it is idling at a standby spot (so an agent with nothing
+    // to do here stays there instead of crossing the page to another spot).
+    agent.parked = null;
+    if (c.anchor) { idleSeg(current, agent, 0, () => c.anchor); agent.parked = { at: 0 }; }
     else holdSeg(agent, 0, () => ({ x: c.x, y: c.y }));
     const arrive = 380 * current.scale;
     const waits = !agent.queue.length || agent.queue[0].start >= arrive + 250 * current.anim;
@@ -1396,6 +1461,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       const spot = c.goal ? () => c.goal : standby(current, k, n);
       travelSeg(agent, 0, arrive, drifting(current, agent, spot));
       idleSeg(current, agent, arrive, spot);
+      agent.parked = { at: arrive };
     }
     addEvent(current, 0, () => {
       agent.cursor.classList.add('is-in', 'is-carried');
@@ -1469,6 +1535,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       copy: 420,
       paste: spec.work || 900,
       pin: 620,
+      pick: spec.work || 1500,
       resolve: 700,
     }[job.kind];
     // Tour stops keep near-real durations; only budgets scale with `weight`.
@@ -1478,7 +1545,6 @@ export function initAgenticEntrance(document, window, config = {}) {
     job.work = job.baseWork;
     job.typeMs = job.baseType;
     job.chars = chars;
-    job.typo = typo;
     // A job dropped on the way (its target was not there to see) keeps its
     // cursor where it was, with no label: entry, path and exit all hold.
     const held = () => job.voidAt || { x: current.vw * 0.5, y: current.vh * 0.8 };
@@ -1513,6 +1579,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (job.kind === 'copy') return grip(clipView(current, b));
       if (job.kind === 'paste') return grip(ghostRect(0));
       if (job.kind === 'pin' || job.kind === 'resolve') return pinPoint();
+      if (job.kind === 'pick') return { x: b.x + Math.min(26, b.w * 0.3), y: b.y + b.h * 0.62 };
       return { x: b.x + Math.min(18, b.w * 0.25), y: b.y + Math.min(b.h * 0.58, 120) };
     };
     job.entry = () => (job.void ? held() : entryOf());
@@ -1575,6 +1642,8 @@ export function initAgenticEntrance(document, window, config = {}) {
         return { x: b.x + b.w * 0.5 + Math.cos(angle) * b.w * 0.42, y: b.y + b.h * 0.42 + Math.sin(angle) * b.h * 0.3 };
       }
       if (job.kind === 'caret') { const start = job.entry(); return { x: start.x + 10 * easeOut(p), y: start.y + 6 * easeOut(p) }; }
+      // A short press on the control, then the cursor rests on it.
+      if (job.kind === 'pick') { const start = job.entry(); const dip = Math.sin(clamp01((p - PICK.at + 0.06) / 0.12) * Math.PI); return { x: start.x + dip, y: start.y + 2.5 * dip }; }
       if (job.kind === 'place') return placeAt(p);
       const start = job.entry();
       return { x: start.x + Math.min(b.w * 0.42, 360) * easeInOut(p), y: start.y + Math.min(b.h * 0.06, 24) * easeInOut(p) };
@@ -1583,7 +1652,9 @@ export function initAgenticEntrance(document, window, config = {}) {
 
     const color = () => spec.color || ROLES[job.agent.role].color;
     const frame = variant => {
-      const element = make('div', `agentic-frame ${variant}`, current.layer);
+      // The hero's frames carry no size chip: it would sit over its text (the
+      // orbit keeps its coordinate, which sits over the art).
+      const element = make('div', `agentic-frame ${variant}${kind === 'hero' && !variant.includes('is-coord') ? ' no-size' : ''}`, current.layer);
       element.style.setProperty('--agent-color', color());
       element.innerHTML = '<i></i><i></i><i></i><i></i><b class="agentic-size"></b><s class="agentic-cross"></s>';
       job.ui.push(element);
@@ -1608,9 +1679,12 @@ export function initAgenticEntrance(document, window, config = {}) {
     };
     job.begin = () => {
       job.begun = true;
-      // The item starts to appear: its wireframe skeleton fades.
-      job.onPlace?.();
       const k = job.kind;
+      // Art waits for its image (IMAGE_WAIT at most): the agent never places
+      // an empty box. Its frame and the reveal start once the image is in.
+      job.loading = !job.void && k === 'reveal' ? job.reveals.flatMap(element => (element.tagName === 'IMG' ? [element] : [...element.querySelectorAll?.('img') || []])).filter(image => image.complete === false) : [];
+      // The item starts to appear: its wireframe skeleton fades.
+      if (!job.loading.length) job.onPlace?.();
       if (job.void) return;
       if (k === 'copy') {
         job.frame = frame('is-review is-copy');
@@ -1633,13 +1707,22 @@ export function initAgenticEntrance(document, window, config = {}) {
         make('i', 'agentic-pin-dot', pin);
         make('span', 'agentic-pin-note', pin).textContent = spec.note || 'check';
         job.pin = pin;
-        current.pins.set(spec.key || 'pin', pin);
+        // Every pin follows its item each frame until it is gone (updatePins).
+        current.pins.push({ node: pin, job, at: pinPoint });
+        placePin(pin, pinPoint());
+        version = -1;
+        job.update(job.arrive);
+        return;
+      }
+      if (k === 'pick') {
+        job.frame = frame('is-review');
+        job.keyTag = tag('click', 'is-key');
         version = -1;
         job.update(job.arrive);
         return;
       }
       if (k === 'resolve') {
-        job.pin = current.pins.get(spec.after || 'pin') || null;
+        job.pin = (job.afterJob?.kind === 'pin' && job.afterJob.pin) || null;
         if (!job.pin) { job.frame = frame('is-review'); }
         version = -1;
         job.update(job.arrive);
@@ -1673,15 +1756,32 @@ export function initAgenticEntrance(document, window, config = {}) {
         return;
       }
       const shown = job.reveals;
-      shown.forEach((element, index) => {
-        if (k === 'reveal') {
-          element.style.setProperty('--agentic-d', `${realMs(Math.max(60, job.work * (shown.length > 1 ? 0.7 : 1)))}ms`);
-          if (shown.length > 1) element.style.transitionDelay = `${realMs(index * (job.work * 0.3) / (shown.length - 1))}ms`;
+      const reveal = ms => {
+        shown.forEach((element, index) => {
+          element.style.setProperty('--agentic-d', `${realMs(Math.max(60, ms * (shown.length > 1 ? 0.7 : 1)))}ms`);
+          if (shown.length > 1) element.style.transitionDelay = `${realMs(index * (ms * 0.3) / (shown.length - 1))}ms`;
           element.dataset.buildState = 'placing';
-        } else {
-          element.dataset.buildState = 'typing';
-        }
-      });
+        });
+      };
+      if (job.loading.length) {
+        job.frame.style.opacity = '0';
+        job.waitUntil = current.now + IMAGE_WAIT * current.anim;
+        // Once the images are in (or the wait is over): the time left.
+        job.startReveal = () => {
+          if (job.revealed || job.done || job.void || run !== current) return;
+          job.revealed = true;
+          job.frame.style.removeProperty('opacity');
+          job.onPlace?.();
+          reveal(Math.max(60, job.end - current.now));
+        };
+        let left = job.loading.length;
+        const loaded = () => { if (--left <= 0) job.startReveal(); };
+        job.loading.forEach(image => {
+          image.addEventListener('load', loaded, { once: true });
+          image.addEventListener('error', loaded, { once: true });
+        });
+      } else if (k === 'reveal') reveal(job.work);
+      else shown.forEach(element => { element.dataset.buildState = 'typing'; });
       if (k === 'type' || k === 'wipe') { lastStep = -1; job.typeProgress = 0; job.caretPoint = writeClip(0); }
       version = -1;
       job.update(job.arrive);
@@ -1758,6 +1858,7 @@ export function initAgenticEntrance(document, window, config = {}) {
 
     job.update = now => {
       if (job.void) return;
+      if (job.startReveal && now >= job.waitUntil) job.startReveal();
       // `frameMs` (per stop): tinted placement frames step aside early.
       if (current.frameMs && job.frame && !job.frameOut && (job.kind === 'place' || job.kind === 'reveal') && now - job.arrive >= current.frameMs) {
         job.frameOut = true;
@@ -1777,12 +1878,22 @@ export function initAgenticEntrance(document, window, config = {}) {
         if (job.kind === 'paste' && pressed && !job.dropped) { job.dropped = true; job.frame.classList.add('is-dropped'); }
         return;
       }
-      if (job.kind === 'pin' || job.kind === 'resolve') {
-        if (job.pin && (geometryChanged || !job.placedPin)) {
-          job.placedPin = true;
-          const at = pinPoint();
-          job.pin.style.translate = `${Math.round(at.x + 8)}px ${Math.round(at.y - 22)}px`;
+      if (job.kind === 'pick') {
+        const v = visible(current, target);
+        if (geometryChanged) {
+          place(job.frame, v);
+          const at = job.entry();
+          job.keyTag.style.translate = `${Math.round(at.x + 16)}px ${Math.round(at.y - 34)}px`;
         }
+        if (p > 0.05 && !job.frame.classList.contains('is-set')) job.frame.classList.add('is-set');
+        if (p >= PICK.at && !job.pressed) {
+          job.pressed = true;
+          job.keyTag.classList.add('is-on');
+          press(target);
+        }
+        return;
+      }
+      if (job.kind === 'pin' || job.kind === 'resolve') {
         if (job.kind === 'pin' && p > 0.35 && !job.pin.classList.contains('is-on')) job.pin.classList.add('is-on');
         if (job.kind === 'resolve' && job.pin && p > 0.45 && !job.pin.classList.contains('is-resolved')) job.pin.classList.add('is-resolved');
         if (job.kind === 'resolve' && !job.pin && geometryChanged) place(job.frame, visible(current, target));
@@ -1930,6 +2041,28 @@ export function initAgenticEntrance(document, window, config = {}) {
     });
   }
 
+  // ---- QA pins ----------------------------------------------------------------
+  // A pin stays on its item while the page moves (not only while its own or
+  // its resolver's job runs). One whose resolver was dropped from the plan,
+  // or voided, fades once it is up, so no note is left frozen on screen.
+  function placePin(node, at) {
+    node.style.translate = `${Math.round(at.x + 8)}px ${Math.round(at.y - 22)}px`;
+  }
+  const liveResolver = (current, pin) => current.jobs.find(job => job.kind === 'resolve' && job.afterJob === pin && !job.void) || null;
+  function updatePins(current, t) {
+    if (!current.pins.length) return;
+    const moved = current.pinsVersion !== current.version;
+    current.pinsVersion = current.version;
+    current.pins.forEach(entry => {
+      // Still placed while it fades (`.agentic-pin.is-out`: 0.5 s delay + 0.4 s).
+      if (entry.out !== undefined && t - entry.out > 1000) return;
+      if (moved) placePin(entry.node, entry.at());
+      if (entry.out !== undefined) return;
+      if (!entry.node.classList.contains('is-out') && t >= entry.job.end && !liveResolver(current, entry.job)) entry.node.classList.add('is-out');
+      if (entry.node.classList.contains('is-out')) entry.out = t;
+    });
+  }
+
   // ---- planning -----------------------------------------------------------
   function travelMs(current, from, to) {
     const d = distance(from, to);
@@ -2069,6 +2202,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (hid && tour) { tour.late++; tour.instant++; }
     current.voided = (current.voided || 0) + 1;
     current.guarded.delete(job);
+    // Jobs that waited for it get no extra grace from it any more.
+    current.jobs.forEach(other => { if (other.afterJob === job) other.graceUntil = undefined; });
     // Its label goes (the agent is not on to anything else yet).
     if (agent?.cursor && (!agent.job || agent.job === job || agent.job.done || agent.job.void)) {
       agent.cursor.classList.remove('is-working');
@@ -2138,17 +2273,31 @@ export function initAgenticEntrance(document, window, config = {}) {
     const orchArrive = 760 * s;
     holdSeg(orchestrator, 0, spawn);
     travelSeg(orchestrator, 300 * s, orchArrive, command);
-    addEvent(current, 0, () => { orchestrator.cursor.classList.add('is-in', 'is-working'); say(orchestrator, 'planning hero'); });
+    addEvent(current, 0, () => { orchestrator.cursor.classList.add('is-in', 'is-working'); if (!current.intro) say(orchestrator, 'planning hero'); });
 
-    // One dispatch at a time: the eye can follow each agent leaving.
-    const dispatchGap = 85 * s;
+    // After the intro, each item is built once the paint wipe has passed it
+    // (`readyAt`, in this plan's time: the intro shifts it by its lead).
+    if (current.intro && current.measurable) {
+      const u = introUnit(current);
+      current.jobs.forEach(job => {
+        const b = box(current, job.target);
+        if (!(b.w > 0 && b.h > 0)) return;
+        const e = clamp01((b.x + 12) / (current.vw + 24));
+        job.readyAt = Math.max(0, (INTRO.paint + (INTRO.paintEnd - INTRO.paint) * easeInverse(e) + 60) * u - current.intro);
+      });
+    }
+
+    // One dispatch at a time: the eye can follow each agent leaving. After
+    // the intro the crew is already out, so the first jobs leave at once.
+    const dispatchGap = (current.intro ? 60 : 85) * s;
     const ordered = subagents.filter(agent => agent.queue.length).map(agent => {
       agent.queue.sort((a, b) => a.wave - b.wave);
       const roleIndex = byRole.get(agent.role).indexOf(agent);
       const popAt = (40 + agent.index * 20) * s;
-      agent.natural = Math.max(popAt + 400 * s, agent.queue[0].wave * s + roleIndex * 70 * s);
+      const wave = agent.queue[0].wave;
+      agent.natural = Math.max(current.intro ? 0 : popAt + 400 * s, wave * s + (wave || !current.intro ? roleIndex * 70 * s : 0));
       return agent;
-    }).sort((a, b) => a.natural - b.natural);
+    }).sort((a, b) => a.natural - b.natural || (b.role === 'type') - (a.role === 'type'));
     let previous = -Infinity;
     ordered.forEach(agent => { agent.firstStart = Math.max(agent.natural, previous + dispatchGap); previous = agent.firstStart; });
 
@@ -2180,8 +2329,8 @@ export function initAgenticEntrance(document, window, config = {}) {
       } else {
         addEvent(current, popAt, () => agent.cursor.classList.add('is-in'));
         // After the intro the crew is already out: start where the intro left it.
-        holdSeg(agent, 0, current.intro ? () => (agent.introEnd || ring)() : spawn);
-        travelSeg(agent, popAt, popAt + 380 * s, ring);
+        holdSeg(agent, 0, current.intro ? ring : spawn);
+        if (!current.intro) travelSeg(agent, popAt, popAt + 380 * s, ring);
         from = ring();
         if (!agent.queue.length) {
           agent.dockAt = (1200 + index * 30) * s;
@@ -2322,13 +2471,13 @@ export function initAgenticEntrance(document, window, config = {}) {
         return { x: 0, y, w: current.vw, h: 1, text, lx: column().right - labelWidth(text), ly: y + 6 };
       });
     }
-    [3, 6, 9].forEach((k, i) => add(`col-${k}`, 'v', 'drawing columns', () => {
+    [3, 9].forEach((k, i) => add(`col-${k}`, 'v', 'drawing columns', () => {
       const g = grid();
       const x = g.left + k * g.colW + (k - 0.5) * g.gap;
       const text = `col ${k}/12 · x ${Math.round(x)}${i === 0 && g.gap ? ` · gutter ${Math.round(g.gap)}` : ''}`;
       return { x, y: 0, w: 1, h: current.vh, text, lx: x + 6, ly: current.vh * 0.17 + i * 22 };
     }));
-    [['box-title', '#hero-title', 'boxing headline'], ['box-art', '.hero-art', 'boxing portrait'], ['box-intro', '.hero-bottom', 'boxing intro row']].forEach(([id, sel, act]) => {
+    [['box-title', '#hero-title', 'boxing headline'], ['box-art', '.hero-art', 'boxing portrait']].forEach(([id, sel, act]) => {
       const element = document.querySelector(sel);
       // Only blocks that start well inside the first screen get a box.
       if (!element || !inView(current, element) || box(current, element).y > current.vh * 0.8) return;
@@ -2365,13 +2514,25 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (guide.label.textContent !== g.text) guide.label.textContent = g.text;
     const lx = clamp(g.lx, 4, Math.max(4, (current.cw || current.vw) - labelWidth(g.text) - 4));
     const ly = clamp(g.ly, 4, Math.max(4, current.vh - 22));
+    guide.lx = lx;
     guide.label.style.translate = `${lx.toFixed(1)}px ${ly.toFixed(1)}px`;
   }
 
-  // Per frame: guide growth (scale / clip-path), labels, and the veil's wipe.
+  // Per frame: the veil's wipe, guide growth (scale / clip-path) and labels.
+  // A label shows from when its guide is drawn for `INTRO.label`, and only
+  // over the black: it goes as soon as the wipe reaches it.
   function updateIntro(current, t) {
     const geometryChanged = current.introVersion !== current.version;
     current.introVersion = current.version;
+    const veil = current.veil;
+    if (veil) {
+      const { t0, t1, sweep } = current.paint;
+      if (t >= t1) { veil.remove(); current.veil = null; current.veilX = Infinity; }
+      else if (t > t0) {
+        const x = Math.round(clamp(sweep(easeInOut((t - t0) / (t1 - t0))).x, 0, current.vw) * 10) / 10;
+        if (x !== current.veilX) { current.veilX = x; veil.style.clipPath = `inset(0 0 0 ${x}px)`; }
+      }
+    }
     current.guides.forEach(guide => {
       if (geometryChanged) placeGuide(current, guide);
       const e = Math.round(easeInOut(clamp01((t - guide.t0) / Math.max(1e-6, guide.t1 - guide.t0))) * 1000) / 1000;
@@ -2380,16 +2541,44 @@ export function initAgenticEntrance(document, window, config = {}) {
         if (guide.kind === 'box') { const rest = ((1 - e) * 100).toFixed(1); guide.line.style.clipPath = e >= 1 ? 'none' : `inset(0 ${rest}% ${rest}% 0)`; }
         else guide.line.style.scale = guide.kind === 'v' ? `1 ${e}` : `${e} 1`;
       }
-      const on = t >= guide.t1;
-      if (on !== guide.on) { guide.on = on; guide.label.classList.toggle('is-on', on); }
+      // Shown (within the label budget) by hushLabels.
+      const wiped = !current.veil || (current.veilX !== undefined && (guide.lx ?? 0) < current.veilX);
+      guide.want = t >= guide.t1 && t < (guide.off ?? Infinity) && !wiped;
     });
-    const veil = current.veil;
-    if (!veil) return;
-    const { t0, t1, sweep } = current.paint;
-    if (t >= t1) { veil.remove(); current.veil = null; return; }
-    if (t <= t0) return;
-    const x = Math.round(clamp(sweep(easeInOut((t - t0) / (t1 - t0))).x, 0, current.vw) * 10) / 10;
-    if (x !== current.veilX) { current.veilX = x; veil.style.clipPath = `inset(0 0 0 ${x}px)`; }
+  }
+
+  // Per frame in the hero: at most HERO_BADGES labels at once (cursor and
+  // guide labels). A label, once shown, keeps its place; the others wait (a
+  // cursor works unlabelled) and show as soon as there is room: guide labels
+  // first, then the headline's type agents.
+  const BADGE_ORDER = ['orchestrator', 'type', 'nav', 'copy', 'art', 'layout', 'links', 'motion', 'a11y', 'qa'];
+  function hushLabels(current) {
+    let used = 0;
+    const waiting = [];
+    const guides = current.guides || [];
+    guides.forEach(guide => {
+      if (guide.on && !guide.want) { guide.on = false; guide.label.classList.remove('is-on'); }
+      if (guide.on) used++;
+    });
+    current.agents.forEach(agent => {
+      const classes = agent.cursor.classList;
+      const labelled = classes.contains('is-working') && !classes.contains('is-docked') && !agent.away && agent.badge.textContent.includes(' · ');
+      if (!labelled) { if (agent.hush !== undefined) { agent.hush = undefined; classes.remove('is-hush'); } return; }
+      if (agent.hush === false) used++;
+      else waiting.push(agent);
+    });
+    guides.forEach(guide => {
+      if (!guide.want || guide.on || used >= HERO_BADGES) return;
+      guide.on = true;
+      guide.label.classList.add('is-on');
+      used++;
+    });
+    waiting.sort((a, b) => BADGE_ORDER.indexOf(a.role) - BADGE_ORDER.indexOf(b.role) || a.index - b.index);
+    waiting.forEach(agent => {
+      const hush = used >= HERO_BADGES;
+      if (!hush) used++;
+      if (hush !== agent.hush) { agent.hush = hush; agent.cursor.classList.toggle('is-hush', hush); }
+    });
   }
 
   // Plays before the planned hero build: shifts that plan behind the intro,
@@ -2411,7 +2600,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     }));
     const spawn = () => ({ x: current.vw / 2, y: current.vh * 0.45 });
 
-    // 0-0.7 s, black: the orchestrator plans alone, then the crew pops in.
+    // When each agent's own hero work starts: the intro may only use it until then.
+    const busyFrom = agent => Math.min(Infinity, ...body.get(agent).filter(seg => seg.kind !== 'hold' && seg.t0 > lead).map(seg => seg.t0));
+
+    // 0-0.3 s, black: the orchestrator plans alone, then the crew pops in.
     holdSeg(orchestrator, 0, spawn);
     addEvent(current, 0, () => { orchestrator.cursor.classList.add('is-in', 'is-working'); say(orchestrator, 'planning layout'); });
     addEvent(current, INTRO.guides * u, () => say(orchestrator, 'setting guides'));
@@ -2424,48 +2616,58 @@ export function initAgenticEntrance(document, window, config = {}) {
       travelSeg(agent, popAt, popAt + 380 * u, agent.ring);
     });
 
-    // ~0.7-2.4 s: guides, about two per drawing agent.
+    // ~0.35-1.15 s: guides, a few per drawing agent. Drawing agents carry no
+    // label of their own (each guide's label says what it is), and a label
+    // shows only briefly, over the black: never over the page's text.
     current.guides = heroGuides(current);
-    const painter = crew.find(agent => agent.role === 'art') || crew.find(agent => agent.role === 'motion') || crew[crew.length - 1];
-    const prefer = ['layout', 'qa', 'a11y', 'nav', 'type', 'copy', 'links', 'motion', 'art'];
-    const drawers = crew.filter(agent => agent !== painter)
-      .sort((a, b) => prefer.indexOf(a.role) - prefer.indexOf(b.role) || a.index - b.index)
-      .slice(0, Math.ceil(current.guides.length / 2));
-    const queues = drawers.length ? drawers.map(() => []) : [[]];
-    current.guides.forEach((guide, i) => queues[i % queues.length].push(guide));
+    const back = 420 * u;
     const guidesEnd = INTRO.guidesEnd * u;
+    const paintEnd = INTRO.paintEnd * u;
+    // The painter and the drawers are agents whose own hero work starts later.
+    const free = crew.map(agent => ({ agent, from: busyFrom(agent) })).sort((a, b) => b.from - a.from || a.agent.index - b.agent.index);
+    const painterPick = free.find(entry => (entry.agent.role === 'art' || entry.agent.role === 'motion') && entry.from >= paintEnd + back)
+      || free.find(entry => entry.from >= paintEnd + back);
+    const painter = painterPick?.agent || null;
+    const drawers = free.filter(entry => entry.agent !== painter && entry.from >= guidesEnd + back).slice(0, Math.min(4, Math.ceil(current.guides.length / 2))).map(entry => entry.agent);
+    const queues = drawers.length ? drawers.map(() => []) : [[]];
+    // Left to right, like the wipe that follows: each label shows before the paint reaches it.
+    [...current.guides].sort((a, b) => a.geom().lx - b.geom().lx).forEach((guide, i) => queues[i % queues.length].push(guide));
+    const introEnd = new Map();
     queues.forEach((queue, k) => {
       const agent = drawers[k];
-      let t = (INTRO.guides + k * 90) * u;
+      let t = (INTRO.guides + k * 60) * u;
       let at = agent ? agent.ring() : spawn();
-      const legs = queue.map(guide => { const ms = clamp(120 + distance(at, guide.from()) * 0.2, 160, 300) * u; at = guide.tip(1); return ms; });
-      const draw = clamp((guidesEnd - t - legs.reduce((sum, ms) => sum + ms + 40 * u, 0)) / Math.max(1, queue.length), 420 * u, 650 * u);
+      const legs = queue.map(guide => { const ms = clamp(90 + distance(at, guide.from()) * 0.15, 110, 200) * u; at = guide.tip(1); return ms; });
+      const draw = clamp((guidesEnd - t - legs.reduce((sum, ms) => sum + ms + 30 * u, 0)) / Math.max(1, queue.length), 200 * u, 420 * u);
       queue.forEach((guide, j) => {
         const arrive = t + legs[j];
         guide.t0 = arrive;
         guide.t1 = arrive + draw;
+        guide.off = guide.t1 + INTRO.label * u;
         if (agent) {
           travelSeg(agent, t, arrive, guide.from);
           agent.segs.push({ t0: guide.t0, t1: guide.t1, kind: 'work', point: p => guide.tip(easeInOut(p)) });
           agent.last = () => guide.tip(1);
-          addEvent(current, t, () => { startWorking(current, agent); agent.cursor.classList.add('is-working'); say(agent, guide.act); });
+          if (j === 0) addEvent(current, t, () => startWorking(current, agent));
         }
-        t = guide.t1 + 40 * u;
+        t = guide.t1 + 30 * u;
       });
       if (!agent || !queue.length) return;
-      addEvent(current, t, () => { agent.cursor.classList.remove('is-working'); say(agent, ''); });
-      travelSeg(agent, t, t + 420 * u, agent.ring);
+      travelSeg(agent, t, t + back, agent.ring);
+      introEnd.set(agent, t + back);
     });
 
-    // ~2.4-3.3 s: the paint agent sweeps left to right; the veil follows it.
+    // ~1.05-1.65 s: the paint agent sweeps left to right; the veil follows it,
+    // and the build follows the veil (planHero's readyAt).
     const sweep = e => ({ x: -12 + (current.vw + 24) * e, y: current.vh * (0.52 + 0.05 * Math.sin(e * Math.PI * 2)) });
-    current.paint = { t0: INTRO.paint * u, t1: INTRO.paintEnd * u, sweep };
+    current.paint = { t0: INTRO.paint * u, t1: paintEnd, sweep };
     if (painter) {
-      const leave = current.paint.t0 - 420 * u;
+      const leave = current.paint.t0 - 380 * u;
       travelSeg(painter, leave, current.paint.t0, () => sweep(0));
       painter.segs.push({ t0: current.paint.t0, t1: current.paint.t1, kind: 'work', point: p => sweep(easeInOut(p)) });
       painter.last = () => sweep(1);
-      painter.introEnd = () => sweep(1);
+      travelSeg(painter, paintEnd, paintEnd + back, painter.ring);
+      introEnd.set(painter, paintEnd + back);
       addEvent(current, leave, () => { startWorking(current, painter); painter.cursor.classList.add('is-working'); say(painter, 'painting canvas'); });
       addEvent(current, current.paint.t1, () => { painter.cursor.classList.remove('is-working'); say(painter, ''); });
     }
@@ -2476,7 +2678,11 @@ export function initAgenticEntrance(document, window, config = {}) {
       current.guideLayer.style.transitionDuration = `${realMs(fade)}ms`;
       current.guideLayer.classList.add('is-fading');
     });
-    current.agents.forEach(agent => { agent.segs = [...agent.segs, ...body.get(agent)]; });
+    // Agents that worked in the intro join their hero plan once back at the ring.
+    current.agents.forEach(agent => {
+      const until = introEnd.get(agent);
+      agent.segs = [...agent.segs, ...body.get(agent).filter(seg => until === undefined || seg.t0 >= until)];
+    });
   }
 
   // A tour stop. The run starts while the page is still moving: the carried
@@ -2584,8 +2790,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     // nothing else it does gets later. Only if nobody can does the job go to
     // the run's pool, where an agent freed up later may still take it. Pool
     // items (content no planned job covers) are offered to the crew the same way.
-    // Content under a placeholder may wait for its editor a little longer.
-    const allowance = job => (job.rescue ? RESCUE.cap - 50 * anim : job.afterJob?.spec?.holes ? HOLE_CAP * anim * 0.6 : 200 * anim);
+    // Content under a placeholder may wait for its editor a little longer (only
+    // while the job that left the placeholder is still planned).
+    const liveDep = job => (job.afterJob && current.jobs.includes(job.afterJob) && !job.afterJob.void ? job.afterJob : null);
+    const allowance = job => (job.rescue ? RESCUE.cap - 50 * anim : liveDep(job)?.spec?.holes ? HOLE_CAP * anim * 0.6 : 200 * anim);
     // A copy or paste that others wait for counts too: a late one holds up its whole chain.
     const isLate = job => (job.reveals.length || (job.leads && !job.kept)) && !job.decor && job.agent && job.agent !== orchestrator && Number.isFinite(job.readyAt) && job.arrive > shownAt(job) + allowance(job);
     const resim = agent => { agent.free = agent.queue.length ? simulate(current, agent, agent.firstStart, agent.from, agent.factor || 1) : 0; };
@@ -2653,29 +2861,39 @@ export function initAgenticEntrance(document, window, config = {}) {
     });
 
     settleDeps(false);
-    // On screen before their agents get there, jobs that wait for another may
-    // stay hidden (under placeholders, if it left some) until `graceUntil`.
-    current.jobs.forEach(job => {
-      const dep = job.afterJob;
-      if (dep && Number.isFinite(dep.end)) job.graceUntil = dep.end + (dep.spec?.holes ? HOLE_CAP : RESCUE.cap) * anim;
-    });
     // Hand over once the builders are done.
     const crewJobs = current.jobs.filter(job => job.agent && job.agent !== orchestrator);
     const builders = crewJobs.filter(job => HIDES.has(job.kind));
     const handover = Math.max(commandAt + 400 * s, lead * 0.5, ...(builders.length ? builders : crewJobs).map(job => job.end)) + 260 * anim;
     let total = handover;
     if (!last) {
-      crew.forEach(agent => {
+      const trailing = agent => {
+        const job = agent.queue[agent.queue.length - 1];
+        if (!job || !OPTIONAL.has(job.kind)) return false;
+        // A QA pin whose resolver was dropped goes with it.
+        return job.start >= handover - 120 * anim || (job.kind === 'pin' && !current.jobs.some(other => other.kind === 'resolve' && other.afterJob === job));
+      };
+      const trim = agent => {
         let dropped = false;
-        while (agent.queue.length && OPTIONAL.has(agent.queue[agent.queue.length - 1].kind) && agent.queue[agent.queue.length - 1].start >= handover - 120 * anim) {
-          const job = agent.queue.pop();
-          current.jobs.splice(current.jobs.indexOf(job), 1);
+        while (agent.queue.length && trailing(agent)) {
+          current.jobs.splice(current.jobs.indexOf(agent.queue.pop()), 1);
           dropped = true;
         }
         if (dropped) agent.free = agent.queue.length ? agent.queue[agent.queue.length - 1].end + current.jobGap : 0;
-        if (agent.queue.length) total = Math.max(total, agent.queue[agent.queue.length - 1].end + 60 * anim);
-      });
+        return dropped;
+      };
+      // Twice: a resolver dropped on a later agent frees its pin on an earlier one.
+      crew.forEach(trim);
+      crew.forEach(trim);
+      crew.forEach(agent => { if (agent.queue.length) total = Math.max(total, agent.queue[agent.queue.length - 1].end + 60 * anim); });
     }
+    // On screen before their agents get there, jobs that wait for another may
+    // stay hidden (under placeholders, if it left some) until `graceUntil`;
+    // only while that other job is still planned (voidJob clears it).
+    current.jobs.forEach(job => {
+      const dep = job.afterJob;
+      if (dep && current.jobs.includes(dep) && !dep.void && Number.isFinite(dep.end)) job.graceUntil = dep.end + (dep.spec?.holes ? HOLE_CAP : RESCUE.cap) * anim;
+    });
 
     // Who goes back to the dock: everyone on the last stop; otherwise the
     // agents that finish first, one or two per stop, or more if over the cap.
@@ -2715,14 +2933,21 @@ export function initAgenticEntrance(document, window, config = {}) {
         let leave = back;
         if (!last && !current.column?.narrow) {
           leave = Math.max(back, handover - 700 * anim + docking++ * 120 * anim);
-          if (leave - back > 900 * anim) rideAlong(current, agent, back, k, slots.length + 1);
-          else leave = back;
+          if (leave - back > 900 * anim) {
+            // It waits at a standby spot (the one it is at, if it has nothing
+            // to do here) and leaves only once it got there.
+            const parkedAt = !agent.queue.length && agent.parked ? agent.parked.at : rideAlong(current, agent, back, k, slots.length + 1);
+            leave = Math.max(leave, parkedAt + 80 * anim);
+          } else leave = back;
         }
         agent.dockAt = leave + clamp(travelMs(current, agent.last(), home(agent)()), 450 * anim, 640 * anim);
         travelSeg(agent, leave, agent.dockAt, home(agent));
         addEvent(current, leave, () => { agent.cursor.classList.remove('is-working', 'is-idle'); say(agent, ''); });
         addEvent(current, agent.dockAt, () => dockAgent(current, agent));
         if (!last) total = Math.max(total, agent.dockAt + 60 * s);
+      } else if (!agent.queue.length && agent.parked) {
+        // Nothing to do here and already at a standby spot: it stays there.
+        agent.dockAt = agent.parked.at;
       } else {
         // Idle carried agents drift over to this stop's standby spots.
         agent.dockAt = rideAlong(current, agent, back, k, slots.length + 1);
@@ -3497,7 +3722,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       jobs.push(createJob(current, spec, target, reveals));
     };
     plan.forEach(spec => {
-      if (spec.only && (spec.only === 'phone') !== (current.tier === 'phone')) return;
+      if (spec.only && (spec.only === 'phone') !== single(current)) return;
       const nodes = specNodes(spec, rootNode);
       if (!nodes.length) return;
       if (current.kind === 'pass') {
@@ -3530,14 +3755,14 @@ export function initAgenticEntrance(document, window, config = {}) {
           if (rest.length && current.measurable) { const top = box(current, rest[0]).y; rest = rest.filter(node => box(current, node).y <= top + current.vh * 0.3); }
           if (rest.length) push({ ...spec, role: spec.role || spec.roles[0], kind: 'reveal', act: `placing ${rest.length} more` }, rest[0], rest);
         }
-      } else if (spec.each && spec.group && current.tier !== 'desktop') {
+      } else if (spec.each && spec.group && (current.tier !== 'desktop' || spec.grouped)) {
         const container = document.querySelector(spec.group);
         const shown = current.measurable ? nodes.filter(node => inView(current, node)) : nodes;
         if (container && shown.length && (!current.measurable || inView(current, container))) push(spec, container, shown);
       } else {
         (spec.each ? nodes : nodes.slice(0, 1))
           .filter(node => !current.measurable || inView(current, node))
-          .forEach(node => push(spec, node, HIDES.has(spec.kind) ? [node] : []));
+          .forEach(node => push(spec.label ? { ...spec, act: `${spec.act} '${cleanName(node.textContent)}'` } : spec, node, HIDES.has(spec.kind) ? [node] : []));
       }
     });
     return cap ? jobs.slice(0, cap) : jobs;
@@ -3547,6 +3772,22 @@ export function initAgenticEntrance(document, window, config = {}) {
   function specNodes(spec, rootNode) {
     const scope = spec.within ? document.querySelector(spec.within) : rootNode;
     return scope ? [...scope.querySelectorAll(spec.sel)] : [];
+  }
+
+  // `only: 'phone'` specs run where the layout is a single column, `'wide'`
+  // ones elsewhere. A stop with `columns` asks its grid how many tracks it
+  // really has (a list can be one column well above the phone tier); without
+  // a laid-out grid the viewport tier decides.
+  const single = current => (current.tracks ? current.tracks < 2 : current.tier === 'phone');
+  function gridTracks(current, element) {
+    if (!element || !current.measurable) return 0;
+    const style = window.getComputedStyle?.(element);
+    if (!style || !/grid/.test(style.display || '')) return 0;
+    const value = (style.gridTemplateColumns || '').trim();
+    if (!value || value === 'none') return 1;
+    // Resolved track sizes ("312px 312px"); a repeat() means no layout ran.
+    if (/repeat\(/.test(value)) return 0;
+    return value.split(/\s+(?![^(]*\))/).filter(Boolean).length;
   }
 
   const cleanName = text => (text || '').replace(/[↗↓↑→←]/g, '').replace(/\s+/g, ' ').trim();
@@ -3582,8 +3823,9 @@ export function initAgenticEntrance(document, window, config = {}) {
       total: duration,
       budget: duration,
       scale,
-      // Animation pace: tour stops stay near real time whatever their weight.
-      anim: kind === 'build' && scale >= 0.5 ? clamp(scale, 0.95, 1.15) : scale,
+      // Animation pace: tour stops stay near real time whatever their weight
+      // (short test timings, `buildDuration`, keep their own scale).
+      anim: kind === 'build' && !config.buildDuration ? clamp(scale, 0.95, 1.15) : scale,
       now: 0,
       t0: 0,
       traj: null,
@@ -3611,7 +3853,8 @@ export function initAgenticEntrance(document, window, config = {}) {
       rescuing: new Set(),
       holes: [],
       holesVersion: -1,
-      pins: new Map(),
+      pins: [],
+      pinsVersion: -1,
       // Pool items the previous stop handed over still hidden (and when each was first seen).
       waiting: new Map(),
       wasHidden: new Set(),
@@ -3806,12 +4049,26 @@ export function initAgenticEntrance(document, window, config = {}) {
       if (!(span > 40)) span = 0;
     } else if (stopInfo.span) {
       const r = box(current, stopInfo.section);
-      span = Math.min(y0 + r.y + r.h - current.vh - to, current.vh * stopInfo.span, maxY - to);
+      const end = y0 + r.y + r.h - current.vh - to;
+      // `untilEnd`: cruise on to the section's end however tall it is (short
+      // screens would otherwise stop before its last lines come into view).
+      let reach = stopInfo.untilEnd ? end : current.vh * stopInfo.span;
+      // `spanTo`: no further than that element's top a little below the
+      // fixed header (room for the slow creep after it), so the Projects
+      // explorer stays in view while it is used.
+      const mark = stopInfo.spanTo ? stopInfo.section.querySelector(stopInfo.spanTo) : null;
+      if (mark) {
+        const m = box(current, mark);
+        const pad = parseFloat(window.getComputedStyle?.(root).scrollPaddingTop) || 0;
+        if (m.h > 0) reach = Math.min(reach, Math.max(0, y0 + m.y - pad - 60 - to));
+      }
+      span = Math.min(end, reach, maxY - to);
       if (!(span > 40)) span = 0;
     }
     // While a pinned stage holds on a chapter the scroll only drifts (the
     // track moves ~1.3x as far sideways).
-    const creep = current.xp && stopInfo.dwell ? Math.min(motion.creep, stopInfo.dwell) : motion.creep;
+    // `creep`: a slower creep for a stop whose controls are used in place.
+    const creep = current.xp && stopInfo.dwell ? Math.min(motion.creep, stopInfo.dwell) : stopInfo.creep ? Math.min(motion.creep, stopInfo.creep) : motion.creep;
     const cruise = span ? clamp(span / (current.budget * 0.7 / 1000), creep, motion.max * 0.45 * boost) : creep;
     const soft = following ? Math.max(to + span, stopTarget(current, following, maxY)) : maxY;
     current.traj = makeTraj({ accel, brake: accel * 0.55, max: motion.max * boost, floor: motion.floor, creep, cruise, to, until: to + span, cruiseAfter: span ? current.budget * 0.15 : 0, soft, maxY, settle: !following }, from);
@@ -3861,9 +4118,6 @@ export function initAgenticEntrance(document, window, config = {}) {
     const turn = {};
     current.jobs.forEach(job => {
       const role = resolveRole(job.role, counts);
-      // `same`: the agent that did the job this one waits for (copy, then paste).
-      const previous = job.spec?.same ? job.afterJob?.agent : null;
-      if (previous && previous.role === role) { job.agent = previous; previous.queue.push(job); return; }
       const n = turn[role] = (turn[role] || 0) + 1;
       const pool = byRole.get(role) || [];
       const slot = (n - 1) % counts[role];
@@ -3917,7 +4171,11 @@ export function initAgenticEntrance(document, window, config = {}) {
       const value = parseFloat(chapter.style.getPropertyValue('--xp-at'));
       return Number.isFinite(value) ? value : k / Math.max(1, chapters.length - 1);
     });
-    return { section, travel, track, chapters, distance, shift, at };
+    // The same rest-and-move map experience.js lays the track out by: the
+    // stops align each chapter, the moves share all but the rests' scroll.
+    const first = chapters[0].offsetLeft;
+    const plan = travelPlan(chapters.map(chapter => clamp(chapter.offsetLeft - first, 0, shift)), shift, distance * (1 - HOLD_SHARE));
+    return { section, travel, track, chapters, distance, shift, at, plan };
   }
 
   // `after`: the keyed job inside the same item (or else the first one).
@@ -3926,9 +4184,11 @@ export function initAgenticEntrance(document, window, config = {}) {
     current.jobs.forEach(job => {
       const want = job.spec?.after;
       if (!want) return;
-      // '*': every builder inside its element.
+      // '*': every builder inside its element (or, with `afterOf`, every
+      // builder of the stop's items matching that selector).
       if (want === '*') {
-        job.afterJobs = current.jobs.filter(other => other !== job && HIDES.has(other.kind) && job.target.contains(other.target));
+        const mine = other => (job.spec.afterOf ? other.target.matches?.(job.spec.afterOf) : job.target.contains(other.target));
+        job.afterJobs = current.jobs.filter(other => other !== job && HIDES.has(other.kind) && mine(other));
         return;
       }
       const options = keyed.filter(other => other !== job && other.spec.key === want);
@@ -3948,6 +4208,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     const stacked = stopInfo.stackWeight && stopInfo.chapter !== undefined && stopInfo.section.dataset.xp !== 'travel';
     const current = prepare('build', buildDuration(tier) * ((stacked ? stopInfo.stackWeight : stopInfo.weight) || 1));
     current.section = section;
+    // `pace`: this stop's animation pace (travel and work), quicker than the
+    // usual near-real time (only at tour timing, not the tests' short runs).
+    if (stopInfo.pace && !config.buildDuration) current.anim = stopInfo.pace;
     if (stopInfo.frameMs) current.frameMs = stopInfo.frameMs * current.anim;
     current.waiting = tour.pending || new Map();
     current.wasHidden = tour.wasHidden || new Set();
@@ -3960,19 +4223,23 @@ export function initAgenticEntrance(document, window, config = {}) {
     const handoff = stopInfo.handoff ? section.querySelector(stopInfo.handoff) : null;
     const following = nextStop();
     const xp = travelStage(stopInfo);
-    watchElements(current, [section, following?.section, current.heading, handoff, xp?.travel, ...candidates]);
+    watchElements(current, [section, following?.section, current.heading, handoff, xp?.travel, stopInfo.spanTo && section.querySelector(stopInfo.spanTo), ...candidates]);
     measure(current);
     current.measurable = isMeasurable(current, [...current.watch]);
     if (xp && current.measurable) current.xp = { ...xp, top: current.sy0 + box(current, xp.travel).y };
     if (current.measurable) planScroll(current, stopInfo, following);
+    if (stopInfo.columns) current.tracks = gridTracks(current, section.querySelector(stopInfo.columns));
     current.jobs = collect(current, stopInfo.jobs || [], section);
     current.jobs.forEach(job => { job.readyAt = readyAt(current, job.target, job.kind === 'paste' && current.xp ? 0.94 : null); });
     linkJobs(current);
     // A chapter's ghost is dragged while the stage slides it in, and lands
-    // as the chapter arrives.
+    // just before the chapter becomes the current one (experience.js flips
+    // its counter once the chapter's left edge passes 40% of the stage), so
+    // the counter never names a chapter that is still a blank ghost.
     current.jobs.forEach(job => {
       if (job.kind !== 'paste' || !current.xp || !current.measurable) return;
-      const work = clamp((current.lead || 0) - (job.readyAt || 0), 900, 1150) * current.anim;
+      const land = readyAt(current, job.target, XP_LAND);
+      const work = clamp((Number.isFinite(land) ? land : current.lead || 0) - (job.readyAt || 0), 520, 900) * current.anim;
       job.baseWork = job.work = work;
     });
     current.pool = makePool(current, gathered);
@@ -4057,8 +4324,16 @@ export function initAgenticEntrance(document, window, config = {}) {
   }
 
   // ---- visitor input ------------------------------------------------------
+  // A `pick` job's click on a real control (the explorer's index).
+  let pressing = false;
+  function press(element) {
+    pressing = true;
+    try { element.click(); } catch { /* the control keeps its state */ }
+    finally { pressing = false; }
+  }
   const inDock = event => Boolean(dock && event.target?.closest?.('.agentic-dock'));
   const onKey = event => {
+    lastInput = 'key';
     // Escape first closes the plan list; the tour keeps going.
     if (event.key === 'Escape' && planOpen) { setPlanOpen(false); if (dock?.root.contains(document.activeElement)) dock.toggle.focus({ preventScroll: true }); return; }
     // Tab between the dock's own controls is not the visitor leaving the tour.
@@ -4068,7 +4343,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     // the visitor taking over.
     if (tour && !inDock(event)) cancelTour();
   };
-  const onTakeover = event => { if (tour && !inDock(event)) cancelTour(); };
+  const onTakeover = event => {
+    if (event.type === 'pointerdown' || event.type === 'touchstart') lastInput = 'pointer';
+    if (tour && !inDock(event)) cancelTour();
+  };
   // Keyboard focus leaving the dock for the page ends the tour like Tab does.
   const onFocusIn = event => {
     if (!tour || inDock(event) || run?.stage.contains(event.target)) return;
@@ -4076,6 +4354,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     stop();
   };
   const onNavigate = event => {
+    // The tour's own press on a control (kind `pick`) is not the visitor.
+    if (pressing) return;
     if (event.target.closest?.('[data-agentic-skip], [data-agentic-replay], .agentic-dock')) return;
     if ((tour || phase !== 'ready' || sectionsEligible) && event.target.closest?.('a, button, summary, input, select, textarea')) stop();
   };
