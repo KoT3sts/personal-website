@@ -123,6 +123,33 @@ test('explorer keys open the ring and step through, the index selects and is ann
   assert.equal(document.querySelector('.explorer-index-count').textContent, '05 / 06');
   await new Promise(resolve => setTimeout(resolve, 250));
   assert.equal(document.querySelector('.explorer-live').textContent, 'Work Helper, project 5 of 6, opportunity discovery.');
+  // The caption shows the active project's facts, read from its story; only that panel is live.
+  const panels = [...document.querySelectorAll('.explorer-caption .explorer-facts-panel')];
+  assert.equal(panels.length, 6);
+  const active = panels.filter(panel => panel.classList.contains('is-active'));
+  assert.deepEqual(active, [panels[4]]);
+  assert.deepEqual(panels.map(panel => panel.hasAttribute('inert')), [true, true, true, true, false, true]);
+  assert.deepEqual([...panels[4].querySelectorAll('dt')].map(term => term.textContent), ['Focus', 'Stage']);
+  assert.deepEqual([...panels[4].querySelectorAll('dd')].map(value => value.textContent), ['Making opportunity discovery more approachable', 'In development']);
+  assert.equal(document.querySelector('.explorer-caption').hasAttribute('aria-hidden'), false, 'the facts are read');
+  assert.equal(document.querySelector('.explorer-caption-title').getAttribute('aria-hidden'), 'true', 'the repeated title is not');
+  assert.deepEqual([...panels[1].querySelectorAll('.explorer-tags li')].map(tag => tag.textContent), ['EEG', 'Signal preprocessing', 'Classification']);
+  assert.equal(panels[2].querySelector('.explorer-facts-link').getAttribute('href'), './lab/sentiment-eval.html');
+  assert.equal(panels.filter(panel => panel.querySelector('.explorer-facts-link')).length, 1, 'the lab link only for the chatbot');
+  // Focus on the lab link when the project changes goes to the new cover, not <body>.
+  document.querySelector('[data-explorer-pick="2"]').click();
+  const lab = panels[2].querySelector('.explorer-facts-link');
+  lab.focus();
+  assert.equal(document.activeElement, lab);
+  document.querySelector('[data-explorer-pick="3"]').click();
+  assert.equal(explorer.state.index, 3);
+  assert.equal(panels[2].hasAttribute('inert'), true);
+  assert.equal(document.activeElement, covers[3], 'focus follows the selection out of the inert panel');
+  // Focus elsewhere (an index button) stays where it is.
+  const pick = document.querySelector('[data-explorer-pick="4"]');
+  pick.focus();
+  pick.click();
+  assert.equal(document.activeElement, pick);
   // A pointer click on a neighbour selects it; on the active cover it follows the link.
   const neighbour = new window.MouseEvent('click', { bubbles: true, cancelable: true, detail: 1, button: 0 });
   covers[2].dispatchEvent(neighbour);

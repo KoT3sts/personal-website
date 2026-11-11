@@ -230,3 +230,104 @@ test('the ring shows the active project too: title, category and a way into its 
   // The tour does not build it, so it waits out the tour.
   assert.match(css, /html\.agentic-touring \.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-caption \{ visibility: hidden; \}/);
 });
+
+// Each story's facts, as explorer.js reads them (dl rows; a row of tags is the stack).
+const STORY_IDS = ['project-agents', 'project-bci', 'project-chatbot', 'project-voicelab', 'project-work-helper', 'project-barking'];
+const storyFacts = id => {
+  const story = work.match(new RegExp(`<section id="${id}" class="project-story"[\\s\\S]*?</section>`))?.[0] || '';
+  const rows = [...(story.match(/<dl>([\s\S]*?)<\/dl>/)?.[1] || '').matchAll(/<div><dt>([^<]+)<\/dt><dd>([\s\S]*?)<\/dd><\/div>/g)];
+  const tags = rows.flatMap(([, , value]) => [...value.matchAll(/<li>([^<]+)<\/li>/g)].map(match => match[1]));
+  return {
+    story,
+    rows: rows.filter(([, , value]) => !value.includes('<li>')).map(([, term, value]) => [term, value]),
+    tags,
+    lab: story.match(/<a class="text-link story-lab-link" href="([^"]+)"/)?.[1] || null,
+  };
+};
+
+test('every project has facts in its story, in the explorer order', () => {
+  STORY_IDS.forEach((id, index) => {
+    const facts = storyFacts(id);
+    // explorer.js pairs a cover with the story whose case-study link matches.
+    assert.match(facts.story, new RegExp(`class="text-link story-case-link" href="\\./projects/${SLUGS[index]}\\.html"`), `${id} is project ${index + 1}`);
+    assert.ok(facts.rows.length + (facts.tags.length ? 1 : 0) >= 2, `${id}: at least two facts`);
+    facts.rows.forEach(([term, value]) => assert.ok(term.trim() && value.trim() && !/</.test(value), `${id}: ${term} is plain text`));
+  });
+  assert.deepEqual(storyFacts('project-bci').rows, [['Role', 'Lead researcher, Sep 2021 – May 2023'], ['Result', '+15% classification accuracy']]);
+  assert.deepEqual(storyFacts('project-chatbot').rows, [['Award', '1st Place, KSU CDay 2024']]);
+  assert.deepEqual(storyFacts('project-chatbot').tags, ['LLM', 'Sentiment analysis']);
+  // Only the chatbot's story has the evaluation lab link.
+  assert.deepEqual(STORY_IDS.map(id => storyFacts(id).lab), [null, null, './lab/sentiment-eval.html', null, null, null]);
+});
+
+test('the explorer builds the facts from the stories with textContent, and announces only the title', async () => {
+  const js = await readFile(new URL('../web/explorer.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(js, /innerHTML|insertAdjacentHTML|outerHTML/);
+  assert.match(js, /const node = document\.createElement\(tag\);/);
+  assert.match(js, /if \(text !== undefined\) node\.textContent = text;/);
+  assert.match(js, /document\.querySelectorAll\('\.project-stories \.project-story'\)/);
+  assert.match(js, /story\.querySelector\('\.story-case-link'\)\?\.getAttribute\('href'\) === href/);
+  assert.match(js, /element\(document, 'dl', 'explorer-facts-list'\)/);
+  assert.match(js, /element\(document, 'dt', 'mono', term\), element\(document, 'dd', '', value\)/);
+  assert.match(js, /const FACT_ROWS = 3;/);
+  assert.match(js, /const FACT_TAGS = 5;/);
+  assert.match(js, /`\+\$\{rest\}`/);
+  assert.match(js, /story\.querySelector\('\.story-lab-link'\)/);
+  // Every change of project switches the panel (wheel, drag, keys, index and tour all go through showCaption).
+  assert.match(js, /panel\.classList\.toggle\('is-active', active\);\s*\/\/[^\n]*\n\s*panel\.toggleAttribute\('inert', !active\);/);
+  // The live region stays short: title, position, category.
+  assert.match(js, /live\.textContent = `\$\{project\.title\}, project \$\{index \+ 1\} of \$\{count\}\$\{project\.spoken \? `, \$\{project\.spoken\}` : ''\}\.`;/);
+  // Focus inside a panel about to go inert moves to the new cover first.
+  const show = js.slice(js.indexOf('function showCaption'), js.indexOf('function render'));
+  assert.ok(show.indexOf("links[index]?.focus({ preventScroll: true })") > 0);
+  assert.ok(show.indexOf('panel.contains(focused)') < show.indexOf("panel.toggleAttribute('inert'"), 'focus moves before the panel goes inert');
+});
+
+test('tablets keep one caption layout in ring and stack; the lab link has a 44px hit area', () => {
+  // The desktop ring's narrow-column facts rules stay on desktop.
+  const desktop = css.slice(css.indexOf('@media (min-width: 1100px) {'));
+  assert.match(desktop, /^@media \(min-width: 1100px\) \{\s*\.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-facts \{ min-height: \d+px;[^}]*\}\s*\.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-fact \{ grid-template-columns: minmax\(0, 1fr\);/);
+  assert.equal(css.match(/\[data-explorer-mode="ring"\] \.explorer-fact \{/g).length, 1);
+  const tablet = css.slice(css.indexOf('@media (max-width: 1099px)'), css.indexOf('@media (max-width: 699px)'));
+  assert.match(tablet, /\[data-explorer-mode="ring"\] \.explorer-caption-title \{ line-height: \.88; \}/);
+  assert.match(tablet, /\[data-explorer-mode="ring"\] \.explorer-caption-lead \{ display: block; \}/);
+  assert.match(tablet, /\.explorer\.is-ready \.explorer-caption-open \{ display: inline-flex; \}/);
+  // Hidden, not removed, in the stack: it keeps its place. Never visibility: visible (the tour hides the ring caption).
+  assert.match(tablet, /\[data-explorer-mode="stack"\] \.explorer-caption-open \{ visibility: hidden; \}/);
+  assert.doesNotMatch(css, /explorer-caption-open \{[^}]*visibility: visible/);
+  const phone = css.slice(css.indexOf('@media (max-width: 699px)'));
+  assert.match(phone, /\.explorer\.is-ready \.explorer-caption-open \{ display: none; \}/);
+  assert.match(css, /\.explorer-facts-link \{ position: relative;/);
+  assert.match(css, /\.explorer-facts-link::before \{ content: ""; position: absolute; top: calc\(50% - 22px\); bottom: calc\(50% - 22px\); left: min\(0px, calc\(50% - 22px\)\); right: min\(0px, calc\(50% - 22px\)\); \}/);
+});
+
+test('the facts block keeps its height, crossfades, and reads at 11px+ with 4.5:1 contrast', () => {
+  // All six panels share one grid cell: the block is as tall as the tallest.
+  assert.match(css, /\.explorer-facts \{ display: grid; min-height: \d+px;/);
+  assert.match(css, /\.explorer-facts-panel \{ grid-area: 1 \/ 1;[^}]*opacity: 0; visibility: hidden; transition: opacity/);
+  assert.match(css, /\.explorer-facts-panel\.is-active \{ opacity: 1; visibility: visible;/);
+  // A reserved height per breakpoint: desktop stack, the ring column, tablet and phones (in the flow).
+  assert.match(css, /\[data-explorer-mode="ring"\] \.explorer-facts \{ min-height: \d+px;/);
+  const tablet = css.slice(css.indexOf('@media (max-width: 1099px)'), css.indexOf('@media (max-width: 699px)'));
+  assert.match(tablet, /\.explorer-facts \{ min-height: \d+px; \}/);
+  assert.match(tablet, /\.explorer-caption-title \{ min-height: 1\.76em; \}/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[^@]*\.explorer-facts-panel, \.explorer-facts-panel\.is-active \{ transition: none; \}/);
+  // Short desktop windows give up the tags, then the facts, in the ring only.
+  assert.match(css, /\(min-width: 1480px\) and \(max-height: 729px\) \{\s*\.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-fact-stack \{ display: none; \}/);
+  // Type: mono labels on the label token, values at 14px, tags at 12px.
+  assert.match(css, /\.explorer-fact dt \{[^}]*font-size: var\(--text-label\);[^}]*text-transform: uppercase;/);
+  assert.match(css, /\.explorer-fact dd \{[^}]*font-size: 14px;/);
+  assert.match(css, /\.explorer \.explorer-tags li \{[^}]*font-size: 12px;/);
+  assert.match(css, /\.explorer-facts-link \{[^}]*font-size: var\(--text-label\);[^}]*pointer-events: auto;/);
+  const lum = hex => {
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+  const quiet = /--explorer-quiet: #([0-9a-f]{6});/.exec(css)[1];
+  const value = /\.explorer-fact dd \{[^}]*color: #([0-9a-f]{6});/.exec(css)[1];
+  const tag = /\.explorer \.explorer-tags li \{[^}]*background: #([0-9a-f]{6}); color: #([0-9a-f]{6});/.exec(css);
+  for (const [fg, bg] of [[quiet, '101114'], [value, '101114'], [tag[2], tag[1]], [quiet, tag[1]], ['c7d2a8', '101114']]) {
+    assert.ok(ratio(fg, bg) >= 4.5, `#${fg} on #${bg}: ${ratio(fg, bg).toFixed(2)}`);
+  }
+});

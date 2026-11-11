@@ -22,6 +22,79 @@ const IN_VIEW = 0.86; // share of the stage that must be visible to take the whe
 const SPIN = 3; // deg/s: the ring's idle drift
 const EASE = 'cubic-bezier(.16, 1, .3, 1)';
 const INDEX_GAP = 32; // px kept between the ring and the index column (desktop)
+const FACT_ROWS = 3; // term/value rows shown per project
+const FACT_TAGS = 5; // stack tags shown before "+N"
+const LAB_LABEL = 'Evaluation lab';
+
+const clean = value => (value || '').replace(/\s+/g, ' ').trim();
+function element(document, tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+// A project's facts, read from its story below the explorer (the no-script
+// fallback and the one source of truth): term/value rows, the stack as tags,
+// and the evaluation lab link when the story has one.
+export function readFacts(story) {
+  const facts = { rows: [], stackTerm: '', stack: [], lab: null };
+  if (!story) return facts;
+  story.querySelectorAll('dl > div').forEach(row => {
+    const term = clean(row.querySelector('dt')?.textContent);
+    const value = row.querySelector('dd');
+    if (!term || !value) return;
+    const tags = [...value.querySelectorAll('li')].map(tag => clean(tag.textContent)).filter(Boolean);
+    if (tags.length) { facts.stackTerm = term; facts.stack = tags; }
+    else if (clean(value.textContent)) facts.rows.push({ term, value: clean(value.textContent) });
+  });
+  const lab = story.querySelector('.story-lab-link');
+  const href = lab?.getAttribute('href');
+  if (href) facts.lab = { href, note: clean(lab.querySelector('.visually-hidden')?.textContent).replace(/^:\s*/, '') };
+  return facts;
+}
+
+// One facts panel, built with createElement/textContent only (never HTML from data).
+function buildFacts(document, title, facts) {
+  const panel = element(document, 'div', 'explorer-facts-panel');
+  panel.setAttribute('role', 'group');
+  panel.setAttribute('aria-label', `${title}: key facts`);
+  const list = element(document, 'dl', 'explorer-facts-list');
+  facts.rows.slice(0, FACT_ROWS).forEach(({ term, value }) => {
+    const row = element(document, 'div', 'explorer-fact');
+    row.append(element(document, 'dt', 'mono', term), element(document, 'dd', '', value));
+    list.append(row);
+  });
+  if (facts.stack.length) {
+    const row = element(document, 'div', 'explorer-fact explorer-fact-stack');
+    const value = element(document, 'dd');
+    const tags = element(document, 'ul', 'tag-list explorer-tags');
+    tags.setAttribute('role', 'list');
+    facts.stack.slice(0, FACT_TAGS).forEach(tag => tags.append(element(document, 'li', '', tag)));
+    const rest = facts.stack.length - FACT_TAGS;
+    if (rest > 0) {
+      const more = element(document, 'li', 'explorer-tag-more', `+${rest}`);
+      more.append(element(document, 'span', 'visually-hidden', ' more'));
+      tags.append(more);
+    }
+    value.append(tags);
+    row.append(element(document, 'dt', 'mono', facts.stackTerm), value);
+    list.append(row);
+  }
+  panel.append(list);
+  if (facts.lab) {
+    const line = element(document, 'p', 'explorer-facts-more');
+    const link = element(document, 'a', 'explorer-facts-link mono', LAB_LABEL);
+    link.setAttribute('href', facts.lab.href);
+    if (facts.lab.note) link.append(element(document, 'span', 'visually-hidden', `: ${facts.lab.note}`));
+    const arrow = element(document, 'span', '', ' →');
+    arrow.setAttribute('aria-hidden', 'true');
+    link.append(arrow);
+    line.append(link);
+    panel.append(line);
+  }
+  return panel;
+}
 
 export function initExplorer(document, window) {
   const section = document.querySelector('#work .explorer');
@@ -58,6 +131,25 @@ export function initExplorer(document, window) {
       lead: text(item, '.explorer-card-lead'),
     };
   });
+  // Each cover's story is the one whose case-study link matches the cover's.
+  const stories = [...document.querySelectorAll('.project-stories .project-story')];
+  const storyFor = href => stories.find(story => href && story.querySelector('.story-case-link')?.getAttribute('href') === href);
+  // The active project's facts, one panel per project stacked in one cell,
+  // so the block is as tall as the tallest and nothing below it moves.
+  const factsBox = caption ? element(document, 'div', 'explorer-facts') : null;
+  const factPanels = factsBox ? items.map((_, index) => {
+    const panel = buildFacts(document, projects[index].title, readFacts(storyFor(links[index]?.getAttribute('href'))));
+    factsBox.append(panel);
+    return panel;
+  }) : [];
+  if (factsBox) {
+    if (captionOpen) caption.insertBefore(factsBox, captionOpen);
+    else caption.append(factsBox);
+    // The caption's title, category and links repeat the active cover (hidden
+    // from screen readers); the facts are new, so they are read.
+    caption.removeAttribute('aria-hidden');
+    [captionTitle, captionCategory?.parentElement, captionLead, captionOpen].forEach(part => part?.setAttribute('aria-hidden', 'true'));
+  }
 
   const motion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const reduced = () => Boolean(motion?.matches);
@@ -256,6 +348,18 @@ export function initExplorer(document, window) {
     const label = counterLabel(index, count);
     if (captionCount) captionCount.textContent = label;
     if (indexCount) indexCount.textContent = label;
+    // Focus in a panel about to go inert (the lab link) would fall to <body>:
+    // it moves to the new project's cover instead.
+    const focused = document.activeElement;
+    if (focused && factPanels.some((panel, at) => at !== index && panel.contains(focused))) {
+      links[index]?.focus({ preventScroll: true });
+    }
+    factPanels.forEach((panel, at) => {
+      const active = at === index;
+      panel.classList.toggle('is-active', active);
+      // Inactive panels are out of sight, the tab order and the reading order.
+      panel.toggleAttribute('inert', !active);
+    });
     if (!direction || typeof caption?.animate !== 'function') return;
     const keyframes = reduced()
       ? [{ opacity: 0.4 }, { opacity: 1 }]
