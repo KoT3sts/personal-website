@@ -42,21 +42,23 @@ test('robots.txt allows everything and points at the absolute sitemap', async ()
   assert.ok(lines.includes(`Sitemap: ${await siteUrl()}sitemap.xml`));
 });
 
-test('sitemap.xml lists the homepage and the six project pages with ISO lastmods', async () => {
+test('sitemap.xml lists the homepage, the six project pages, the evaluation lab and the build trace with ISO lastmods', async () => {
   const xml = await read('sitemap.xml');
   assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
   assert.match(xml, /<\/urlset>\s*$/);
-  assert.equal(xml.match(/<url>/g)?.length, 7);
+  assert.equal(xml.match(/<url>/g)?.length, 9);
   const site = await siteUrl();
   const slugs = ['agent-workflow', 'thoughts-to-text', 'companion-chatbot', 'voicelab', 'work-helper', 'barking-village'];
-  assert.deepEqual([...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]), [site, ...slugs.map(slug => `${site}projects/${slug}.html`)]);
+  assert.deepEqual([...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]), [site, ...slugs.map(slug => `${site}projects/${slug}.html`), `${site}lab/sentiment-eval.html`, `${site}lab/build-trace.html`]);
   const lastmods = [...xml.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map(match => match[1]);
-  assert.equal(lastmods.length, 7);
+  assert.equal(lastmods.length, 9);
   for (const lastmod of lastmods) {
     assert.match(lastmod, /^\d{4}-\d{2}-\d{2}$/);
     assert.ok(!Number.isNaN(Date.parse(lastmod)));
   }
   for (const slug of slugs) assert.ok(await exists(`projects/${slug}.html`), `projects/${slug}.html exists`);
+  assert.ok(await exists('lab/sentiment-eval.html'), 'lab/sentiment-eval.html exists');
+  assert.ok(await exists('lab/build-trace.html'), 'lab/build-trace.html exists');
 });
 
 test('apple-touch-icon.png is a 180x180 PNG and index.html links it', async () => {

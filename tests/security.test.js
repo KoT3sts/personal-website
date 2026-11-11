@@ -38,7 +38,7 @@ const inlineScripts = html => [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*t
 const sha = text => `'sha256-${createHash('sha256').update(text).digest('base64')}'`;
 
 test('every page sets the strict CSP before any script, with a hash for each inline script and no unsafe-*', () => {
-  assert.ok(pages.length >= 8, 'homepage, 404 and six case studies');
+  assert.equal(pages.length, 10, 'homepage, 404, six case studies and two lab pages: add new pages here on purpose');
   for (const file of pages) {
     const html = read(file).replace(/<!--[\s\S]*?-->/g, '');
     const metas = [...html.matchAll(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/g)];

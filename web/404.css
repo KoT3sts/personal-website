@@ -13,7 +13,7 @@ a { color: inherit; text-decoration: none; }
 .lost-top { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px var(--gutter); }
 .lost-wordmark { display: inline-flex; flex-direction: column; gap: 1px; color: var(--ink); font-family: "Archivo", Arial, sans-serif; font-size: 22px; font-weight: 850; font-stretch: 87.5%; letter-spacing: -.045em; text-transform: none; padding: 7px 0; }
 .lost-wordmark-first { display: inline-flex; gap: 5px; align-items: center; }
-.lost-wordmark-last { font-size: 8px; font-weight: 600; font-stretch: 100%; letter-spacing: .11em; }
+.lost-wordmark-last { font-size: 11px; font-weight: 600; font-stretch: 100%; letter-spacing: .06em; line-height: 1; }
 .lost-dot { width: 6px; height: 6px; margin-top: 2px; border-radius: 50%; background: currentColor; }
 
 .lost { align-self: center; padding: 6vh var(--gutter) 10vh; }

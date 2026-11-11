@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const files = ['web/styles.css', 'web/about-scenes.css', 'web/experience.css', 'web/explorer.css', 'web/accordion.css', 'web/project.css', 'web/404.css'];
+const files = ['web/styles.css', 'web/about-scenes.css', 'web/experience.css', 'web/explorer.css', 'web/accordion.css', 'web/project.css', 'web/404.css', 'web/lab/lab.css', 'web/lab/build-trace.css'];
 const sheets = Object.fromEntries(files.map(file => [file, read(file)]));
 const styles = sheets['web/styles.css'];
 
@@ -15,13 +15,12 @@ test('three reading tokens: 15-16px body, labels never under 11px, pills and nav
   assert.match(styles, /--text-pill: clamp\(12px, [^;]+, 13px\);/);
 });
 
-test('no fixed font size under 11px in the owned stylesheets (the wordmark lockup and narrow-phone nav excepted)', () => {
+test('no fixed font size under 11px in the owned stylesheets, the wordmark lockup included', () => {
   for (const [file, css] of Object.entries(sheets)) {
     for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       const [, selector, body] = match;
       for (const size of body.matchAll(/font-size: ([\d.]+)px/g)) {
-        if (Number(size[1]) >= 11) continue;
-        assert.ok(/\.(cs-|lost-)?wordmark-last/.test(selector), `${file}: ${selector.trim()} ${size[0]}`);
+        assert.ok(Number(size[1]) >= 11, `${file}: ${selector.trim()} ${size[0]}`);
       }
     }
   }
@@ -40,7 +39,7 @@ test('body copy and labels use the tokens', () => {
 });
 
 test('small text links get a 44px hit area without changing their look', () => {
-  assert.match(styles, /:is\(\.main-nav a, \.hero-links a, \.contact-links a, \.work-end a, \.section-top a\)::before \{ content: ""; position: absolute; top: calc\(50% - 22px\); bottom: calc\(50% - 22px\); left: min\(0px, calc\(50% - 22px\)\); right: min\(0px, calc\(50% - 22px\)\); \}/);
+  assert.match(styles, /:is\(\.main-nav a, \.hero-links a, \.contact-links a, \.work-end a, \.section-top a, \.footer-trace\)::before \{ content: ""; position: absolute; top: calc\(50% - 22px\); bottom: calc\(50% - 22px\); left: min\(0px, calc\(50% - 22px\)\); right: min\(0px, calc\(50% - 22px\)\); \}/);
 });
 
 test('the ABOUT ME panel keeps its highlight dim enough for 4.5:1 text', () => {

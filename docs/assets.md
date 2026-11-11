@@ -30,3 +30,37 @@ Self-hosted in `web/assets/fonts/`, declared at the top of `web/styles.css` and 
 - The closing note's italic *making.* uses the real Archivo Italic drawing, replacing the earlier Georgia accent (owner's choice, November 11, 2026). Its `@font-face` covers only those seven code points, so any other character in that `em` falls back to Archivo upright with a synthesized slant; change the text and the file must be fetched again with the new `text=` value. No local subsetter was needed (fontTools/pip and npm were unreachable that day).
 - `Archivo Fallback` and `Geist Mono Fallback` are local Arial/Helvetica and Courier New/Menlo faces with `size-adjust` and ascent/descent overrides measured in Chrome against these files, to limit layout shift during the swap.
 - Geist Mono is unmodified (Google's latin subsetting only). Archivo's axes were narrowed to what the site uses: display 850 at 87.5% width, body 400–700 at 100% (CSS weights 400–850; nothing below 400). Google's CSS2 API serves the same full-axis latin file for narrower ranges, so the limit was applied locally; brotli for woff2 came from Node's built-in zlib through a temporary shim. Headlines were compared at 1440 against the original file: identical glyph extents and layout, differences only in edge anti-aliasing. Any new weight below 400 or width outside 87.5–100% would be synthesized or clamped, so widen the instance first. OFL permits bundling and redistribution with the site; neither copyright line declares a Reserved Font Name. Keep the license files beside the fonts.
+
+# Data
+
+## Evaluation lab: UCI Sentiment Labelled Sentences
+
+Used by `web/lab/sentiment-eval.html`, a public reproduction that shows how Cesar evaluates a sentiment classifier. It is not the Companionship Chatbot's model, data or reported result, and the page says so.
+
+- **Dataset:** Sentiment Labelled Sentences, UCI Machine Learning Repository, dataset 331. Page: https://archive.ics.uci.edu/dataset/331/sentiment+labelled+sentences. DOI: https://doi.org/10.24432/C57604.
+- **Citation:** Kotzias, D., Denil, M., de Freitas, N., and Smyth, P. (2015). From Group to Individual Labels Using Deep Features. KDD 2015. UCI asks users to cite the paper.
+- **Licence:** Creative Commons Attribution 4.0 International (CC BY 4.0), as stated on the UCI dataset page (checked November 11, 2026). Sharing and adaptation are allowed with credit; the lab page and the JSON carry the citation, the licence and a note of the changes.
+- **File:** https://archive.ics.uci.edu/static/public/331/sentiment+labelled+sentences.zip, retrieved November 11, 2026, 84,188 bytes, SHA-256 `afc26626d710899948693e1a61405dce197f57ffa719fa1130d346b4cc095343`. The script refuses a zip with any other hash.
+- **Contents used:** `amazon_cells_labelled.txt`, `yelp_labelled.txt`, `imdb_labelled.txt` (1,000 sentences each, 500 positive and 500 negative; one `sentence<TAB>label` per line).
+- **Changes:** Windows-1252 punctuation stored as C1 control characters in the IMDb file (U+0085, U+0096, U+0097) mapped back to "...", "-" and "--"; whitespace collapsed; 21 exact repeats (ignoring case and spacing) removed before the split, leaving 2,979 sentences.
+- **What is committed:** only `web/lab/data/sentiment-eval.json` (about 98 KB): dataset metadata, model settings, reference metrics, bootstrap intervals, the chosen failure examples and the 596 test sentences with both models' P(positive). The raw zip, the training and validation sentences and the trained weights are not committed. The zip is cached outside the repository at `$TMPDIR/sentiment-eval/sentiment.zip`.
+- **Rebuild:** `python3 scripts/eval/build_sentiment_eval.py` (Python 3 standard library; `--zip PATH` uses a local copy). Seed 331; the same seed writes a byte-identical JSON and page. The script also rewrites the page's generated blocks (evidence strip, no-JS reference tables, failure examples, method numbers) between `<!-- generated:NAME -->` markers, so edit the hand-written text around them, not inside them.
+
+## Build trace: `web/trace/build-trace.json`
+
+Hand-curated on November 11, 2026 from the site's own records: git commit times and subjects
+(`3839873..7395a47`, exact) and the OpenCode session transcripts of rounds 4 and 5 (message times
+to the minute; task intervals between them are marked `estimated`). There is no generator: each
+of the 52 spans is a short paraphrase of a real step, its real result (test counts, review
+findings, failures and retries) and the commit it ended in. Roles are role types, not separate
+agent instances.
+
+- **Privacy rules it follows** (the repository is public): no file paths, usernames, machine or
+  employer names, internal systems, other people's names, URLs or verbatim prompts; website work
+  only. `tests/trace.test.js` checks the schema, that every commit exists in git history, and the
+  privacy patterns.
+- **Used by** the build tour (cursor labels, the Trace panel) and `web/lab/build-trace.html`.
+  Both say it is a recorded replay of rounds 4–5 and that cursor positions, typing and the
+  number of cursors are a visualization.
+- **To extend it** to a later round, add spans the same way (real commits only, `timing` honest),
+  update `run`, `totals` and the title's round range, and re-run `node --test`.

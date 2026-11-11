@@ -68,7 +68,7 @@
   .site-header:has(:focus-visible) { transform: none; }
   .wordmark { display: inline-flex; flex-direction: column; gap: 1px; align-items: flex-start; font-size: 22px; letter-spacing: -.045em; font-weight: var(--display-weight); font-stretch: var(--display-stretch); padding: 7px 0; }
   .wordmark-first { display: inline-flex; gap: 5px; align-items: center; }
-  .wordmark-last { font-size: 8px; letter-spacing: .11em; font-weight: 600; font-stretch: 100%; }
+  .wordmark-last { font-size: 11px; letter-spacing: .06em; font-weight: 600; font-stretch: 100%; line-height: 1; }
   .brand-dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; margin-top: 2px; }
   .main-nav { display: flex; gap: 3px; padding: 5px; background: #eeede8e8; backdrop-filter: blur(16px); border: 1px solid #b9b9b14d; border-radius: 50px; box-shadow: 0 3px 15px #00000003; }
   .main-nav a { position: relative; padding: 9px 20px; border-radius: 40px; color: #66675f; font-size: var(--text-pill); text-transform: uppercase; letter-spacing: .035em; }
@@ -161,6 +161,7 @@
   .project-story .story-footnote { font-size: 12px !important; color: #676d5d !important; }
   .work-end { display: flex; justify-content: space-between; gap: 20px; padding: 22px 0 30px; border-top: 1px solid var(--line); margin-top: 75px; color: #676b5e; font-size: var(--text-label); }
   .work-end a { color: var(--ink); }
+  .work-end-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 28px; }
   .closing-note { display: flex; align-items: center; flex-direction: column; justify-content: center; padding: 100px var(--gutter); min-height: 480px; text-align: center; position: relative; overflow: clip; }
   .closing-note > .mono { font-size: var(--text-label); color: var(--label); }
   .closing-note p { font-size: clamp(63px, 8.6vw, 140px); font-weight: 800; font-stretch: var(--display-stretch); letter-spacing: var(--display-tracking); line-height: .95; margin: 26px 0 0; position: relative; z-index: 1; }
@@ -178,9 +179,11 @@
   .contact-links a { display: inline-block; padding: 10px 0; color: #d7deca; border-bottom: 1px solid #50564a; }
   .contact-links a:hover { color: #f7ffec; border-bottom-color: #d7deca; }
   .footer-bottom { display: flex; justify-content: space-between; gap: 30px; padding: 25px 0 30px; color: #8b9381; font-size: var(--text-label); border-top: 1px solid #33382c; }
+  .footer-trace { color: #c9d1bc; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  .footer-trace:hover { color: var(--paper); }
   /* Touch targets: text links keep their look; an invisible box gives each one at least 44 x 44 px to hit. */
-  :is(.main-nav a, .hero-links a, .contact-links a, .work-end a, .section-top a) { position: relative; }
-  :is(.main-nav a, .hero-links a, .contact-links a, .work-end a, .section-top a)::before { content: ""; position: absolute; top: calc(50% - 22px); bottom: calc(50% - 22px); left: min(0px, calc(50% - 22px)); right: min(0px, calc(50% - 22px)); }
+  :is(.main-nav a, .hero-links a, .contact-links a, .work-end a, .section-top a, .footer-trace) { position: relative; }
+  :is(.main-nav a, .hero-links a, .contact-links a, .work-end a, .section-top a, .footer-trace)::before { content: ""; position: absolute; top: calc(50% - 22px); bottom: calc(50% - 22px); left: min(0px, calc(50% - 22px)); right: min(0px, calc(50% - 22px)); }
   /* Tight display tracking also narrows the word space; give it back so words stay distinct. */
   .hero h1, .work-heading h2, .experience-heading h2, .capabilities-heading h2, .skills-layout h2, .approach-heading h2, .closing-note p, .contact h2, .about-title-panel h2 { word-spacing: .06em; }
 }

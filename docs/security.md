@@ -9,10 +9,10 @@ that serves it. The site covers the first three; the fourth is account hygiene (
 ## In place (November 11, 2026)
 
 - **Content-Security-Policy on every page** (`<meta http-equiv>` in `web/index.html`,
-  `web/404.html`, `web/projects/*.html`), set before any script:
+  `web/404.html`, `web/projects/*.html`, `web/lab/*.html`), set before any script:
   `default-src 'self'`; `script-src 'self'` plus a SHA-256 hash for the homepage's one inline
   script (the early tour decision); `style-src`, `font-src`, `connect-src`, `manifest-src`
-  `'self'`; `img-src 'self' data:` (the CSS feather masks); `object-src`, `frame-src`,
+  `'self'` (same-origin JSON only: the evaluation lab's `lab/data/sentiment-eval.json`, and `trace/build-trace.json`, which the homepage fetches only when the tour plays or the Trace panel opens, and `lab/build-trace.html` renders); `img-src 'self' data:` (the CSS feather masks); `object-src`, `frame-src`,
   `worker-src`, `media-src`, `base-uri`, `form-action` all `'none'`; `upgrade-insecure-requests`.
   An injected inline script or a remote image is refused (checked in Chrome: the probe script
   did not run, and `script-src-elem` and `img-src` violations fired). The full build tour runs
