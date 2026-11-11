@@ -6,6 +6,7 @@ import { sectionAtLine } from './motion.js';
 const SOLID_AFTER = 24; // px scrolled before the bar fades in
 const PINNED_UNTIL = 160; // px from the top where the header never hides
 const SCROLL_DELTA = 8; // px of travel in one direction before hide/show flips
+const NAV_LINE = 0.3; // the nav's reading line, as a share of the window height
 
 export function initHeader(document, window) {
   const header = document.querySelector('.site-header');
@@ -81,11 +82,34 @@ export function initHeader(document, window) {
     }
   }
 
+  // The nav marks the section under the reading line (NAV_LINE of the window
+  // height), recomputed from live positions on every paint, so it can never
+  // lag behind (an observer only reports changes, and a section that left the
+  // band without another entering used to keep its mark). At the very bottom
+  // the last section wins even if it is too short to reach the line.
+  let currentHash = null;
+  function paintNav() {
+    if (!navLinks.length) return;
+    const vh = window.innerHeight || root.clientHeight || 800;
+    const y = window.scrollY || window.pageYOffset || 0;
+    const atEnd = y > 0 && y + vh >= (root.scrollHeight || 0) - 2;
+    const index = atEnd ? pageSections.length - 1 : sectionAtLine(pageSections.map(section => section.getBoundingClientRect()), vh * NAV_LINE);
+    const section = pageSections[index];
+    const hash = section ? `#${section.dataset.navSection || section.id}` : '';
+    if (hash === currentHash) return;
+    currentHash = hash;
+    navLinks.forEach(link => {
+      if (link.hash === hash) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+  }
+
   let frame = 0;
   function paint() {
     frame = 0;
     paintHeaderState();
     paintHeaderTone();
+    paintNav();
   }
   const queuePaint = () => {
     if (!raf) paint();
@@ -109,19 +133,14 @@ export function initHeader(document, window) {
     new window.MutationObserver(queuePaint).observe(root, { attributes: true, attributeFilter: ['class'] });
   }
 
-  if (window.IntersectionObserver) {
-    const navObserver = new window.IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        navLinks.forEach(link => {
-          if (link.hash === `#${entry.target.dataset.navSection || entry.target.id}`) link.setAttribute('aria-current', 'location');
-          else link.removeAttribute('aria-current');
-        });
-      });
-    }, { rootMargin: '-12% 0px -70% 0px', threshold: 0 });
-    pageSections.forEach(section => navObserver.observe(section));
+  // Layout shifts without a scroll (fonts, the Experience stage switching
+  // modes, images) can move a section across the line: repaint on those too.
+  if (typeof window.ResizeObserver === 'function') {
+    const resized = new window.ResizeObserver(queuePaint);
+    pageSections.forEach(section => resized.observe(section));
   }
   paintHeaderState();
   paintHeaderTone();
-  return { paintHeaderTone, paintHeaderState };
+  paintNav();
+  return { paintHeaderTone, paintHeaderState, paintNav };
 }

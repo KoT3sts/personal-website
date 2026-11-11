@@ -29,6 +29,8 @@
     --display-weight: 850; --display-stretch: 87.5%; --display-tracking: -.05em;
     /* Fixed header: its offset from the top, the bar's extra depth below it, and the clearance anchors land below. */
     --header-top: 24px; --header-bar-pad: 14px; --header-clear: 76px;
+    /* Reading floor: body copy 15-16px, mono labels never under 11px, pills and nav never under 12px. */
+    --text-body: clamp(15px, 14px + .2vw, 16px); --text-label: clamp(11px, 10.4px + .12vw, 12px); --text-pill: clamp(12px, 11.4px + .1vw, 13px);
   }
   html { scroll-behavior: smooth; scroll-padding-top: var(--header-clear); scrollbar-color: #9a9d90 var(--paper); }
   body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-weight: 400; font-stretch: 100%; font-kerning: normal; word-spacing: .035em; -webkit-font-smoothing: antialiased; overflow-wrap: break-word; }
@@ -36,8 +38,8 @@
   .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   :focus-visible { outline: 2px solid #627942; outline-offset: 6px; }
   .dark-section :focus-visible { outline-color: var(--green); }
-  .mono { font-family: var(--font-mono); font-size: 10px; font-weight: 400; letter-spacing: .035em; word-spacing: normal; line-height: 1.55; }
-  .small-label { font-size: 10px; color: var(--muted); }
+  .mono { font-family: var(--font-mono); font-size: var(--text-label); font-weight: 400; letter-spacing: .035em; word-spacing: normal; line-height: 1.55; }
+  .small-label { font-size: var(--text-label); color: var(--muted); }
   .dark-section { background: var(--night); color: var(--paper); }
   .section-top { display: flex; justify-content: space-between; gap: 30px; padding: 29px 0; border-bottom: 1px solid var(--line); }
   .dark-section .section-top { border-color: #333438; color: #a4a59f; }
@@ -66,7 +68,7 @@
   .wordmark-last { font-size: 8px; letter-spacing: .11em; font-weight: 600; font-stretch: 100%; }
   .brand-dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; margin-top: 2px; }
   .main-nav { display: flex; gap: 3px; padding: 5px; background: #eeede8e8; backdrop-filter: blur(16px); border: 1px solid #b9b9b14d; border-radius: 50px; box-shadow: 0 3px 15px #00000003; }
-  .main-nav a { padding: 10px 20px; border-radius: 40px; color: #66675f; font-size: 10px; text-transform: uppercase; letter-spacing: .035em; }
+  .main-nav a { position: relative; padding: 9px 20px; border-radius: 40px; color: #66675f; font-size: var(--text-pill); text-transform: uppercase; letter-spacing: .035em; }
   .main-nav a[aria-current] { color: var(--ink); background: #f8f7f1; box-shadow: 0 0 0 1px #cacbc34d; }
   .main-nav a:hover { color: var(--ink); }
   .header-contact { display: flex; align-items: center; gap: 28px; font-size: 11px; padding: 12px 0; }
@@ -82,28 +84,28 @@
   /* Size, offset and centring of the portrait group live in portrait.css. */
   .hero-art { position: absolute; z-index: 2; left: 50%; }
   .sculpture { width: 100%; height: auto; rotate: var(--art-rotate, 0deg); }
-  .orbit-label { position: absolute; color: var(--muted); font-size: 8px; writing-mode: vertical-rl; }
-  .art-coordinate { position: absolute; font-size: 8px; color: var(--muted); }
+  .orbit-label { position: absolute; color: var(--muted); font-size: var(--text-label); writing-mode: vertical-rl; }
+  .art-coordinate { position: absolute; font-size: var(--text-label); color: var(--muted); }
   .hero-bottom { position: absolute; z-index: 3; left: var(--gutter); right: var(--gutter); bottom: 96px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 20px; }
   .hero-intro p:first-of-type { font-size: 24px; line-height: 1.14; letter-spacing: -.03em; font-weight: 450; margin-top: 12px; text-wrap: balance; }
-  .hero-intro .hero-scope { font-size: 13px; line-height: 1.55; letter-spacing: 0; color: var(--muted); margin-top: 12px; text-wrap: pretty; }
+  .hero-intro .hero-scope { font-size: var(--text-body); line-height: 1.55; letter-spacing: 0; color: var(--muted); margin-top: 12px; text-wrap: pretty; }
   .hero-actions { justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
   .pill-button { display: inline-flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 50px; background: var(--ink); color: var(--paper); font-size: 13px; box-shadow: 0 12px 24px -16px #17171699; }
   .pill-button > span:last-child { font-size: 18px; line-height: 1; }
   .pill-meta { font-family: var(--font-mono); font-size: 11px; color: #b9bcaf; letter-spacing: .05em; }
   .pill-button:hover { background: #32342e; }
-  .hero-links { display: flex; gap: 22px; font-size: 11px; }
+  .hero-links { display: flex; gap: 22px; font-size: var(--text-label); }
   .hero-links a { padding: 8px 0; border-bottom: 1px solid #b3b6a8; }
   .hero-links a:hover { border-bottom-color: var(--ink); }
   .scroll-cue { width: 50px; height: 50px; display: grid; place-items: center; border: 1px solid #c7c9bd; border-radius: 50%; margin-bottom: 4px; font-size: 24px; }
   .scroll-cue:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .hero-rule { display: flex; justify-content: space-between; gap: 30px; position: absolute; bottom: 25px; left: var(--gutter); right: var(--gutter); border-top: 1px solid var(--line); padding-top: 15px; color: #686b60; font-size: 8px; }
+  .hero-rule { display: flex; justify-content: space-between; gap: 30px; position: absolute; bottom: 25px; left: var(--gutter); right: var(--gutter); border-top: 1px solid var(--line); padding-top: 15px; color: #686b60; font-size: var(--text-label); }
   .cinematic-copy .currently { margin-top: 16px; padding-top: 14px; border-top: 1px solid #ffffff1f; color: #d8d9de; }
   .currently .mono { display: block; margin-bottom: 6px; color: var(--green); font-size: 11px; letter-spacing: .06em; }
   .work-heading, .experience-heading, .capabilities-heading { display: flex; justify-content: space-between; align-items: end; gap: 30px; padding: 78px 0 20px; }
   .work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: clamp(55px, 7.6vw, 125px); letter-spacing: var(--display-tracking); line-height: .9; font-weight: var(--display-weight); font-stretch: var(--display-stretch); }
   .work-heading h2 span { color: #808477; }
-  .work-heading > p, .experience-heading > p, .capabilities-heading > p { font-size: 13px; color: #65685d; line-height: 1.6; padding: 0 4px 8px 0; max-width: 300px; }
+  .work-heading > p, .experience-heading > p, .capabilities-heading > p { font-size: var(--text-body); color: #65685d; line-height: 1.55; padding: 0 4px 8px 0; max-width: 340px; text-wrap: pretty; }
   .capabilities { padding: 0 var(--gutter) 90px; }
   .capabilities-heading h2 span { color: #8c9285; }
   .capabilities-heading > p { color: #a5ada0; }
@@ -121,7 +123,8 @@
   .skills { padding: 0 var(--gutter); }
   .skills-layout, .education-layout { display: grid; grid-template-columns: var(--split); column-gap: 5vw; }
   .skills-layout { padding: 80px 0 0; row-gap: 40px; }
-  .skills-layout h2 { font-size: clamp(48px, 6vw, 100px); letter-spacing: var(--display-tracking); line-height: .92; font-weight: var(--display-weight); font-stretch: var(--display-stretch); }
+  /* Sized so TRAINING. (about 4.6em) fits its column: the period never wraps on its own. */
+  .skills-layout h2 { font-size: clamp(44px, 5.7vw, 100px); letter-spacing: var(--display-tracking); line-height: .92; font-weight: var(--display-weight); font-stretch: var(--display-stretch); }
   .skills-layout h2 span { color: #8c9285; }
   .skill-list { margin: 0; border-top: 1px solid var(--night-line); }
   .skill-list > div { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 12px 20px; padding: 20px 0; border-bottom: 1px solid var(--night-line); align-items: baseline; }
@@ -153,25 +156,28 @@
   .project-story dl > div:last-child { border: 0; }
   dt { font-family: var(--font-mono); font-size: 11px; color: var(--label); text-transform: uppercase; }dd { margin: 0; font-size: 13px; }
   .project-story .story-footnote { font-size: 12px !important; color: #676d5d !important; }
-  .work-end { display: flex; justify-content: space-between; gap: 20px; padding: 22px 0 30px; border-top: 1px solid var(--line); margin-top: 75px; color: #676b5e; font-size: 9px; }
+  .work-end { display: flex; justify-content: space-between; gap: 20px; padding: 22px 0 30px; border-top: 1px solid var(--line); margin-top: 75px; color: #676b5e; font-size: var(--text-label); }
   .work-end a { color: var(--ink); }
   .closing-note { display: flex; align-items: center; flex-direction: column; justify-content: center; padding: 100px var(--gutter); min-height: 480px; text-align: center; position: relative; overflow: clip; }
-  .closing-note > .mono { font-size: 9px; color: #7b826e; }
+  .closing-note > .mono { font-size: var(--text-label); color: var(--label); }
   .closing-note p { font-size: clamp(63px, 8.6vw, 140px); font-weight: 800; font-stretch: var(--display-stretch); letter-spacing: var(--display-tracking); line-height: .95; margin: 26px 0 0; position: relative; z-index: 1; }
   .closing-note em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-stretch: 100%; letter-spacing: -.04em; }
   .note-orbit { position: absolute; width: 200px; height: 200px; right: 10%; top: 25%; border: 1px solid #d5d9cd; border-radius: 50%; transform: rotate(-25deg) scaleX(.4); }
   .note-orbit span { display: none; }.note-orbit i { width: 12px; height: 12px; border-radius: 50%; background: #b0bca0; position: absolute; left: -6px; top: 50%; }
   .contact { padding: 0 var(--gutter); overflow: clip; }
-  .contact-intro { color: #a5aa9e; text-align: center; padding-top: 90px; font-size: 13px; }
+  .contact-intro { color: #a5aa9e; text-align: center; padding-top: 90px; font-size: var(--text-body); }
   .contact h2 { text-align: center; font-size: clamp(65px, 10.2vw, 180px); font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: var(--display-tracking); line-height: .95; margin-top: 25px; white-space: nowrap; text-shadow: 0 0 40px #e3eac51a; }
   .contact h2 > span { color: #d7deca; }
   .contact-button { display: flex; justify-content: space-between; align-items: center; gap: 28px; width: fit-content; max-width: 100%; margin: 45px auto 0; border: 1px solid #bec9ad; padding: 15px 22px; border-radius: 50px; background: #e2e8d8; color: #20271b; font-size: 13px; box-shadow: 0 14px 30px -18px #dbe9be40; }.contact-button span:last-child { font-size: 22px; }
   .contact-address { overflow-wrap: anywhere; }
   .contact-button:hover { background: #f7ffec; }
-  .contact-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 34px; list-style: none; padding: 0; margin: 30px 0 100px; font-size: 11px; }
+  .contact-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 34px; list-style: none; padding: 0; margin: 30px 0 100px; font-size: var(--text-label); }
   .contact-links a { display: inline-block; padding: 10px 0; color: #d7deca; border-bottom: 1px solid #50564a; }
   .contact-links a:hover { color: #f7ffec; border-bottom-color: #d7deca; }
-  .footer-bottom { display: flex; justify-content: space-between; gap: 30px; padding: 25px 0 30px; color: #8b9381; font-size: 8px; border-top: 1px solid #33382c; }
+  .footer-bottom { display: flex; justify-content: space-between; gap: 30px; padding: 25px 0 30px; color: #8b9381; font-size: var(--text-label); border-top: 1px solid #33382c; }
+  /* Touch targets: text links keep their look; an invisible box gives each one at least 44 x 44 px to hit. */
+  :is(.main-nav a, .hero-links a, .contact-links a, .work-end a, .section-top a) { position: relative; }
+  :is(.main-nav a, .hero-links a, .contact-links a, .work-end a, .section-top a)::before { content: ""; position: absolute; top: calc(50% - 22px); bottom: calc(50% - 22px); left: min(0px, calc(50% - 22px)); right: min(0px, calc(50% - 22px)); }
   /* Tight display tracking also narrows the word space; give it back so words stay distinct. */
   .hero h1, .work-heading h2, .experience-heading h2, .capabilities-heading h2, .skills-layout h2, .approach-heading h2, .closing-note p, .contact h2, .about-title-panel h2 { word-spacing: .06em; }
 }
@@ -199,19 +205,21 @@
     .skills-layout, .education-layout { column-gap: 36px; }.skill-list > div { grid-template-columns: 130px minmax(0, 1fr); }
   }
   @media (max-width: 760px) {
-    :root { --header-top: 16px; --header-bar-pad: 10px; --header-clear: 62px; }.site-header { gap: 12px; }.wordmark { font-size: 20px; }.main-nav a { font-size: 9px; padding: 10px 10px; }.main-nav { padding: 4px; }.header-contact, .nav-optional { display: none; }
-    .hero { padding-top: 104px; }.hero-kicker { font-size: 10px; gap: 7px; }.hero h1 { font-size: 15.4vw; margin-top: 20px; line-height: .86; }.hero-line > span { display: block; }
+    :root { --header-top: 16px; --header-bar-pad: 10px; --header-clear: 62px; }.site-header { gap: 12px; }.wordmark { font-size: 20px; }.main-nav a { padding: 9px 10px; }.main-nav { padding: 4px; }.header-contact, .nav-optional { display: none; }
+    .hero { padding-top: 104px; }.hero-kicker { gap: 7px; }.hero h1 { font-size: 15.4vw; margin-top: 20px; line-height: .86; }.hero-line > span { display: block; }
     /* Phone hero: one column below the portrait (portrait.css sizes and tucks it under ENGINEER). */
-    .orbit-label { font-size: 7px; }.art-coordinate { font-size: 7px; }
-    .hero-bottom { grid-template-columns: 1fr; gap: 26px; }.hero-intro p:first-of-type { font-size: 24px; }.small-label { font-size: 9px; }.hero-actions { justify-self: start; align-items: flex-start; }.hero-rule { font-size: 8px; margin-top: 46px; padding-top: 12px; }
-    .section-top { font-size: 8px; gap: 30px; padding: 25px 0; }.section-top > :last-child { text-align: right; max-width: 46%; }
-    .work-heading, .experience-heading, .capabilities-heading { display: block; padding-top: 55px; }.work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: 12.4vw; }.work-heading > p, .experience-heading > p, .capabilities-heading > p { margin-top: 25px; font-size: 13px; }
+    .hero-bottom { grid-template-columns: 1fr; gap: 26px; }.hero-intro p:first-of-type { font-size: 24px; }.hero-actions { justify-self: start; align-items: flex-start; }.hero-rule { margin-top: 46px; padding-top: 12px; }
+    .section-top { gap: 24px; padding: 25px 0; }.section-top > :last-child { text-align: right; max-width: 46%; }
+    .work-heading, .experience-heading, .capabilities-heading { display: block; padding-top: 55px; }.work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: 12.4vw; }.work-heading > p, .experience-heading > p, .capabilities-heading > p { margin-top: 25px; }
     .capabilities { padding-bottom: 60px; }.capability-list { grid-template-columns: 1fr; margin-top: 36px; }.capability-list > :nth-last-child(2) { border-bottom: 0; }.capability { padding: 24px 0 28px; }.capability h3 { font-size: 23px; }.capability-proof { font-size: 14.5px; }
     .skills-layout, .education-layout { grid-template-columns: 1fr; }.skills-layout { padding: 55px 0 0; row-gap: 34px; }.skills-layout h2 { font-size: 12.4vw; }.skill-list > div { grid-template-columns: 1fr; gap: 12px; }
     .education-layout h3 { padding-bottom: 0; border-bottom: 0 !important; }.education-list, .spoken-languages { grid-column: 1; border-top: 0 !important; padding-top: 16px !important; }.education-layout { padding-bottom: 64px; }
-    .work-end { margin-top: 50px; font-size: 8px; }
-    .closing-note { min-height: 410px; padding-block: 75px; }.closing-note > .mono { font-size: 8px; }.closing-note p { font-size: 17vw; }.note-orbit { right: -80px; top: 27%; }
-    .contact-intro { padding-top: 65px; font-size: 13px; }.contact h2 { font-size: 10.1vw; margin-top: 24px; }.contact-button { margin-top: 35px; padding: 13px 20px; font-size: 12px; gap: 18px; }.contact-links { margin: 26px 0 70px; gap: 4px 26px; }.footer-bottom { flex-wrap: wrap; gap: 12px; font-size: 8px; }.footer-bottom > :nth-child(2) { order: 3; width: 100%; }.footer-bottom > :last-child { margin-left: auto; }.story-lead { font-size: 21px; }
+    .work-end { margin-top: 50px; }
+    .closing-note { min-height: 410px; padding-block: 75px; }.closing-note p { font-size: 17vw; }.note-orbit { right: -80px; top: 27%; }
+    .contact-intro { padding-top: 65px; }.contact h2 { font-size: 10.1vw; margin-top: 24px; }.contact-button { margin-top: 35px; padding: 13px 20px; font-size: 13px; gap: 18px; }.contact-links { margin: 26px 0 70px; gap: 8px 26px; }.footer-bottom { flex-direction: column; gap: 10px; }.story-lead { font-size: 21px; }
   }
-  @media (max-width: 390px) { .main-nav a { padding: 10px 8px; font-size: 8.5px; }.wordmark { font-size: 18px; }}
+  /* Narrow phones: the nav keeps 12px type by setting it semi-condensed (the display width) with tighter padding;
+     its 44px hit areas come from ::before. Below 375px it steps down to 11px so it still fits beside the wordmark. */
+  @media (max-width: 420px) { .site-header { gap: 8px; }.main-nav a { padding: 9px 7px; font-stretch: var(--display-stretch); letter-spacing: 0; }.wordmark { font-size: 18px; }}
+  @media (max-width: 374px) { .main-nav a { padding-inline: 6px; font-size: 11px; }}
 }

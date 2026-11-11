@@ -38,6 +38,8 @@ export function initExplorer(document, window) {
   const captionCategory = caption?.querySelector('.explorer-caption-category');
   const captionCount = caption?.querySelector('.explorer-caption-count');
   const captionLead = caption?.querySelector('.explorer-caption-lead');
+  // The ring caption's way in: the active cover's own link, for the pointer only.
+  const captionOpen = caption?.querySelector('.explorer-caption-open');
   const indexBox = stage.querySelector('.explorer-index');
   const indexCount = stage.querySelector('.explorer-index-count');
   const live = stage.querySelector('.explorer-live');
@@ -212,6 +214,10 @@ export function initExplorer(document, window) {
     if (state.mode === next) return;
     state.mode = next;
     stage.dataset.explorerMode = next;
+    // The caption changes place with the mode (desktop): fade it in where it lands.
+    if (!instant && typeof caption?.animate === 'function') {
+      caption.animate([{ opacity: 0 }, { opacity: 1 }], reduced() ? { duration: 120 } : { duration: 520, delay: 160, easing: EASE, fill: 'backwards' });
+    }
     const target = next === 'stack' ? 1 : 0;
     if (instant || !animated()) {
       state.modeTween = null;
@@ -244,6 +250,8 @@ export function initExplorer(document, window) {
     if (captionTitle) captionTitle.textContent = project.title;
     if (captionCategory) captionCategory.textContent = project.category;
     if (captionLead) captionLead.textContent = project.lead;
+    const href = links[index]?.getAttribute('href');
+    if (captionOpen && href) captionOpen.setAttribute('href', href);
     const label = counterLabel(index, count);
     if (captionCount) captionCount.textContent = label;
     if (indexCount) indexCount.textContent = label;

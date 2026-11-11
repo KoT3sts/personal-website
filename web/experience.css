@@ -6,9 +6,13 @@
    reduced motion, print, short screens). experience.js sets
    data-xp="travel" when the chapters fit one screen; the stage then pins and
    the page scroll carries the track sideways, driven by a scroll timeline
-   (or by the script where scroll timelines are missing). */
+   (or by the script where scroll timelines are missing). Each chapter rests
+   aligned at the gutter for part of its scroll before the next slides in. */
 
-/* Travel progress through the pinned stage: 0 at the first chapter, 1 at the last. */
+/* Scroll progress through the pinned stretch (0..1): the timeline (or the script) drives it. */
+@property --xp-q { syntax: "<number>"; inherits: true; initial-value: 0; }
+/* Track position (0..1): 0 at the first chapter, 1 at the last. experience.js
+   sets it on .xp-travel to a piecewise map of --xp-q (flat while a chapter rests). */
 @property --xp-p { syntax: "<number>"; inherits: true; initial-value: 0; }
 
 @layer layout {
@@ -36,7 +40,7 @@
   .xp-title::selection, .xp-title-tail::selection { color: var(--ink); -webkit-text-stroke: 0; }
   .xp-title-tail { display: block; margin-top: 16px; font-family: var(--font-mono); font-size: 12px; font-weight: 400; font-stretch: 100%; letter-spacing: .06em; word-spacing: normal; line-height: 1.5; color: #d6d8cf; -webkit-text-stroke: 0; }
 
-  .xp-marks { list-style: none; display: flex; flex-wrap: wrap; gap: 14px 30px; margin: 10px 0 0; padding: 16px 0 0; border-top: 1px solid var(--night-line); align-self: stretch; font-family: var(--font-mono); font-size: 10px; letter-spacing: .05em; line-height: 1.45; text-transform: uppercase; color: #a4a59f; }
+  .xp-marks { list-style: none; display: flex; flex-wrap: wrap; gap: 14px 30px; margin: 10px 0 0; padding: 16px 0 0; border-top: 1px solid var(--night-line); align-self: stretch; font-family: var(--font-mono); font-size: var(--text-label); letter-spacing: .05em; line-height: 1.45; text-transform: uppercase; color: #a4a59f; }
   .xp-marks li { max-width: 17ch; }
   .xp-marks b { display: block; margin-bottom: 3px; font-family: var(--font-sans); font-size: 28px; font-weight: 750; font-stretch: var(--display-stretch); letter-spacing: -.035em; line-height: 1; text-transform: none; color: var(--paper); font-variant-numeric: tabular-nums; }
 
@@ -72,16 +76,17 @@
     .experience[data-xp="travel"] .xp-points li { font-size: clamp(13.5px, 1.8svh, 15px); line-height: 1.55; }
     .experience[data-xp="travel"] .xp-group .tag-list { margin-top: clamp(12px, 2svh, 18px); }
     /* Behind every chapter's copy (the track is the stacking context), and
-       drifting a little slower than its chapter for depth. */
-    .experience[data-xp="travel"] .xp-year { top: auto; right: auto; left: -.05em; bottom: calc(var(--xp-bar) - .13em); font-size: clamp(180px, 42svh, 480px); transform: translate3d(calc((var(--xp-p) - var(--xp-at, 0)) * var(--xp-shift, 0px) * .2), 0, 0); }
+       drifting a little slower than its chapter for depth; it follows the
+       scroll (--xp-q), so it keeps easing along while the chapter rests. */
+    .experience[data-xp="travel"] .xp-year { top: auto; right: auto; left: -.05em; bottom: calc(var(--xp-bar) - .13em); font-size: clamp(180px, 42svh, 480px); transform: translate3d(calc((var(--xp-q) - var(--xp-at, 0)) * var(--xp-shift, 0px) * .2), 0, 0); }
 
     .xp-controls { position: absolute; z-index: 2; left: var(--gutter); right: var(--gutter); bottom: 0; height: var(--xp-bar); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 20px; border-top: 1px solid var(--night-line); }
-    .xp-progress { position: absolute; top: -1px; left: 0; width: 100%; height: 1px; background: var(--paper); transform-origin: 0 50%; transform: scaleX(var(--xp-p)); }
+    .xp-progress { position: absolute; top: -1px; left: 0; width: 100%; height: 1px; background: var(--paper); transform-origin: 0 50%; transform: scaleX(var(--xp-q)); }
     .xp-count { margin: 0; color: #a4a59f; font-size: 11px; font-variant-numeric: tabular-nums; }
     .xp-count-current { color: var(--paper); }
     .xp-index { display: flex; gap: 6px; }
     .xp-index-button { position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 18px; border: 1px solid #3b3e39; border-radius: 40px; color: #a9aba4; font-size: 13px; letter-spacing: -.01em; white-space: nowrap; }
-    .xp-index-button .mono { font-size: 10.5px; }
+    .xp-index-button .mono { font-size: var(--text-label); }
     .xp-index-button:hover { color: var(--paper); border-color: #70756a; }
     .xp-index-button[aria-current="true"] { background: var(--paper); border-color: var(--paper); color: var(--ink); }
     .xp-steps { justify-self: end; display: flex; gap: 8px; }
@@ -96,7 +101,7 @@
 }
 
 @layer motion {
-  @keyframes xp-progress { from { --xp-p: 0; } to { --xp-p: 1; } }
+  @keyframes xp-progress { from { --xp-q: 0; } to { --xp-q: 1; } }
   /* The current chapter's title fills from the left as it arrives; leaving, the fill withdraws faster. */
   @media screen {
     .experience[data-xp="travel"] .xp-title::after { clip-path: inset(-.3em 101% -.3em -.3em); transition: clip-path .55s cubic-bezier(.55, 0, .15, 1); }

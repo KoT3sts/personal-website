@@ -4,15 +4,26 @@
 //
 // Travel mode: the stage pins while the page scrolls through a wrapper that is
 // one stage tall plus the travel distance; the scroll position moves the track
-// sideways. A CSS scroll timeline drives `--xp-p` (0..1) where supported; here
-// the same value is read from the wrapper's position to mark the current
-// chapter, drive the controls and, where scroll timelines are missing, set
-// `--xp-p` itself. Vertical scrolling is never captured: the pinned stretch is
-// ordinary page height.
+// sideways. Each chapter first rests aligned at the gutter (title whole) for
+// HOLD_SHARE of its scroll, then the track moves on to the next one.
+// `--xp-q` (0..1) is the scroll progress through the pinned stretch: a CSS
+// scroll timeline drives it where supported, otherwise this script sets it.
+// `--xp-p` (0..1, the track's position) is derived from it in CSS by the
+// piecewise map written in `measure()` (holds flat, moves linear). Here the
+// same progress is read from the wrapper's position to mark the current
+// chapter and drive the controls. Vertical scrolling is never captured: the
+// pinned stretch is ordinary page height.
+//
+// Build-tour contract (entrance.js reads these on #experience):
+// `--xp-shift` (px the track moves), `--xp-distance` (px of pinned scroll) and,
+// per chapter, `--xp-at`: the scroll progress (0..1) where that chapter's rest
+// begins, so `travel top + at * distance` shows it aligned.
 
 const TRAVEL_MEDIA = '(min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)';
-// Pinned scroll per chapter, in stage heights (the track may move farther).
+// Pinned scroll per chapter for the moves, in stage heights (the track may move farther).
 const DISTANCE_PER_CHAPTER = 0.85;
+// Share of each chapter's scroll span spent resting aligned before the next slides in.
+export const HOLD_SHARE = 0.18;
 // A chapter is current once its left edge passes this share of the stage.
 const CURRENT_LINE = 0.4;
 // A chapter has arrived once its left edge passes this share of the stage.
@@ -35,7 +46,7 @@ export function initExperience(document, window) {
   const raf = window.requestAnimationFrame?.bind(window) || (fn => window.setTimeout(fn, 16));
   const pad = n => String(n + 1).padStart(2, '0');
 
-  const state = { mode: 'stack', shift: 0, distance: 0, stageW: 0, lefts: [], stops: [], current: -1, frame: 0, measureFrame: 0 };
+  const state = { mode: 'stack', shift: 0, distance: 0, stageW: 0, lefts: [], stops: [], plan: null, current: -1, frame: 0, measureFrame: 0 };
 
   function setMode(mode) {
     state.mode = mode;
@@ -49,6 +60,8 @@ export function initExperience(document, window) {
       delete section.dataset.xpDriver;
       ['--xp-shift', '--xp-distance', '--xp-tail'].forEach(name => section.style.removeProperty(name));
       travel.style.removeProperty('--xp-p');
+      travel.style.removeProperty('--xp-q');
+      state.plan = null;
       chapters.forEach(chapter => {
         chapter.removeAttribute('tabindex');
         chapter.removeAttribute('data-reached');
@@ -86,10 +99,13 @@ export function initExperience(document, window) {
     state.shift = Math.max(0, trackW - stageW);
     state.lefts = chapters.map(chapter => chapter.offsetLeft);
     state.stops = state.lefts.map(left => Math.min(Math.max(0, left - first), state.shift));
-    state.distance = state.shift ? Math.round(Math.min(state.shift, chapters.length * DISTANCE_PER_CHAPTER * vh)) : 0;
+    const moves = state.shift ? Math.min(state.shift, chapters.length * DISTANCE_PER_CHAPTER * vh) : 0;
+    state.plan = travelPlan(state.stops, state.shift, moves);
+    state.distance = state.plan.distance;
     section.style.setProperty('--xp-shift', `${state.shift}px`);
     section.style.setProperty('--xp-distance', `${state.distance}px`);
-    chapters.forEach((chapter, index) => chapter.style.setProperty('--xp-at', state.shift ? (state.stops[index] / state.shift).toFixed(4) : '0'));
+    travel.style.setProperty('--xp-p', state.plan.css);
+    chapters.forEach((chapter, index) => chapter.style.setProperty('--xp-at', (state.plan.holds[index]?.[0] ?? 0).toFixed(4)));
     update();
   }
 
@@ -104,8 +120,9 @@ export function initExperience(document, window) {
   function update() {
     state.frame = 0;
     if (state.mode !== 'travel') return;
-    const p = progress();
-    if (!timeline) travel.style.setProperty('--xp-p', p.toFixed(4));
+    const q = progress();
+    if (!timeline) travel.style.setProperty('--xp-q', q.toFixed(4));
+    const p = trackAt(state.plan, q);
     const x = p * state.shift;
     const first = state.lefts[0] || 0;
     let current = 0;
@@ -117,8 +134,9 @@ export function initExperience(document, window) {
     });
     if (current === state.current) return;
     state.current = current;
-    if (announceNext) {
-      announceNext = false;
+    // Announce the chapter a button asked for once it arrives, not the first one passed on the way.
+    if (announceFor === current) {
+      announceFor = -1;
       const title = chapters[current]?.querySelector('.xp-title')?.textContent.replace(/\s+/g, ' ').trim();
       live.textContent = `Chapter ${current + 1} of ${chapters.length}${title ? `, ${title}` : ''}`;
     }
@@ -138,11 +156,13 @@ export function initExperience(document, window) {
   const schedule = () => { if (!state.frame && state.mode === 'travel') state.frame = raf(update); };
   const remeasure = () => { if (!state.measureFrame) state.measureFrame = raf(measure); };
 
-  // The page scroll position that shows chapter `index` at the stage's left.
+  // The page scroll position that shows chapter `index` at the stage's left:
+  // the middle of its rest, so a little overshoot either way stays aligned.
   function scrollTargetFor(index) {
     const r = travel.getBoundingClientRect();
     const top = (window.scrollY || window.pageYOffset || 0) + r.top;
-    const share = state.shift ? state.stops[index] / state.shift : 0;
+    const hold = state.plan?.holds[index];
+    const share = hold ? (hold[0] + hold[1]) / 2 : 0;
     return Math.round(top + share * state.distance);
   }
 
@@ -151,19 +171,19 @@ export function initExperience(document, window) {
   live.className = 'visually-hidden';
   live.setAttribute('aria-live', 'polite');
   section.append(live);
-  let announceNext = false;
+  let announceFor = -1;
 
-  function goTo(index, { behavior = 'smooth' } = {}) {
+  function goTo(index, { behavior = 'smooth', announce = false } = {}) {
     if (state.mode !== 'travel') return;
     const target = Math.max(0, Math.min(chapters.length - 1, index));
+    if (announce) announceFor = target;
     window.scrollTo({ top: scrollTargetFor(target), behavior });
   }
 
-  indexButtons.forEach(button => button.addEventListener('click', () => { announceNext = true; goTo(Number(button.dataset.xpGo)); }));
+  indexButtons.forEach(button => button.addEventListener('click', () => goTo(Number(button.dataset.xpGo), { announce: true })));
   stepButtons.forEach(button => button.addEventListener('click', () => {
     if (button.getAttribute('aria-disabled') === 'true') return;
-    announceNext = true;
-    goTo(Math.max(0, state.current) + Number(button.dataset.xpStep));
+    goTo(Math.max(0, state.current) + Number(button.dataset.xpStep), { announce: true });
   }));
 
   // Keyboard: focus on (or inside) a chapter brings that chapter into view;
@@ -202,4 +222,63 @@ export function initExperience(document, window) {
     goTo,
     refresh: measure,
   };
+}
+
+// The pinned stretch as alternating rests and moves. `stops` are the track
+// offsets (px) that align each chapter, `shift` the whole travel, `moves` the
+// scroll (px) shared by the moves in proportion to how far each one carries
+// the track. Each chapter also rests for HOLD_SHARE of its own span (its share
+// of the moves plus its rest). Returns the total scroll `distance` (px), the
+// scroll progress range of each chapter's rest (`holds`, 0..1), the
+// breakpoints of the progress -> track map (`points`, [q, p] pairs) and the
+// same map as a CSS expression of var(--xp-q).
+export function travelPlan(stops, shift, moves) {
+  const count = stops.length;
+  if (!(shift > 0) || !count || !(moves > 0)) {
+    return { distance: 0, holds: stops.map(() => [0, 0]), points: [[0, 0], [1, 1]], css: 'var(--xp-q)' };
+  }
+  const hold = (HOLD_SHARE / (1 - HOLD_SHARE)) * (moves / count);
+  const marks = stops.map(stop => Math.min(Math.max(0, stop), shift));
+  // The last rest ends the travel: anything past the last stop is one more move.
+  if (shift - marks[count - 1] > 0.5) marks.push(shift);
+  const span = marks[marks.length - 1] - marks[0] || 1;
+  const segments = [];
+  let y = 0;
+  marks.forEach((mark, index) => {
+    if (index < count) { segments.push({ kind: 'hold', chapter: index, from: y, to: y + hold, x: mark }); y += hold; }
+    const next = marks[index + 1];
+    if (next !== undefined) {
+      const length = (moves * (next - mark)) / span;
+      segments.push({ kind: 'move', from: y, to: y + length, x0: mark, x1: next });
+      y += length;
+    }
+  });
+  const distance = Math.round(y);
+  const at = value => value / y;
+  const holds = segments.filter(segment => segment.kind === 'hold').map(segment => [at(segment.from), at(segment.to)]);
+  const points = [[0, marks[0] / shift]];
+  segments.forEach(segment => points.push([at(segment.to), (segment.kind === 'hold' ? segment.x : segment.x1) / shift]));
+  const terms = segments
+    .filter(segment => segment.kind === 'move' && segment.to > segment.from)
+    .map(segment => {
+      const q0 = at(segment.from).toFixed(5);
+      const rate = (1 / (at(segment.to) - at(segment.from))).toFixed(5);
+      const share = ((segment.x1 - segment.x0) / shift).toFixed(5);
+      return `clamp(0, (var(--xp-q) - ${q0}) * ${rate}, 1) * ${share}`;
+    });
+  const base = (marks[0] / shift).toFixed(5);
+  return { distance, holds, points, css: `calc(${[base, ...terms].join(' + ')})` };
+}
+
+// The track position (0..1) at scroll progress `q`, from a plan's points.
+export function trackAt(plan, q) {
+  const points = plan?.points;
+  if (!points?.length) return q;
+  if (q <= points[0][0]) return points[0][1];
+  for (let index = 1; index < points.length; index += 1) {
+    const [q1, p1] = points[index];
+    const [q0, p0] = points[index - 1];
+    if (q <= q1) return q1 > q0 ? p0 + ((q - q0) / (q1 - q0)) * (p1 - p0) : p1;
+  }
+  return points[points.length - 1][1];
 }

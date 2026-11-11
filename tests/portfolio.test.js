@@ -11,14 +11,10 @@ test('About navigation covers both scenes while header colors follow the actual 
   const { window } = new JSDOM(html, { url: 'https://portfolio.test/#about' });
   t.after(() => window.close());
   window.matchMedia = () => ({ matches: true });
-  let onIntersection;
-  const observed = [];
-  window.IntersectionObserver = class {
-    constructor(callback) { onIntersection = callback; }
-    observe(element) { observed.push(element); }
-  };
+  window.IntersectionObserver = class { observe() {} disconnect() {} };
   const { document, Event } = window;
-  // JSDOM has no layout: stub the boxes. The header's centre line is y = 50.
+  // JSDOM has no layout: stub the boxes. The header's centre line is y = 50;
+  // the nav's reading line is 30% of the window height (768 -> y = 230).
   const header = document.querySelector('.site-header');
   header.getBoundingClientRect = () => ({ top: 24, bottom: 76, height: 52 });
   const sections = [...document.querySelectorAll('main > section[id], footer[id]')];
@@ -29,29 +25,48 @@ test('About navigation covers both scenes while header colors follow the actual 
   layout({ home: { top: 0, bottom: 800 }, about: { top: 800, bottom: 1700 } });
   initPortfolio(document, window);
   const nav = () => document.querySelector('.main-nav [aria-current]')?.hash;
-  const enter = id => onIntersection([{ target: document.getElementById(id), isIntersecting: true }]);
-  assert.ok(observed.includes(document.querySelector('#introduction')));
+  assert.equal(nav(), undefined, 'the hero has no nav entry');
   assert.equal(header.classList.contains('is-dark'), false, 'light hero behind the header');
-  enter('about');
+  layout({ home: { top: -600, bottom: 200 }, about: { top: 200, bottom: 1100 } });
   assert.equal(nav(), '#about');
-  assert.equal(header.classList.contains('is-dark'), false, 'the nav band alone never changes the header tone');
+  assert.equal(header.classList.contains('is-dark'), false, 'the nav line alone never changes the header tone');
   layout({ about: { top: -200, bottom: 700 } });
   assert.ok(header.classList.contains('is-dark'));
-  enter('introduction');
+  layout({ about: { top: -900, bottom: -10 }, introduction: { top: -10, bottom: 900 } });
   assert.equal(nav(), '#about', 'cinematic introduction belongs to About');
-  layout({ introduction: { top: -10, bottom: 900 } });
   assert.ok(header.classList.contains('is-dark'));
-  enter('work');
-  assert.equal(nav(), '#work');
   layout({ work: { top: -300, bottom: 600 } });
+  assert.equal(nav(), '#work');
   assert.equal(header.classList.contains('is-dark'), false);
   // Regression: at the very bottom the dark footer filled the nav band while the
   // light closing note was still behind the header, so the wordmark vanished.
-  enter('contact');
   layout({ approach: { top: -900, bottom: -400 }, notes: { top: -400, bottom: 125 }, contact: { top: 125, bottom: 800 } });
+  assert.equal(nav(), '#contact');
   assert.equal(header.classList.contains('is-dark'), false, 'light closing note behind the header at the page bottom');
   layout({ notes: { top: -500, bottom: 30 }, contact: { top: 30, bottom: 705 } });
   assert.ok(header.classList.contains('is-dark'), 'dark once the footer is behind the header');
+});
+
+test('the nav follows the reading line both ways: never WORK while Experience is read', t => {
+  const { window } = new JSDOM(html, { url: 'https://portfolio.test/#experience' });
+  t.after(() => window.close());
+  window.matchMedia = () => ({ matches: true });
+  window.IntersectionObserver = class { observe() {} disconnect() {} };
+  const { document, Event } = window;
+  const sections = [...document.querySelectorAll('main > section[id], footer[id]')];
+  function layout(boxes) {
+    sections.forEach(section => { section.getBoundingClientRect = () => boxes[section.id] || { top: -5000, bottom: -4000 }; });
+    window.dispatchEvent(new Event('scroll'));
+  }
+  initPortfolio(document, window);
+  const nav = () => document.querySelector('.main-nav [aria-current]')?.hash;
+  layout({ experience: { top: -2000, bottom: 400 }, work: { top: 400, bottom: 1600 } });
+  assert.equal(nav(), '#experience');
+  layout({ experience: { top: -2300, bottom: 100 }, work: { top: 100, bottom: 1300 } });
+  assert.equal(nav(), '#work');
+  // Back up a little: the work section is still on screen, but Experience is under the line again.
+  layout({ experience: { top: -2150, bottom: 250 }, work: { top: 250, bottom: 1450 } });
+  assert.equal(nav(), '#experience');
 });
 
 function setup(reducedMotion = false) {

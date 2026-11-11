@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { HOLD_SHARE, travelPlan, trackAt } from '../web/experience.js';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const html = read('web/index.html');
@@ -79,6 +80,12 @@ test('the pinned travel is opt-in: script-gated, screen-only, and never wider th
   assert.match(css, /\.experience \{[^}]*overflow-x: clip/);
   assert.match(css, /animation-timeline: view\(block 0px 0px\); animation-range: contain 0% contain 100%/);
   assert.match(css, /@property --xp-p/);
+  // The timeline drives the scroll progress (--xp-q); the track position (--xp-p) is mapped from it.
+  assert.match(css, /@property --xp-q/);
+  assert.match(css, /@keyframes xp-progress \{ from \{ --xp-q: 0; \} to \{ --xp-q: 1; \} \}/);
+  assert.match(css, /\.xp-track \{[^}]*translate3d\(calc\(var\(--xp-p\) \* var\(--xp-shift, 0px\) \* -1\)/);
+  assert.match(js, /travel\.style\.setProperty\('--xp-p', state\.plan\.css\)/);
+  assert.match(js, /if \(!timeline\) travel\.style\.setProperty\('--xp-q'/);
   // Phones, short windows and reduced motion stay stacked (no pinning).
   assert.match(js, /min-width: 761px\) and \(min-height: 600px\) and \(prefers-reduced-motion: no-preference\)/);
   assert.match(js, /export function initExperience\(document, window\)/);
@@ -107,4 +114,45 @@ test('the build tour builds the chapters on stage and never waits on hidden ones
 test('the old light-section role rules are gone from styles.css', () => {
   assert.doesNotMatch(styles, /\.role[\s,{.-]/);
   assert.doesNotMatch(styles, /\.experience \{/);
+});
+
+test('each chapter rests aligned for part of its scroll before the next slides in', () => {
+  // Measured 1280 x 800 layout: chapter offsets 0, 1608 and 2736 px; the moves take 2040 px of scroll.
+  const stops = [0, 1608, 2736];
+  const plan = travelPlan(stops, 2736, 2040);
+  assert.ok(HOLD_SHARE >= 0.15 && HOLD_SHARE <= 0.2, `hold share ${HOLD_SHARE}`);
+  assert.equal(plan.holds.length, 3);
+  const hold = (2040 / 3) * HOLD_SHARE / (1 - HOLD_SHARE);
+  assert.equal(plan.distance, Math.round(2040 + 3 * hold));
+  plan.holds.forEach(([from, to], index) => {
+    // Flat: anywhere inside the rest, the track shows that chapter at the gutter.
+    for (const q of [from, (from + to) / 2, to]) assert.ok(Math.abs(trackAt(plan, q) * 2736 - stops[index]) < 0.5, `chapter ${index} at ${q}`);
+    // The rest is HOLD_SHARE of the chapter's span (its share of the moves plus the rest).
+    const span = (to - from) * plan.distance;
+    assert.ok(Math.abs(span - hold) < 1, `rest ${span}`);
+  });
+  assert.equal(plan.holds[0][0], 0, 'the first rest starts the pin');
+  assert.ok(Math.abs(plan.holds[2][1] - 1) < 1e-9, 'the last rest ends it');
+  // Between rests the track moves monotonically and continuously.
+  let last = -1;
+  for (let q = 0; q <= 1.0001; q += 0.01) { const p = trackAt(plan, q); assert.ok(p >= last - 1e-9); last = p; }
+  // The CSS map is the same function: evaluate it for a few q.
+  const evaluate = q => Function(`return ${plan.css.replace(/^calc/, '').replace(/clamp\(0, /g, 'Math.min(1, Math.max(0, ').replace(/, 1\)/g, '))').replaceAll('var(--xp-q)', String(q))}`)();
+  for (const q of [0, 0.03, 0.2, 0.5, plan.holds[1][0] + 0.01, 0.8, 0.99, 1]) assert.ok(Math.abs(evaluate(q) - trackAt(plan, q)) < 1e-4, `css at ${q}`);
+});
+
+test('build-tour contract: --xp-at is where each chapter rest begins, buttons land mid-rest and announce the target', () => {
+  assert.match(js, /chapter\.style\.setProperty\('--xp-at', \(state\.plan\.holds\[index\]\?\.\[0\] \?\? 0\)\.toFixed\(4\)\)/);
+  assert.match(js, /section\.style\.setProperty\('--xp-shift'/);
+  assert.match(js, /section\.style\.setProperty\('--xp-distance'/);
+  assert.match(js, /const share = hold \? \(hold\[0\] \+ hold\[1\]\) \/ 2 : 0;/);
+  assert.match(js, /if \(announceFor === current\)/);
+  // The year still drifts while its chapter rests (it follows the scroll, not the track).
+  assert.match(css, /\.xp-year \{[^}]*translate3d\(calc\(\(var\(--xp-q\) - var\(--xp-at, 0\)\)/);
+});
+
+test('degenerate plans fall back to a straight map', () => {
+  const flat = travelPlan([0], 0, 0);
+  assert.equal(flat.distance, 0);
+  assert.equal(trackAt(flat, 0.4), 0.4);
 });

@@ -212,3 +212,19 @@ test('drags, keys and indexes stay inside the list', () => {
   assert.equal(clampIndex(Number.NaN, 6), 0);
   assert.equal(counterLabel(1, 6), '02 / 06');
 });
+
+test('the ring shows the active project too: title, category and a way into its case study', async () => {
+  const js = await readFile(new URL('../web/explorer.js', import.meta.url), 'utf8');
+  const caption = section.match(/<div class="explorer-caption"[\s\S]*?<\/div>/)?.[0] || '';
+  assert.match(caption, /^<div class="explorer-caption" aria-hidden="true" hidden>/);
+  // A pointer convenience: out of the tab order (the active cover is the same link for keys and screen readers).
+  assert.match(caption, /<a class="explorer-caption-open mono" href="\.\/projects\/agent-workflow\.html" tabindex="-1">CASE STUDY <span>↗<\/span><\/a>/);
+  assert.match(js, /captionOpen\.setAttribute\('href', href\)/);
+  // Visible in both modes; in the ring it sits under the index (desktop) or beside it (tablet).
+  assert.doesNotMatch(css, /\.explorer\.is-ready \.explorer-caption \{[^}]*(visibility: hidden|opacity: 0)/);
+  assert.match(css, /\[data-explorer-mode="ring"\] \.explorer-caption \{ top: auto; bottom: 64px; left: auto; right: 0;/);
+  assert.match(css, /\[data-explorer-mode="ring"\] \.explorer-caption-open \{ display: inline-flex; \}/);
+  assert.match(css, /\.explorer-caption-open \{[^}]*min-height: 44px/);
+  // The tour does not build it, so it waits out the tour.
+  assert.match(css, /html\.agentic-touring \.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-caption \{ visibility: hidden; \}/);
+});

@@ -79,15 +79,17 @@ test('the figure is the owner-supplied drawing, cut out, decorative and within b
   assert.doesNotMatch(css.match(/\.beam-figure \{[^}]*\}/)?.[0] ?? '', /grayscale|brightness/);
 });
 
-test('the swap variables match the drawing, and the art sits between the topline and the copy', () => {
+test('the swap variables match the drawing, and the art rests clear of the copy', () => {
   const img = art.match(/<img class="beam-figure"[^>]*>/)?.[0] ?? '';
   const [w, h] = [attr(img, 'width'), attr(img, 'height')].map(Number);
   const rule = css.match(/\.cinematic-art \{[^}]*\}/)?.[0] ?? '';
   const num = name => Number(rule.match(new RegExp(`${name}: ([\\d.]+)`))?.[1]);
   assert.ok(Math.abs(num('--fig-ratio') - h / w) < .005, `--fig-ratio ${h / w}`);
   for (const name of ['--body-ax', '--body-ay']) assert.ok(num(name) > 0 && num(name) < 1, name);
-  // Centred in the open area: from --art-top down to --foot-top, the copy's own top margin.
-  assert.match(rule, /top: calc\(var\(--art-top\) \+ \(var\(--foot-top\) - var\(--art-top\)\) \* var\(--art-bias/);
+  // The box rests --art-clear above --foot-top (the copy's own top margin); the clearance covers the
+  // post-rest drift (at most .82 of --drift is downward), the tumble's wider box and a margin.
+  assert.match(rule, /top: calc\(var\(--foot-top\) - var\(--art-clear\) - var\(--fig-h\)\)/);
+  assert.match(rule, /--art-clear: calc\(var\(--drift, \d+px\) \* \.82 \+ var\(--fig-w, \d+px\) \* \.08 \+ \d+px\)/);
   assert.match(css, /\.cinematic-footer \{[^}]*margin-top: var\(--foot-top\)/);
   assert.doesNotMatch(css, /\.cinematic-footer \{[^}]*margin-top: \d/, 'one source for the copy offset');
 });
@@ -117,9 +119,16 @@ test('the fall, tumble, halo, light and feathers only move with motion and scrol
   assert.match(css, /\.beam-feathers > span \{[^}]*rotate: var\(--r\); opacity: var\(--o\)/);
   assert.match(css, /\.cinematic-light::after \{[^}]*opacity: \.85; \}/);
   assert.match(css, /@keyframes cine-heaven \{[^\n]*45% \{ opacity: \.85; \}/);
-  // Down the shaft (away from the light) is +(cos, sin) of the beam angle; he starts higher and ends lower.
+  // Down the shaft (away from the light) is +(cos, sin) of the beam angle: he drops --fall into the rest pose,
+  // then only drifts --drift further, so he never reaches the copy.
   assert.match(css, /@keyframes figure-fall \{\s*0% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--fall, \d+px\) \* -1\)/);
-  assert.match(css, /100% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--fall, \d+px\) \* 1\.1\)/);
+  assert.match(css, /100% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--drift, \d+px\)\) calc\(sin\(var\(--beam-turn\)\) \* var\(--drift, \d+px\)\); \}/);
+  // A clearly visible drop: several times the drift at every size, never a token nudge.
+  const drops = [...css.matchAll(/--fall: (\d+)px; --drift: (\d+)px/g)].map(match => match.slice(1).map(Number));
+  assert.ok(drops.length >= 4, 'base, wide, wider and tablet sizes');
+  for (const [fall, drift] of drops) assert.ok(fall >= 300 && fall >= drift * 8, `fall ${fall}, drift ${drift}`);
+  assert.match(css, /--fall: \d+px; --drift: \d+px; --fig-tilt: -3deg/, 'the phone size too');
   // Feathers fall slower than he does, so they lag above him.
-  assert.match(css, /@keyframes feather-shed \{[\s\S]*?100% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--fall, \d+px\) \* \.4 \* var\(--d\)/);
+  assert.match(css, /@keyframes feather-shed \{[\s\S]*?0% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--fall, \d+px\) \* -\.85\)/);
+  assert.match(css, /@keyframes feather-shed \{[\s\S]*?100% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--drift, \d+px\) \* \.4 \* var\(--d\)/);
 });

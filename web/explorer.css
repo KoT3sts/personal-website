@@ -134,7 +134,7 @@
   border-radius: 30px;
   background: rgb(16 17 20 / .86);
   color: var(--explorer-ink);
-  font-size: 9px;
+  font-size: var(--text-label);
   letter-spacing: .08em;
   box-shadow: 0 8px 18px -10px rgb(0 0 0 / .8);
   opacity: 0;
@@ -163,7 +163,10 @@
 .explorer.is-ready .explorer-hub-count::after { content: " ·"; content: " ·" / ""; }
 .explorer.is-ready [data-explorer-mode="stack"] .explorer-hub { opacity: 0; scale: .9; }
 
-/* Large active title, left. */
+/* Large active title, left of the stack. In the ring the same caption sits
+   under the index, smaller, with its own way into the case study, so a
+   skimmer sees one project without touching anything (explorer.js fades it
+   in at each change of place). */
 .explorer.is-ready .explorer-caption {
   position: absolute;
   top: 50%;
@@ -173,11 +176,13 @@
   translate: 0 -50%;
   container-type: inline-size;
   pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity .35s ease, visibility 0s linear .35s;
 }
-.explorer.is-ready [data-explorer-mode="stack"] .explorer-caption { opacity: 1; visibility: visible; transition: opacity .6s ease .18s, visibility 0s; }
+.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption { top: auto; bottom: 64px; left: auto; right: 0; width: clamp(220px, 19vw, 290px); translate: none; }
+.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-title { font-size: min(36px, 12.2cqi); line-height: .9; }
+.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-meta { margin-top: 14px; }
+.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-lead { display: none; }
+/* The build tour does not build this caption: it waits until the tour is over. */
+html.agentic-touring .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption { visibility: hidden; }
 .explorer-caption-title {
   font-size: min(clamp(38px, 4.4vw, 80px), 12.2cqi);
   font-weight: var(--display-weight);
@@ -188,13 +193,32 @@
   text-wrap: balance;
   color: var(--explorer-ink);
 }
-.explorer-caption-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 24px; color: var(--explorer-quiet); font-size: 10px; letter-spacing: .08em; }
+.explorer-caption-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 24px; color: var(--explorer-quiet); font-size: var(--text-label); letter-spacing: .08em; }
 .explorer-caption-count { color: var(--green); }
-.explorer-caption-lead { max-width: 32ch; margin-top: 12px; color: #b9bbb1; font-size: 14px; line-height: 1.55; }
+.explorer-caption-lead { max-width: 32ch; margin-top: 12px; color: #b9bbb1; font-size: 15px; line-height: 1.55; }
+/* The ring's way in (pointer only: keyboard and screen readers open the
+   active cover, the same link). The stack shows it on the cover instead. */
+.explorer-caption-open {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 16px;
+  padding: 0 18px;
+  border: 1px solid #3d4038;
+  border-radius: 40px;
+  color: var(--explorer-ink);
+  font-size: var(--text-label);
+  letter-spacing: .08em;
+  pointer-events: auto;
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+.explorer-caption-open:hover { background: var(--explorer-ink); border-color: var(--explorer-ink); color: var(--night); }
+.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-open { display: inline-flex; }
 
 /* Compact index, upper right (the ring keeps clear of it). */
 .explorer.is-ready .explorer-index { position: absolute; top: clamp(20px, 5vh, 56px); right: 0; z-index: 4; width: clamp(220px, 19vw, 290px); }
-.explorer-index-label { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--explorer-rule); color: var(--explorer-quiet); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.explorer-index-label { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--explorer-rule); color: var(--explorer-quiet); font-size: var(--text-label); letter-spacing: .08em; text-transform: uppercase; }
 .explorer-index-count { color: var(--green); }
 .explorer-index ol { margin: 0; padding: 0; list-style: none; }
 .explorer-pick {
@@ -215,7 +239,7 @@
   transition: color .25s ease;
 }
 .explorer-pick::after { content: ""; justify-self: end; width: 22px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform .5s var(--explorer-ease); }
-.explorer-pick-no { color: #868b7f; font-size: 10px; transition: color .25s ease; }
+.explorer-pick-no { color: #868b7f; font-size: var(--text-label); transition: color .25s ease; }
 .explorer-pick:hover { color: #d8dad1; }
 .explorer-pick[aria-current="true"] { color: var(--explorer-ink); }
 .explorer-pick[aria-current="true"] .explorer-pick-no { color: var(--green); }
@@ -231,7 +255,7 @@
   z-index: 4;
   margin: 0;
   color: var(--explorer-quiet);
-  font-size: 10px;
+  font-size: var(--text-label);
   letter-spacing: .08em;
   white-space: nowrap;
   pointer-events: none;
@@ -255,7 +279,9 @@
   }
   .explorer.is-ready .explorer-covers { position: relative; inset: auto; grid-area: deck; }
   .explorer.is-ready .explorer-hub { grid-area: deck; position: relative; inset: auto; }
-  .explorer.is-ready .explorer-caption { grid-area: caption; position: relative; top: auto; width: auto; padding-top: 18px; translate: none; }
+  .explorer.is-ready .explorer-caption, .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption { grid-area: caption; position: relative; inset: auto; width: auto; padding-top: 18px; translate: none; }
+  .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-title { font-size: min(clamp(34px, 5.4vw, 56px), 12.2cqi); }
+  .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-meta { margin-top: 24px; }
   .explorer.is-ready .explorer-index { grid-area: index; position: relative; top: auto; right: auto; width: auto; padding-top: 24px; }
   .explorer.is-ready .explorer-hint { grid-area: hint; position: relative; bottom: auto; right: auto; justify-self: center; padding: 26px 0 22px; }
   .explorer-caption-title { font-size: min(clamp(34px, 5.4vw, 56px), 12.2cqi); }
@@ -285,5 +311,5 @@
 @media (prefers-reduced-motion: reduce) {
   .explorer-cover img, .explorer-pick::after, .explorer.is-ready .explorer-hub, .explorer.is-ready .explorer-stage::before { transition: none; }
   .explorer.is-ready .explorer-card:hover img { transform: none; }
-  .explorer.is-ready .explorer-caption, .explorer.is-ready [data-explorer-mode="stack"] .explorer-caption { transition-duration: .12s; transition-delay: 0s; }
+  .explorer-caption-open { transition: none; }
 }
