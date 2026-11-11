@@ -30,8 +30,10 @@ test('every project links to its case study, in order, with a described cover an
   const links = [...section.matchAll(/<a class="explorer-card" href="\.\/projects\/([a-z-]+)\.html" aria-label="([^"]+)">/g)];
   assert.deepEqual(links.map(match => match[1]), SLUGS);
   links.forEach(([, slug, label]) => {
-    assert.match(label, /Read the case study\.$/);
-    assert.match(section, new RegExp(`src="\\./assets/${slug}\\.svg" alt="[^"]{40,}"`));
+    // "Name, category: what the cover shows. Read the case study." The link
+    // describes the cover, so the image itself is decorative (alt="").
+    assert.match(label, /^[^,]+, [a-zA-Z ]+: [^.]{30,}\. Read the case study\.$/);
+    assert.match(section, new RegExp(`src="\\./assets/${slug}\\.svg" alt=""`));
   });
   const names = [...section.matchAll(/<span class="explorer-card-name">([^<]+)<\/span>/g)].map(match => match[1]);
   assert.deepEqual(names, ['Multi-Agent Workflow', 'Thoughts-to-Text BCI', 'Companionship Chatbot', 'VoiceLab', 'Work Helper', 'Barking Village']);

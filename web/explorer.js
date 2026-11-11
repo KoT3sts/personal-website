@@ -47,9 +47,10 @@ export function initExplorer(document, window) {
   const text = (item, selector) => item.querySelector(selector)?.textContent.trim() || '';
   const projects = items.map((item, index) => {
     const title = text(item, '.explorer-card-name');
-    // The link's label carries the category in sentence case ("Name, category. …").
+    // The link's label carries the category in sentence case, then the cover's
+    // description ("Name, category: what the cover shows. …"); announce only the category.
     const label = links[index]?.getAttribute('aria-label') || '';
-    const spoken = label.startsWith(`${title}, `) ? label.slice(title.length + 2).split('. ')[0] : '';
+    const spoken = label.startsWith(`${title}, `) ? label.slice(title.length + 2).split('. ')[0].split(': ')[0] : '';
     return {
       title,
       category: text(item, '.explorer-card-category').replace(/^\d+\s*\/\s*/, ''),

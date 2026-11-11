@@ -92,16 +92,18 @@ test('previous and next links walk the six projects in gallery order', async () 
   }
 });
 
-test('each homepage story links to its project page, and the cover alt text matches the gallery', async () => {
+test('each homepage story links to its project page, and each cover is described once', async () => {
   const index = await read(new URL('index.html', web));
   const stories = index.match(/<div class="project-stories">([\s\S]*?)\n\s*<\/div>/)[1];
   for (const [i, slug] of SLUGS.entries()) {
     const story = stories.match(new RegExp(`<section id="${STORIES[i]}"[\\s\\S]*?</section>`))?.[0];
     assert.ok(story, `${STORIES[i]} exists`);
     assert.match(story, new RegExp(`<a class="text-link[^"]*" href="\\./projects/${slug}\\.html">Read the case study`), `${STORIES[i]} links to ${slug}`);
-    const cardAlt = index.match(new RegExp(`src="\\./assets/${slug}\\.svg" alt="([^"]+)"`))?.[1];
+    // On the homepage the explorer link describes the cover (alt=""); the case
+    // study keeps a full description on its own cover.
+    assert.match(index, new RegExp(`src="\\./assets/${slug}\\.svg" alt=""`), `${slug} homepage cover is described by its link`);
     const { html } = (await pages)[i];
-    assert.equal(html.match(new RegExp(`src="\\.\\./assets/${slug}\\.svg" alt="([^"]+)"`))?.[1], cardAlt, `${slug} alt matches the gallery card`);
+    assert.match(html, new RegExp(`src="\\.\\./assets/${slug}\\.svg" alt="[^"]{40,}"`), `${slug} case-study cover keeps its description`);
     // Title, category, lead and footnote are the story's own words.
     for (const cls of ['story-category', 'story-lead', 'story-footnote']) {
       const text = plain(story.match(new RegExp(`class="[^"]*${cls}[^"]*">([\\s\\S]*?)</(?:span|p)>`))[1]);
