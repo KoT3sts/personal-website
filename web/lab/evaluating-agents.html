@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#eeede8">
+  <title>How I evaluate agents — Cesar Tortolero</title>
+  <meta name="description" content="How Cesar Tortolero approaches evaluating AI agents: what to measure beyond one accuracy number, how to find failures from traces, when fewer agents beat more, and a checklist for calling an agent done. Tied to the public evaluation lab and the recorded agent run behind this site.">
+  <meta name="author" content="Cesar Alejandro Tortolero Trujillo">
+  <link rel="canonical" href="https://cesar-tortolero.cesartortolero.chatgpt.site/lab/evaluating-agents.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="How I evaluate agents — Cesar Tortolero">
+  <meta property="og:description" content="What to measure beyond one accuracy number, how to find failures from traces, when fewer agents beat more, and a checklist for calling an agent done.">
+  <meta property="og:url" content="https://cesar-tortolero.cesartortolero.chatgpt.site/lab/evaluating-agents.html">
+  <meta property="og:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. Builds and ships ML and LLM systems on AWS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How I evaluate agents — Cesar Tortolero">
+  <meta name="twitter:description" content="What to measure beyond one accuracy number, how to find failures from traces, when fewer agents beat more, and a checklist for calling an agent done.">
+  <meta name="twitter:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-card.jpg">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./lab.css">
+  <link rel="stylesheet" href="./evaluating-agents.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How I evaluate agents",
+    "description": "What to measure beyond one accuracy number, how to find failures from traces, when fewer agents beat more, and a checklist for calling an agent done.",
+    "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/lab/evaluating-agents.html",
+    "datePublished": "2026-11-11",
+    "inLanguage": "en",
+    "keywords": "Agent evaluation, LLM tracing, Groundedness, Tool calls, Bootstrap, Multi-agent systems",
+    "author": {
+      "@type": "Person",
+      "name": "Cesar Tortolero",
+      "alternateName": "Cesar Alejandro Tortolero Trujillo",
+      "jobTitle": "Machine Learning Engineer",
+      "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/"
+    },
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Cesar Tortolero",
+      "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="cs-top">
+    <a class="cs-wordmark" href="../"><span class="cs-wordmark-first">CESAR<span class="cs-dot" aria-hidden="true"></span></span> <span class="cs-wordmark-last">TORTOLERO</span></a>
+    <a class="cs-back" href="../#work"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> All projects</a>
+  </header>
+  <main id="main">
+    <article aria-labelledby="ea-title">
+      <header class="cs-intro">
+        <p class="mono lab-kicker">Notes · method</p>
+        <h1 id="ea-title" class="lab-title">How I evaluate agents</h1>
+        <div class="cs-grid cs-summary">
+          <div class="cs-main">
+            <p class="cs-lead lab-lead">What I would measure and how I would look for failures, with evidence from the lab and the build trace on this site.</p>
+            <p class="lab-disclaimer">The method sections describe how I approach agent evaluation. They are not a report on any employer system or a record of past practice. The facts and numbers come from this site: my homepage, the <a class="lab-link" href="./sentiment-eval.html">evaluation lab</a> and <a class="lab-link" href="./build-trace.html">the recorded agent run</a> that built the site.</p>
+          </div>
+          <dl class="cs-rail cs-meta">
+            <div><dt class="mono">Topic</dt><dd class="mono">Agent evaluation</dd></div>
+            <div><dt class="mono">Evidence</dt><dd class="mono">Lab · build trace</dd></div>
+            <div><dt class="mono">Length</dt><dd class="mono" data-reading-time>About a 6-minute read</dd></div>
+          </dl>
+        </div>
+      </header>
+
+      <div class="cs-body">
+        <section class="cs-grid cs-section" aria-labelledby="measure-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="measure-title">What to measure</h2>
+            <p class="lab-rail-note">One score hides where the errors are.</p>
+          </div>
+          <div class="cs-main ea-prose">
+            <p>An agent can give a fluent answer and still fail the task, so a single accuracy number is the wrong place to start. For each task I would want four things, reported separately:</p>
+            <ul class="cs-points ea-points">
+              <li><strong>Task success.</strong> Did the run do what was asked, judged against an expected outcome written down before the run, not against whether the answer sounds right?</li>
+              <li><strong>Groundedness.</strong> Is each claim supported by context the agent retrieved or a tool result it actually received? A correct answer with no support is a lucky answer.</li>
+              <li><strong>Tool-call errors.</strong> Wrong tool, wrong or malformed arguments, and failed calls the agent quietly ignored.</li>
+              <li><strong>Latency and cost per successful task.</strong> Totals divided by the tasks that succeeded, not by all runs. An agent that is cheap per call but needs retries to finish is not cheap.</li>
+            </ul>
+            <p>A single number also hides where the errors fall. In the evaluation lab, at the default threshold, model B has the higher F1 overall, 0.803 against 0.795. On the IMDb slice it is the less accurate of the two, 0.750 against 0.775. I evaluated a skill-extraction model on 2,400+ records with precision, recall, F1 and slice analysis, not one score.</p>
+            <p>A threshold is a decision, not a default. Raising it trades recall for precision, and the right point depends on what a false positive costs. The lab lets you move the slider on the test set to see the trade, but a threshold you deploy should come from validation data. For an agent, the same choice decides when it acts on its own and when it stops and asks.</p>
+            <p>And a small gap is often noise. In the lab, B leads A by 0.008 F1 on 596 test sentences. Across 1,000 bootstrap resamples of the test set, the interval for that gap runs from −0.021 to +0.038, and B comes out ahead in 70% of them. The interval crosses zero, so a 0.008 F1 gap is not a win, and I would not switch models on it. A hand-built agent test set with fewer cases gives a wider interval, so it needs one even more.</p>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="catch-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="catch-title">How to catch failures</h2>
+            <p class="lab-rail-note">Read the trace before you touch the prompt.</p>
+          </div>
+          <div class="cs-main ea-prose">
+            <figure class="ea-flow">
+              <ol class="ea-flow-steps">
+                <li><span class="mono ea-flow-label">Trace</span><span class="ea-flow-text">Every run, every span</span></li>
+                <li><span class="mono ea-flow-label">Classify</span><span class="ea-flow-text">One bucket per failure</span></li>
+                <li><span class="mono ea-flow-label">Fixed test set</span><span class="ea-flow-text">Real failures, expected outcomes</span></li>
+                <li><span class="mono ea-flow-label">Gate</span><span class="ea-flow-text">Block a release while it fails</span></li>
+              </ol>
+              <figcaption>The loop I would set up: a failure found in a trace becomes a test case, and the test set decides whether a change ships.</figcaption>
+            </figure>
+            <p>Traces come first. I set up LLM tracing and evaluation with Arize AX and OpenTelemetry/OpenInference. In OpenTelemetry terms a run is a trace and each step inside it is a span; OpenInference adds conventions for LLM steps such as model calls, retrievals and tool calls. When spans record inputs, outputs, timing and errors, a failed run shows which step went wrong instead of leaving you to guess from the final answer.</p>
+            <p>Then put each failure in one bucket:</p>
+            <ul class="cs-points ea-points">
+              <li><strong>Wrong tool.</strong> The agent called a tool that cannot answer the question, or answered without the tool it needed.</li>
+              <li><strong>Bad arguments.</strong> The right tool with the wrong parameters or format.</li>
+              <li><strong>Missing evidence.</strong> The answer states something that no span supports.</li>
+              <li><strong>Timeouts and infrastructure.</strong> The call never had a fair chance. Some agent integration failures I have debugged were of this kind and had nothing to do with the model: MCP IAM request signing, OAuth credentials, missing deployment secrets and network rules.</li>
+            </ul>
+            <p>Each classified failure should become a case in a small, fixed test set with an expected outcome. If the set does not change between runs, a moving score means the agent changed. Next to it, keep a failure log: the trace, the bucket, the fix, and the test that now covers it. Learning from what went wrong also shaped the onboarding guide for the workshops I co-delivered. Each workshop showed where developers got stuck, such as missing secrets, access groups and network rules, and the guide changed to match. It has been revised more than 40 times.</p>
+            <p>The recorded run that built this site shows the pattern on a small scale. Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix. Two were delegated tasks that stopped midway, one interrupted and one after a lost connection, and both were resumed. One was a measurement: the first attempt to hold a figure on screen longer overshot, 6.4 s against 3.8 s before, and the saved version settled at about 5.2 s. The dependency download never cleared: it kept failing with a 503, and the trace records the normal full test command as blocked. Separately, a grounding test caught two homepage labels that the text did not support, and both were reworded before the commit.</p>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="fewer-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="fewer-title">When fewer agents beat more</h2>
+            <p class="lab-rail-note">Add a specialist only where it pays for the handoff.</p>
+          </div>
+          <div class="cs-main ea-prose">
+            <p>Each handoff between agents costs something. The receiving agent gets a summary instead of the full context, and a task that dies midway has to be handed off again. So start with one agent, and add a specialist only when it does a job the first one does badly and has a clear input and output.</p>
+            <p>Here is what the build trace shows. One orchestrator, my primary agent working under my direction, recorded 37 of the 52 steps and made all 16 commits. The implementation-worker recorded 9, the quality-reviewer 4 and the ui-design-director 2. Both tasks that stopped midway and left partial edits behind were delegated worker tasks.</p>
+            <p>The specialist reviewers added value at review points. The quality-reviewer’s first pass found frozen review notes, blank waits and copy hidden on short screens. A later pass on the integrated changes found no high-severity issues and six smaller findings. A second pass on the security changes reported five low-priority findings, all fixed before saving. The ui-design-director’s review found tiny text, crowded labels and uneven tour pacing. A reviewer with fresh context reads the change, not the conversation that produced it.</p>
+            <p>There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything. It counts role types, not separate agent instances. Most times are estimates, so it says nothing about latency or cost per role. And it covers one project, rounds 4–5 only.</p>
+            <p>My conclusion is narrow. Keep one agent in charge of integration and commits, and add specialists where an independent check is worth more than the handoff. The <a class="lab-link" href="../projects/agent-workflow.html">multi-agent workflow</a> I built is set up that way: one subagent implements, one reviews, one verifies, and they get read-only access to delivery tools.</p>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="check-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="check-title">A checklist for calling an agent done</h2>
+            <p class="lab-rail-note">Every item should be true, not mostly true.</p>
+          </div>
+          <div class="cs-main">
+            <ol class="ea-checklist">
+              <li>Every run is traced, and any failing case can be opened in its trace.</li>
+              <li>A fixed test set built from real failures, each with an expected outcome, runs on every change.</li>
+              <li>Task success, groundedness and tool-call errors are reported separately, overall and by slice.</li>
+              <li>Latency and cost are reported per successful task, not per call.</li>
+              <li>Any comparison between versions comes with an interval. If it crosses zero, it is not a win.</li>
+              <li>Thresholds and settings were chosen on validation data, never on the test set.</li>
+              <li>Every open failure is in the log with its bucket and the test that will cover it.</li>
+              <li>Permissions are the smallest that work, and secrets and network rules are checked in the deployed environment.</li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="next-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="next-title">Read next</h2>
+          </div>
+          <div class="cs-main">
+            <ul class="ea-next">
+              <li><a class="cs-text-link" href="./sentiment-eval.html">Evaluation lab <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+              <li><a class="cs-text-link" href="./build-trace.html">The agent run behind this site <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+              <li><a class="cs-text-link" href="../#work">Back to Work <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </article>
+  </main>
+  <footer class="cs-close">
+    <nav class="cs-pager" aria-label="Where next">
+      <a href="./sentiment-eval.html"><span class="mono"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Lab</span><span class="cs-pager-title">Evaluation lab</span></a>
+      <a href="./build-trace.html"><span class="mono">Trace <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></span><span class="cs-pager-title">The agent run</span></a>
+    </nav>
+    <div class="cs-contact">
+      <p>Want to talk about this work?</p>
+      <div class="cs-contact-links">
+        <a class="cs-pill cs-pill-primary" href="../#contact">Get in touch <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        <a class="cs-pill" href="../assets/Cesar_Tortolero_Resume.pdf">Résumé <span class="mono">PDF</span></a>
+      </div>
+    </div>
+    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#work">Back to all projects</a></div>
+  </footer>
+</body>
+</html>

@@ -75,8 +75,8 @@ test('steps are grouped by day in time order, with exact or estimated times as r
   }
   const byId = id => data.spans.find(span => span.id === id);
   assert.equal(timeText(byId('s05')), '12:08');
-  assert.equal(timeText(byId('s02')), '10:46 → 11:26');
-  assert.equal(timeText(byId('s00')), 'Nov 10 10:12 → Nov 11 12:03');
+  assert.equal(timeText(byId('s02')), '10:46–11:26');
+  assert.equal(timeText(byId('s00')), 'Nov 10 10:12 – Nov 11 12:03');
   assert.equal(offsetText(readSpans(data)), 'UTC−05:00');
   assert.equal(dayLabel('2026-11-11T00:02:12-05:00'), 'Wednesday, November 11, 2026');
   // Bad data is dropped, never thrown.

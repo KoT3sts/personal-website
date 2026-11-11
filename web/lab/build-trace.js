@@ -43,12 +43,12 @@ export function dayLabel(iso) {
 const clockOf = iso => { const m = ISO.exec(iso); return m ? `${m[4]}:${m[5]}` : ''; };
 const short = iso => { const p = dayOf(iso); return p ? `${MONTHS[p[1] - 1].slice(0, 3)} ${p[2]}` : ''; };
 
-// "12:08" for a commit (a point in time); "10:46 → 11:26" for an interval;
+// "12:08" for a commit (a point in time); "10:46–11:26" for an interval;
 // the date is repeated only when it changes.
 export function timeText(span) {
   if (span.start === span.end) return clockOf(span.start);
   const sameDay = span.start.slice(0, 10) === span.end.slice(0, 10);
-  return sameDay ? `${clockOf(span.start)} → ${clockOf(span.end)}` : `${short(span.start)} ${clockOf(span.start)} → ${short(span.end)} ${clockOf(span.end)}`;
+  return sameDay ? `${clockOf(span.start)}–${clockOf(span.end)}` : `${short(span.start)} ${clockOf(span.start)} – ${short(span.end)} ${clockOf(span.end)}`;
 }
 // The recorded UTC offset, e.g. "UTC−05:00".
 export function offsetText(spans) {
@@ -169,7 +169,7 @@ export function render(document, data) {
   set('[data-bt="commits"]', String(summary.commits));
   set('[data-bt="steps"]', String(summary.spans.length));
   set('[data-bt="roles-count"]', String(summary.roles.length));
-  set('[data-bt="range"]', `${summary.dates}${summary.from && summary.to ? ` · commits ${summary.from} → ${summary.to}` : ''}`);
+  set('[data-bt="range"]', `${summary.dates}${summary.from && summary.to ? ` · commits ${summary.from}–${summary.to}` : ''}`);
   const roles = document.querySelector('[data-bt="roles"]');
   if (roles) {
     roles.textContent = '';

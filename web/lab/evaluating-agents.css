@@ -1,0 +1,53 @@
+@charset "UTF-8";
+/* "How I evaluate agents" (web/lab/evaluating-agents.html). Loaded after ../project.css
+   and ./lab.css, which supply the fonts, tokens, header, reading grid and footer; this
+   file only adds the essay measure, the four-step loop and the checklist. No script.
+   Text stays at 11px or larger, all colours at 4.5:1 or more on their background. */
+
+/* Reading column: about 68 characters a line. */
+.ea-prose { max-width: 68ch; font-size: clamp(16px, 1.2vw, 18px); line-height: 1.65; text-wrap: pretty; }
+.ea-prose > * + * { margin-top: .9em; }
+.ea-prose strong { font-weight: 700; }
+.ea-points { font-size: inherit; line-height: 1.6; }
+
+/* The loop: trace -> classify -> fixed test set -> gate, as an ordered list. */
+.ea-flow { display: grid; gap: 12px; margin: 0 0 1.6em; }
+.ea-flow-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; margin: 0; padding: 0; list-style: none; counter-reset: ea-step; }
+.ea-flow-steps li { position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px 14px 14px; border: 1px solid #b9b9b1; border-radius: 6px; counter-increment: ea-step; }
+/* The arrow between steps is the same drawn icon as .icon-arrow-e in ../project.css
+   (a CSS mask, not a font glyph); it turns to point down when the steps stack. */
+.ea-flow-steps li + li::before { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M9 3.5 13.5 8 9 12.5'/%3E%3C/svg%3E"); content: ""; position: absolute; top: 50%; left: -19px; width: 15px; height: 15px; background-color: var(--label); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; transform: translateY(-50%); }
+.ea-flow-steps li:last-child { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.ea-flow-label { color: var(--label); }
+.ea-flow-label::before { content: counter(ea-step, decimal-leading-zero) " · "; }
+.ea-flow-steps li:last-child .ea-flow-label { color: #c4c7bd; }
+.ea-flow-text { font-size: 14px; line-height: 1.4; }
+.ea-flow figcaption { color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+/* Compact checklist: an empty box per item, numbered by the list itself. */
+.ea-checklist { max-width: 68ch; margin: 0; padding: 0; list-style: none; font-size: clamp(16px, 1.15vw, 17px); line-height: 1.5; }
+.ea-checklist li { position: relative; padding: 11px 0 11px 34px; border-bottom: 1px solid var(--line); text-wrap: pretty; }
+.ea-checklist li:first-child { padding-top: 4px; }
+.ea-checklist li:last-child { border-bottom: 0; }
+.ea-checklist li::before { content: ""; position: absolute; left: 0; top: calc(11px + .2em); width: 16px; height: 16px; border: 1.5px solid var(--ink); border-radius: 3px; }
+.ea-checklist li:first-child::before { top: calc(4px + .2em); }
+
+/* Read next. */
+.ea-next { margin: 0; padding: 0; list-style: none; font-size: 17px; }
+.ea-next li { border-bottom: 1px solid var(--line); }
+.ea-next li:last-child { border-bottom: 0; }
+.ea-next .cs-text-link { padding: 8px 0; }
+
+
+@media (max-width: 700px) {
+  .ea-flow-steps { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .ea-flow-steps li + li::before { top: -18px; left: 18px; transform: rotate(90deg); }
+}
+@media (forced-colors: active) {
+  .ea-flow-steps li + li::before { background-color: CanvasText; forced-color-adjust: none; }
+}
+@media print {
+  .ea-flow-steps li:last-child { background: none; color: var(--ink); }
+  .ea-flow-steps li:last-child .ea-flow-label { color: var(--label); }
+  .ea-checklist li { break-inside: avoid; }
+}
