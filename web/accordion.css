@@ -46,7 +46,7 @@
   }
   .approach-list summary::-webkit-details-marker { display: none; }
   .approach-list summary > span:nth-child(2) { text-wrap: balance; }
-  .approach-number { color: var(--label); font-size: 10px; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+  .approach-number { color: var(--label); font-size: var(--text-label); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
 
   /* Drawn plus that turns into a close mark. */
   .approach-list .details-icon { position: relative; width: var(--row-icon); height: var(--row-icon); border: 1px solid #bfc3b4; border-radius: 50%; color: var(--ink); }
@@ -63,7 +63,7 @@
   .approach-row-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px; padding: 18px 0 clamp(22px, 2.4vw, 32px); border-top: 1px solid var(--panel-line); }
   .approach-focus { display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; color: var(--panel-quiet); text-transform: uppercase; }
   .approach-focus li + li::before { content: "·"; content: "·" / ""; margin: 0 .75em; color: #6f7468; }
-  .approach-link { display: inline-flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 18px; border: 1px solid rgb(238 237 232 / .32); border-radius: 40px; color: var(--panel-ink); text-transform: uppercase; white-space: nowrap; }
+  .approach-link { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 18px; border: 1px solid rgb(238 237 232 / .32); border-radius: 40px; color: var(--panel-ink); text-transform: uppercase; white-space: nowrap; }
   .approach-link > span { font-family: var(--font-sans); font-size: 14px; }
   .approach-link:hover { background: var(--panel-ink); border-color: var(--panel-ink); color: var(--night); }
   .approach-link:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
@@ -107,7 +107,6 @@
     .approach-list details > p, .approach-row-foot { margin-left: 0; }
     .approach-list details > p { font-size: 15px; padding-bottom: 22px; }
     .approach-row-foot { padding-bottom: 20px; }
-    .approach-focus { font-size: 9px; }
     .approach-link { min-height: 44px; }
   }
   @media (max-width: 390px) { .approach-list summary { font-size: 19px; } }

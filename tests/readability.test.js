@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const files = ['web/styles.css', 'web/about-scenes.css', 'web/experience.css', 'web/explorer.css'];
+const files = ['web/styles.css', 'web/about-scenes.css', 'web/experience.css', 'web/explorer.css', 'web/accordion.css'];
 const sheets = Object.fromEntries(files.map(file => [file, read(file)]));
 const styles = sheets['web/styles.css'];
 

@@ -32,6 +32,8 @@
     /* Reading floor: body copy 15-16px, mono labels never under 11px, pills and nav never under 12px. */
     --text-body: clamp(15px, 14px + .2vw, 16px); --text-label: clamp(11px, 10.4px + .12vw, 12px); --text-pill: clamp(12px, 11.4px + .1vw, 13px);
   }
+  /* Guard against sideways scrolling; clip (not hidden) keeps the sticky stages working. */
+  html, body { overflow-x: clip; }
   html { scroll-behavior: smooth; scroll-padding-top: var(--header-clear); scrollbar-color: #9a9d90 var(--paper); }
   body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-weight: 400; font-stretch: 100%; font-kerning: normal; word-spacing: .035em; -webkit-font-smoothing: antialiased; overflow-wrap: break-word; }
   ::selection { background: var(--green); color: var(--ink); }
