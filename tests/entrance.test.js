@@ -526,8 +526,13 @@ test('replay is placed inside the footer row without displacing its final item',
   const replay = row.querySelector('[data-agentic-replay]');
   assert.ok(replay);
   assert.notEqual(row.lastElementChild, replay);
-  assert.equal(row.lastElementChild.textContent, 'BUILT IN PLAIN HTML, CSS AND JS. SEE THE AGENT RUN BEHIND IT →');
-  assert.equal(row.lastElementChild.querySelector('a').getAttribute('href'), './lab/build-trace.html');
+  // Three spans; the last one carries both lab links, each with an arrow icon (no glyph).
+  assert.equal(row.querySelectorAll(':scope > span').length, 3);
+  assert.equal(row.lastElementChild.textContent.replace(/\s+/g, ' ').trim(), 'BUILT IN PLAIN HTML, CSS AND JS. SEE THE AGENT RUN BEHIND IT HOW I EVALUATE AGENTS');
+  assert.deepEqual([...row.lastElementChild.querySelectorAll('a')].map(link => link.getAttribute('href')), ['./lab/build-trace.html', './lab/evaluating-agents.html']);
+  assert.deepEqual([...row.lastElementChild.querySelectorAll('a')].map(link => link.querySelectorAll('.icon-arrow-e[aria-hidden="true"]').length), [1, 1]);
+  assert.equal(replay.querySelectorAll('.icon-arrow-ne[aria-hidden="true"]').length, 1, 'the replay arrow is an icon');
+  assert.equal(replay.textContent.trim(), 'Replay build tour');
 });
 
 test('with fast timing the whole first visit completes without residue', async t => {
@@ -873,12 +878,13 @@ test('handoff notes appear one at a time, beside the dock, hidden from assistive
     on.forEach(note => {
       assert.equal(note.getAttribute('aria-hidden'), 'true');
       assert.equal(note.closest('[aria-live]'), null);
+      assert.equal(note.querySelectorAll('.icon-arrow-e').length, 1, 'the handoff arrow is an icon');
       texts.add(note.textContent);
     });
   }
   assert.equal(document.querySelectorAll('.agentic-note').length <= 1, true);
   assert.ok(texts.size >= 5, `${texts.size} notes`);
-  assert.ok([...texts].every(text => /^[a-z0-9]+ → [a-z0-9]+ · [a-z ]+$/.test(text)), [...texts].join(' | '));
+  assert.ok([...texts].every(text => /^[a-z0-9]+ {2}[a-z0-9]+ · [a-z ]+$/.test(text)), [...texts].join(' | '));
   assert.ok([...texts].every(text => !/token|model|api|latency|test|pass|fail/i.test(text)));
   assert.equal(document.querySelectorAll('.agentic-note.is-on').length, 0, 'none left on the pill');
 });
@@ -1092,6 +1098,25 @@ test('the hero opens on a black screen: the veil is opaque and no hero content s
   assert.equal(document.querySelectorAll('.agentic-guide-label.is-on').length, 0, 'no guides drawn yet');
   controller.skip();
   assertNoResidue(document);
+});
+
+test('the hero stop builds the proof strip: hidden at first, placed before the tour leaves the hero', t => {
+  // Laid out at 1280 x 800 in a real engine, so the strip is in view (the visible-target rule).
+  const { document, controller, clock } = setup(t, { width: 1280, height: 800, frames: true, layout: true });
+  const items = [...document.querySelectorAll('.hero-proof > li')];
+  assert.equal(items.length, 3);
+  const waiting = () => items.filter(item => item.closest('[data-build-state="pending"]')).length;
+  clock.step(16);
+  assert.equal(waiting(), 3, 'the facts wait hidden while the hero is planned');
+  let placedAt = 0;
+  while (controller.touring && controller.tour?.index === 0 && clock.now() < 20000) {
+    clock.step(16);
+    if (!placedAt && waiting() === 0) placedAt = clock.now();
+  }
+  assert.ok(placedAt > 0, 'placed during the hero stop');
+  controller.skip();
+  assertNoResidue(document);
+  assert.equal(waiting(), 0);
 });
 
 test('guides are drawn before the first content job, labelled briefly with measured numbers, and the build follows the paint wipe', t => {

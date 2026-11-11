@@ -155,6 +155,9 @@ const HERO_PLAN = [
   { sel: '.scroll-cue', role: 'links', kind: 'reveal', wave: 1180, act: 'wiring scroll cue' },
   { sel: '.hero-actions .pill-button', role: 'links', kind: 'reveal', wave: 1180, act: 'wiring résumé' },
   { sel: '.hero-links a', role: 'links', kind: 'reveal', wave: 1180, each: true, group: '.hero-links', act: 'wiring links' },
+  // The proof strip under the intro: one type agent (free once its headline
+  // word is set) places the three facts in turn.
+  { sel: '.hero-proof > li', role: 'type', kind: 'reveal', wave: 1180, each: true, group: '.hero-proof', grouped: true, act: 'setting proof figures' },
   { sel: '.hero-orbit', role: 'motion', kind: 'orbit', wave: 1650, act: 'aligning orbit' },
   { sel: '.main-nav', role: 'a11y', kind: 'review', wave: 2150, act: 'checking targets' },
   { sel: '.hero-actions', role: 'a11y', kind: 'review', wave: 2150, act: 'checking hit areas' },
@@ -211,7 +214,6 @@ const chapterJobs = n => {
     { sel: `${ch} .xp-title`, role: 'type', kind: 'type', label: true, act: 'setting', charMs: 42, ...at },
     { sel: `${ch} .xp-org, ${ch} .xp-when`, roles: ['copy', 'links'], kind: 'type', multi: 2, label: true, act: 'writing', charMs: 32, ...at },
     { sel: `${ch} .xp-year`, role: 'art', kind: 'reveal', act: 'setting year marker', work: 700, ...at },
-    { sel: `${ch} .xp-marks`, role: 'nav', kind: 'place', act: 'marking milestones', kids: 'li', ...at },
     { sel: `${ch} .xp-group-head`, role: 'nav', kind: 'place', label: true, name: 'h4', act: 'placing', ...at },
     { sel: `${ch} .xp-points > li`, roles: ['copy', 'type', 'links'], kind: 'wipe', multi: 3, label: true, act: 'writing', ...at },
     { sel: `${ch} .xp-group > .tag-list`, role: 'art', kind: 'place', act: 'swapping tags', kids: 'li', ...at },
@@ -279,7 +281,7 @@ export const TOUR_STOPS = [
   // swaps its tags and QA checks it. Chapters still off to the right wait
   // unseen (experience.css). Phones and tablets stack the chapters and every
   // item is built in place on the first stop (`span` cruises through them).
-  { sel: '#experience', name: 'Experience', weight: 0.9, stackWeight: 1.4, pace: 0.78, span: 2.4, chapter: 0, dwell: 16, note: 'layout → copy · first chapter set', jobs: [
+  { sel: '#experience', name: 'Experience', weight: 0.6, stackWeight: 1.4, pace: 0.68, span: 2.4, chapter: 0, dwell: 16, note: 'layout → copy · first chapter set', jobs: [
     { sel: '.section-top > span', roles: ['copy', 'nav'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#experience-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.experience-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
@@ -287,7 +289,6 @@ export const TOUR_STOPS = [
     { sel: '.xp-year', role: 'art', kind: 'reveal', multi: 3, act: 'setting year marker', work: 700, after: 'frame', afterAt: 0.4, shown: true },
     { sel: '.xp-title', roles: ['type', 'type', 'type'], kind: 'type', multi: 3, label: true, act: 'setting', charMs: 45, after: 'frame', afterAt: 0.4, shown: true },
     { sel: '.xp-org, .xp-when', roles: ['copy', 'links'], kind: 'type', multi: 6, label: true, act: 'writing', charMs: 35, after: 'frame', afterAt: 0.4, shown: true },
-    { sel: '.xp-marks', role: 'nav', kind: 'place', multi: 3, act: 'marking milestones', kids: 'li', after: 'frame', afterAt: 0.4, shown: true },
     { sel: '.xp-group-head', role: 'nav', kind: 'place', multi: 4, label: true, name: 'h4', act: 'placing', after: 'frame', afterAt: 0.4, shown: true },
     { sel: '.xp-points > li', roles: ['copy', 'type', 'links', 'copy', 'type', 'qa', 'copy', 'links'], kind: 'wipe', multi: 8, rest: true, label: true, act: 'writing', after: 'frame', afterAt: 0.4, shown: true },
     { sel: '.xp-group > .tag-list', roles: ['a11y', 'links', 'a11y', 'links'], kind: 'place', multi: 4, act: 'tagging tools', kids: 'li', after: 'frame', afterAt: 0.4, shown: true },
@@ -296,8 +297,8 @@ export const TOUR_STOPS = [
     // Once chapter 1 is written, it is copied for the next two.
     { sel: '[data-xp="travel"] .xp-chapter:first-child', role: 'copy', kind: 'copy', after: '*', overlap: 1100, act: 'copying chapter 01' },
   ] },
-  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 1, dwell: 16, weight: 0.6, pace: 0.72, note: 'copy → type · second chapter pasted', jobs: chapterJobs(2) },
-  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 2, dwell: 16, weight: 0.6, pace: 0.72, note: 'copy → type · third chapter pasted', jobs: chapterJobs(3) },
+  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 1, dwell: 16, weight: 0.6, pace: 0.6, note: 'copy → type · second chapter pasted', jobs: chapterJobs(2) },
+  { sel: '#experience', when: '[data-xp="travel"]', name: 'Experience', sub: true, chapter: 2, dwell: 16, weight: 0.6, pace: 0.6, note: 'copy → type · third chapter pasted', jobs: chapterJobs(3) },
   // The explorer (explorer.js), the one project gallery. It holds still while
   // the tour builds it, so its rotated card names and the hidden caption are
   // never written: art agents place the six covers round the ring one at a
@@ -325,7 +326,7 @@ export const TOUR_STOPS = [
   { sel: '#skills', name: 'Skills', weight: 0.7, pace: 0.85, span: 0.6, note: 'copy → a11y · tags listed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#skills-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
-    { sel: '.skill-list > div', roles: ['copy', 'type', 'links', 'copy', 'type'], kind: 'place', multi: 5, label: true, name: 'dt', act: 'listing', kids: 'li' },
+    { sel: '.skill-list > div', roles: ['copy', 'type', 'links', 'copy'], kind: 'place', multi: 4, label: true, name: 'dt', act: 'listing', kids: 'li' },
     { sel: '.education-layout > h3', role: 'nav', kind: 'type', multi: 2, act: 'setting heading', charMs: 50 },
     // Each school: its name typed, then its degree and dates written.
     { sel: '.education-list .school', roles: ['type', 'type'], kind: 'type', multi: 2, label: true, act: 'writing', charMs: 45 },
@@ -363,6 +364,21 @@ export const TOUR_STOPS = [
 // the bottom edge: résumé/contact links, the introduction's scene pills and
 // the Experience chapter bar (year index, previous/next).
 const PROTECTED = '.hero-actions .pill-button, .hero-links a, .scene-pill, .xp-index-button, .xp-step, .contact-button, .contact-copy, .contact-links a, .footer-bottom > *';
+
+// Arrow glyphs are outside the self-hosted fonts (they fell back to a system
+// font, oversized): text set here draws them as styles.css icons instead.
+const ARROW_ICONS = { '→': 'e', '←': 'w', '↓': 's', '↑': 'n', '↗': 'ne', '↘': 'se', '↔': 'ew' };
+export function setIconText(element, text) {
+  element.textContent = '';
+  for (const part of String(text).split(/([→←↓↑↗↘↔])/)) {
+    if (ARROW_ICONS[part]) {
+      const icon = element.ownerDocument.createElement('span');
+      icon.className = `icon icon-arrow-${ARROW_ICONS[part]}`;
+      icon.setAttribute('aria-hidden', 'true');
+      element.append(icon);
+    } else if (part) element.append(part);
+  }
+}
 
 const HIDES = new Set(['reveal', 'type', 'wipe', 'place']);
 const OPTIONAL = new Set(['frame', 'review', 'orbit', 'caret', 'pin', 'resolve']);
@@ -711,7 +727,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   replayButton.type = 'button';
   replayButton.className = 'agentic-replay';
   replayButton.dataset.agenticReplay = '';
-  replayButton.textContent = 'Replay build tour ↗';
+  setIconText(replayButton, 'Replay build tour ↗');
   replayButton.hidden = true;
   replayButton.disabled = Boolean(media?.matches);
   // Keep the footer's own last item last: its layout pins the final child.
@@ -1375,7 +1391,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   function showNote(text) {
     if (!dock || !text) return;
     window.clearTimeout(dock.noteTimer);
-    dock.note.textContent = text;
+    setIconText(dock.note, text);
     dock.note.classList.add('is-on');
     dock.noteTimer = window.setTimeout(() => dock?.note.classList.remove('is-on'), NOTE_MS);
   }
@@ -4282,7 +4298,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     return value.split(/\s+(?![^(]*\))/).filter(Boolean).length;
   }
 
-  const cleanName = text => (text || '').replace(/[↗↓↑→←]/g, '').replace(/\s+/g, ' ').trim();
+  const cleanName = text => (text || '').replace(/[←↑→↓↔↗↘]/g, '').replace(/\s+/g, ' ').trim();
   // One item's job spec: its role (cycled), its label and its parts.
   function itemSpec(current, spec, node, index) {
     const item = { ...spec, role: spec.roles ? spec.roles[index % spec.roles.length] : spec.role, nth: index };

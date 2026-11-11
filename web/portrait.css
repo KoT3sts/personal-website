@@ -37,13 +37,16 @@
 .hero-art .orbit-label { top: 28%; right: auto; left: 121%; }
 .hero-art .art-coordinate { top: 41%; left: -13%; }
 
-/* Desktop intro row: the scroll cue joins the intro on the left (the centre
-   column now belongs to the portrait), actions stay low right. */
+/* Desktop intro row (the centre column belongs to the portrait): the intro
+   low left with the proof strip under it, reaching a little past the intro
+   column but clear of the portrait; the scroll cue tops the right column and
+   the actions stay low right. */
 @media (min-width: 1101px) {
   .hero-intro { max-width: var(--intro-w); }
-  .hero-bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 26px; }
-  .hero-bottom .scroll-cue { grid-column: 1; grid-row: 1; margin: 0; }
-  .hero-bottom .hero-intro { grid-column: 1; grid-row: 2; }
+  .hero-bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 24px; }
+  .hero-bottom .hero-intro { grid-column: 1; grid-row: 1; }
+  .hero-bottom .hero-proof { grid-column: 1; grid-row: 2; max-width: calc(var(--intro-w) + 64px); }
+  .hero-bottom .scroll-cue { grid-column: 2; grid-row: 1; justify-self: end; align-self: start; margin: 0; }
   .hero-bottom .hero-actions { grid-column: 2; grid-row: 1 / span 2; align-self: end; }
 }
 
@@ -52,13 +55,18 @@
 @media (max-width: 1100px) {
   .hero-art { position: relative; bottom: auto; width: min(46vw, 440px); margin: -5.2vw 0 0 50%; }
   .hero-bottom { margin-top: calc(min(46vw, 440px) * -.1); }
+  .hero-bottom .hero-proof { grid-column: 1; grid-row: 2; }
+  .hero-bottom .hero-actions { grid-column: 2; grid-row: 1 / span 2; align-self: end; }
 }
 
 /* Phone: three headline lines; the portrait tucks under ENGINEER so the
    greeting, intro and résumé button still share the first 390x844 screen. */
 @media (max-width: 760px) {
-  .hero-art { width: min(64vw, 290px); margin-top: -9vw; }
-  .hero-bottom { margin-top: calc(min(64vw, 290px) * -.11); }
+  /* 52vw (was 64vw) leaves room for the proof strip in the first screen, with
+     the résumé button still clear of the build tour's compact dock. */
+  .hero-art { width: min(52vw, 290px); margin-top: -11vw; }
+  .hero-bottom { margin-top: calc(min(52vw, 290px) * -.11); }
+  .hero-bottom .hero-proof, .hero-bottom .hero-actions { grid-column: auto; grid-row: auto; }
   .hero-orbit { left: 80%; top: 41%; width: 31%; }
   .hero-art .orbit-label { top: 26%; left: 111%; right: auto; }
   .hero-art .art-coordinate { top: 56%; left: -15%; }

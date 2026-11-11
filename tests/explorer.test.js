@@ -220,7 +220,7 @@ test('the ring shows the active project too: title, category and a way into its 
   const caption = section.match(/<div class="explorer-caption"[\s\S]*?<\/div>/)?.[0] || '';
   assert.match(caption, /^<div class="explorer-caption" aria-hidden="true" hidden>/);
   // A pointer convenience: out of the tab order (the active cover is the same link for keys and screen readers).
-  assert.match(caption, /<a class="explorer-caption-open mono" href="\.\/projects\/agent-workflow\.html" tabindex="-1">CASE STUDY <span>↗<\/span><\/a>/);
+  assert.match(caption, /<a class="explorer-caption-open mono" href="\.\/projects\/agent-workflow\.html" tabindex="-1">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"><\/span><\/a>/);
   assert.match(js, /captionOpen\.setAttribute\('href', href\)/);
   // Visible in both modes; in the ring it sits under the index (desktop) or beside it (tablet).
   assert.doesNotMatch(css, /\.explorer\.is-ready \.explorer-caption \{[^}]*(visibility: hidden|opacity: 0)/);

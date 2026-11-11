@@ -18,7 +18,7 @@ test('the approach section is a light scene, so the header turns light over it',
   assert.match(openTag, /class="approach"/);
   assert.doesNotMatch(openTag, /dark-section/);
   assert.match(openTag, /aria-labelledby="approach-title"/);
-  assert.match(section, /<h2 id="approach-title">MAKE IT WORK\.<br><span>MAKE IT MATTER\.<\/span><\/h2>/);
+  assert.match(section, /<h2 id="approach-title">MAKE IT WORK\. <br><span>MAKE IT MATTER\.<\/span><\/h2>/);
 });
 
 test('three native disclosures form one exclusive group with the first row open', () => {
@@ -55,7 +55,7 @@ test('each open panel has a compact focus line and a small link to an existing a
   rows.forEach((row, index) => {
     const foot = (/<div class="approach-row-foot">([\s\S]*?)<\/div>/.exec(row) || [])[1] || '';
     assert.match(foot, /<ul class="approach-focus mono" aria-label="In practice">(<li>[^<]+<\/li>){3}<\/ul>/);
-    const [, href, label] = /<a class="approach-link mono" href="([^"]+)">([^<]+?) <span aria-hidden="true">[↑↓]<\/span><\/a>/.exec(foot) || [];
+    const [, href, label] = /<a class="approach-link mono" href="([^"]+)">([^<]+?) <span class="icon icon-arrow-[ns]" aria-hidden="true"><\/span><\/a>/.exec(foot) || [];
     assert.deepEqual([href, label], expected[index]);
     assert.match(html, new RegExp(`id="${href.slice(1)}"`), `${href} exists`);
   });

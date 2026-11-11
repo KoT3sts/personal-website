@@ -51,7 +51,20 @@
   button, summary { cursor: pointer; }
   button { background: none; border: 0; }
   .text-link { display: inline-flex; align-items: center; gap: 55px; padding: 15px 0; border-bottom: 1px solid currentColor; font-size: 13px; }
-  .text-link span { font-size: 21px; }
+  .text-link .icon { width: 1.25em; height: 1.25em; }
+  /* Arrow icons. The arrow glyphs sit outside the self-hosted fonts and fell back to a
+     system font (oversized, detached), so they are drawn: one stroke set (16-unit grid,
+     1.6 stroke) masked in currentColor and sized in em, so each follows its text. */
+  .icon { display: inline-block; flex: none; width: .92em; height: .92em; vertical-align: -.1em; background-color: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+  .icon-arrow-e { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M9 3.5 13.5 8 9 12.5'/%3E%3C/svg%3E"); }
+  .icon-arrow-w { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.5 8h-11M7 3.5 2.5 8 7 12.5'/%3E%3C/svg%3E"); }
+  .icon-arrow-s { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2.5v11M3.5 9 8 13.5 12.5 9'/%3E%3C/svg%3E"); }
+  .icon-arrow-n { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 13.5v-11M3.5 7 8 2.5 12.5 7'/%3E%3C/svg%3E"); }
+  .icon-arrow-ne { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 11.5l7-7M5.5 4.5h6v6'/%3E%3C/svg%3E"); }
+  .icon-arrow-se { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 4.5l7 7M11.5 5.5v6h-6'/%3E%3C/svg%3E"); }
+  .icon-arrow-ew { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M5.5 5 2.5 8l3 3M10.5 5l3 3-3 3'/%3E%3C/svg%3E"); }
+  .icon-arrow-ns { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2.5v11M5 5.5l3-3 3 3M5 10.5l3 3 3-3'/%3E%3C/svg%3E"); }
+  @media (forced-colors: active) { .icon { background-color: CanvasText; forced-color-adjust: none; } }
 }
 @layer layout {
   .site-header { position: fixed; top: var(--header-top); left: var(--gutter); right: var(--gutter); z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 20px; pointer-events: none; }
@@ -74,8 +87,14 @@
   .main-nav a { position: relative; padding: 9px 20px; border-radius: 40px; color: #66675f; font-size: var(--text-pill); text-transform: uppercase; letter-spacing: .035em; }
   .main-nav a[aria-current] { color: var(--ink); background: #f8f7f1; box-shadow: 0 0 0 1px #cacbc34d; }
   .main-nav a:hover { color: var(--ink); }
-  .header-contact { display: flex; align-items: center; gap: 28px; font-size: 11px; padding: 12px 0; }
-  .header-contact span { font-size: 19px; }
+  /* Over dark sections the pill takes the bar's tone: a faint light fill, light text
+     (#b9bab3 on about #1f2022, about 8:1) and a brighter active chip (about 10:1). */
+  .site-header.is-dark .main-nav { background: rgb(238 237 232 / .07); border-color: rgb(238 237 232 / .13); box-shadow: none; }
+  .site-header.is-dark .main-nav a { color: #b9bab3; }
+  .site-header.is-dark .main-nav a[aria-current] { color: var(--paper); background: rgb(238 237 232 / .14); box-shadow: 0 0 0 1px rgb(238 237 232 / .12); }
+  .site-header.is-dark .main-nav a:hover { color: var(--paper); }
+  .header-contact { display: flex; align-items: center; gap: 8px; font-size: 11px; padding: 12px 0; }
+  .header-contact .icon { width: 1.2em; height: 1.2em; }
   .site-header.is-dark .wordmark, .site-header.is-dark .header-contact { color: var(--paper); }
   .hero { position: relative; min-height: 720px; height: 100svh; max-height: 1150px; padding: 146px var(--gutter) 0; isolation: isolate; overflow: clip; }
   .hero-kicker { display: flex; justify-content: center; align-items: center; gap: 9px; font-size: 11px; color: #575a50; }
@@ -94,15 +113,26 @@
   .hero-intro .hero-scope { font-size: var(--text-body); line-height: 1.55; letter-spacing: 0; color: var(--muted); margin-top: 12px; text-wrap: pretty; }
   .hero-actions { justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
   .pill-button { display: inline-flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 50px; background: var(--ink); color: var(--paper); font-size: 13px; box-shadow: 0 12px 24px -16px #17171699; }
-  .pill-button > span:last-child { font-size: 18px; line-height: 1; }
+  .pill-button .icon { width: 1.15em; height: 1.15em; }
   .pill-meta { font-family: var(--font-mono); font-size: 11px; color: #b9bcaf; letter-spacing: .05em; }
   .pill-button:hover { background: #32342e; }
   .hero-links { display: flex; gap: 22px; font-size: var(--text-label); }
   .hero-links a { padding: 8px 0; border-bottom: 1px solid #b3b6a8; }
   .hero-links a:hover { border-bottom-color: var(--ink); }
-  .scroll-cue { width: 50px; height: 50px; display: grid; place-items: center; border: 1px solid #c7c9bd; border-radius: 50%; margin-bottom: 4px; font-size: 24px; }
+  /* Proof strip: three facts stated further down the page, each a link to where it is
+     backed up. Mono label, large figure, a hairline above (layout per breakpoint in portrait.css). */
+  .hero-proof { list-style: none; margin: 0; padding: 14px 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: clamp(14px, 1.6vw, 26px); }
+  .hero-proof a { display: flex; flex-direction: column; gap: 7px; padding: 2px 0; }
+  .proof-figure { font-size: clamp(26px, 2.15vw, 34px); font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: -.035em; line-height: .95; font-variant-numeric: tabular-nums; }
+  .proof-label { display: block; color: var(--muted); text-transform: uppercase; line-height: 1.4; text-wrap: pretty; }
+  .proof-label .icon { margin-left: .3em; }
+  .hero-proof a:hover .proof-label { color: var(--ink); }
+  .scroll-cue { width: 50px; height: 50px; display: grid; place-items: center; border: 1px solid #c7c9bd; border-radius: 50%; margin-bottom: 4px; }
+  .scroll-cue .icon { width: 18px; height: 18px; }
   .scroll-cue:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .hero-rule { display: flex; justify-content: space-between; gap: 30px; position: absolute; bottom: 25px; left: var(--gutter); right: var(--gutter); border-top: 1px solid var(--line); padding-top: 15px; color: #686b60; font-size: var(--text-label); }
+  /* app.js sets the flow field's src once About is near (index.html); until then it takes no room. */
+  .about-flow img:not([src]) { display: none; }
   .cinematic-copy .currently { margin-top: 16px; padding-top: 14px; border-top: 1px solid #ffffff1f; color: #d8d9de; }
   .currently .mono { display: block; margin-bottom: 6px; color: var(--green); font-size: 11px; letter-spacing: .06em; }
   .work-heading, .experience-heading, .capabilities-heading { display: flex; justify-content: space-between; align-items: end; gap: 30px; padding: 78px 0 20px; }
@@ -172,13 +202,18 @@
   .contact-intro { color: #a5aa9e; text-align: center; padding-top: 90px; font-size: var(--text-body); }
   .contact h2 { text-align: center; font-size: clamp(65px, 10.2vw, 180px); font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: var(--display-tracking); line-height: .95; margin-top: 25px; white-space: nowrap; text-shadow: 0 0 40px #e3eac51a; }
   .contact h2 > span { color: #d7deca; }
-  .contact-button { display: flex; justify-content: space-between; align-items: center; gap: 28px; width: fit-content; max-width: 100%; margin: 45px auto 0; border: 1px solid #bec9ad; padding: 15px 22px; border-radius: 50px; background: #e2e8d8; color: #20271b; font-size: 13px; box-shadow: 0 14px 30px -18px #dbe9be40; }.contact-button span:last-child { font-size: 22px; }
+  .contact-button { display: flex; justify-content: space-between; align-items: center; gap: 28px; width: fit-content; max-width: 100%; margin: 45px auto 0; border: 1px solid #bec9ad; padding: 15px 22px; border-radius: 50px; background: #e2e8d8; color: #20271b; font-size: 13px; box-shadow: 0 14px 30px -18px #dbe9be40; }.contact-button .icon { width: 17px; height: 17px; }
   .contact-address { overflow-wrap: anywhere; }
   .contact-button:hover { background: #f7ffec; }
   .contact-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 34px; list-style: none; padding: 0; margin: 30px 0 100px; font-size: var(--text-label); }
   .contact-links a { display: inline-block; padding: 10px 0; color: #d7deca; border-bottom: 1px solid #50564a; }
   .contact-links a:hover { color: #f7ffec; border-bottom-color: #d7deca; }
-  .footer-bottom { display: flex; justify-content: space-between; gap: 30px; padding: 25px 0 30px; color: #8b9381; font-size: var(--text-label); border-top: 1px solid #33382c; }
+  .footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 30px; padding: 25px 0 30px; color: #8b9381; font-size: var(--text-label); border-top: 1px solid #33382c; }
+  /* The last item (the two lab links) wraps to its own line, right-aligned, when the row is full. */
+  .footer-bottom > :last-child { margin-left: auto; text-align: right; }
+  .footer-trace { white-space: nowrap; }
+  .footer-trace .icon { margin-left: .4em; }
+  .footer-trace:not(:last-child) { margin-right: .9em; }
   .footer-trace { color: #c9d1bc; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
   .footer-trace:hover { color: var(--paper); }
   /* Touch targets: text links keep their look; an invisible box gives each one at least 44 x 44 px to hit. */
@@ -192,6 +227,7 @@
   /* Header: slides out of the way while reading down, back on any upward scroll. */
   .site-header { transition: transform .5s cubic-bezier(.16,1,.3,1); }
   .site-header::before { transition: opacity .3s cubic-bezier(.33,1,.68,1), background-color .35s ease, border-color .35s ease; }
+  .main-nav { transition: background-color .35s ease, border-color .35s ease; }
   .site-header.is-hidden { transition-duration: .38s; transition-timing-function: cubic-bezier(.4,0,.6,1); }
   /* Hero idle: a slow breath, plus an eased lean toward the pointer. */
   .sculpture { animation: hero-idle 12s ease-in-out infinite; transition: rotate 1.6s cubic-bezier(.16,1,.3,1); }
@@ -212,9 +248,11 @@
   }
   @media (max-width: 760px) {
     :root { --header-top: 16px; --header-bar-pad: 10px; --header-clear: 62px; }.site-header { gap: 12px; }.wordmark { font-size: 20px; }.main-nav a { padding: 9px 10px; }.main-nav { padding: 4px; }.header-contact, .nav-optional { display: none; }
-    .hero { padding-top: 104px; }.hero-kicker { gap: 7px; }.hero h1 { font-size: 15.4vw; margin-top: 20px; line-height: .86; }.hero-line > span { display: block; }
-    /* Phone hero: one column below the portrait (portrait.css sizes and tucks it under ENGINEER). */
-    .hero-bottom { grid-template-columns: 1fr; gap: 26px; }.hero-intro p:first-of-type { font-size: 24px; }.hero-actions { justify-self: start; align-items: flex-start; }.hero-rule { margin-top: 46px; padding-top: 12px; }
+    .hero { padding-top: 90px; }.hero-kicker { gap: 7px; }.hero h1 { font-size: 15.4vw; margin-top: 16px; line-height: .86; }.hero-line > span { display: block; }
+    /* Phone hero: one column below the portrait (portrait.css sizes and tucks it under ENGINEER).
+       Tighter gaps keep the proof strip, résumé button and links in the first 390x844 screen. */
+    .hero-bottom { grid-template-columns: 1fr; gap: 16px; }.hero-intro p:first-of-type { font-size: 24px; margin-top: 8px; }.hero-intro .hero-scope { margin-top: 8px; }.hero-actions { justify-self: start; align-items: flex-start; gap: 10px; }.hero-links a { padding: 6px 0; }.hero-rule { margin-top: 46px; padding-top: 12px; }
+    .hero-proof { column-gap: 10px; padding-top: 12px; }.proof-label { letter-spacing: .01em; }
     .section-top { gap: 24px; padding: 25px 0; }.section-top > :last-child { text-align: right; max-width: 46%; }
     .work-heading, .experience-heading, .capabilities-heading { display: block; padding-top: 55px; }.work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: 12.4vw; }.work-heading > p, .experience-heading > p, .capabilities-heading > p { margin-top: 25px; }
     .capabilities { padding-bottom: 60px; }.capability-list { grid-template-columns: 1fr; margin-top: 36px; }.capability-list > :nth-last-child(2) { border-bottom: 0; }.capability { padding: 24px 0 28px; }.capability h3 { font-size: 23px; }.capability-proof { font-size: 14.5px; }
@@ -222,10 +260,12 @@
     .education-layout h3 { padding-bottom: 0; border-bottom: 0 !important; }.education-list, .spoken-languages { grid-column: 1; border-top: 0 !important; padding-top: 16px !important; }.education-layout { padding-bottom: 64px; }
     .work-end { margin-top: 50px; }
     .closing-note { min-height: 410px; padding-block: 75px; }.closing-note p { font-size: 17vw; }.note-orbit { right: -80px; top: 27%; }
-    .contact-intro { padding-top: 65px; }.contact h2 { font-size: 10.1vw; margin-top: 24px; }.contact-button { margin-top: 35px; padding: 13px 20px; font-size: 13px; gap: 18px; }.contact-links { margin: 26px 0 70px; gap: 8px 26px; }.footer-bottom { flex-direction: column; gap: 10px; }.story-lead { font-size: 21px; }
+    .contact-intro { padding-top: 65px; }.contact h2 { font-size: 10.1vw; margin-top: 24px; }.contact-button { margin-top: 35px; padding: 13px 20px; font-size: 13px; gap: 18px; }.contact-links { margin: 26px 0 70px; gap: 8px 26px; }.footer-bottom { flex-direction: column; gap: 10px; }.footer-bottom > :last-child { margin-left: 0; text-align: left; }.story-lead { font-size: 21px; }
   }
   /* Narrow phones: the nav keeps 12px type by setting it semi-condensed (the display width) with tighter padding;
      its 44px hit areas come from ::before. Below 375px it steps down to 11px so it still fits beside the wordmark. */
   @media (max-width: 420px) { .site-header { gap: 8px; }.main-nav a { padding: 9px 7px; font-stretch: var(--display-stretch); letter-spacing: 0; }.wordmark { font-size: 18px; }}
   @media (max-width: 374px) { .main-nav a { padding-inline: 6px; font-size: 11px; }}
 }
+/* The arrow icons are a mask over the text colour; keep them when background graphics are off. */
+@media print { .icon { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

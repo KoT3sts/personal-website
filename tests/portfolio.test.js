@@ -239,7 +239,7 @@ test('About scenes lead into capabilities, then experience, work, skills and app
 
 test('every anchor the first-visit entrance targets still exists in the markup', () => {
   const { document } = new JSDOM(html).window;
-  for (const selector of ['.wordmark', '.main-nav', '.hero-kicker', '#hero-title', '.hero-art', '.hero-portrait', '.sculpture', '.hero-orbit', '.hero-intro', '.hero-note', '.scroll-cue', '#introduction .cinematic-art', '#introduction .cinematic-copy', '#introduction .scene-actions', '.explorer-item .explorer-cover', '#explorer-title', '.footer-bottom']) {
+  for (const selector of ['.wordmark', '.main-nav', '.hero-kicker', '#hero-title', '.hero-art', '.hero-portrait', '.sculpture', '.hero-orbit', '.hero-intro', '.hero-proof', '.hero-note', '.scroll-cue', '#introduction .cinematic-art', '#introduction .cinematic-copy', '#introduction .scene-actions', '.explorer-item .explorer-cover', '#explorer-title', '.footer-bottom']) {
     assert.ok(document.querySelector(selector), `entrance anchor ${selector}`);
   }
 });

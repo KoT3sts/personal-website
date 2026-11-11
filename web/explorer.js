@@ -87,8 +87,9 @@ function buildFacts(document, title, facts) {
     const link = element(document, 'a', 'explorer-facts-link mono', LAB_LABEL);
     link.setAttribute('href', facts.lab.href);
     if (facts.lab.note) link.append(element(document, 'span', 'visually-hidden', `: ${facts.lab.note}`));
-    const arrow = element(document, 'span', '', ' →');
+    const arrow = element(document, 'span', 'icon icon-arrow-e');
     arrow.setAttribute('aria-hidden', 'true');
+    link.append(' ');
     link.append(arrow);
     line.append(link);
     panel.append(line);

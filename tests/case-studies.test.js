@@ -77,7 +77,8 @@ test('relative links and assets resolve, and the shared stylesheet fonts exist',
     assert.match(html, new RegExp(`<img[^>]+src="\\.\\./assets/${slug}\\.svg"[^>]+alt="[^"]{40,}"`), `${slug} cover with alt text`);
   }
   const css = await read(new URL('project.css', web));
-  const urls = [...css.matchAll(/url\("([^"]+)"\)/g)].map(match => match[1]);
+  // The arrow icons are inline data: masks; every other url() is a font file.
+  const urls = [...css.matchAll(/url\("([^"]+)"\)/g)].map(match => match[1]).filter(url => !url.startsWith('data:'));
   assert.equal(urls.length, 2);
   for (const url of urls) assert.ok(await exists(new URL(url, new URL('project.css', web))), `${url} exists`);
 });

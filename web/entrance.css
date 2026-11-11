@@ -263,6 +263,8 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 
 /* Replay sits inside the footer's small mono row without changing its height. */
 .agentic-replay { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -16px; padding: 0; color: inherit; font: inherit; text-transform: uppercase; letter-spacing: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.agentic-replay { white-space: nowrap; }
+.agentic-replay .icon { margin-left: .45em; }
 .agentic-replay:hover { color: #d7deca; }
 .agentic-replay:disabled { display: none; }
 

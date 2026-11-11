@@ -184,6 +184,10 @@ test('headlines split on their authored <br> lines, or into words when they have
   const words = planHeadline([text("LET'S "), el('SPAN', 'CONNECT.')]);
   assert.equal(words.mode, 'words');
   assert.deepEqual(words.units, [{ index: 0, kind: 'text', lead: '', core: "LET'S", trail: ' ' }, { index: 1, kind: 'element' }]);
+  // Round 7: the authored space before a <br> (so screen readers do not join the words)
+  // stays with its line; the split is unchanged.
+  assert.deepEqual(planHeadline([text('WHAT I '), el('BR'), el('SPAN', 'CAN DO.')]), { mode: 'lines', lines: [[0], [2]], breaks: [1] });
+  assert.deepEqual(planHeadline([text('ABOUT '), el('BR'), text('ME')]).lines, [[0], [2]]);
   // Nothing to stagger: a single word, or empty lines only.
   assert.equal(planHeadline([text('CONNECT.')]), null);
   assert.equal(planHeadline([text('ONE'), el('BR'), text('  ')]), null);

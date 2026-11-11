@@ -134,3 +134,133 @@ test('contact polish: the copy toast clears the headline and the glow waits for 
   assert.match(motion, /\.contact h2\[data-headline\] \{ text-shadow: 0 0 40px #e3eac500; \}/);
   assert.match(motion, /\.contact h2 \{ transition: text-shadow /);
 });
+
+// ---- Round 7: proof strip, figures stated once, skills, deferred flow field ----
+
+const plainText = markup => markup.replace(/<span class="visually-hidden">[^<]*<\/span>/g, '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+const sectionOf = id => html.match(new RegExp(`<section id="${id}"[\\s\\S]*?\\n    </section>`))?.[0] ?? '';
+
+test('the proof strip: three facts under the intro, each linking to where it is backed up', async () => {
+  const strip = hero.match(/<ul class="hero-proof" aria-label="Highlights">([\s\S]*?)<\/ul>/)?.[1];
+  assert.ok(strip, 'a labelled list in the hero');
+  assert.ok(hero.indexOf('class="hero-intro"') < hero.indexOf('class="hero-proof"') && hero.indexOf('class="hero-proof"') < hero.indexOf('class="hero-actions'), 'after the intro, before the actions (reading order)');
+  const links = [...strip.matchAll(/<li><a href="(#[a-z]+)"><span class="proof-figure">([\s\S]*?)<\/span> <span class="proof-label mono">([^<]+?) <span class="icon icon-arrow-s" aria-hidden="true"><\/span><\/span><\/a><\/li>/g)];
+  assert.deepEqual(links.map(([, href]) => href), ['#experience', '#experience', '#approach']);
+  assert.deepEqual(links.map(([, , figure]) => plainText(figure)), ['~ 350', '250+', 'Minutes']);
+  assert.deepEqual(links.map(([, , , label]) => label), ['Developers I helped train', 'Agents built by teams I helped train', 'Firewall checks that took about a day']);
+  // "~" is not read out: screen readers hear "About 350".
+  assert.match(links[0][2], /^<span aria-hidden="true">~<\/span><span class="visually-hidden">About <\/span>350$/);
+  // Every fact is stated where the link lands.
+  const experience = plainText(sectionOf('experience'));
+  const approach = plainText(sectionOf('approach'));
+  assert.match(experience, /to ~350 developers/);
+  assert.match(experience, /Those teams have built 250\+ agents/);
+  assert.match(approach, /about a day of manual testing[^.]*\. Asking why led to a diagnostics app that runs the same checks from one screen in minutes\./);
+  // The build tour sets it during the hero stop (one grouped job, so the label cap holds).
+  const entrance = await read('../web/entrance.js');
+  assert.match(entrance, /\{ sel: '\.hero-proof > li', role: 'type', kind: 'reveal', wave: \d+, each: true, group: '\.hero-proof', grouped: true, act: 'setting proof figures' \}/);
+  assert.match(entrance, /const HERO_BADGES = 6;/);
+  // Mono label, large display figure; placed per breakpoint without shrinking type.
+  const styles = await read('../web/styles.css');
+  const portrait = await read('../web/portrait.css');
+  assert.match(styles, /\.proof-figure \{ font-size: clamp\(26px, [^;]+\); font-weight: var\(--display-weight\);/);
+  assert.match(portrait, /@media \(min-width: 1101px\) \{[^@]*\.hero-bottom \.hero-proof \{ grid-column: 1; grid-row: 2;/);
+});
+
+test('each headline figure is stated once on the page (plus the strip), where it is explained', () => {
+  const main = html.match(/<main id="main">([\s\S]*)<\/main>/)[1].replace(/<ul class="hero-proof"[\s\S]*?<\/ul>/, '');
+  const body = plainText(main);
+  const count = pattern => (body.match(pattern) || []).length;
+  assert.equal(count(/~350/g), 1, '~350: the Experience bullet');
+  assert.equal(count(/250\+/g), 1, '250+: the Experience bullet');
+  assert.equal(count(/18\+/g), 2, '18+: the Experience bullet and the Approach story');
+  assert.equal(count(/\b24(?:-account| AWS accounts)/g), 2, '24 accounts: the Experience bullet and the Approach story');
+  assert.equal(count(/about a day/g), 2, 'a day to minutes: the Experience bullet and the Approach story');
+  assert.doesNotMatch(html, /class="xp-marks"/, 'no milestone rows repeating the bullets');
+  const capabilities = plainText(sectionOf('capabilities'));
+  assert.doesNotMatch(capabilities, /~350|250\+|18\+|\b24\b|about a day/);
+  // The Approach focus chips restate the story in words, not figures.
+  for (const [, chips] of sectionOf('approach').matchAll(/<ul class="approach-focus mono" aria-label="In practice">([\s\S]*?)<\/ul>/g)) assert.doesNotMatch(chips, /\d|→/, chips);
+});
+
+test('skills: a compact grid of twelve core skills in four groups, all from the earlier list', () => {
+  const list = html.match(/<dl class="skill-list">([\s\S]*?)<\/dl>/)[1];
+  const groups = [...list.matchAll(/<div><dt>([^<]+)<\/dt><dd><ul class="tag-list">([\s\S]*?)<\/ul><\/dd><\/div>/g)].map(([, name, tags]) => [name.replace('&amp;', '&'), [...tags.matchAll(/<li>([^<]+)<\/li>/g)].map(match => match[1])]);
+  assert.deepEqual(groups, [
+    ['Languages', ['Python', 'SQL', 'TypeScript']],
+    ['LLMs & agents', ['MCP', 'RAG', 'LLM evaluation']],
+    ['ML & MLOps', ['scikit-learn', 'TensorFlow', 'MLflow']],
+    ['Cloud & infra', ['Amazon SageMaker', 'AWS Lambda', 'Docker']],
+  ]);
+});
+
+test('the About flow field loads only once About is near, with a no-script copy', async () => {
+  const about = sectionOf('about');
+  const flow = about.match(/<div class="about-flow" aria-hidden="true">([\s\S]*?)<\/div>/)?.[1] ?? '';
+  const [lazy, fallback] = flow.match(/<img[^>]*>/g) || [];
+  assert.equal(attr(lazy, 'data-src'), './assets/about-flow.svg');
+  assert.equal(attr(lazy, 'src'), undefined, 'no src in the markup: nothing is fetched with the page');
+  assert.equal(attr(lazy, 'decoding'), 'async');
+  assert.match(flow, /<noscript><img src="\.\/assets\/about-flow\.svg" alt="" width="1600" height="1000" decoding="async"><\/noscript>/);
+  assert.equal(attr(fallback, 'src'), './assets/about-flow.svg');
+  const app = await read('../web/app.js');
+  assert.match(app, /deferAboutFlow\(document, window\);/, 'initPortfolio wires it');
+  assert.match(app, /addEventListener\('beforeprint', load\)/, 'printing from the top still loads the image');
+  assert.match(app, /const intents = \['wheel', 'touchstart', 'pointerdown', 'keydown'\];/);
+  assert.match(app, /entry\.intersectionRect\.height > 0/, 'the edge-adjacent fold does not count');
+  assert.match(app, /dataset\.tour === 'play'\) timer = window\.setTimeout\(load, /, 'ahead of the build tour');
+  const styles = await read('../web/styles.css');
+  assert.match(styles, /\.about-flow img:not\(\[src\]\) \{ display: none; \}/);
+});
+
+test('deferAboutFlow: nothing at the fold edge, loads on intent, a real overlap, a deep link or ahead of the tour', async () => {
+  const { deferAboutFlow, FLOW_TOUR_LEAD_MS } = await import('../web/app.js');
+  function rig({ scrollY = 0, tour } = {}) {
+    const listeners = new Map();
+    const timers = [];
+    let observed = null;
+    const image = {
+      dataset: { src: './assets/about-flow.svg' }, src: undefined,
+      removeAttribute(name) { if (name === 'data-src') delete this.dataset.src; },
+      closest: () => 'about-section',
+    };
+    const document = { querySelector: () => (image.dataset.src ? image : null), documentElement: { dataset: tour ? { tour } : {} } };
+    const window = {
+      scrollY,
+      performance: { now: () => 1000 },
+      addEventListener: (type, fn) => listeners.set(type, fn),
+      removeEventListener: type => listeners.delete(type),
+      setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
+      clearTimeout() {},
+      IntersectionObserver: class { constructor(callback) { observed = { callback }; } observe(target) { observed.target = target; } disconnect() { observed.gone = true; } },
+    };
+    deferAboutFlow(document, window);
+    return { image, window, listeners, timers, io: () => observed };
+  }
+  const idle = rig();
+  assert.equal(idle.image.src, undefined, 'not fetched with the page');
+  assert.equal(idle.io().target, 'about-section');
+  idle.io().callback([{ intersectionRect: { height: 0 } }]);
+  assert.equal(idle.image.src, undefined, 'the section touching the fold is not "near" yet');
+  idle.listeners.get('scroll')();
+  assert.equal(idle.image.src, undefined, 'a scroll event at the very top does nothing');
+  assert.deepEqual(idle.timers, [], 'no timer without the tour');
+  idle.listeners.get('wheel')();
+  assert.equal(idle.image.src, './assets/about-flow.svg', 'a wheel turn loads it');
+  assert.equal(idle.image.dataset.src, undefined);
+  assert.equal(idle.listeners.size, 0, 'listeners removed');
+  assert.ok(idle.io().gone);
+
+  const overlap = rig();
+  overlap.io().callback([{ intersectionRect: { height: 1 } }]);
+  assert.equal(overlap.image.src, './assets/about-flow.svg', 'a real overlap loads it');
+
+  const deep = rig({ scrollY: 900 });
+  assert.equal(deep.image.src, './assets/about-flow.svg', 'a page that opens lower down loads it at once');
+
+  const tour = rig({ tour: 'play' });
+  assert.equal(tour.timers.length, 1);
+  assert.equal(tour.timers[0].ms, FLOW_TOUR_LEAD_MS - 1000, 'counted from navigation start');
+  tour.timers[0].fn();
+  assert.equal(tour.image.src, './assets/about-flow.svg', 'loaded ahead of the tour reaching About');
+});

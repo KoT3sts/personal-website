@@ -26,7 +26,47 @@ export function initPortfolio(document, window) {
     else if (!tiltFrame) tiltFrame = raf(paintTilt);
   });
   document.querySelectorAll('[data-year]').forEach(element => { element.textContent = new Date().getFullYear(); });
+  deferAboutFlow(document, window);
   document.body.classList.add('js-enabled');
+}
+
+// The About flow field is the heaviest file on the page (about 311 KB) and sits
+// right under the full-height hero, where loading="lazy" would still fetch it at
+// once. It loads once the visitor heads for it: any scroll away from the top, a
+// wheel, touch, pointer or key press, a deep link that lands lower down, the
+// section entering the view, or, while the build tour plays, FLOW_TOUR_LEAD_MS
+// after navigation start (the tour reaches About at about 8 s). Without scripts
+// the <noscript> copy in index.html loads as usual.
+export const FLOW_TOUR_LEAD_MS = 5000;
+export function deferAboutFlow(document, window) {
+  const image = document.querySelector('.about-flow img[data-src]');
+  if (!image) return;
+  const intents = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
+  let timer = 0;
+  let observer = null;
+  const onScroll = () => { if ((window.scrollY || 0) > 0) load(); };
+  function load() {
+    if (!image.dataset.src) return;
+    image.src = image.dataset.src;
+    image.removeAttribute('data-src');
+    intents.forEach(type => window.removeEventListener(type, load, true));
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('beforeprint', load);
+    window.clearTimeout(timer);
+    observer?.disconnect();
+  }
+  if ((window.scrollY || 0) > 0) { load(); return; }
+  intents.forEach(type => window.addEventListener(type, load, { capture: true, passive: true }));
+  window.addEventListener('scroll', onScroll, { passive: true });
+  if (typeof window.IntersectionObserver === 'function') {
+    // Only a real overlap counts: the section starts exactly at the fold, which
+    // already reports as an (edge-adjacent) intersection.
+    observer = new window.IntersectionObserver(entries => { if (entries.some(entry => entry.intersectionRect.height > 0)) load(); });
+    observer.observe(image.closest('section') || image);
+  }
+  // Printing from the top would otherwise leave the image without a source.
+  window.addEventListener('beforeprint', load);
+  if (document.documentElement.dataset.tour === 'play') timer = window.setTimeout(load, Math.max(0, FLOW_TOUR_LEAD_MS - (window.performance?.now?.() ?? 0)));
 }
 
 // ---- build tour bootstrap -----------------------------------------------------
@@ -114,7 +154,11 @@ function lazyEntrance(document, window) {
     stub.type = 'button';
     stub.className = 'agentic-replay';
     stub.dataset.agenticReplay = '';
-    stub.textContent = 'Replay build tour ↗';
+    stub.textContent = 'Replay build tour ';
+    const icon = document.createElement('span');
+    icon.className = 'icon icon-arrow-ne';
+    icon.setAttribute('aria-hidden', 'true');
+    stub.append(icon);
     stub.disabled = Boolean(media?.matches);
     stub.addEventListener('click', replay);
     media?.addEventListener?.('change', () => { if (stub) stub.disabled = Boolean(media.matches); });

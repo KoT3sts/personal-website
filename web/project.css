@@ -92,6 +92,18 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
 .cs-pager .mono { color: #a4a59f; }
 .cs-pager-title { font-size: clamp(26px, 4.4vw, 68px); line-height: .9; font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: -.045em; word-spacing: .06em; text-transform: uppercase; }
 .cs-arrow { display: inline-block; }
+/* Arrow icons (same set as styles.css): the arrow glyphs are outside the self-hosted
+   fonts, so they are drawn as a mask in currentColor, sized in em. */
+.icon { display: inline-block; flex: none; width: .92em; height: .92em; vertical-align: -.1em; background-color: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+.icon-arrow-e { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M9 3.5 13.5 8 9 12.5'/%3E%3C/svg%3E"); }
+.icon-arrow-w { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.5 8h-11M7 3.5 2.5 8 7 12.5'/%3E%3C/svg%3E"); }
+.icon-arrow-s { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2.5v11M3.5 9 8 13.5 12.5 9'/%3E%3C/svg%3E"); }
+.icon-arrow-n { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 13.5v-11M3.5 7 8 2.5 12.5 7'/%3E%3C/svg%3E"); }
+.icon-arrow-ne { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 11.5l7-7M5.5 4.5h6v6'/%3E%3C/svg%3E"); }
+.icon-arrow-se { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 4.5l7 7M11.5 5.5v6h-6'/%3E%3C/svg%3E"); }
+.icon-arrow-ew { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M5.5 5 2.5 8l3 3M10.5 5l3 3-3 3'/%3E%3C/svg%3E"); }
+.icon-arrow-ns { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2.5v11M5 5.5l3-3 3 3M5 10.5l3 3 3-3'/%3E%3C/svg%3E"); }
+@media (forced-colors: active) { .icon { background-color: CanvasText; forced-color-adjust: none; } }
 .cs-pager a:hover .cs-pager-title { color: #d7deca; }
 .cs-contact { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px; padding: 30px 0 34px; border-top: 1px solid #33382c; }
 .cs-contact p { color: #c4c7bd; font-size: 15px; line-height: 1.45; }
@@ -133,4 +145,6 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
   .cs-back, .skip-link, .cs-contact-links { display: none; }
   .cs-close { background: none; color: var(--ink); }
   .cs-cover img { box-shadow: none; }
+  /* The arrow icons are a mask over the text colour; keep them when background graphics are off. */
+  .icon, .ea-flow-steps li + li::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

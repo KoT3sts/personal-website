@@ -91,7 +91,7 @@
       <a href="#skills" class="nav-optional">Skills</a>
       <a href="#contact">Contact</a>
     </nav>
-    <a class="header-contact" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Résumé (PDF) <span aria-hidden="true">↓</span></a>
+    <a class="header-contact" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Résumé (PDF) <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
   </header>
 
   <main id="main">
@@ -143,16 +143,22 @@
           <p>I build and ship ML and LLM systems on AWS.</p>
           <p class="hero-scope">AI agents and MCP integrations, LLM tracing and evaluation, serverless APIs, MLOps.</p>
         </div>
-        <a class="scroll-cue" href="#about" aria-label="Skip to the about section"><span aria-hidden="true">↘</span></a>
+        <!-- Proof strip: three facts stated further down, each linking to where it is backed up. -->
+        <ul class="hero-proof" aria-label="Highlights">
+          <li><a href="#experience"><span class="proof-figure"><span aria-hidden="true">~</span><span class="visually-hidden">About </span>350</span> <span class="proof-label mono">Developers I helped train <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
+          <li><a href="#experience"><span class="proof-figure">250+</span> <span class="proof-label mono">Agents built by teams I helped train <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
+          <li><a href="#approach"><span class="proof-figure">Minutes</span> <span class="proof-label mono">Firewall checks that took about a day <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
+        </ul>
+        <a class="scroll-cue" href="#about" aria-label="Skip to the about section"><span class="icon icon-arrow-se" aria-hidden="true"></span></a>
         <div class="hero-actions hero-note">
-          <a class="pill-button" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Download résumé <span class="pill-meta">PDF</span> <span aria-hidden="true">↓</span></a>
+          <a class="pill-button" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Download résumé <span class="pill-meta">PDF</span> <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
           <div class="hero-links mono">
-            <a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span aria-hidden="true">↗</span></a>
-            <a href="mailto:Lucenatrujillo.cesar@gmail.com">EMAIL <span aria-hidden="true">↗</span></a>
+            <a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+            <a href="mailto:Lucenatrujillo.cesar@gmail.com">EMAIL <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
           </div>
         </div>
       </div>
-      <div class="hero-rule mono"><span>AGENTS, EVALS AND MLOPS AT ADP.</span><span>SCROLL TO EXPLORE ↓</span></div>
+      <div class="hero-rule mono"><span>AGENTS, EVALS AND MLOPS AT ADP.</span><span>SCROLL TO EXPLORE <span class="icon icon-arrow-s" aria-hidden="true"></span></span></div>
     </section>
 
     <!-- Wide screens with JS and motion: the scene pins while the page scrolls through the section and the
@@ -160,15 +166,18 @@
     <section id="about" class="about-transition dark-section" aria-labelledby="about-title">
       <div class="about-scene">
         <div class="about-field">
-          <div class="about-flow" aria-hidden="true"><img src="./assets/about-flow.svg" alt="" width="1600" height="1000" loading="lazy"></div>
+          <!-- The flow field (about 311 KB) is fetched by app.js only once the visitor heads
+               for it (scroll, wheel, touch, keys, a deep link, or the build tour about to arrive);
+               without scripts the <noscript> copy loads as usual. -->
+          <div class="about-flow" aria-hidden="true"><img data-src="./assets/about-flow.svg" alt="" width="1600" height="1000" decoding="async"><noscript><img src="./assets/about-flow.svg" alt="" width="1600" height="1000" decoding="async"></noscript></div>
           <div class="about-transition-meta mono"><span>01 / A LITTLE CONTEXT</span><span>THE PERSON BEHIND THE PROJECTS</span></div>
         </div>
         <div class="about-window" aria-hidden="true"></div>
         <div class="about-title-panel">
           <span class="about-panel-index mono">C / A CLOSER LOOK</span>
-          <h2 id="about-title">ABOUT<br>ME</h2>
+          <h2 id="about-title">ABOUT <br>ME</h2>
         </div>
-        <div class="about-transition-foot mono"><span>FROM BCI RESEARCH TO PRODUCTION AGENTS.</span><span>KEEP EXPLORING ↓</span></div>
+        <div class="about-transition-foot mono"><span>FROM BCI RESEARCH TO PRODUCTION AGENTS.</span><span>KEEP EXPLORING <span class="icon icon-arrow-s" aria-hidden="true"></span></span></div>
       </div>
     </section>
 
@@ -186,7 +195,7 @@
           </div>
           <div class="beam-feathers"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
         </div>
-        <div class="cinematic-topline mono"><span>TURNING BETTER QUESTIONS<br>INTO USEFUL SOFTWARE.</span><span>CESAR TORTOLERO<br>MACHINE LEARNING ENGINEER</span></div>
+        <div class="cinematic-topline mono"><span>TURNING BETTER QUESTIONS <br>INTO USEFUL SOFTWARE.</span><span>CESAR TORTOLERO <br>MACHINE LEARNING ENGINEER</span></div>
         <div class="cinematic-footer">
           <div class="cinematic-copy">
             <span class="mono">ML ENGINEERING / LLM SYSTEMS / MLOPS</span>
@@ -196,8 +205,8 @@
             <p class="currently"><span class="mono">CURRENTLY</span> Pursuing an M.S. in Computer Science (Machine Learning) at Georgia Tech, part-time, while working full-time.</p>
           </div>
           <div class="scene-actions">
-            <a class="scene-pill scene-pill-primary" href="#capabilities">What I can do <span aria-hidden="true">↗</span></a>
-            <a class="scene-pill" href="#experience">Experience <span aria-hidden="true">↗</span></a>
+            <a class="scene-pill scene-pill-primary" href="#capabilities">What I can do <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+            <a class="scene-pill" href="#experience">Experience <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
           </div>
         </div>
       </div>
@@ -206,11 +215,11 @@
 
     <section id="capabilities" class="capabilities dark-section" aria-labelledby="capabilities-title">
       <div class="section-top mono"><span>02 / WHAT I CAN DO</span><span>EACH ONE WITH PROOF FROM MY WORK</span></div>
-      <div class="capabilities-heading"><h2 id="capabilities-title">WHAT I<br><span>CAN DO.</span></h2><p>Seven things I can take on, each backed by work I’ve done.</p></div>
+      <div class="capabilities-heading"><h2 id="capabilities-title">WHAT I <br><span>CAN DO.</span></h2><p>Seven things I can take on, each backed by work I’ve done.</p></div>
       <ul class="capability-list">
         <li class="capability">
           <h3>Build and ship AI agents and MCP integrations on AWS</h3>
-          <p class="capability-proof"><span class="mono">PROOF</span> The platform runs 250+ agents, built by teams I helped train.</p>
+          <p class="capability-proof"><span class="mono">PROOF</span> The teams I helped train build and run their agents on the platform.</p>
           <ul class="tag-list" aria-label="Tools"><li>Strands Agents</li><li>MCP</li><li>Bedrock AgentCore</li></ul>
         </li>
         <li class="capability">
@@ -235,7 +244,7 @@
         </li>
         <li class="capability">
           <h3>Teach and unblock developers</h3>
-          <p class="capability-proof"><span class="mono">PROOF</span> Hands-on workshops for ~350 developers, an onboarding guide and 12 demo videos. I debug production integrations: IAM signing, OAuth, secrets and network rules.</p>
+          <p class="capability-proof"><span class="mono">PROOF</span> Hands-on workshops for developers across payroll, HR, tax and analytics, an onboarding guide and 12 demo videos. I debug production integrations: IAM signing, OAuth, secrets and network rules.</p>
         </li>
         <li class="capability">
           <h3>Do applied ML research</h3>
@@ -247,7 +256,7 @@
 
     <section id="experience" class="experience dark-section" aria-labelledby="experience-title">
       <div class="section-top mono"><span>03 / EXPERIENCE</span><span>WHERE THE WORK HAPPENS</span></div>
-      <div class="experience-heading"><h2 id="experience-title">BUILD. TEACH.<br><span>SHIP. DEBUG.</span></h2><p>Machine learning engineering at ADP since July 2024. Before that, brain-computer interface research at Kennesaw State University.</p></div>
+      <div class="experience-heading"><h2 id="experience-title">BUILD. TEACH. <br><span>SHIP. DEBUG.</span></h2><p>Machine learning engineering at ADP since July 2024. Before that, brain-computer interface research at Kennesaw State University.</p></div>
 
       <!-- Three chapters. On wide screens experience.js pins the stage and the
            page scroll carries the track sideways; otherwise they stack. -->
@@ -260,9 +269,6 @@
                 <p class="xp-org mono">ADP · ROSELAND, NJ</p>
                 <h3 class="xp-title" id="xp-ml-title" data-ghost="Machine Learning Engineer">Machine Learning Engineer</h3>
                 <p class="xp-when mono"><time datetime="2026-08">AUG 2026</time> – PRESENT</p>
-                <ul class="xp-marks" aria-hidden="true">
-                  <li><b>18+</b> hands-on workshops</li><li><b>~350</b> developers</li><li><b>250+</b> agents</li>
-                </ul>
               </header>
               <div class="xp-group">
                 <div class="xp-group-head"><span class="mono">2026</span><h4 id="group-agents">AI agent platform &amp; applied AI</h4></div>
@@ -295,9 +301,6 @@
                 <p class="xp-org mono">ADP · ROSELAND, NJ</p>
                 <h3 class="xp-title" id="xp-associate-title" data-ghost="Associate ML Engineer">Associate ML Engineer</h3>
                 <p class="xp-when mono"><time datetime="2024-07">JUL 2024</time> – <time datetime="2026-07">JUL 2026</time></p>
-                <ul class="xp-marks" aria-hidden="true">
-                  <li><b>296</b> models in the inventory</li>
-                </ul>
               </header>
               <div class="xp-group">
                 <div class="xp-group-head"><span class="mono">2024 – 2025</span><h4 id="group-mlops">MLOps &amp; GenAI</h4></div>
@@ -318,9 +321,6 @@
                 <p class="xp-org mono">KENNESAW STATE UNIVERSITY</p>
                 <h3 class="xp-title" id="xp-ksu-title" data-ghost="Lead Researcher">Lead Researcher<span class="visually-hidden">,</span> <span class="xp-title-tail">Thoughts-to-Text BCI</span></h3>
                 <p class="xp-when mono"><time datetime="2021-09">SEP 2021</time> – <time datetime="2023-05">MAY 2023</time></p>
-                <ul class="xp-marks" aria-hidden="true">
-                  <li><b>15%</b> higher classification accuracy</li><li><b>50+</b> undergraduate researchers mentored</li>
-                </ul>
               </header>
               <div class="xp-group">
                 <div class="xp-group-head"><span class="mono">RESEARCH</span><h4 id="group-bci">Brain-computer interface</h4></div>
@@ -355,23 +355,23 @@
 
     <section id="work" class="work" aria-labelledby="work-title">
       <div class="section-top mono"><span>04 / SELECTED PROJECTS</span><span>RESEARCH, EXPERIMENTS AND TOOLS</span></div>
-      <div class="work-heading"><h2 id="work-title">LESS TALK.<br>MORE <span>MAKING.</span></h2><p>Research, experiments and tools.<br>Each one starts with a question.</p></div>
+      <div class="work-heading"><h2 id="work-title">LESS TALK. <br>MORE <span>MAKING.</span></h2><p>Research, experiments and tools. <br>Each one starts with a question.</p></div>
       <div class="explorer">
         <div class="explorer-stage" data-explorer-mode="ring">
           <div class="explorer-hub"><h3 id="explorer-title"><span class="explorer-hub-word">All projects</span> <span class="explorer-hub-count mono"><span class="visually-hidden">: </span>06</span></h3></div>
           <ol class="explorer-covers" role="list" aria-label="Project case studies">
-            <li class="explorer-item" data-explorer-item="0"><a class="explorer-card" href="./projects/agent-workflow.html" aria-label="Multi-Agent Workflow, agent tooling: implement, review and verify steps with read-only Jenkins and Bitbucket context. Read the case study."><span class="explorer-cover"><img src="./assets/agent-workflow.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Multi-Agent Workflow</span><span class="mono explorer-card-category">01 / AGENT TOOLING</span><span class="explorer-card-lead">A specialist for each step. Context they can read, not change.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span>↗</span></span></a></li>
-            <li class="explorer-item" data-explorer-item="1"><a class="explorer-card" href="./projects/thoughts-to-text.html" aria-label="Thoughts-to-Text BCI, BCI research: noisy EEG channels cleaned by preprocessing, with classification accuracy up 15 percent. Read the case study."><span class="explorer-cover"><img src="./assets/thoughts-to-text.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Thoughts-to-Text BCI</span><span class="mono explorer-card-category">02 / BCI RESEARCH</span><span class="explorer-card-lead">Cleaner signals. Better predictions.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span>↗</span></span></a></li>
-            <li class="explorer-item" data-explorer-item="2"><a class="explorer-card" href="./projects/companion-chatbot.html" aria-label="Companionship Chatbot, conversational AI: a companion chat beside a sentiment gauge. Read the case study."><span class="explorer-cover"><img src="./assets/companion-chatbot.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Companionship Chatbot</span><span class="mono explorer-card-category">03 / CONVERSATIONAL AI</span><span class="explorer-card-lead">Listen for the tone, not just the words.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span>↗</span></span></a></li>
-            <li class="explorer-item" data-explorer-item="3"><a class="explorer-card" href="./projects/voicelab.html" aria-label="VoiceLab, language experiments: writing passages beside a language signal visualization. Read the case study."><span class="explorer-cover"><img src="./assets/voicelab.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">VoiceLab</span><span class="mono explorer-card-category">04 / LANGUAGE EXPERIMENTS</span><span class="explorer-card-lead">Understand the signals. Keep the meaning.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span>↗</span></span></a></li>
-            <li class="explorer-item" data-explorer-item="4"><a class="explorer-card" href="./projects/work-helper.html" aria-label="Work Helper, opportunity discovery: finding opportunities and three steps for a job search. Read the case study."><span class="explorer-cover"><img src="./assets/work-helper.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Work Helper</span><span class="mono explorer-card-category">05 / OPPORTUNITY DISCOVERY</span><span class="explorer-card-lead">A more intentional way to approach what’s next.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span>↗</span></span></a></li>
-            <li class="explorer-item" data-explorer-item="5"><a class="explorer-card" href="./projects/barking-village.html" aria-label="Barking Village, operations software: a staff sidebar and care planning panels. Read the case study."><span class="explorer-cover"><img src="./assets/barking-village.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Barking Village</span><span class="mono explorer-card-category">06 / OPERATIONS SOFTWARE</span><span class="explorer-card-lead">Less friction behind the scenes. More room for care.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span>↗</span></span></a></li>
+            <li class="explorer-item" data-explorer-item="0"><a class="explorer-card" href="./projects/agent-workflow.html" aria-label="Multi-Agent Workflow, agent tooling: implement, review and verify steps with read-only Jenkins and Bitbucket context. Read the case study."><span class="explorer-cover"><img src="./assets/agent-workflow.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Multi-Agent Workflow</span><span class="mono explorer-card-category">01 / AGENT TOOLING</span><span class="explorer-card-lead">A specialist for each step. Context they can read, not change.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="1"><a class="explorer-card" href="./projects/thoughts-to-text.html" aria-label="Thoughts-to-Text BCI, BCI research: noisy EEG channels cleaned by preprocessing, with classification accuracy up 15 percent. Read the case study."><span class="explorer-cover"><img src="./assets/thoughts-to-text.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Thoughts-to-Text BCI</span><span class="mono explorer-card-category">02 / BCI RESEARCH</span><span class="explorer-card-lead">Cleaner signals. Better predictions.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="2"><a class="explorer-card" href="./projects/companion-chatbot.html" aria-label="Companionship Chatbot, conversational AI: a companion chat beside a sentiment gauge. Read the case study."><span class="explorer-cover"><img src="./assets/companion-chatbot.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Companionship Chatbot</span><span class="mono explorer-card-category">03 / CONVERSATIONAL AI</span><span class="explorer-card-lead">Listen for the tone, not just the words.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="3"><a class="explorer-card" href="./projects/voicelab.html" aria-label="VoiceLab, language experiments: writing passages beside a language signal visualization. Read the case study."><span class="explorer-cover"><img src="./assets/voicelab.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">VoiceLab</span><span class="mono explorer-card-category">04 / LANGUAGE EXPERIMENTS</span><span class="explorer-card-lead">Understand the signals. Keep the meaning.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="4"><a class="explorer-card" href="./projects/work-helper.html" aria-label="Work Helper, opportunity discovery: finding opportunities and three steps for a job search. Read the case study."><span class="explorer-cover"><img src="./assets/work-helper.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Work Helper</span><span class="mono explorer-card-category">05 / OPPORTUNITY DISCOVERY</span><span class="explorer-card-lead">A more intentional way to approach what’s next.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="5"><a class="explorer-card" href="./projects/barking-village.html" aria-label="Barking Village, operations software: a staff sidebar and care planning panels. Read the case study."><span class="explorer-cover"><img src="./assets/barking-village.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Barking Village</span><span class="mono explorer-card-category">06 / OPERATIONS SOFTWARE</span><span class="explorer-card-lead">Less friction behind the scenes. More room for care.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
           </ol>
           <div class="explorer-caption" aria-hidden="true" hidden>
             <p class="explorer-caption-title">Multi-Agent Workflow</p>
             <p class="explorer-caption-meta mono"><span class="explorer-caption-category">AGENT TOOLING</span> <span class="explorer-caption-count">01 / 06</span></p>
             <p class="explorer-caption-lead">A specialist for each step. Context they can read, not change.</p>
-            <a class="explorer-caption-open mono" href="./projects/agent-workflow.html" tabindex="-1">CASE STUDY <span>↗</span></a>
+            <a class="explorer-caption-open mono" href="./projects/agent-workflow.html" tabindex="-1">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
           </div>
           <div class="explorer-index" hidden>
             <p class="explorer-index-label mono" id="explorer-index-label">Index <span class="explorer-index-count" aria-hidden="true">01 / 06</span></p>
@@ -384,31 +384,30 @@
               <li><button class="explorer-pick" type="button" data-explorer-pick="5"><span class="mono explorer-pick-no">06</span><span class="explorer-pick-name">Barking Village</span></button></li>
             </ol>
           </div>
-          <p class="explorer-hint mono" aria-hidden="true" hidden><span class="explorer-hint-fine">SCROLL OR DRAG <span>↑↓</span> · ARROW KEYS</span><span class="explorer-hint-touch">SWIPE <span>↔</span> OR TAP A PROJECT</span></p>
+          <p class="explorer-hint mono" aria-hidden="true" hidden><span class="explorer-hint-fine">SCROLL OR DRAG <span class="icon icon-arrow-ns" aria-hidden="true"></span> · ARROW KEYS</span><span class="explorer-hint-touch">SWIPE <span class="icon icon-arrow-ew" aria-hidden="true"></span> OR TAP A PROJECT</span></p>
           <p class="explorer-live visually-hidden" aria-live="polite" aria-atomic="true"></p>
         </div>
       </div>
       <div class="project-stories">
-        <section id="project-agents" class="project-story" aria-labelledby="agents-title"><span class="mono story-category">AGENT TOOLING</span><h3 id="agents-title">Multi-Agent Workflow</h3><p class="story-lead">A specialist for each step. Context they can read, not change.</p><p>A multi-agent developer workflow. Specialist coding subagents split the work: one implements, one reviews, one verifies. Read-only MCP servers give them Jenkins and Bitbucket context, and a searchable knowledge base is compiled automatically from work sessions.</p><dl><div><dt>Focus</dt><dd>Clear roles and read-only access to delivery tools</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>MCP</li><li>Coding subagents</li><li>Jenkins</li><li>Bitbucket</li></ul></dd></div></dl><p class="story-footnote">No internal code, data or systems are shown. The cover is an original illustration.</p><a class="text-link story-case-link" href="./projects/agent-workflow.html">Read the case study<span class="visually-hidden">: Multi-Agent Workflow</span> <span aria-hidden="true">→</span></a></section>
-        <section id="project-bci" class="project-story" aria-labelledby="bci-title"><span class="mono story-category">BCI RESEARCH</span><h3 id="bci-title">Thoughts-to-Text BCI</h3><p class="story-lead">Cleaner signals. Better predictions.</p><p>Kennesaw State University research on a thoughts-to-text brain-computer interface. As lead researcher, I designed the EEG preprocessing pipelines, which raised classification accuracy by 15%. I presented the work at NCUR, the National Conference on Undergraduate Research.</p><dl><div><dt>Role</dt><dd>Lead researcher, Sep 2021 – May 2023</dd></div><div><dt>Result</dt><dd>+15% classification accuracy</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>EEG</li><li>Signal preprocessing</li><li>Classification</li></ul></dd></div></dl><p class="story-footnote">The cover is an original illustration, not research data.</p><a class="text-link story-case-link" href="./projects/thoughts-to-text.html">Read the case study<span class="visually-hidden">: Thoughts-to-Text BCI</span> <span aria-hidden="true">→</span></a></section>
-        <section id="project-chatbot" class="project-story" aria-labelledby="chatbot-title"><span class="mono story-category">CONVERSATIONAL AI</span><h3 id="chatbot-title">Companionship Chatbot</h3><p class="story-lead">Listen for the tone, not just the words.</p><p>An LLM companionship chatbot with sentiment analysis. Sentiment classification reached 95% accuracy, and measured user satisfaction was 20% higher.</p><dl><div><dt>Award</dt><dd>1st Place, KSU CDay 2024</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>LLM</li><li>Sentiment analysis</li></ul></dd></div></dl><p class="story-footnote">The cover is an original illustration. The conversation shown is sample text.</p><a class="text-link story-case-link" href="./projects/companion-chatbot.html">Read the case study<span class="visually-hidden">: Companionship Chatbot</span> <span aria-hidden="true">→</span></a><div class="story-lab"><a class="text-link story-lab-link" href="./lab/sentiment-eval.html">See the evaluation lab<span class="visually-hidden">: a public reproduction on open data, not the original model</span> <span aria-hidden="true">→</span></a></div></section>
-        <section id="project-voicelab" class="project-story" aria-labelledby="voicelab-title"><span class="mono story-category">LANGUAGE EXPERIMENTS</span><h3 id="voicelab-title">VoiceLab</h3><p class="story-lead">Understand the signals. Keep the meaning.</p><p>A local prototype for explainable writing-signal analysis and meaning-preserving revision. It explores patterns in language while keeping text on the local device.</p><dl><div><dt>Focus</dt><dd>Explainable analysis and thoughtful revision</dd></div><div><dt>Stage</dt><dd>Local prototype</dd></div></dl><p class="story-footnote">This experiment does not establish authorship. The cover is an original illustration.</p><a class="text-link story-case-link" href="./projects/voicelab.html">Read the case study<span class="visually-hidden">: VoiceLab</span> <span aria-hidden="true">→</span></a></section>
-        <section id="project-work-helper" class="project-story" aria-labelledby="work-helper-title"><span class="mono story-category">OPPORTUNITY DISCOVERY</span><h3 id="work-helper-title">Work Helper</h3><p class="story-lead">A more intentional way to approach what’s next.</p><p>A project exploring how software can help people discover job opportunities and take the next step. The current work includes a local onboarding prototype.</p><dl><div><dt>Focus</dt><dd>Making opportunity discovery more approachable</dd></div><div><dt>Stage</dt><dd>In development</dd></div></dl><p class="story-footnote">The project cover is an original interface illustration, not a screenshot of a launched service.</p><a class="text-link story-case-link" href="./projects/work-helper.html">Read the case study<span class="visually-hidden">: Work Helper</span> <span aria-hidden="true">→</span></a></section>
-        <section id="project-barking" class="project-story" aria-labelledby="barking-title"><span class="mono story-category">OPERATIONS SOFTWARE</span><h3 id="barking-title">Barking Village</h3><p class="story-lead">Less friction behind the scenes. More room for care.</p><p>A full-stack dog-care operations project bringing staff workflows into one place: care sessions, daily planning, room status, and dog records.</p><dl><div><dt>Focus</dt><dd>Everyday operational workflows</dd></div><div><dt>Exploring</dt><dd>Clear interfaces for complex, connected tasks</dd></div></dl><p class="story-footnote">The project cover is an original illustration. No customer or operational data is shown.</p><a class="text-link story-case-link" href="./projects/barking-village.html">Read the case study<span class="visually-hidden">: Barking Village</span> <span aria-hidden="true">→</span></a></section>
+        <section id="project-agents" class="project-story" aria-labelledby="agents-title"><span class="mono story-category">AGENT TOOLING</span><h3 id="agents-title">Multi-Agent Workflow</h3><p class="story-lead">A specialist for each step. Context they can read, not change.</p><p>A multi-agent developer workflow. Specialist coding subagents split the work: one implements, one reviews, one verifies. Read-only MCP servers give them Jenkins and Bitbucket context, and a searchable knowledge base is compiled automatically from work sessions.</p><dl><div><dt>Focus</dt><dd>Clear roles and read-only access to delivery tools</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>MCP</li><li>Coding subagents</li><li>Jenkins</li><li>Bitbucket</li></ul></dd></div></dl><p class="story-footnote">No internal code, data or systems are shown. The cover is an original illustration.</p><a class="text-link story-case-link" href="./projects/agent-workflow.html">Read the case study<span class="visually-hidden">: Multi-Agent Workflow</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
+        <section id="project-bci" class="project-story" aria-labelledby="bci-title"><span class="mono story-category">BCI RESEARCH</span><h3 id="bci-title">Thoughts-to-Text BCI</h3><p class="story-lead">Cleaner signals. Better predictions.</p><p>Kennesaw State University research on a thoughts-to-text brain-computer interface. As lead researcher, I designed the EEG preprocessing pipelines, which raised classification accuracy by 15%. I presented the work at NCUR, the National Conference on Undergraduate Research.</p><dl><div><dt>Role</dt><dd>Lead researcher, Sep 2021 – May 2023</dd></div><div><dt>Result</dt><dd>+15% classification accuracy</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>EEG</li><li>Signal preprocessing</li><li>Classification</li></ul></dd></div></dl><p class="story-footnote">The cover is an original illustration, not research data.</p><a class="text-link story-case-link" href="./projects/thoughts-to-text.html">Read the case study<span class="visually-hidden">: Thoughts-to-Text BCI</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
+        <section id="project-chatbot" class="project-story" aria-labelledby="chatbot-title"><span class="mono story-category">CONVERSATIONAL AI</span><h3 id="chatbot-title">Companionship Chatbot</h3><p class="story-lead">Listen for the tone, not just the words.</p><p>An LLM companionship chatbot with sentiment analysis. Sentiment classification reached 95% accuracy, and measured user satisfaction was 20% higher.</p><dl><div><dt>Award</dt><dd>1st Place, KSU CDay 2024</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>LLM</li><li>Sentiment analysis</li></ul></dd></div></dl><p class="story-footnote">The cover is an original illustration. The conversation shown is sample text.</p><a class="text-link story-case-link" href="./projects/companion-chatbot.html">Read the case study<span class="visually-hidden">: Companionship Chatbot</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a><div class="story-lab"><a class="text-link story-lab-link" href="./lab/sentiment-eval.html">See the evaluation lab<span class="visually-hidden">: a public reproduction on open data, not the original model</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></div></section>
+        <section id="project-voicelab" class="project-story" aria-labelledby="voicelab-title"><span class="mono story-category">LANGUAGE EXPERIMENTS</span><h3 id="voicelab-title">VoiceLab</h3><p class="story-lead">Understand the signals. Keep the meaning.</p><p>A local prototype for explainable writing-signal analysis and meaning-preserving revision. It explores patterns in language while keeping text on the local device.</p><dl><div><dt>Focus</dt><dd>Explainable analysis and thoughtful revision</dd></div><div><dt>Stage</dt><dd>Local prototype</dd></div></dl><p class="story-footnote">This experiment does not establish authorship. The cover is an original illustration.</p><a class="text-link story-case-link" href="./projects/voicelab.html">Read the case study<span class="visually-hidden">: VoiceLab</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
+        <section id="project-work-helper" class="project-story" aria-labelledby="work-helper-title"><span class="mono story-category">OPPORTUNITY DISCOVERY</span><h3 id="work-helper-title">Work Helper</h3><p class="story-lead">A more intentional way to approach what’s next.</p><p>A project exploring how software can help people discover job opportunities and take the next step. The current work includes a local onboarding prototype.</p><dl><div><dt>Focus</dt><dd>Making opportunity discovery more approachable</dd></div><div><dt>Stage</dt><dd>In development</dd></div></dl><p class="story-footnote">The project cover is an original interface illustration, not a screenshot of a launched service.</p><a class="text-link story-case-link" href="./projects/work-helper.html">Read the case study<span class="visually-hidden">: Work Helper</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
+        <section id="project-barking" class="project-story" aria-labelledby="barking-title"><span class="mono story-category">OPERATIONS SOFTWARE</span><h3 id="barking-title">Barking Village</h3><p class="story-lead">Less friction behind the scenes. More room for care.</p><p>A full-stack dog-care operations project bringing staff workflows into one place: care sessions, daily planning, room status, and dog records.</p><dl><div><dt>Focus</dt><dd>Everyday operational workflows</dd></div><div><dt>Exploring</dt><dd>Clear interfaces for complex, connected tasks</dd></div></dl><p class="story-footnote">The project cover is an original illustration. No customer or operational data is shown.</p><a class="text-link story-case-link" href="./projects/barking-village.html">Read the case study<span class="visually-hidden">: Barking Village</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
       </div>
-      <div class="work-end mono"><span>SIX PROJECTS, FROM RESEARCH TO PRODUCTION.</span><span class="work-end-links"><a href="./lab/sentiment-eval.html">EVALUATION LAB <span aria-hidden="true">→</span></a><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">MORE ON GITHUB ↗</a></span></div>
+      <div class="work-end mono"><span>SIX PROJECTS, FROM RESEARCH TO PRODUCTION.</span><span class="work-end-links"><a href="./lab/sentiment-eval.html">EVALUATION LAB <span class="icon icon-arrow-e" aria-hidden="true"></span></a><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">MORE ON GITHUB <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></span></div>
     </section>
 
     <section id="skills" class="skills dark-section" aria-labelledby="skills-title">
       <div class="section-top mono"><span>05 / SKILLS &amp; EDUCATION</span><span>WHAT I WORK WITH</span></div>
       <div class="skills-layout">
-        <h2 id="skills-title">TOOLS &amp;<br><span>TRAINING.</span></h2>
+        <h2 id="skills-title">TOOLS &amp; <br><span>TRAINING.</span></h2>
         <dl class="skill-list">
-          <div><dt>Languages</dt><dd><ul class="tag-list"><li>Python</li><li>TypeScript</li><li>JavaScript</li><li>SQL</li><li>Java</li><li>Bash</li></ul></dd></div>
-          <div><dt>LLMs &amp; agents</dt><dd><ul class="tag-list"><li>Strands Agents</li><li>MCP</li><li>LangChain</li><li>RAG</li><li>Prompt design</li><li>Arize AX</li><li>OpenTelemetry/OpenInference</li><li>LLM evaluation</li></ul></dd></div>
-          <div><dt>ML &amp; MLOps</dt><dd><ul class="tag-list"><li>scikit-learn</li><li>XGBoost</li><li>TensorFlow</li><li>MLflow</li><li>Databricks Unity Catalog</li><li>Spark</li><li>Amazon SageMaker</li></ul></dd></div>
-          <div><dt>Cloud &amp; infra</dt><dd><ul class="tag-list"><li>AWS Lambda</li><li>API Gateway</li><li>EC2</li><li>SSM</li><li>IAM</li><li>S3</li><li>DynamoDB</li><li>Bedrock AgentCore</li><li>Terraform</li><li>Docker</li><li>Jenkins CI/CD</li></ul></dd></div>
-          <div><dt>Backend &amp; testing</dt><dd><ul class="tag-list"><li>FastAPI</li><li>Flask</li><li>NestJS</li><li>pytest</li><li>Jest</li></ul></dd></div>
+          <div><dt>Languages</dt><dd><ul class="tag-list"><li>Python</li><li>SQL</li><li>TypeScript</li></ul></dd></div>
+          <div><dt>LLMs &amp; agents</dt><dd><ul class="tag-list"><li>MCP</li><li>RAG</li><li>LLM evaluation</li></ul></dd></div>
+          <div><dt>ML &amp; MLOps</dt><dd><ul class="tag-list"><li>scikit-learn</li><li>TensorFlow</li><li>MLflow</li></ul></dd></div>
+          <div><dt>Cloud &amp; infra</dt><dd><ul class="tag-list"><li>Amazon SageMaker</li><li>AWS Lambda</li><li>Docker</li></ul></dd></div>
         </dl>
       </div>
       <div class="education-layout">
@@ -424,28 +423,28 @@
 
     <section id="approach" class="approach" aria-labelledby="approach-title">
       <div class="section-top mono"><span>06 / THE APPROACH</span><span>HOW I THINK ABOUT BUILDING</span></div>
-      <div class="approach-heading"><h2 id="approach-title">MAKE IT WORK.<br><span>MAKE IT MATTER.</span></h2><p>Start from the person who will use it, then build.</p></div>
+      <div class="approach-heading"><h2 id="approach-title">MAKE IT WORK. <br><span>MAKE IT MATTER.</span></h2><p>Start from the person who will use it, then build.</p></div>
       <div class="approach-list">
-        <details name="approach" open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true"></span></summary><p>Watch how the work gets done today before adding a feature. Checking firewall rules across our 24 AWS accounts took a developer about a day of manual testing, one account at a time. Asking why led to a diagnostics app that runs the same checks from one screen in minutes.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>24 AWS accounts</li><li>A day → minutes</li><li>One screen</li></ul><a class="approach-link mono" href="#experience">See the experience <span aria-hidden="true">↑</span></a></div></details>
-        <details name="approach"><summary><span class="mono approach-number">02</span><span>Build something tangible.</span><span class="details-icon" aria-hidden="true"></span></summary><p>A working version makes an idea easier to question. The first firewall checker was a small local app, rough but real. Using it showed which checks mattered, and those became a serverless API that tests accounts in parallel with bounded retries.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>A local app first</li><li>A serverless API</li><li>Parallel checks</li></ul><a class="approach-link mono" href="#work">See the work <span aria-hidden="true">↑</span></a></div></details>
-        <details name="approach"><summary><span class="mono approach-number">03</span><span>Stay curious. Keep refining.</span><span class="details-icon" aria-hidden="true"></span></summary><p>The details are part of the work. Each of the 18+ workshops showed where developers got stuck, such as missing secrets, access groups and network rules, and the onboarding guide changed to match. It has been revised more than 40 times.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>18+ workshops</li><li>40+ guide revisions</li><li>Where developers got stuck</li></ul><a class="approach-link mono" href="#contact">Say hello <span aria-hidden="true">↓</span></a></div></details>
+        <details name="approach" open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true"></span></summary><p>Watch how the work gets done today before adding a feature. Checking firewall rules across our 24 AWS accounts took a developer about a day of manual testing, one account at a time. Asking why led to a diagnostics app that runs the same checks from one screen in minutes.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Watch the work today</li><li>Ask why</li><li>One screen</li></ul><a class="approach-link mono" href="#experience">See the experience <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div></details>
+        <details name="approach"><summary><span class="mono approach-number">02</span><span>Build something tangible.</span><span class="details-icon" aria-hidden="true"></span></summary><p>A working version makes an idea easier to question. The first firewall checker was a small local app, rough but real. Using it showed which checks mattered, and those became a serverless API that tests accounts in parallel with bounded retries.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>A local app first</li><li>A serverless API</li><li>Parallel checks</li></ul><a class="approach-link mono" href="#work">See the work <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div></details>
+        <details name="approach"><summary><span class="mono approach-number">03</span><span>Stay curious. Keep refining.</span><span class="details-icon" aria-hidden="true"></span></summary><p>The details are part of the work. Each of the 18+ workshops showed where developers got stuck, such as missing secrets, access groups and network rules, and the onboarding guide changed to match. It has been revised more than 40 times.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Each workshop</li><li>The guide changed to match</li><li>Where developers got stuck</li></ul><a class="approach-link mono" href="#contact">Say hello <span class="icon icon-arrow-s" aria-hidden="true"></span></a></div></details>
       </div>
     </section>
 
-    <section id="notes" class="closing-note" aria-label="Personal note"><span class="mono">M.S. AT GEORGIA TECH, PART-TIME.</span><p>Still learning.<br>Still <em>making.</em></p><div class="note-orbit" aria-hidden="true"><span>C</span><i></i></div></section>
+    <section id="notes" class="closing-note" aria-label="Personal note"><span class="mono">M.S. AT GEORGIA TECH, PART-TIME.</span><p>Still learning. <br>Still <em>making.</em></p><div class="note-orbit" aria-hidden="true"><span>C</span><i></i></div></section>
   </main>
 
   <footer id="contact" class="contact dark-section" aria-labelledby="contact-title">
-    <div class="section-top mono"><span>07 / SAY HELLO</span><a href="#home">BACK TO THE TOP ↑</a></div>
+    <div class="section-top mono"><span>07 / SAY HELLO</span><a href="#home">BACK TO THE TOP <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div>
     <p class="contact-intro">Email is the fastest way to reach me.</p>
     <h2 id="contact-title">LET’S <span>CONNECT.</span></h2>
-    <a class="contact-button" href="mailto:Lucenatrujillo.cesar@gmail.com"><span class="contact-address">Lucenatrujillo.cesar@gmail.com</span><span aria-hidden="true">↗</span></a>
+    <a class="contact-button" href="mailto:Lucenatrujillo.cesar@gmail.com"><span class="contact-address">Lucenatrujillo.cesar@gmail.com</span><span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
     <ul class="contact-links mono">
-      <li><a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span aria-hidden="true">↗</span></a></li>
-      <li><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></li>
-      <li><a href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">RÉSUMÉ (PDF) <span aria-hidden="true">↓</span></a></li>
+      <li><a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></li>
+      <li><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">GITHUB <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></li>
+      <li><a href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">RÉSUMÉ (PDF) <span class="icon icon-arrow-s" aria-hidden="true"></span></a></li>
     </ul>
-    <div class="footer-bottom mono"><span>© <span data-year>2026</span> CESAR TORTOLERO</span><span>MACHINE LEARNING ENGINEER · MORRISTOWN, NJ</span><span>BUILT IN PLAIN HTML, CSS AND JS. <a class="footer-trace" href="./lab/build-trace.html">SEE THE AGENT RUN BEHIND IT <span aria-hidden="true">→</span></a></span></div>
+    <div class="footer-bottom mono"><span>© <span data-year>2026</span> CESAR TORTOLERO</span><span>MACHINE LEARNING ENGINEER · MORRISTOWN, NJ</span><span>BUILT IN PLAIN HTML, CSS AND JS. <a class="footer-trace" href="./lab/build-trace.html">SEE THE AGENT RUN BEHIND IT<span class="icon icon-arrow-e" aria-hidden="true"></span></a> <a class="footer-trace" href="./lab/evaluating-agents.html">HOW I EVALUATE AGENTS<span class="icon icon-arrow-e" aria-hidden="true"></span></a></span></div>
   </footer>
 </body>
 </html>
