@@ -40,9 +40,6 @@
   .xp-title::selection, .xp-title-tail::selection { color: var(--ink); -webkit-text-stroke: 0; }
   .xp-title-tail { display: block; margin-top: 16px; font-family: var(--font-mono); font-size: 12px; font-weight: 400; font-stretch: 100%; letter-spacing: .06em; word-spacing: normal; line-height: 1.5; color: #d6d8cf; -webkit-text-stroke: 0; }
 
-  .xp-marks { list-style: none; display: flex; flex-wrap: wrap; gap: 14px 30px; margin: 10px 0 0; padding: 16px 0 0; border-top: 1px solid var(--night-line); align-self: stretch; font-family: var(--font-mono); font-size: var(--text-label); letter-spacing: .05em; line-height: 1.45; text-transform: uppercase; color: #a4a59f; }
-  .xp-marks li { max-width: 17ch; }
-  .xp-marks b { display: block; margin-bottom: 3px; font-family: var(--font-sans); font-size: 28px; font-weight: 750; font-stretch: var(--display-stretch); letter-spacing: -.035em; line-height: 1; text-transform: none; color: var(--paper); font-variant-numeric: tabular-nums; }
 
   .xp-group-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
   .xp-group-head .mono { color: #a4a59f; font-size: 11px; }
@@ -68,7 +65,6 @@
     .experience[data-xp="travel"] .xp-chapter::before { content: ""; position: absolute; top: 0; bottom: var(--xp-bar); left: 0; width: 1px; background: var(--night-line); }
     .experience[data-xp="travel"] .xp-head { position: static; align-self: stretch; flex: none; width: clamp(330px, 44cqw, 680px); gap: clamp(10px, 1.7svh, 18px); padding-bottom: clamp(14px, 2.6svh, 30px); }
     .experience[data-xp="travel"] .xp-title { font-size: clamp(46px, min(6.8cqw, 11.5svh), 112px); }
-    .experience[data-xp="travel"] .xp-marks { margin-top: auto; }
     .experience[data-xp="travel"] .xp-group { flex: none; width: clamp(340px, 34cqw, 500px); }
     .experience[data-xp="travel"] .xp-group + .xp-group { padding-top: 0; border-top: 0; }
     .experience[data-xp="travel"] .xp-group-head h4 { font-size: clamp(21px, min(2.1cqw, 3.6svh), 30px); }
@@ -137,8 +133,6 @@
     .xp-group + .xp-group { padding-top: 28px; }
     .xp-title { font-size: 12.4vw; }
     .xp-year { top: .02em; font-size: 36vw; }
-    .xp-marks { gap: 12px 24px; }
-    .xp-marks b { font-size: 24px; }
     .xp-points li { padding-left: 20px; font-size: 14.5px; }
     .xp-group .tag-list { margin-left: 0; }
   }

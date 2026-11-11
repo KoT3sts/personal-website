@@ -20,10 +20,12 @@
 // begins, so `travel top + at * distance` shows it aligned.
 
 const TRAVEL_MEDIA = '(min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)';
-// Pinned scroll per chapter for the moves, in stage heights (the track may move farther).
-const DISTANCE_PER_CHAPTER = 0.85;
+// Pinned scroll per chapter for the moves, in stage heights (the track moves
+// about 2.5x as far sideways). With the rests, the whole pinned stretch is
+// about 1.7 stage heights for three chapters (1,385 px at 1280 x 800).
+export const DISTANCE_PER_CHAPTER = 0.45;
 // Share of each chapter's scroll span spent resting aligned before the next slides in.
-export const HOLD_SHARE = 0.18;
+export const HOLD_SHARE = 0.22;
 // A chapter is current once its left edge passes this share of the stage.
 const CURRENT_LINE = 0.4;
 // A chapter has arrived once its left edge passes this share of the stage.

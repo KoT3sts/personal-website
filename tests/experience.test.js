@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { HOLD_SHARE, travelPlan, trackAt } from '../web/experience.js';
+import { DISTANCE_PER_CHAPTER, HOLD_SHARE, travelPlan, trackAt } from '../web/experience.js';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const html = read('web/index.html');
@@ -20,7 +20,7 @@ const all = (pattern, source = section) => [...source.matchAll(pattern)];
 test('the section stays a labelled dark landmark with its heading and summary', () => {
   assert.ok(start > 0, 'experience section found');
   assert.match(section, /^<section id="experience" class="experience dark-section" aria-labelledby="experience-title">/);
-  assert.match(section, /<h2 id="experience-title">BUILD\. TEACH\.<br><span>SHIP\. DEBUG\.<\/span><\/h2>/);
+  assert.match(section, /<h2 id="experience-title">BUILD\. TEACH\. ?<br><span>SHIP\. DEBUG\.<\/span><\/h2>/);
   assert.match(section, /Machine learning engineering at ADP since July 2024\. Before that, brain-computer interface research at Kennesaw State University\./);
   assert.match(section, /03 \/ EXPERIENCE/);
 });
@@ -53,13 +53,6 @@ test('every existing fact is kept: titles, dates, place, bullets and tags', () =
   const tags = all(/<ul class="tag-list" aria-label="(?:Tools|Topics)">([\s\S]*?)<\/ul>/g).flatMap(match => all(/<li>([^<]+)<\/li>/g, match[1]).map(item => item[1]));
   assert.equal(tags.length, 29);
   for (const tag of ['Strands Agents', 'AWS Bedrock AgentCore', 'OpenInference', 'SSM Run Command', 'Artifactory', 'Databricks Unity Catalog', 'LangChain', 'Signal preprocessing']) assert.ok(tags.includes(tag), tag);
-});
-
-test('milestones only restate figures from the bullets and are hidden from assistive tech', () => {
-  const marks = all(/<ul class="xp-marks" aria-hidden="true">([\s\S]*?)<\/ul>/g);
-  assert.equal(marks.length, 3);
-  const bullets = all(/<ul class="xp-points">([\s\S]*?)<\/ul>/g).map(match => text(match[1])).join(' ');
-  for (const [, figure] of marks.flatMap(match => all(/<b>([^<]+)<\/b>/g, match[1]))) assert.ok(bullets.includes(figure), figure);
 });
 
 test('controls ship hidden, are real buttons and keep 44px targets', () => {
@@ -102,12 +95,12 @@ test('the build tour builds the chapters on stage and never waits on hidden ones
   const weight = Number(/weight: ([\d.]+)/.exec(stop)[1]);
   assert.ok(weight <= 1.5, `weight ${weight}`);
   assert.doesNotMatch(stop, /role-/);
-  for (const selector of ['.xp-year', '.xp-title', '.xp-org', '.xp-when', '.xp-marks', '.xp-group-head', '.xp-points', '.xp-controls', '.xp-stage']) {
+  for (const selector of ['.xp-year', '.xp-title', '.xp-org', '.xp-when', '.xp-group-head', '.xp-points', '.xp-controls', '.xp-stage']) {
     assert.ok(stop.includes(selector), selector);
     assert.ok(section.includes(`class="${selector.slice(1)}`) || section.includes(` ${selector.slice(1)}"`) || section.includes(`"${selector.slice(1)} `), `${selector} in the markup`);
   }
   // Chapters off-stage are skipped (`shown`) and wait unseen only while touring.
-  assert.equal((stop.match(/shown: true/g) || []).length, 8);
+  assert.equal((stop.match(/shown: true/g) || []).length, 7);
   assert.match(css, /html\.agentic-touring \.experience\[data-xp="travel"\] \.xp-chapter:not\(\[data-reached\]\) \{ visibility: hidden; \}/);
 });
 
@@ -117,13 +110,22 @@ test('the old light-section role rules are gone from styles.css', () => {
 });
 
 test('each chapter rests aligned for part of its scroll before the next slides in', () => {
-  // Measured 1280 x 800 layout: chapter offsets 0, 1608 and 2736 px; the moves take 2040 px of scroll.
+  // Measured 1280 x 800 layout: chapter offsets 0, 1608 and 2736 px; the moves take
+  // DISTANCE_PER_CHAPTER stage heights each (as experience.js measures them).
   const stops = [0, 1608, 2736];
-  const plan = travelPlan(stops, 2736, 2040);
-  assert.ok(HOLD_SHARE >= 0.15 && HOLD_SHARE <= 0.2, `hold share ${HOLD_SHARE}`);
+  const moves = Math.min(2736, 3 * DISTANCE_PER_CHAPTER * 800);
+  const plan = travelPlan(stops, 2736, moves);
+  assert.ok(HOLD_SHARE >= 0.2 && HOLD_SHARE <= 0.25, `hold share ${HOLD_SHARE}`);
   assert.equal(plan.holds.length, 3);
-  const hold = (2040 / 3) * HOLD_SHARE / (1 - HOLD_SHARE);
-  assert.equal(plan.distance, Math.round(2040 + 3 * hold));
+  const hold = (moves / 3) * HOLD_SHARE / (1 - HOLD_SHARE);
+  assert.equal(plan.distance, Math.round(moves + 3 * hold));
+  // Short enough to read three chapters without a long sideways haul: about
+  // 1.7 stage heights of pinned scroll (it was 3.1), the section about 2,570 px
+  // tall at 1280 x 800 (heading 383 + stage 800 + travel) instead of 3,671.
+  assert.ok(plan.distance >= 1.6 * 800 && plan.distance <= 1.8 * 800, `distance ${plan.distance}`);
+  assert.ok(383 + 800 + plan.distance <= 3671 * 0.72, `section ${383 + 800 + plan.distance}`);
+  // Each rest is still a real stop (about one wheel notch or more).
+  assert.ok(hold >= 90, `rest ${hold}`);
   plan.holds.forEach(([from, to], index) => {
     // Flat: anywhere inside the rest, the track shows that chapter at the gutter.
     for (const q of [from, (from + to) / 2, to]) assert.ok(Math.abs(trackAt(plan, q) * 2736 - stops[index]) < 0.5, `chapter ${index} at ${q}`);
@@ -136,6 +138,11 @@ test('each chapter rests aligned for part of its scroll before the next slides i
   // Between rests the track moves monotonically and continuously.
   let last = -1;
   for (let q = 0; q <= 1.0001; q += 0.01) { const p = trackAt(plan, q); assert.ok(p >= last - 1e-9); last = p; }
+  // The build tour rebuilds the plan from --xp-distance alone (moves = distance x
+  // (1 - HOLD_SHARE)); it must land on the same rests and the same map.
+  const tour = travelPlan(stops, 2736, plan.distance * (1 - HOLD_SHARE));
+  tour.holds.forEach(([from, to], index) => assert.ok(Math.abs(from - plan.holds[index][0]) < 1e-3 && Math.abs(to - plan.holds[index][1]) < 1e-3, `tour rest ${index}`));
+  for (let q = 0; q <= 1.0001; q += 0.05) assert.ok(Math.abs(trackAt(tour, q) - trackAt(plan, q)) < 1e-3, `tour track at ${q}`);
   // The CSS map is the same function: evaluate it for a few q.
   const evaluate = q => Function(`return ${plan.css.replace(/^calc/, '').replace(/clamp\(0, /g, 'Math.min(1, Math.max(0, ').replace(/, 1\)/g, '))').replaceAll('var(--xp-q)', String(q))}`)();
   for (const q of [0, 0.03, 0.2, 0.5, plan.holds[1][0] + 0.01, 0.8, 0.99, 1]) assert.ok(Math.abs(evaluate(q) - trackAt(plan, q)) < 1e-4, `css at ${q}`);
