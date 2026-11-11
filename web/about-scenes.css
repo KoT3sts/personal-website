@@ -147,6 +147,12 @@
       .beam-figure { animation: figure-tumble linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
       .beam-halo { animation: halo-fade linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
       .beam-feathers > span { animation: feather-shed linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      /* Phones: the shaft leaves through the stage's right edge, so a long fall would carry him past it while he is in
+         view. He lands sooner (40svh after the scene enters, as he comes up from the bottom of the screen), so the
+         last part of the fall that is seen stays inside the stage; then he drifts as on wider screens. */
+      @media (max-width: 760px) {
+        :is(.beam-fall, .beam-figure, .beam-halo, .beam-feathers > span), .cinematic-light::after { animation-range: cover 0% cover calc(40svh / .45); }
+      }
       .cinematic-topline { animation: cine-edge-settle linear both; animation-timeline: --cine-scene; animation-range: entry 15% cover 45%; }
       .cinematic-footer { animation: cine-copy-settle linear both; animation-timeline: --cine-scene; animation-range: entry 25% cover 50%; }
     }
@@ -189,20 +195,22 @@
      ABOUT_OPEN_MEDIA in motion.js mirrors this query. Nothing here is interactive (pointer-events: none),
      and every layer of #about is transparent at --about-p = 1, so #introduction takes over seamlessly. */
   @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+    /* Pinned scroll distance: #about is one screen plus this, and #introduction (pulled up 100svh) slides up
+       under the pinned scene by the same amount. Short (200px at 1280x800), so the phases below share it evenly:
+       none spans less than .3 of the run, and they still play in the same order. */
+    :root[data-tour] :is(#about, #about + #introduction) { --about-run: 25svh; }
     :root[data-tour] #about {
-      /* Pinned scroll distance. The first 100svh of #introduction slides up under the pinned scene. */
-      --about-run: 120svh;
       --w0: clamp(260px, 26vw, 380px); --h0: 475px; --r0: 18px;
       /* Phases of --about-p: the title recedes (t), the window opens (o, eased oe) and its own ground
-         dissolves onto #introduction behind it (f); once the window fills the screen the field around it
-         fades (g), and its edge goes last (e). A shaft inside the window (b) hands over to the real one. */
-      --t: clamp(0, (var(--about-p) - .05) / .45, 1);
-      --o: clamp(0, (var(--about-p) - .06) / .46, 1);
+         dissolves onto #introduction behind it (f); once the window nearly fills the screen the field around
+         it fades (g), and its edge goes last (e). A shaft inside the window (b) hands over to the real one. */
+      --t: clamp(0, var(--about-p) / .45, 1);
+      --o: clamp(0, (var(--about-p) - .02) / .5, 1);
       --oe: calc(var(--o) * var(--o) * (3 - 2 * var(--o)));
-      --g: clamp(0, (var(--about-p) - .46) / .1, 1);
-      --f: clamp(0, (var(--about-p) - .36) / .46, 1);
-      --e: clamp(0, (var(--about-p) - .6) / .25, 1);
-      --b: clamp(0, (var(--about-p) - .42) / .26, 1);
+      --g: clamp(0, (var(--about-p) - .4) / .3, 1);
+      --f: clamp(0, (var(--about-p) - .3) / .45, 1);
+      --e: clamp(0, (var(--about-p) - .55) / .4, 1);
+      --b: clamp(0, (var(--about-p) - .4) / .35, 1);
       z-index: 1; height: calc(100svh + var(--about-run)); min-height: 0; max-height: none; background: transparent;
       /* It overlaps the top of #introduction, whose links and text must stay reachable. */
       pointer-events: none;
@@ -234,7 +242,10 @@
     /* The panel keeps its box (the build tour frames it) and only its contents move: ABOUT ME recedes. */
     :root[data-tour] #about .about-title-panel { height: var(--h0); min-height: 0; border-color: transparent; background: none; box-shadow: none; }
     :root[data-tour] #about .about-title-panel > *, :root[data-tour] #about .about-title-panel::after { transform: translate3d(0, calc(var(--t) * -26px), 0) scale(calc(1 - var(--t) * .42)); opacity: calc(1 - var(--t) * 1.1); }
-    :root[data-tour] #about + #introduction { position: relative; z-index: 0; margin-top: -100svh; box-shadow: 0 -100svh 0 #101114; }
+    /* The shadow is the scene's ground above #introduction's top, inside the window: #introduction's top sits
+       --about-run below #about's, so the shadow is lifted by exactly that and never reaches above #about (over the
+       hero). */
+    :root[data-tour] #about + #introduction { position: relative; z-index: 0; margin-top: -100svh; box-shadow: 0 calc(-1 * var(--about-run)) 0 #101114; }
   }
   @supports (animation-timeline: view()) {
     @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
@@ -252,7 +263,8 @@
      the stage sticks for exactly --cine-hold and ends 24px above the caption, as without the hold. Icarus finishes his
      fall inside the hold, lands in the rest pose 40% of the way in, floats until the release, and his drift carries
      on after it. The other scene ranges below are rewritten so they play exactly as without the hold. Without scroll
-     timelines (motion.js drives the opening) there is no hold and no extra height. */
+     timelines (motion.js drives the opening) there is no hold and no extra height. On wide screens the stage is also
+     framed to fit the window during the hold (see the end of the responsive layer). */
   @supports (animation-timeline: view()) {
     @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
       :root[data-tour] #about + #introduction {
@@ -261,6 +273,10 @@
         --hold-in: 100svh;
         --hold-land: calc(var(--hold-in) + var(--cine-hold) * .4);
         --hold-out: calc(var(--hold-in) + var(--cine-hold));
+        /* The fall's first 45% (out of the light into the rest pose) takes 75svh of scrolling and ends on the landing:
+           it starts behind the About scene, about 30svh before the (25svh) opening, so most of the drop shows through
+           the opening window and the first part of the hold, at about the scroll speed it had before. */
+        --hold-fall: calc(var(--hold-land) - 75svh);
         /* /#introduction lands on the rest pose, inside the hold. */
         scroll-margin-top: calc(-1 * var(--header-clear) - var(--cine-hold) * .4);
       }
@@ -273,14 +289,14 @@
       :root[data-tour] #about + #introduction .cinematic-light { animation-range: entry 5% cover calc(50% - var(--cine-hold) * .5); }
       :root[data-tour] #about + #introduction .cinematic-topline { animation-range: entry 15% cover calc(45% - var(--cine-hold) * .45); }
       :root[data-tour] #about + #introduction .cinematic-footer { animation-range: entry 25% cover calc(50% - var(--cine-hold) * .5); }
-      /* The fall keeps its keyframes; its range ends where 45% (the rest pose) falls on --hold-land. */
+      /* The fall keeps its keyframes; its range runs from --hold-fall so that 45% (the rest pose) falls on --hold-land. */
       :root[data-tour] #about + #introduction :is(.beam-figure, .beam-halo, .beam-feathers > span),
-      :root[data-tour] #about + #introduction .cinematic-light::after { animation-range: cover 0% cover calc(var(--hold-land) / .45); }
+      :root[data-tour] #about + #introduction .cinematic-light::after { animation-range: cover var(--hold-fall) cover calc(var(--hold-fall) + (var(--hold-land) - var(--hold-fall)) / .45); }
       /* The float runs from the landing to the release and is still at both ends: its few px along the shaft are added
          to the fall and drift; its sway turns figure and halo about the body point (nothing else turns .beam-fall). */
       :root[data-tour] #about + #introduction .beam-fall {
         animation: figure-fall linear both, figure-float ease-in-out none; animation-composition: replace, add; animation-timeline: --cine-scene, --cine-scene;
-        animation-range: cover 0% cover calc(var(--hold-land) / .45), cover var(--hold-land) cover var(--hold-out);
+        animation-range: cover var(--hold-fall) cover calc(var(--hold-fall) + (var(--hold-land) - var(--hold-fall)) / .45), cover var(--hold-land) cover var(--hold-out);
       }
     }
   }
@@ -330,7 +346,9 @@
     .cinematic-topline > :last-child { max-width: 44%; }
     /* Phone: the 125deg shaft leaves through the right edge; the figure falls in the open area under the topline. */
     .cinematic-stage { --beam-turn: 125deg; --art-top: 76px; --foot-top: 390px; }
-    .cinematic-art { --fig-w: 205px; --fig-x: 56%; --fall: 380px; --drift: 26px; --fig-tilt: -3deg; }
+    /* A little smaller and left of centre, so the whole figure (wings included) and his last bit of fall stay inside
+       the stage at 360px. */
+    .cinematic-art { --fig-w: 180px; --fig-x: 52%; --fall: 300px; --drift: 26px; --fig-tilt: -3deg; }
     .cinematic-light { background: linear-gradient(125deg, transparent 15%, #e2e3ed0a 26%, #f2f2f555 37%, #ffffff74 41%, #e2e3ed21 49%, transparent 61%); mask-image: linear-gradient(#000, transparent 62%); }
     .cinematic-light::after { background: linear-gradient(125deg, transparent 31%, #ffffff1a 35.5%, #ffffff85 39.5%, #ffffff22 43%, transparent 49%); }
     .cinematic-footer { padding: 22px; gap: 25px; }
@@ -339,5 +357,34 @@
     .scene-pill { padding-inline: 15px; gap: 14px; }
     .cinematic-caption { margin-inline: 8px; }
     .cinematic-caption > :last-child { text-align: right; max-width: 42%; }
+  }
+  /* The hold's frame (wide screens, only where the hold runs): the whole stage stands in the window while it is
+     held, from --cine-pad under the header bar to 20px above the window's bottom, so the copy and pills are read with
+     Icarus. The copy sits at the stage's foot (--foot-top is then only its least offset), and Icarus is placed from
+     the stage's top on the shaft's axis, or further right if that is needed to keep --art-side clear of the copy
+     column (500px from the footer's 32px padding): beside the copy's top lines rather than above them. --art-side is
+     --art-clear turned sideways: the drift's leftward part (.62 of it), the tumble's wider box and a margin that also
+     covers the float. Above the pills (78px with the footer's padding), --art-clear still holds, so his width is
+     capped by the stage's height (--fig-fit; the breakpoint widths 290/345/420px are repeated here). Narrower
+     screens (761-1000px, copy above the pills) keep the stacked layout. */
+  @supports (animation-timeline: view()) {
+    @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+      @media (min-width: 1001px) {
+        :root[data-tour] #about + #introduction .cinematic-stage {
+          --stage-h: calc(100svh - var(--cine-pad) - 20px); --art-top: 84px; --foot-top: 96px;
+          display: flex; flex-direction: column; justify-content: flex-end; min-height: var(--stage-h);
+        }
+        :root[data-tour] #about + #introduction .cinematic-footer { grid-template-columns: minmax(0, 500px) auto; }
+        :root[data-tour] #about + #introduction .cinematic-art {
+          --fig-fit: calc((var(--stage-h) - var(--art-top) - 78px - 14px - var(--drift, 40px) * .82) / (var(--fig-ratio) + .08));
+          --fig-w: min(290px, var(--fig-fit));
+          --art-side: calc(var(--drift, 40px) * .62 + var(--fig-w) * .08 + 20px);
+          top: var(--art-top);
+          left: max(calc(49% + var(--stage-h) * .38 - (var(--art-top) + var(--fig-h) * var(--body-ay)) * .78 - var(--fig-w) * var(--body-ax)), calc(532px + var(--art-side)));
+        }
+      }
+      @media (min-width: 1500px) { :root[data-tour] #about + #introduction .cinematic-art { --fig-w: min(345px, var(--fig-fit)); } }
+      @media (min-width: 1900px) { :root[data-tour] #about + #introduction .cinematic-art { --fig-w: min(420px, var(--fig-fit)); } }
+    }
   }
 }
