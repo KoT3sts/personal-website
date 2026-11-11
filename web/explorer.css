@@ -36,7 +36,7 @@
   font-weight: var(--display-weight);
   font-stretch: var(--display-stretch);
   letter-spacing: var(--display-tracking);
-  line-height: .9;
+  line-height: 1;
   text-transform: uppercase;
   word-spacing: .06em;
 }

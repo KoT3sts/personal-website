@@ -2,6 +2,7 @@
 /* Self-hosted variable fonts (SIL OFL 1.1, see assets/fonts/ and docs/assets.md).
    Latin subset from Google Fonts; preloaded in index.html. */
 @font-face { font-family: "Archivo"; font-style: normal; font-weight: 400 900; font-stretch: 87.5% 100%; font-display: swap; src: url("./assets/fonts/archivo-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Archivo Note"; font-style: italic; font-weight: 400; font-stretch: 100%; font-display: swap; src: url("./assets/fonts/archivo-italic-note.woff2") format("woff2"); unicode-range: U+002E, U+0061, U+0067, U+0069, U+006B, U+006D-006E; }
 @font-face { font-family: "Geist Mono"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("./assets/fonts/geist-mono-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 /* Metric-matched local fallbacks, measured in Chrome against the woff2 files
    (Archivo 400 sets ~2% narrower than Arial; Geist Mono and Courier New share a
@@ -58,10 +59,10 @@
   /* Tone-matched bar, drawn full-bleed behind the header once the page leaves the
      hero top (header.js sets is-solid). The header's own box keeps the content
      column, which the build tour measures. */
-  .site-header::before { content: ""; position: absolute; z-index: -1; top: calc(-1 * var(--header-top)); bottom: calc(-1 * var(--header-bar-pad)); left: calc(-1 * var(--gutter)); right: calc(-1 * var(--gutter)); background: rgb(238 237 232 / .97); border-bottom: 1px solid rgb(23 23 22 / .09); opacity: 0; pointer-events: none; }
-  @supports (backdrop-filter: blur(1px)) { .site-header::before { background: rgb(238 237 232 / .93); backdrop-filter: blur(16px) saturate(1.1); } }
+  .site-header::before { content: ""; position: absolute; z-index: -1; top: calc(-1 * var(--header-top)); bottom: calc(-1 * var(--header-bar-pad)); left: calc(-1 * var(--gutter)); right: calc(-1 * var(--gutter)); background: rgb(238 237 232 / .985); border-bottom: 1px solid rgb(23 23 22 / .09); opacity: 0; pointer-events: none; }
+  @supports (backdrop-filter: blur(1px)) { .site-header::before { backdrop-filter: blur(16px) saturate(1.1); } }
   .site-header.is-solid::before { opacity: 1; pointer-events: auto; }
-  .site-header.is-dark::before { background: rgb(16 17 20 / .93); border-bottom-color: rgb(238 237 232 / .08); }
+  .site-header.is-dark::before { background: rgb(16 17 20 / .985); border-bottom-color: rgb(238 237 232 / .08); }
   /* Hidden while reading downward; header.js never hides it at the top, with focus inside, or during the build tour. */
   .site-header.is-hidden { transform: translate3d(0, calc(-100% - var(--header-top) - var(--header-bar-pad) - 2px), 0); }
   .site-header:has(:focus-visible) { transform: none; }
@@ -163,7 +164,7 @@
   .closing-note { display: flex; align-items: center; flex-direction: column; justify-content: center; padding: 100px var(--gutter); min-height: 480px; text-align: center; position: relative; overflow: clip; }
   .closing-note > .mono { font-size: var(--text-label); color: var(--label); }
   .closing-note p { font-size: clamp(63px, 8.6vw, 140px); font-weight: 800; font-stretch: var(--display-stretch); letter-spacing: var(--display-tracking); line-height: .95; margin: 26px 0 0; position: relative; z-index: 1; }
-  .closing-note em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-stretch: 100%; letter-spacing: -.04em; }
+  .closing-note em { font-family: "Archivo Note", "Archivo", "Archivo Fallback", sans-serif; font-style: italic; font-weight: 400; font-stretch: 100%; letter-spacing: -.04em; }
   .note-orbit { position: absolute; width: 200px; height: 200px; right: 10%; top: 25%; border: 1px solid #d5d9cd; border-radius: 50%; transform: rotate(-25deg) scaleX(.4); }
   .note-orbit span { display: none; }.note-orbit i { width: 12px; height: 12px; border-radius: 50%; background: #b0bca0; position: absolute; left: -6px; top: 50%; }
   .contact { padding: 0 var(--gutter); overflow: clip; }

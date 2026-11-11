@@ -55,3 +55,23 @@ npm 503. The site's own browser checks at 390, 1280 and 1728 cover the layout si
 - Typographic quotes in the copy (I'm, don't) and line-height 1 on `.explorer-hub h3`.
 - Run the render tier once npm is reachable:
   `npm i --no-save puppeteer-core` in the temp clone, then add `--render`.
+
+## Follow-up, November 11, 2026 (round 5)
+
+- **npm still unavailable:** `npm view jsdom@26.1.0` returned E503 from registry.npmjs.org, so
+  `npm ci`, the full `npm test` and the render tier (`puppeteer-core`) could not run here. pip
+  through Artifactory returned 403 as well.
+- **Full test run, substitute:** `node --test` passes 102 tests; the two jsdom suites can't
+  load jsdom. Both passed in the Chrome harness (the test files served to headless Chrome
+  with node shims and an iframe in place of jsdom): entrance 59/59 in jsdom mode (no layout,
+  no `requestAnimationFrame`) and 59/59 with real layout; portfolio 10/10 in jsdom mode. The
+  harness gained `doesNotMatch`, binary `readFile` and a bootless `app.js` for this run.
+  In real-layout mode two portfolio nav tests read before their animation frame; that is a
+  harness artefact, not a site failure.
+- **Static tier rerun** on the same 11 files (base 36ee593 vs round 5): 403 → 402 FAIL,
+  208 → 208 REFLEX, 11 → 9 WARN. Gone: F1 straight quotes (6), 55a on `.explorer-hub h3`,
+  the glass-panel warning on the header bar, and the Georgia font literal (replaced by the
+  `Archivo Note` literal). Still open: 55a on `.cs-intro h1` (line-height .86, case-study
+  pages).
+- Fixed from "Worth doing later": typographic apostrophes in visible text, line-height 1 on
+  `.explorer-hub h3`. The render tier is still outstanding.

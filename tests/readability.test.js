@@ -62,3 +62,14 @@ test('the ABOUT ME panel keeps its highlight dim enough for 4.5:1 text', () => {
 test('the skills title is sized so TRAINING. keeps its period', () => {
   assert.match(styles, /\.skills-layout h2 \{ font-size: clamp\(44px, 5\.7vw, 100px\);/);
 });
+
+test('the closing note sets "making." in the real Archivo Italic, not Georgia or a faked slant', () => {
+  const html = read('web/index.html');
+  assert.doesNotMatch(styles, /\.closing-note em \{[^}]*Georgia/);
+  assert.match(styles, /@font-face \{ font-family: "Archivo Note"; font-style: italic;[^}]*url\("\.\/assets\/fonts\/archivo-italic-note\.woff2"\)[^}]*unicode-range: U\+002E, U\+0061, U\+0067, U\+0069, U\+006B, U\+006D-006E; \}/);
+  assert.match(styles, /\.closing-note em \{ font-family: "Archivo Note",[^}]*font-style: italic;/);
+  // The subset only holds these glyphs, so the note must not change without refetching it.
+  assert.match(html, /Still <em>making\.<\/em>/);
+  const font = readFileSync(new URL('../web/assets/fonts/archivo-italic-note.woff2', import.meta.url));
+  assert.equal(font.subarray(0, 4).toString('latin1'), 'wOF2');
+});

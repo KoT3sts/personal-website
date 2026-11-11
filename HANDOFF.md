@@ -1,8 +1,16 @@
 # Personal Website handoff
 
-Updated: November 10, 2026 (America/New_York), round 4: Icarus scene, tour fixes and pacing, readability, scroll feel, copy, Hallmark audit.
+Updated: November 11, 2026 (America/New_York), round 5: repeated facts cut, cover labels, typographic apostrophes, header bar, explorer title, Archivo Italic closing note.
 
 ## Confirmed state
+
+- November 11, round 5, commits 36ee593..HEAD (not pushed), the polish plan Cesar approved on November 11:
+  - **Copy (repeated facts, option A):** the cloud card's proof is now "Built a cross-account network-testing API and a firewall diagnostics app on AWS."; the teaching card starts "Hands-on workshops for ~350 developers, …". The 24-account, day-to-minutes and 18+ figures stay in Experience and Approach. The other five cards are unchanged.
+  - **Cover labels:** each explorer link's aria-label now reads "Name, category: short cover description. Read the case study."; the homepage cover images are `alt=""` so the description is heard once. Case-study pages keep their full cover alt. The live region still announces only the category (`explorer.js` stops at the first `: `).
+  - **Polish:** typographic apostrophes in visible text only (homepage, Work Helper case study; no attributes, meta or scripts); `.explorer-hub h3` line-height 1; the header bar is .985 opaque in light and dark (blur kept), so text no longer smears through it.
+  - **Closing note:** *making.* is set in the real Archivo Italic 400, a 1.4 KB Google Fonts subset of just those glyphs, as its own `Archivo Note` face (`web/assets/fonts/archivo-italic-note.woff2`, OFL, provenance and SHA-256 in docs/assets.md). Georgia is gone. Change the note's text and the subset must be fetched again.
+  - **Verification:** `npm run check`, `npm run build`, `git diff --check`; `node --test` 102 pass, the two jsdom suites still can't load jsdom here (npm E503). In the Chrome harness: entrance 59/59 (jsdom mode and real layout), portfolio 10/10 (jsdom mode). Headless tour: 51.4 s at 1280×800 and 46.6 s at 390×844, no console errors, no overflow, no phantom labels. Browser screenshots at 1280 of the closing note, header bar over light and dark sections, and the explorer: `~/Documents/Work/Screenshots/personal-website/r5-2026-11-11-*`. Hallmark static rerun and the still-missing render tier: `docs/verification/2026-11-10-hallmark-audit.md`. Impeccable detector: no findings on the changed rules. Code review: no blockers; its two low items are fixed.
+  - **Still to confirm before any push:** "24 AWS accounts" and "revised more than 40 times" (Approach), the 2026 groups under ML Engineer, and the rights to the Icarus reference image. Still open: real `npm ci && npm test`, Hallmark render tier, Safari/Firefox, `.cs-intro h1` line-height .86 on the case-study pages.
 
 - November 10, round 4, commits 3839873..HEAD (not pushed):
   - **Structure (5bf7267):** the project explorer moved into #work; About opens by scroll into the light scene; the ribbon gallery, project index (#projects) and dialog were dropped.
