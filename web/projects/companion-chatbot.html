@@ -73,31 +73,28 @@
           </dl>
         </div>
       </header>
+      <section class="cs-grid cs-brief" aria-labelledby="brief-title">
+        <h2 class="cs-rail mono cs-brief-title" id="brief-title">In 30 seconds</h2>
+        <dl class="cs-main cs-brief-list">
+          <div><dt class="mono">Problem</dt><dd>Make an LLM companion listen for the tone of a message, not just its words.</dd></div>
+          <div><dt class="mono">My part</dt><dd>I built an LLM companionship chatbot with sentiment analysis.</dd></div>
+          <div><dt class="mono">Result</dt><dd>Sentiment classification reached <strong>95%</strong> accuracy, and measured user satisfaction was <strong>20%</strong> higher.</dd></div>
+          <div><dt class="mono">Proof</dt><dd><ul class="cs-proof">
+            <li><strong>1st Place</strong>, KSU CDay 2024</li>
+            <li><a class="cs-text-link" href="../lab/sentiment-eval.html">See the evaluation lab: a public reproduction on open data, not the original model <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+          </ul></dd></div>
+        </dl>
+      </section>
       <figure class="cs-grid cs-cover">
         <img class="cs-main" src="../assets/companion-chatbot.svg" alt="Original illustration of a companion chat conversation beside a sentiment gauge with positive, neutral and negative bars" width="900" height="620" fetchpriority="high">
         <figcaption class="cs-rail">The cover is an original illustration. The conversation shown is sample text.</figcaption>
       </figure>
       <div class="cs-body">
-        <section class="cs-grid cs-section" aria-labelledby="built-title">
-          <h2 class="cs-rail" id="built-title">What I built</h2>
+        <section class="cs-grid cs-section" aria-labelledby="limit-title">
+          <h2 class="cs-rail" id="limit-title">One limit</h2>
           <div class="cs-main cs-prose">
-            <p>An LLM companionship chatbot with sentiment analysis.</p>
-          </div>
-        </section>
-        <section class="cs-grid cs-section" aria-labelledby="result-title">
-          <h2 class="cs-rail" id="result-title">Result</h2>
-          <div class="cs-main cs-prose">
-            <ul class="cs-results">
-              <li>Sentiment classification reached <strong>95%</strong> accuracy.</li>
-              <li>Measured user satisfaction was <strong>20%</strong> higher.</li>
-              <li><strong>1st Place</strong>, KSU CDay 2024</li>
-            </ul>
-          </div>
-        </section>
-        <section class="cs-grid cs-section" aria-labelledby="lab-title">
-          <h2 class="cs-rail" id="lab-title">Evaluation lab</h2>
-          <div class="cs-main cs-prose">
-            <p><a class="cs-text-link" href="../lab/sentiment-eval.html">See the evaluation lab: a public reproduction on open data, not the original model <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></p>
+            <p>Neither the original model nor its data is published here, so the 95% and the 20% can’t be checked on this site.</p>
+            <p>The evaluation lab shows how I evaluate a classifier instead, on open data: a held-out test set, bootstrap intervals, a threshold you can move, and failures picked by rule, not by hand. Its models learned from review sentences. Chat messages, sarcasm and mixed feelings are harder, and these models have never seen them.</p>
           </div>
         </section>
         <section class="cs-grid cs-section" aria-labelledby="stack-title">

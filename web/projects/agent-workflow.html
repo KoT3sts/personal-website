@@ -72,26 +72,52 @@
           </dl>
         </div>
       </header>
+      <section class="cs-grid cs-brief" aria-labelledby="brief-title">
+        <h2 class="cs-rail mono cs-brief-title" id="brief-title">In 30 seconds</h2>
+        <dl class="cs-main cs-brief-list">
+          <div><dt class="mono">Problem</dt><dd>How do you give coding agents clear roles, and delivery context they can read but not change?</dd></div>
+          <div><dt class="mono">My part</dt><dd>I built the workflow: specialist coding subagents, read-only MCP servers for Jenkins and Bitbucket, and a searchable knowledge base compiled automatically from work sessions.</dd></div>
+          <div><dt class="mono">Result</dt><dd>A recorded agent run built two rounds of this site: <strong>52</strong> steps and <strong>16</strong> commits, errors and retries included.</dd></div>
+          <div><dt class="mono">Proof</dt><dd><ul class="cs-proof">
+            <li><a class="cs-text-link" href="../lab/build-trace.html">The agent run behind this site <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+            <li><a class="cs-text-link" href="../lab/evaluating-agents.html">How I evaluate agents <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+          </ul></dd></div>
+        </dl>
+      </section>
       <figure class="cs-grid cs-cover">
         <img class="cs-main" src="../assets/agent-workflow.svg" alt="Original illustration of a multi-agent workflow: implement, review and verify steps beside read-only Jenkins and Bitbucket context and a searchable knowledge base" width="900" height="620" fetchpriority="high">
         <figcaption class="cs-rail">No internal code, data or systems are shown. The cover is an original illustration.</figcaption>
       </figure>
       <div class="cs-body">
-        <section class="cs-grid cs-section" aria-labelledby="built-title">
-          <h2 class="cs-rail" id="built-title">What I built</h2>
-          <div class="cs-main cs-prose">
-            <p>A multi-agent developer workflow.</p>
-            <ul class="cs-points">
-              <li>Specialist coding subagents split the work: one implements, one reviews, one verifies.</li>
-              <li>Read-only MCP servers give them Jenkins and Bitbucket context.</li>
-              <li>A searchable knowledge base is compiled automatically from work sessions.</li>
+        <section class="cs-grid cs-section" aria-labelledby="flow-title">
+          <h2 class="cs-rail" id="flow-title">How it fits together</h2>
+          <figure class="cs-main cs-flow">
+            <ol class="cs-flow-steps" aria-label="The work, split by role">
+              <li><p class="mono cs-flow-label">Implements</p><p class="cs-flow-text">Coding subagent</p></li>
+              <li><p class="mono cs-flow-label">Reviews</p><p class="cs-flow-text">Coding subagent</p></li>
+              <li><p class="mono cs-flow-label">Verifies</p><p class="cs-flow-text">Coding subagent</p></li>
+            </ol>
+            <p class="mono cs-flow-group" id="flow-context">Context they can read, not change</p>
+            <ul class="cs-flow-context" aria-labelledby="flow-context">
+              <li><p class="mono cs-flow-label">Read-only MCP</p><p class="cs-flow-text">Jenkins</p></li>
+              <li><p class="mono cs-flow-label">Read-only MCP</p><p class="cs-flow-text">Bitbucket</p></li>
+              <li><p class="mono cs-flow-label">From work sessions</p><p class="cs-flow-text">Searchable knowledge base</p></li>
             </ul>
+            <figcaption>Specialist coding subagents split the work: one implements, one reviews, one verifies. Read-only MCP servers give them Jenkins and Bitbucket context.</figcaption>
+          </figure>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="decision-title">
+          <h2 class="cs-rail" id="decision-title">One hard decision</h2>
+          <div class="cs-main cs-prose">
+            <p>Each handoff between agents costs something. The receiving agent gets a summary instead of the full context, and a task that dies midway has to be handed off again.</p>
+            <p>My conclusion: keep one agent in charge of integration and commits, and add specialists where an independent check is worth more than the handoff. The multi-agent workflow I built is set up that way: one subagent implements, one reviews, one verifies, and they get read-only access to delivery tools.</p>
           </div>
         </section>
-        <section class="cs-grid cs-section" aria-labelledby="focus-title">
-          <h2 class="cs-rail" id="focus-title">Focus</h2>
+        <section class="cs-grid cs-section" aria-labelledby="limit-title">
+          <h2 class="cs-rail" id="limit-title">One limit</h2>
           <div class="cs-main cs-prose">
-            <p>Clear roles and read-only access to delivery tools</p>
+            <p>In the recorded run, 8 of its 52 steps ended in an error, and 6 of those are followed by a recorded retry or fix. Both tasks that stopped midway and left partial edits behind were delegated worker tasks. One was interrupted and one lost its connection, and both were resumed.</p>
+            <p>There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything.</p>
           </div>
         </section>
         <section class="cs-grid cs-section" aria-labelledby="stack-title">

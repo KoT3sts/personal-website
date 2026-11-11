@@ -1,0 +1,327 @@
+{
+  "about": "Sources for the sentences added to the six case studies (web/projects/*.html) in round 8. tests/case-studies.test.js reads this file: every factual sentence on a case study must be published on the homepage, a lab page (web/lab/*.html) or the build trace (web/trace/build-trace.json), or be listed here. Each entry must still appear on its page. For homepage, lab and trace entries every quote must appear in that source, and the status is approved. Résumé entries cannot be checked by the test and stay pending-cesar until Cesar confirms them; he can then set status to approved. 'reworded' means the sentence restates the quoted source in new words; Cesar should read those.",
+  "sources": {
+    "homepage": "web/index.html",
+    "lab": "web/lab/sentiment-eval.html, web/lab/build-trace.html, web/lab/evaluating-agents.html",
+    "trace": "web/trace/build-trace.json",
+    "résumé 2026-11": "Cesar's résumé of November 2026 (Cesar_Tortolero_Resume_2026-11.html, kept outside the repository)"
+  },
+  "facts": [
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · Problem",
+      "sentence": "How do you give coding agents clear roles, and delivery context they can read but not change?",
+      "source": "homepage",
+      "quote": ["Clear roles and read-only access to delivery tools", "Context they can read, not change."],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · My part",
+      "sentence": "I built the workflow: specialist coding subagents, read-only MCP servers for Jenkins and Bitbucket, and a searchable knowledge base compiled automatically from work sessions.",
+      "source": "homepage",
+      "quote": ["A multi-agent developer workflow.", "Specialist coding subagents split the work", "Read-only MCP servers give them Jenkins and Bitbucket context, and a searchable knowledge base is compiled automatically from work sessions."],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "\"I built\" comes from the essay: \"The multi-agent workflow I built is set up that way\"."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · Result",
+      "sentence": "A recorded agent run built two rounds of this site: 52 steps and 16 commits, errors and retries included.",
+      "source": "trace",
+      "quote": ["Recorded replay: the agent run that built rounds 4–5 of this site", "16 commits after the baseline", "Worker interrupted mid-edit; partial changes remained", "Resume the interrupted orange-box fix"],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "52 = totals.spans; 16 = run.commits; statuses include error (8) and retried (2). Whether this run counts as the Multi-Agent Workflow itself is question 1 in docs/case-study-questions.md."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · Proof",
+      "sentence": "The agent run behind this site",
+      "source": "lab",
+      "quote": ["The agent run behind this site (rounds 4–5)"],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Link text to lab/build-trace.html."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · Proof",
+      "sentence": "How I evaluate agents",
+      "source": "lab",
+      "quote": ["How I evaluate agents"],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Link text to lab/evaluating-agents.html."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it fits together · diagram",
+      "sentence": "Coding subagent",
+      "source": "homepage",
+      "quote": ["Specialist coding subagents split the work: one implements, one reviews, one verifies."],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Node text for the three role steps (implements, reviews, verifies). The left-to-right order follows the homepage wording."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it fits together · diagram",
+      "sentence": "Searchable knowledge base",
+      "source": "homepage",
+      "quote": ["a searchable knowledge base is compiled automatically from work sessions"],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One hard decision",
+      "sentence": "Each handoff between agents costs something.",
+      "source": "lab",
+      "quote": ["Each handoff between agents costs something."],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One hard decision",
+      "sentence": "The receiving agent gets a summary instead of the full context, and a task that dies midway has to be handed off again.",
+      "source": "lab",
+      "quote": ["The receiving agent gets a summary instead of the full context, and a task that dies midway has to be handed off again."],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One hard decision",
+      "sentence": "My conclusion: keep one agent in charge of integration and commits, and add specialists where an independent check is worth more than the handoff.",
+      "source": "lab",
+      "quote": ["My conclusion is narrow.", "Keep one agent in charge of integration and commits, and add specialists where an independent check is worth more than the handoff."],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One hard decision",
+      "sentence": "The multi-agent workflow I built is set up that way: one subagent implements, one reviews, one verifies, and they get read-only access to delivery tools.",
+      "source": "lab",
+      "quote": ["The multi-agent workflow I built is set up that way: one subagent implements, one reviews, one verifies, and they get read-only access to delivery tools."],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "No source gives the reason for read-only access; that is question 2 in docs/case-study-questions.md."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "In the recorded run, 8 of its 52 steps ended in an error, and 6 of those are followed by a recorded retry or fix.",
+      "source": "lab",
+      "quote": ["Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix."],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "Both tasks that stopped midway and left partial edits behind were delegated worker tasks.",
+      "source": "lab",
+      "quote": ["Both tasks that stopped midway and left partial edits behind were delegated worker tasks."],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "One was interrupted and one lost its connection, and both were resumed.",
+      "source": "lab",
+      "quote": ["one interrupted and one after a lost connection, and both were resumed"],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything.",
+      "source": "lab",
+      "quote": ["There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything."],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · Problem",
+      "sentence": "Classify EEG signals well enough for a thoughts-to-text brain-computer interface.",
+      "source": "homepage",
+      "quote": ["research on a thoughts-to-text brain-computer interface", "I designed the EEG preprocessing pipelines, which raised classification accuracy by 15%"],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · My part",
+      "sentence": "I also mentored 50+ undergraduate researchers as a Research Peer Mentor (2022–2023).",
+      "source": "résumé 2026-11",
+      "quote": ["Mentored 50+ undergraduate researchers as Research Peer Mentor (2022–2023)."],
+      "wording": "reworded",
+      "status": "pending-cesar",
+      "note": "The homepage already says \"Mentored 50+ undergraduate researchers (2022–2023).\" Only the title \"Research Peer Mentor\" is new."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · Result and diagram",
+      "sentence": "+15% classification accuracy",
+      "source": "homepage",
+      "quote": ["+15% classification accuracy"],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · Proof",
+      "sentence": "Presented at NCUR, the National Conference on Undergraduate Research, and received a $2,000 Research Excellence stipend.",
+      "source": "homepage",
+      "quote": ["Presented the work at NCUR and received a $2,000 Research Excellence stipend.", "NCUR, the National Conference on Undergraduate Research"],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Where my part sits · diagram",
+      "sentence": "EEG signals",
+      "source": "homepage",
+      "quote": ["From EEG signals to AI agents in production."],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Where my part sits · diagram",
+      "sentence": "EEG preprocessing pipelines",
+      "source": "homepage",
+      "quote": ["I designed the EEG preprocessing pipelines"],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Where my part sits · caption",
+      "sentence": "The pipelines I designed sit between the EEG signals and classification.",
+      "source": "homepage",
+      "quote": ["I designed the EEG preprocessing pipelines, which raised classification accuracy by 15%"],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Preprocessing comes before classification by definition; the steps inside the pipelines are question 6 in docs/case-study-questions.md."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · Problem",
+      "sentence": "Make an LLM companion listen for the tone of a message, not just its words.",
+      "source": "homepage",
+      "quote": ["Listen for the tone, not just the words.", "An LLM companionship chatbot with sentiment analysis."],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · My part",
+      "sentence": "I built an LLM companionship chatbot with sentiment analysis.",
+      "source": "homepage",
+      "quote": ["An LLM companionship chatbot with sentiment analysis."],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Same claim as the old page's \"What I built\" heading. If it was a team project, question 11 in docs/case-study-questions.md changes this row."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · Result",
+      "sentence": "Sentiment classification reached 95% accuracy, and measured user satisfaction was 20% higher.",
+      "source": "homepage",
+      "quote": ["Sentiment classification reached 95% accuracy, and measured user satisfaction was 20% higher."],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One limit",
+      "sentence": "Neither the original model nor its data is published here, so the 95% and the 20% can’t be checked on this site.",
+      "source": "lab",
+      "quote": ["It is not the Companionship Chatbot’s model, data or reported result."],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "\"Here\" is this site: the lab is the only model on it and says it is not the chatbot's. Whether the original can be shared at all is question 15 in docs/case-study-questions.md."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One limit",
+      "sentence": "The evaluation lab shows how I evaluate a classifier instead, on open data: a held-out test set, bootstrap intervals, a threshold you can move, and failures picked by rule, not by hand.",
+      "source": "lab",
+      "quote": ["This is a public reproduction on open data, built to show how I evaluate a classifier.", "Held-out test set.", "1,000 bootstrap resamples of the test set", "Decision threshold", "Picked by rule, not by hand"],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One limit",
+      "sentence": "Its models learned from review sentences.",
+      "source": "lab",
+      "quote": ["Two sentiment models on 3,000 public review sentences"],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One limit",
+      "sentence": "Chat messages, sarcasm and mixed feelings are harder, and these models have never seen them.",
+      "source": "lab",
+      "quote": ["Chat messages, sarcasm and mixed feelings are harder, and these models have never seen them."],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "voicelab",
+      "section": "In 30 seconds · Problem",
+      "sentence": "Can writing signals be explained, and a text revised, without losing what it means?",
+      "source": "homepage",
+      "quote": ["A local prototype for explainable writing-signal analysis and meaning-preserving revision.", "Understand the signals. Keep the meaning."],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "work-helper",
+      "section": "In 30 seconds · Problem",
+      "sentence": "How can software help people discover job opportunities and take the next step?",
+      "source": "homepage",
+      "quote": ["A project exploring how software can help people discover job opportunities and take the next step."],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "barking-village",
+      "section": "In 30 seconds · Problem",
+      "sentence": "Bring dog-care staff workflows into one place.",
+      "source": "homepage",
+      "quote": ["A full-stack dog-care operations project bringing staff workflows into one place"],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "barking-village",
+      "section": "In 30 seconds · What it is",
+      "sentence": "A full-stack dog-care operations project.",
+      "source": "homepage",
+      "quote": ["A full-stack dog-care operations project bringing staff workflows into one place"],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "barking-village",
+      "section": "In 30 seconds · Covers",
+      "sentence": "Care sessions, daily planning, room status, and dog records.",
+      "source": "homepage",
+      "quote": ["care sessions, daily planning, room status, and dog records"],
+      "wording": "verbatim",
+      "status": "approved"
+    }
+  ]
+}

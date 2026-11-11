@@ -1,10 +1,11 @@
-// Project pages in web/projects/: metadata, links, and that every factual
-// line on a page is already published on the homepage (no new claims).
+// Project pages in web/projects/: metadata, links, the "In 30 seconds" block, and
+// that every factual sentence on a page is already published (homepage, a lab page
+// or the build trace) or recorded with its source in docs/case-study-facts.json.
 // Plain text checks, no DOM.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { access, readFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const web = new URL('../web/', import.meta.url);
@@ -28,6 +29,38 @@ const norm = text => text.toLowerCase().replace(/[’]/g, "'").replace(/\s+/g, '
 async function siteUrl() {
   const html = await read(new URL('index.html', web));
   return html.match(/<link rel="canonical" href="([^"]+)"/)[1];
+}
+
+// Published sources a case-study sentence may come from. Scripts and styles are
+// dropped so only visible text (and visually hidden labels) count.
+const stripCode = html => html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ');
+const strings = value => (typeof value === 'string' ? [value] : Array.isArray(value) ? value.flatMap(strings) : value && typeof value === 'object' ? Object.values(value).flatMap(strings) : []);
+const corpus = (async () => {
+  const homepage = norm(plain(stripCode(await read(new URL('index.html', web)))));
+  const labDir = new URL('lab/', web);
+  const labPages = (await readdir(labDir)).filter(name => name.endsWith('.html')).sort();
+  const lab = (await Promise.all(labPages.map(async name => norm(plain(stripCode(await read(new URL(name, labDir)))))))).join(' | ');
+  const trace = norm(strings(JSON.parse(await read(new URL('trace/build-trace.json', web)))).join(' | '));
+  return { homepage, lab, trace, all: [homepage, lab, trace].join(' | ') };
+})();
+const RESUME = 'résumé 2026-11';
+const SOURCES = ['homepage', 'lab', 'trace', RESUME];
+const facts = readFile(new URL('../docs/case-study-facts.json', import.meta.url), 'utf8').then(JSON.parse).then(file => file.facts);
+// A sentence as compared: normalised, without its closing period, colon or question mark.
+const clean = text => norm(text).replace(/[.:?]$/, '');
+const mainOf = html => html.match(/<main[^>]*>([\s\S]*?)<\/main>/)[1];
+// Diagram node labels (e.g. "Input", "My part") are labels like <dt>, not claims.
+const FLOW_LABEL = /<p class="mono cs-flow-label">([^<]*)<\/p>/g;
+function claims(html) {
+  const main = mainOf(html);
+  const labels = [...main.matchAll(FLOW_LABEL)].map(match => match[1]);
+  const body = main
+    .replace(/<h[12][^>]*>[\s\S]*?<\/h[12]>/g, '')       // headings
+    .replace(/<dt[^>]*>[\s\S]*?<\/dt>/g, '')             // labels
+    .replace(FLOW_LABEL, '')                              // diagram labels
+    .replace(/<dd class="mono">\d\d \/ 06<\/dd>/g, '');  // position in the set
+  const lines = body.replace(/<\/(?:p|li|dd|figcaption)>/g, '\n').split('\n').map(plain).filter(Boolean);
+  return { labels, sentences: lines.flatMap(line => line.split(/(?<=[.!?])\s+/)) };
 }
 
 const pages = Promise.all(SLUGS.map(async slug => ({ slug, html: await read(new URL(`${slug}.html`, projects)) })));
@@ -113,31 +146,83 @@ test('each homepage story links to its project page, and each cover is described
   }
 });
 
-test('every factual line on a project page is already on the homepage', async () => {
-  const index = norm(plain(await read(new URL('index.html', web))));
+test('every factual sentence on a project page is on the homepage, a lab page, in the trace, or in docs/case-study-facts.json', async () => {
+  const { all } = await corpus;
+  const recorded = await facts;
   for (const { slug, html } of await pages) {
-    const main = html.match(/<main[^>]*>([\s\S]*?)<\/main>/)[1]
-      .replace(/<h[12][^>]*>[\s\S]*?<\/h[12]>/g, '')       // headings
-      .replace(/<dt[^>]*>[\s\S]*?<\/dt>/g, '')             // labels
-      .replace(/<dd class="mono">\d\d \/ 06<\/dd>/g, '');  // position in the set
-    const lines = main.replace(/<\/(?:p|li|dd|figcaption)>/g, '\n').split('\n').map(plain).filter(Boolean);
-    assert.ok(lines.length >= 4, `${slug} has content`);
-    for (const line of lines) {
-      for (const sentence of line.split(/(?<=[.!?])\s+/)) {
-        const text = norm(sentence).replace(/[.:]$/, '');
-        assert.ok(index.includes(text), `${slug}: "${sentence}" is not on the homepage`);
-      }
+    const listed = recorded.filter(fact => fact.page === slug).map(fact => clean(fact.sentence));
+    const { labels, sentences } = claims(html);
+    assert.ok(sentences.length >= 4, `${slug} has content`);
+    for (const label of labels) {
+      assert.ok(label.split(/\s+/).length <= 3 && !/\d/.test(label), `${slug}: diagram label "${label}" is a short label, not a claim`);
     }
-    // Metrics and named venues must match the homepage exactly.
-    const metrics = plain(html.match(/<main[^>]*>([\s\S]*?)<\/main>/)[1]).match(/[+$]?\d[\d,]*%?|NCUR|CDay|1st Place/g) || [];
-    for (const metric of metrics.filter(token => token !== '06' && !/^0\d$/.test(token))) {
-      assert.ok(index.includes(norm(metric)), `${slug}: ${metric} is on the homepage`);
+    for (const sentence of sentences) {
+      const text = clean(sentence);
+      assert.ok(all.includes(text) || listed.some(fact => fact.includes(text)), `${slug}: "${sentence}" is not on the homepage, a lab page or in the trace, and not in docs/case-study-facts.json`);
+    }
+    // Numbers and named venues are published somewhere or recorded with a source.
+    const metrics = plain(mainOf(html)).match(/[+$]?\d[\d,.]*%?|NCUR|CDay|1st Place/g) || [];
+    for (const metric of metrics.map(token => token.replace(/[.,]$/, '')).filter(token => token !== '06' && !/^0\d$/.test(token))) {
+      assert.ok(all.includes(norm(metric)) || listed.some(fact => fact.includes(norm(metric))), `${slug}: ${metric} has a source`);
     }
     const description = meta(html, 'name', 'description');
     for (const metric of description.match(/\d[\d,]*%|\$[\d,]+|NCUR|CDay \d+/g) || []) {
-      assert.ok(index.includes(norm(metric)), `${slug} description: ${metric} is on the homepage`);
+      assert.ok(all.includes(norm(metric)), `${slug} description: ${metric} is published on the site`);
     }
   }
+});
+
+test('every entry in docs/case-study-facts.json is still on its page and backed by its source', async () => {
+  const sources = await corpus;
+  const recorded = await facts;
+  assert.ok(recorded.length > 0);
+  const text = Object.fromEntries((await pages).map(({ slug, html }) => [slug, norm(plain(mainOf(html)))]));
+  const seen = new Set();
+  for (const fact of recorded) {
+    const where = `${fact.page}: "${fact.sentence}"`;
+    assert.ok(SLUGS.includes(fact.page), `${where}: page is one of the six`);
+    assert.ok(SOURCES.includes(fact.source), `${where}: source is one of ${SOURCES.join(', ')}`);
+    assert.ok(['verbatim', 'reworded'].includes(fact.wording), `${where}: wording is verbatim or reworded`);
+    assert.ok(!seen.has(`${fact.page}|${clean(fact.sentence)}`), `${where} is listed once`);
+    seen.add(`${fact.page}|${clean(fact.sentence)}`);
+    assert.ok(text[fact.page].includes(clean(fact.sentence)), `${where} no longer appears on its page: update or remove the entry`);
+    const quotes = [].concat(fact.quote ?? []);
+    assert.ok(quotes.length && quotes.every(quote => typeof quote === 'string' && quote.trim()), `${where} quotes its source`);
+    if (fact.source === RESUME) {
+      // Résumé-only facts wait for Cesar; he flips them to "approved".
+      assert.ok(['pending-cesar', 'approved'].includes(fact.status), `${where}: status`);
+    } else {
+      assert.equal(fact.status, 'approved', `${where}: facts already published on the site are approved`);
+      for (const quote of quotes) assert.ok(sources[fact.source].includes(clean(quote)), `${where}: quote "${quote}" is in the ${fact.source}`);
+      if (fact.wording === 'verbatim') assert.ok(sources[fact.source].includes(clean(fact.sentence)), `${where} is verbatim in the ${fact.source}`);
+    }
+  }
+});
+
+test('résumé facts waiting for Cesar are listed here (informational, never fails)', async t => {
+  const pending = (await facts).filter(fact => fact.status === 'pending-cesar');
+  t.diagnostic(`${pending.length} pending-cesar fact(s) in docs/case-study-facts.json`);
+  for (const fact of pending) t.diagnostic(`pending-cesar · ${fact.page}: ${fact.sentence} (source: ${fact.source})`);
+});
+
+test('each page leads with an "In 30 seconds" block before the cover', async () => {
+  const PROJECT = ['Problem', 'My part', 'Result', 'Proof'];
+  const SIDE = { voicelab: ['Problem', 'What it is', 'Stage'], 'work-helper': ['Problem', 'Built so far', 'Stage'], 'barking-village': ['Problem', 'What it is', 'Covers'] };
+  for (const { slug, html } of await pages) {
+    const main = mainOf(html);
+    const brief = main.match(/<section class="cs-grid cs-brief" aria-labelledby="brief-title">\s*<h2 class="cs-rail mono cs-brief-title" id="brief-title">In 30 seconds<\/h2>\s*<dl class="cs-main cs-brief-list">([\s\S]*?)<\/dl>\s*<\/section>/);
+    assert.ok(brief, `${slug} has the block`);
+    assert.ok(main.indexOf('cs-brief') < main.indexOf('cs-cover'), `${slug}: the block comes before the cover`);
+    assert.deepEqual([...brief[1].matchAll(/<dt class="mono">([^<]+)<\/dt>/g)].map(match => match[1]), SIDE[slug] ?? PROJECT, `${slug} rows`);
+  }
+  const html = Object.fromEntries((await pages).map(({ slug, html }) => [slug, html]));
+  for (const href of ['../lab/build-trace.html', '../lab/evaluating-agents.html']) assert.ok(html['agent-workflow'].includes(`<a class="cs-text-link" href="${href}">`), `agent workflow proof links to ${href}`);
+  assert.match(html['companion-chatbot'], /<dt class="mono">Proof<\/dt><dd><ul class="cs-proof">[\s\S]*?href="\.\.\/lab\/sentiment-eval\.html"/, 'chatbot proof links to the lab');
+  // Decision and limit sections only where the facts support them (questions for the rest: docs/case-study-questions.md).
+  const has = (slug, id) => html[slug].includes(`id="${id}-title"`);
+  assert.ok(has('agent-workflow', 'decision') && has('agent-workflow', 'limit'));
+  assert.ok(has('companion-chatbot', 'limit'));
+  for (const slug of ['thoughts-to-text', 'voicelab', 'work-helper', 'barking-village']) assert.ok(!has(slug, 'decision'), `${slug} has no unsupported decision section`);
 });
 
 test('the result pages carry the published metrics', async () => {

@@ -53,6 +53,34 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
 .cs-meta dd { font-size: 14px; line-height: 1.4; }
 .cs-meta dd.mono { font-size: 11px; line-height: 1.6; }
 
+/* In 30 seconds: problem, my part, result and proof as one compact definition list,
+   between the title and the cover, in the rail-and-column grammar of the page. */
+.cs-brief { padding: 0 var(--gutter) clamp(44px, 5.5vw, 80px); }
+.cs-brief-title { padding-top: 14px; color: var(--label); }
+.cs-brief-list { max-width: 66ch; border-top: 1px solid var(--ink); }
+.cs-brief-list > div { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 18px; padding: 13px 0 14px; border-bottom: 1px solid var(--line); }
+.cs-brief-list dt { padding-top: .32em; color: var(--label); }
+.cs-brief-list dd { font-size: clamp(16px, 1.2vw, 18px); line-height: 1.5; text-wrap: pretty; }
+.cs-brief-list strong { font-weight: 750; }
+.cs-proof { display: flex; flex-wrap: wrap; gap: 0 28px; padding: 0; list-style: none; }
+.cs-proof li { min-width: 0; }
+/* Proof links keep a 44px hit area without making the row taller. */
+.cs-proof .cs-text-link { margin: -10px 0; gap: 10px; text-wrap: pretty; }
+
+/* A small diagram as an HTML list: steps left to right with drawn arrows, then the
+   context around them. Phones stack it. No inline styles, no script. */
+.cs-flow { display: grid; gap: 14px; max-width: 64ch; }
+.cs-flow-steps, .cs-flow-context { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin: 0; padding: 0; list-style: none; }
+.cs-flow-steps li, .cs-flow-context li { position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px 14px 14px; border: 1px solid #b9b9b1; border-radius: 6px; }
+.cs-flow-steps li + li::before { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M9 3.5 13.5 8 9 12.5'/%3E%3C/svg%3E"); content: ""; position: absolute; top: 50%; left: -19px; width: 15px; height: 15px; background-color: var(--label); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; transform: translateY(-50%); }
+.cs-flow-steps li.is-mine { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.cs-flow-context li { border-style: dashed; background: #f6f5ee; }
+.cs-flow-label { color: var(--label); }
+.cs-flow-steps li.is-mine .cs-flow-label { color: #c4c7bd; }
+.cs-flow-text { font-size: 15px; line-height: 1.4; }
+.cs-flow-group { margin-top: 10px; color: var(--label); }
+.cs-flow figcaption { margin-top: 4px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+
 /* Cover, large, with the provenance note as its caption in the rail. */
 .cs-cover { padding: 0 var(--gutter); align-items: end; }
 .cs-cover img { width: 100%; aspect-ratio: 900 / 620; border-radius: 6px; background: #dcdbd3; box-shadow: 0 34px 70px -46px #1717168c; }
@@ -103,7 +131,7 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
 .icon-arrow-se { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 4.5l7 7M11.5 5.5v6h-6'/%3E%3C/svg%3E"); }
 .icon-arrow-ew { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M5.5 5 2.5 8l3 3M10.5 5l3 3-3 3'/%3E%3C/svg%3E"); }
 .icon-arrow-ns { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2.5v11M5 5.5l3-3 3 3M5 10.5l3 3 3-3'/%3E%3C/svg%3E"); }
-@media (forced-colors: active) { .icon { background-color: CanvasText; forced-color-adjust: none; } }
+@media (forced-colors: active) { .icon { background-color: CanvasText; forced-color-adjust: none; } .cs-flow-steps li + li::before { background-color: CanvasText; forced-color-adjust: none; } }
 .cs-pager a:hover .cs-pager-title { color: #d7deca; }
 .cs-contact { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px; padding: 30px 0 34px; border-top: 1px solid #33382c; }
 .cs-contact p { color: #c4c7bd; font-size: 15px; line-height: 1.45; }
@@ -132,6 +160,7 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
   .cs-cover figcaption { margin-top: 18px; }
   .cs-section { padding: 26px 0 38px; }
   .cs-section h2 { margin-bottom: 16px; }
+  .cs-brief-title { padding-top: 0; margin-bottom: 12px; }
 }
 @media (max-width: 560px) {
   .cs-top { padding-top: 18px; padding-bottom: 18px; }
@@ -140,11 +169,22 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
   .cs-pager a + a { align-items: flex-start; padding-left: 0; border-left: 0; border-top: 1px solid #33382c; text-align: left; }
   .cs-pager a:first-child { padding-right: 0; }
   .cs-contact { flex-direction: column; align-items: flex-start; }
+  .cs-brief-list > div { grid-template-columns: 84px minmax(0, 1fr); gap: 14px; }
+  .cs-flow-steps, .cs-flow-context { grid-template-columns: minmax(0, 1fr); }
+  .cs-flow-steps { gap: 20px; }
+  .cs-flow-context { gap: 10px; }
+  .cs-flow-steps li + li::before { top: -18px; left: 18px; transform: rotate(90deg); }
 }
 @media print {
   .cs-back, .skip-link, .cs-contact-links { display: none; }
   .cs-close { background: none; color: var(--ink); }
   .cs-cover img { box-shadow: none; }
   /* The arrow icons are a mask over the text colour; keep them when background graphics are off. */
-  .icon, .ea-flow-steps li + li::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .icon, .ea-flow-steps li + li::before, .cs-flow-steps li + li::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Keep the 30-second block and each diagram on one page; the dark step prints as an outline. */
+  .cs-brief-list > div, .cs-flow { break-inside: avoid; }
+  .cs-flow-steps li.is-mine { background: none; color: var(--ink); border-width: 2px; }
+  .cs-flow-steps li.is-mine .cs-flow-label { color: var(--label); }
+  .cs-flow-context li { background: none; }
+  .cs-proof .cs-text-link { min-height: 0; margin: 0; }
 }
