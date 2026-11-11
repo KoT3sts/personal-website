@@ -36,7 +36,7 @@ npm 503. The site's own browser checks at 390, 1280 and 1728 cover the layout si
 ## Deliberate exceptions (owner's decision: keep the site's look)
 
 - **67, labels in tracked capitals** (about 50 findings): the mono uppercase labels are
-  the site's type system (SPECIFICATION §7). Sizes now meet the 11 px floor.
+  the site's type system (SPECIFICATION §7). Readable text on the homepage, case studies and 404 page now meets the 11 px floor (`tests/readability.test.js`); exceptions are the 8 px TORTOLERO wordmark lockup, nav links at 11 px below 375 px wide, and the tour's decorative cursor labels (10–10.5 px, hidden from assistive technology).
 - **54, eyebrows before headings** (section-top, chapter org lines, hero kicker): same
   system; each carries information (section number, employer, place).
 - **63, middle-dot meta strings and arrows after link text** ("ADP · ROSELAND, NJ",

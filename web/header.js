@@ -33,11 +33,11 @@ export function initHeader(document, window) {
     const value = parseFloat(window.getComputedStyle?.(header).getPropertyValue('--header-bar-pad'));
     return Number.isFinite(value) ? value : 14;
   }
-  function paintHeaderTone() {
+  function paintHeaderTone(rects = pageSections.map(section => section.getBoundingClientRect())) {
     const bounds = header.getBoundingClientRect();
     const top = bounds.top - slideOffset();
     const line = header.classList.contains('is-solid') ? top + bounds.height + barDepth() - 1 : top + bounds.height / 2;
-    const index = sectionAtLine(pageSections.map(section => section.getBoundingClientRect()), line);
+    const index = sectionAtLine(rects, line);
     header.classList.toggle('is-dark', index >= 0 && pageSections[index].classList.contains('dark-section'));
   }
 
@@ -88,12 +88,12 @@ export function initHeader(document, window) {
   // band without another entering used to keep its mark). At the very bottom
   // the last section wins even if it is too short to reach the line.
   let currentHash = null;
-  function paintNav() {
+  function paintNav(rects) {
     if (!navLinks.length) return;
     const vh = window.innerHeight || root.clientHeight || 800;
     const y = window.scrollY || window.pageYOffset || 0;
     const atEnd = y > 0 && y + vh >= (root.scrollHeight || 0) - 2;
-    const index = atEnd ? pageSections.length - 1 : sectionAtLine(pageSections.map(section => section.getBoundingClientRect()), vh * NAV_LINE);
+    const index = atEnd ? pageSections.length - 1 : sectionAtLine(rects || pageSections.map(section => section.getBoundingClientRect()), vh * NAV_LINE);
     const section = pageSections[index];
     const hash = section ? `#${section.dataset.navSection || section.id}` : '';
     if (hash === currentHash) return;
@@ -108,8 +108,10 @@ export function initHeader(document, window) {
   function paint() {
     frame = 0;
     paintHeaderState();
-    paintHeaderTone();
-    paintNav();
+    // One read of the section boxes per frame, shared by both paints.
+    const rects = pageSections.map(section => section.getBoundingClientRect());
+    paintHeaderTone(rects);
+    paintNav(rects);
   }
   const queuePaint = () => {
     if (!raf) paint();

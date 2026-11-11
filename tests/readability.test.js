@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const files = ['web/styles.css', 'web/about-scenes.css', 'web/experience.css', 'web/explorer.css', 'web/accordion.css'];
+const files = ['web/styles.css', 'web/about-scenes.css', 'web/experience.css', 'web/explorer.css', 'web/accordion.css', 'web/project.css', 'web/404.css'];
 const sheets = Object.fromEntries(files.map(file => [file, read(file)]));
 const styles = sheets['web/styles.css'];
 
@@ -21,7 +21,7 @@ test('no fixed font size under 11px in the owned stylesheets (the wordmark locku
       const [, selector, body] = match;
       for (const size of body.matchAll(/font-size: ([\d.]+)px/g)) {
         if (Number(size[1]) >= 11) continue;
-        assert.ok(/\.wordmark-last/.test(selector), `${file}: ${selector.trim()} ${size[0]}`);
+        assert.ok(/\.(cs-|lost-)?wordmark-last/.test(selector), `${file}: ${selector.trim()} ${size[0]}`);
       }
     }
   }

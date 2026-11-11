@@ -98,7 +98,7 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
 .cs-pill:hover { border-color: #d7deca; color: #f7ffec; }
 .cs-pill-primary { border-color: #bec9ad; background: #e2e8d8; color: #20271b; }
 .cs-pill-primary:hover { background: #f7ffec; color: #20271b; }
-.cs-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0 24px; padding: 8px 0 14px; border-top: 1px solid #33382c; color: #8b9381; font-size: 10px; }
+.cs-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0 24px; padding: 8px 0 14px; border-top: 1px solid #33382c; color: #8b9381; font-size: 11px; }
 .cs-bottom > * { padding: 12px 0; }
 .cs-bottom a { color: #c4c7bd; text-decoration: underline; text-decoration-color: #50564a; text-underline-offset: 5px; }
 .cs-bottom a:hover { color: #f7ffec; text-decoration-color: #d7deca; }

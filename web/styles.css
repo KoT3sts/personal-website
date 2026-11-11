@@ -29,7 +29,7 @@
     --display-weight: 850; --display-stretch: 87.5%; --display-tracking: -.05em;
     /* Fixed header: its offset from the top, the bar's extra depth below it, and the clearance anchors land below. */
     --header-top: 24px; --header-bar-pad: 14px; --header-clear: 76px;
-    /* Reading floor: body copy 15-16px, mono labels never under 11px, pills and nav never under 12px. */
+    /* Reading floor: body copy 15-16px, mono labels never under 11px, pills and nav never under 12px (nav drops to 11px below 375px wide). */
     --text-body: clamp(15px, 14px + .2vw, 16px); --text-label: clamp(11px, 10.4px + .12vw, 12px); --text-pill: clamp(12px, 11.4px + .1vw, 13px);
   }
   /* Guard against sideways scrolling; clip (not hidden) keeps the sticky stages working. */

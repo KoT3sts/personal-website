@@ -176,7 +176,17 @@ export function initExperience(document, window) {
   function goTo(index, { behavior = 'smooth', announce = false } = {}) {
     if (state.mode !== 'travel') return;
     const target = Math.max(0, Math.min(chapters.length - 1, index));
-    if (announce) announceFor = target;
+    if (announce && target === state.current) {
+      // Already there: say so now instead of leaving a pending announcement.
+      announceFor = -1;
+      const title = chapters[target]?.querySelector('.xp-title')?.textContent.replace(/\s+/g, ' ').trim();
+      live.textContent = '';
+      raf(() => { live.textContent = `Chapter ${target + 1} of ${chapters.length}${title ? `, ${title}` : ''}`; });
+    } else if (announce) {
+      announceFor = target;
+      // A scroll cut short leaves nothing pending (checked after the last frame's update).
+      window.addEventListener('scrollend', () => window.setTimeout(() => { if (announceFor === target && state.current !== target) announceFor = -1; }, 250), { once: true });
+    }
     window.scrollTo({ top: scrollTargetFor(target), behavior });
   }
 

@@ -303,8 +303,8 @@ export const TOUR_STOPS = [
   // that a11y resolves. Then a links agent presses the first project in the
   // index (a real click, as a visitor would): the ring turns into the drum and
   // the project's title and "Case study" chip come up before the tour moves on.
-  // It was already the selected project, so after the tour (the explorer
-  // turns back into a ring offscreen) the page is as it was.
+  // It is pressed only while it is still the selected project (first visit),
+  // so after the tour the page is as it was and a Replay keeps a visitor's pick.
   { sel: '#work', name: 'Projects', weight: 1.0, span: 0.8, spanTo: '.explorer-stage', creep: 24, note: 'art → links · ring placed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#work-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
@@ -991,7 +991,9 @@ export function initAgenticEntrance(document, window, config = {}) {
       removeDock();
     }, pillMs);
   }
-  const hovered = element => { try { return element.matches(':hover'); } catch { return false; } };
+  // Touch browsers keep :hover on the last tapped element, so only a real
+  // hover-capable pointer holds the pill open.
+  const hovered = element => { try { return !!window.matchMedia?.('(hover: hover)').matches && element.matches(':hover'); } catch { return false; } };
 
   function removeDock() {
     if (!dock) return;
@@ -1889,7 +1891,9 @@ export function initAgenticEntrance(document, window, config = {}) {
         if (p >= PICK.at && !job.pressed) {
           job.pressed = true;
           job.keyTag.classList.add('is-on');
-          press(target);
+          // Only open the project that is already selected, so a Replay never
+          // overwrites a visitor's own pick (or fires a selection announcement).
+          if (target.getAttribute('aria-current') === 'true') press(target);
         }
         return;
       }
