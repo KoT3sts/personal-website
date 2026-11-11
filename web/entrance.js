@@ -10,12 +10,14 @@ export { SECTION_TARGETS };
 // crews assemble each one, and a bottom dock reports how many agents are
 // working where. Items are placed one by one (cards pop in, proof lines are
 // written, tags cascade); tall sections keep scrolling while that happens.
-// The dock also holds the orchestrator's task list, a 1x/2x speed toggle (one
-// virtual clock, so 2x never jumps) and short decorative handoff notes; the
-// final pill reports the agents that worked and the measured tour time.
-// Everything is decorative choreography over existing content:
-// no model, network or editor activity takes place, and the dock only counts
-// the animated agents and real page sections.
+// The dock also holds the Trace panel (the recorded agent run this replay
+// shows, see TRACE_URL), a 1x/2x speed toggle (one virtual clock, so 2x never
+// jumps) and short handoff notes; the final pill reports the measured tour time.
+// The steps, results and commits named on the cursors and in the panel are
+// real (recorded); the cursor movement, typing and placement are a
+// visualization over existing content: no model or editor activity takes
+// place (the one request is the same-origin trace file), and the dock only
+// counts the animated agents and real page sections.
 //
 // Any visitor input ends the tour where the visitor is, with every element
 // visible. A single controller owns one stage, one rAF loop and one event
@@ -464,6 +466,183 @@ export function typoFor(text, { transform = 'none' } = {}) {
   return { at: match.index + offset, ch };
 }
 
+// ---- the recorded trace -------------------------------------------------------
+// web/trace/build-trace.json holds the real agent run that built this site
+// (curated spans: role, action, result, status, times, commit, sections). It
+// is fetched same-origin next to the tour and never waits on it: until it
+// arrives (or if it never does) the cursors keep their choreography labels.
+// Once it is in, a working cursor names a real recorded step mapped to the
+// stop it works on, and the dock's Trace panel lists every step.
+export const TRACE_URL = './trace/build-trace.json';
+// The static, linkable version for visitors who skip the tour or use reduced motion.
+export const TRACE_PAGE = './lab/build-trace.html';
+export const TRACE_HONESTY = 'Steps, results and commits are real. Cursor positions and typing are a visualization. Commit times are exact; other times are estimated.';
+export const TRACE_CURSORS = 'The number of cursors is a visualization too; the trace counts role types, not separate agents.';
+export const TRACE_SCALE_NOTE = 'Bars are drawn on a compressed time axis: the order of steps is exact, but long gaps between recorded times are shortened (square-root scale), so bar lengths are not to scale.';
+export const TRACE_ROLE_NAMES = ['orchestrator', 'implementation-worker', 'quality-reviewer', 'ui-design-director'];
+// The cursor crew keeps its choreography roles and colours; each one is shown
+// as one of the four recorded role types (numbered per type, e.g.
+// implementation-worker·3). Builders are implementation workers, art,
+// motion and a11y are the design director's, QA is the quality reviewer.
+export const TRACE_ROLE_OF = {
+  orchestrator: 'orchestrator', layout: 'implementation-worker', nav: 'implementation-worker', type: 'implementation-worker',
+  copy: 'implementation-worker', links: 'implementation-worker', art: 'ui-design-director', motion: 'ui-design-director',
+  a11y: 'ui-design-director', qa: 'quality-reviewer',
+};
+export const TRACE_STATUSES = ['ok', 'error', 'retried', 'fixed'];
+export const TRACE_TIMINGS = ['commit', 'message', 'estimated'];
+// Spans tagged with these apply to every stop (they fill gaps).
+export const TRACE_SPREAD = ['All', 'Tour'];
+// Statuses a cursor label shows as a tag (a plain "ok" step shows none).
+const TRACE_TAGGED = new Set(['error', 'retried', 'fixed']);
+// A recorded error turns into its retry or fix on the same cursor after this
+// long at work (virtual ms, the tour clock).
+const TRACE_STEP_MS = 1100;
+// Error labels: at most one on screen, and this long (virtual ms) between
+// one turning into its retry or fix and the next one appearing.
+const TRACE_ERROR_GAP = 1400;
+// No error label in the hero's first this-many ms (at the production pace).
+const TRACE_CALM_MS = 2500;
+// The longest action text in a cursor label, per viewport class.
+const TRACE_ACTION = { desktop: 38, tablet: 30, phone: 26 };
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const SMALL_WORDS = /^(?:the|a|an|and|or|to|of|for|with|into|in|on|at|its|their|that|than|from|by|as)$/i;
+
+// Validated, time-ordered copy of the trace file (unknown roles, statuses,
+// timings, malformed times or start > end drop the span); null if nothing
+// usable is left. Text is only ever written with textContent.
+export function normalizeTrace(data) {
+  if (!data || typeof data !== 'object' || !Array.isArray(data.spans)) return null;
+  const text = (value, max = 160) => (typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) : '');
+  const ids = new Set();
+  const spans = [];
+  data.spans.forEach((raw, index) => {
+    if (!raw || typeof raw !== 'object') return;
+    const id = text(raw.id, 24);
+    const action = text(raw.action);
+    const start = Date.parse(raw.start);
+    const end = Date.parse(raw.end);
+    if (!id || ids.has(id) || !action || !TRACE_ROLE_NAMES.includes(raw.role) || !TRACE_STATUSES.includes(raw.status)
+      || !TRACE_TIMINGS.includes(raw.timing) || !Number.isFinite(start) || !Number.isFinite(end) || end < start) return;
+    ids.add(id);
+    spans.push({
+      id, index, action, start, end,
+      parent: typeof raw.parent === 'string' ? raw.parent : null,
+      role: raw.role,
+      result: text(raw.result),
+      status: raw.status,
+      timing: raw.timing,
+      commit: typeof raw.commit === 'string' && /^[0-9a-f]{7,40}$/.test(raw.commit) ? raw.commit.slice(0, 7) : null,
+      sections: Array.isArray(raw.sections) ? raw.sections.filter(name => typeof name === 'string') : [],
+    });
+  });
+  if (!spans.length) return null;
+  spans.sort((a, b) => a.start - b.start || b.end - a.end || a.index - b.index);
+  const run = data.run && typeof data.run === 'object' ? data.run : {};
+  const commits = Number.isInteger(run.commits) && run.commits >= 0 ? run.commits : new Set(spans.map(span => span.commit).filter(Boolean)).size;
+  const day = value => (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : '');
+  const first = spans.reduce((a, b) => (b.start < a.start ? b : a));
+  const last = spans.reduce((a, b) => (b.end > a.end ? b : a));
+  const from = day(run.started) || day(data.spans[first.index]?.start);
+  const to = day(run.ended) || day(data.spans[last.index]?.end);
+  // What part of the build the recording covers, from its title ("rounds 4–5").
+  const scope = /\brounds? \d+(?:\s*[–-]\s*\d+)?/i.exec(typeof data.title === 'string' ? data.title : '')?.[0].toLowerCase() || '';
+  return { spans, byId: new Map(spans.map(span => [span.id, span])), commits, from, to, scope, cache: new Map() };
+}
+
+// "Nov 10–11, 2026" from two YYYY-MM-DD days (the days as recorded, no time zone shift).
+export function traceDates(from, to) {
+  const parse = value => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || ''); return m ? { y: +m[1], m: MONTHS[+m[2] - 1], d: +m[3] } : null; };
+  const a = parse(from);
+  const b = parse(to) || a;
+  if (!a || !a.m || !b.m) return '';
+  if (a.y !== b.y) return `${a.m} ${a.d}, ${a.y} – ${b.m} ${b.d}, ${b.y}`;
+  if (a.m !== b.m) return `${a.m} ${a.d} – ${b.m} ${b.d}, ${a.y}`;
+  return a.d === b.d ? `${a.m} ${a.d}, ${a.y}` : `${a.m} ${a.d}–${b.d}, ${a.y}`;
+}
+
+export function traceHeading(trace) {
+  const dates = traceDates(trace.from, trace.to);
+  return `Recorded replay${trace.scope ? ` · ${trace.scope}` : ''} · ${trace.commits} ${trace.commits === 1 ? 'commit' : 'commits'}${dates ? ` · ${dates}` : ''}`;
+}
+
+// A recorded action shortened for a cursor label: lowercase first letter (as
+// the labels are), cut at a word boundary with an ellipsis, never mid-word.
+export function shortAction(text, max = 38) {
+  let value = String(text || '').trim().replace(/\s+/g, ' ');
+  if (!value) return '';
+  if (/^[A-Z][a-z]/.test(value)) value = value[0].toLowerCase() + value.slice(1);
+  if (value.length <= max) return value;
+  const words = value.slice(0, Math.max(1, max - 1)).split(' ');
+  if (value[max - 1] !== ' ' && words.length > 1) words.pop();
+  while (words.length > 1 && SMALL_WORDS.test(words[words.length - 1])) words.pop();
+  const cut = words.join(' ').replace(/[\s,;:·–—-]+$/, '') || value.slice(0, max - 1);
+  return `${cut}…`;
+}
+
+// A review result as a short pin note: "Found frozen review notes, blank
+// waits and ..." -> "found frozen review notes".
+export function traceFinding(result, max = 30) {
+  const first = String(result || '').split(/[,;:]/)[0].trim();
+  return shortAction(first, max);
+}
+
+// The spans that belong to a tour stop: its own (`direct`, by section name)
+// and the ones tagged All or Tour (`spread`), each in time order.
+export function traceStopSpans(trace, stop) {
+  const direct = trace.spans.filter(span => span.sections.includes(stop));
+  const spread = trace.spans.filter(span => !span.sections.includes(stop) && span.sections.some(name => TRACE_SPREAD.includes(name)));
+  return { direct, spread };
+}
+
+// An error and what followed it on the same role: its retry or fix (or a
+// later ok step), up to two steps on.
+export function traceChain(trace, span) {
+  const chain = [span];
+  const rank = { retried: 0, fixed: 1, ok: 2 };
+  for (let current = span; chain.length < 3 && current.status !== 'ok';) {
+    if (current.status !== 'error' && current.status !== 'retried') break;
+    const next = trace.spans.filter(other => other.parent === current.id && other.role === current.role && other.status !== 'error')
+      .sort((a, b) => rank[a.status] - rank[b.status] || a.start - b.start)[0];
+    if (!next) break;
+    chain.push(next);
+    current = next;
+  }
+  return chain;
+}
+
+// The order in which a stop hands its spans to cursors of one role: its own
+// spans first, then All/Tour ones. A retry or fix whose error is in the same
+// list is left out: it is shown after that error, on the same cursor.
+export function traceRotation(trace, stop, role) {
+  const key = `${stop}|${role}`;
+  if (trace.cache.has(key)) return trace.cache.get(key);
+  const { direct, spread } = traceStopSpans(trace, stop);
+  const all = [...direct, ...spread].filter(span => span.role === role);
+  const ids = new Set(all.map(span => span.id));
+  const list = all.filter(span => {
+    const parent = span.parent && trace.byId.get(span.parent);
+    return !(parent && ids.has(parent.id) && parent.role === span.role && (parent.status === 'error' || parent.status === 'retried') && (span.status === 'retried' || span.status === 'fixed'));
+  });
+  trace.cache.set(key, list);
+  return list;
+}
+
+// Bar positions (0..1) on a compressed axis: the ordered, distinct recorded
+// times are spaced by the square root of the gap between them, so a night's
+// pause does not flatten an afternoon of work. Order is exact; length is not.
+export function traceAxis(spans) {
+  const times = [...new Set(spans.flatMap(span => [span.start, span.end]))].sort((a, b) => a - b);
+  const at = new Map();
+  let x = 0;
+  times.forEach((time, k) => {
+    if (k) x += Math.sqrt(Math.max(0, time - times[k - 1]) / 60000);
+    at.set(time, x);
+  });
+  const total = x || 1;
+  return new Map(spans.map(span => [span.id, { x0: at.get(span.start) / total, x1: at.get(span.end) / total }]));
+}
+
 export function initAgenticEntrance(document, window, config = {}) {
   const hero = document.querySelector('#home');
   const idleStats = { agents: 0, cursors: 0, targets: 0, done: 0, working: 0, visible: 0 };
@@ -515,11 +694,18 @@ export function initAgenticEntrance(document, window, config = {}) {
   // it mid-tour never jumps.
   let speed = 1;
   try { speed = window.localStorage?.getItem(SPEED_KEY) === '2' ? 2 : 1; } catch { speed = 1; }
-  // The orchestrator's plan as shown in the dock's task list.
+  // The tour's steps (one per section; Experience's chapter stops share one),
+  // for the dock's "k / 9" progress.
   let planSteps = [];
-  let planOpen = false;
   const tourEndCallbacks = [];
   const visitedSections = new Set();
+  // The recorded trace (see TRACE_URL): null until it has loaded and passed
+  // validation. `traceState`: 'off' | 'loading' | 'ready' | 'failed'.
+  let trace = null;
+  let traceState = 'off';
+  let traceOpen = false;
+  // Tour time (virtual ms) before which no new error label may start.
+  let traceErrorFree = 0;
 
   const replayButton = document.createElement('button');
   replayButton.type = 'button';
@@ -572,6 +758,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       updateHoles(current);
       updatePins(current, t);
       current.agents.forEach(agent => placeAgent(current, agent, t));
+      if (trace && current.traceBook) stepTraceLabels(current, t);
       if (current.kind === 'hero') hushLabels(current);
       // A rescue still under way finishes first (briefly), so nothing pops in.
       if (t >= current.total && !(current.rescuing.size && t < current.total + 2500)) {
@@ -739,7 +926,6 @@ export function initAgenticEntrance(document, window, config = {}) {
     const wasTouring = Boolean(tour);
     tour = null;
     carry = null;
-    settlePlan();
     sectionsEligible = false;
     observer?.disconnect();
     clearVisuals();
@@ -765,7 +951,6 @@ export function initAgenticEntrance(document, window, config = {}) {
     const allowPasses = tour.firstVisit;
     tour = null;
     carry = null;
-    settlePlan();
     clearVisuals();
     phase = 'ready';
     replayButton.hidden = false;
@@ -793,9 +978,9 @@ export function initAgenticEntrance(document, window, config = {}) {
   }
 
   // ---- dock ---------------------------------------------------------------
-  // [Plan] dots · N agents working · Section k / 9 [1x] [Skip tour]; above it
-  // the orchestrator's task list (opened by Plan) and a decorative handoff
-  // note. After the tour: [Plan] Built by N agents in X s · Replay · ×.
+  // [Trace] dots · N agents working · Section k / 9 [1x] [Skip tour]; above it
+  // the recorded trace (opened by Trace) and a decorative handoff note. After
+  // the tour: [Trace] Built by N agents in X s · Replay · ×.
   function ensureDock() {
     if (dock) { dock.root.hidden = false; return dock; }
     const element = make('div', 'agentic-dock');
@@ -803,23 +988,19 @@ export function initAgenticEntrance(document, window, config = {}) {
     element.setAttribute('aria-label', 'Page build tour');
     const live = make('p', 'agentic-dock-live', element);
     live.setAttribute('aria-live', 'polite');
-    const planBox = make('div', 'agentic-plan', element);
-    planBox.id = `agentic-plan-${Math.random().toString(36).slice(2, 8)}`;
-    planBox.hidden = true;
-    const planTitle = make('p', 'agentic-plan-title', planBox);
-    planTitle.textContent = 'Orchestrator plan';
-    const planList = make('ol', 'agentic-plan-list', planBox);
-    planList.setAttribute('aria-label', 'Orchestrator plan');
     const note = make('p', 'agentic-note', element);
     note.setAttribute('aria-hidden', 'true');
-    const toggle = make('button', 'agentic-dock-plan', element);
+    const toggle = make('button', 'agentic-dock-trace', element);
     toggle.type = 'button';
-    toggle.dataset.agenticPlan = '';
+    toggle.dataset.agenticTrace = '';
     toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-controls', planBox.id);
-    toggle.setAttribute('aria-label', 'Build plan');
-    toggle.innerHTML = '<span class="agentic-plan-icon" aria-hidden="true"></span><span class="agentic-plan-word" aria-hidden="true">Plan</span>';
-    toggle.addEventListener('click', () => setPlanOpen(!planOpen));
+    toggle.setAttribute('aria-label', 'Recorded trace');
+    toggle.innerHTML = '<span class="agentic-trace-icon" aria-hidden="true"></span><span class="agentic-trace-word" aria-hidden="true">Trace</span>';
+    toggle.addEventListener('click', () => setTraceOpen(!traceOpen));
+    // The panel follows its toggle in the DOM (Tab from the open toggle goes
+    // into it); CSS still places it above the dock.
+    const panel = buildTracePanel(element);
+    toggle.setAttribute('aria-controls', panel.root.id);
     const face = make('div', 'agentic-dock-face', element);
     face.setAttribute('aria-hidden', 'true');
     const dots = make('span', 'agentic-dock-dots', face);
@@ -846,17 +1027,23 @@ export function initAgenticEntrance(document, window, config = {}) {
     replay.textContent = 'Replay';
     replay.setAttribute('aria-label', 'Replay the build tour from the top');
     replay.addEventListener('click', () => startTour(true));
+    // The pill's way to the static trace page (lab/build-trace.html).
+    const fullTrace = make('a', 'agentic-dock-full', element);
+    fullTrace.href = TRACE_PAGE;
+    fullTrace.setAttribute('aria-label', 'Open the full trace');
+    make('span', 'agentic-dock-full-more', fullTrace).textContent = 'Open the ';
+    fullTrace.append('full trace');
     const close = make('button', 'agentic-dock-close', element);
     close.type = 'button';
     close.setAttribute('aria-label', 'Dismiss build tour summary');
     close.innerHTML = '<span aria-hidden="true">×</span>';
     close.addEventListener('click', () => removeDock());
     document.body.append(element);
-    dock = { root: element, live, plan: planBox, planList, note, toggle, dots, count, unit, where, progress, summary, speed: speedButton, skip, replay, close, working: -1, timer: 0, noteTimer: 0, lift: 0, announced: '' };
-    planOpen = false;
+    dock = { root: element, live, panel, note, toggle, dots, count, unit, where, progress, summary, speed: speedButton, skip, replay, close, working: -1, timer: 0, noteTimer: 0, lift: 0, announced: '' };
+    traceOpen = false;
     setWorking(0);
     renderSpeed();
-    renderPlan();
+    renderTrace();
     return dock;
   }
 
@@ -865,8 +1052,6 @@ export function initAgenticEntrance(document, window, config = {}) {
     dock.working = n;
     dock.count.textContent = String(n);
     dock.unit.innerHTML = `<span class="agentic-dock-agents">${n === 1 ? 'agent' : 'agents'} </span>working`;
-    const step = tour ? tour.stops[tour.index]?.step : -1;
-    if (tour && planSteps[step]?.state === 'building') { planSteps[step].agents = n; renderPlan(); }
   }
 
   function announce(text) {
@@ -875,48 +1060,300 @@ export function initAgenticEntrance(document, window, config = {}) {
     dock.live.textContent = text;
   }
 
-  // ---- the orchestrator's plan (task list) ---------------------------------
-  const planName = name => `Build ${name === 'Hero' ? 'hero' : name}`;
-  const planState = step => (step.state === 'building' ? `building · ${step.agents} ${step.agents === 1 ? 'agent' : 'agents'}` : step.state);
-  function renderPlan() {
+  // ---- the recorded trace: loading ------------------------------------------
+  // Fetched once, same-origin, in parallel with the tour (never awaited by
+  // it). `config.trace`: trace data to use instead (tests), or false/null for
+  // none. Anything that fails leaves the choreography labels in place.
+  // Fetched only once it is needed: when the tour plays, or when the Trace
+  // panel is first opened (e.g. from the pill). Injected data is used at once.
+  let traceAsked = false;
+  function loadTrace() {
+    if (traceAsked) return;
+    traceAsked = true;
+    const given = config.trace;
+    if (given && typeof given === 'object') { useTrace(given); return; }
+    if (given === false || given === null || typeof window.fetch !== 'function') return;
+    traceState = 'loading';
+    let request;
+    try { request = window.fetch(TRACE_URL, { credentials: 'same-origin' }); }
+    catch { traceState = 'failed'; return; }
+    Promise.resolve(request)
+      .then(response => (response && response.ok ? response.json() : null))
+      .then(data => { if (!destroyed) useTrace(data); })
+      .catch(() => { if (traceState === 'loading') { traceState = 'failed'; renderTrace(); } });
+  }
+  function useTrace(data) {
+    let next = null;
+    try { next = normalizeTrace(data); } catch { next = null; }
+    trace = next;
+    traceState = next ? 'ready' : 'failed';
+    nameCache.clear();
+    renderTrace();
+  }
+
+  // The spans the panel highlights for a stop: its own, or with the All/Tour
+  // ones as well when it has fewer than two of its own.
+  function stopSpans(name) {
+    if (!trace || !name) return [];
+    const { direct, spread } = traceStopSpans(trace, name);
+    return direct.length >= 2 ? direct : [...direct, ...spread];
+  }
+  // The stop's handoff note, from the trace: how many recorded steps map to
+  // it, and how many of those were errors.
+  function stopNote(stopInfo) {
+    if (!trace) return stopInfo?.note;
+    // Experience's chapter stops continue one section: its note was shown once.
+    if (stopInfo?.sub) return '';
+    const spans = stopSpans(stopInfo?.name);
+    if (!spans.length) return '';
+    const errors = spans.filter(span => span.status === 'error').length;
+    const steps = `recorded · ${spans.length} ${spans.length === 1 ? 'step' : 'steps'}`;
+    return errors ? `${steps} · ${errors} ${errors === 1 ? 'error' : 'errors'}` : steps;
+  }
+
+  // A QA pin's note once the trace is in: a real review finding mapped to the
+  // stop (a reviewer's or design director's recorded error result, e.g.
+  // "found tiny text"), one per pin in turn; none recorded, no text.
+  function pinFinding(current) {
+    const stop = current.traceStop || traceStopName();
+    const findings = trace.spans.filter(span => span.sections.includes(stop) && span.status === 'error'
+      && (span.role === 'quality-reviewer' || span.role === 'ui-design-director') && span.result);
+    if (!findings.length) return '';
+    const k = current.pinTurn = (current.pinTurn ?? -1) + 1;
+    return traceFinding(findings[k % findings.length].result);
+  }
+
+  // ---- the recorded trace: the dock's panel ----------------------------------
+  // A disclosure (the dock's Trace button) for a labelled region above the
+  // dock: what the replay is, the honesty line, and a waterfall of every
+  // recorded step. Rows are built on first open; the current stop's steps
+  // are highlighted and scrolled into the list's view (the page never moves).
+  function buildTracePanel(parent) {
+    const root = make('div', 'agentic-trace', parent);
+    const id = `agentic-trace-${Math.random().toString(36).slice(2, 8)}`;
+    root.id = id;
+    root.hidden = true;
+    root.setAttribute('role', 'region');
+    root.setAttribute('aria-labelledby', `${id}-title`);
+    const title = make('p', 'agentic-trace-title', root);
+    title.id = `${id}-title`;
+    make('p', 'agentic-trace-honesty', root).textContent = `${TRACE_HONESTY} ${TRACE_CURSORS}`;
+    const more = make('p', 'agentic-trace-more', root);
+    const full = make('a', 'agentic-trace-full', more);
+    full.href = TRACE_PAGE;
+    full.textContent = 'Open the full trace';
+    const where = make('p', 'agentic-trace-where', root);
+    const status = make('p', 'agentic-trace-status', root);
+    make('p', 'agentic-visually-hidden', root).textContent = TRACE_SCALE_NOTE;
+    const axis = make('p', 'agentic-trace-axis', root);
+    axis.setAttribute('aria-hidden', 'true');
+    const list = make('ol', 'agentic-trace-list', root);
+    list.tabIndex = 0;
+    list.setAttribute('aria-label', 'Recorded steps, oldest first');
+    return { root, title, where, status, axis, list, rows: new Map(), built: null, focus: null };
+  }
+
+  function renderTrace() {
     if (!dock) return;
-    const list = dock.planList;
-    if (list.children.length !== planSteps.length) {
-      list.textContent = '';
-      planSteps.forEach(() => {
-        const item = make('li', 'agentic-plan-item', list);
-        make('span', 'agentic-plan-mark', item).setAttribute('aria-hidden', 'true');
-        make('span', 'agentic-plan-name', item);
-        make('span', 'agentic-plan-state', item);
-      });
-    }
-    planSteps.forEach((step, index) => {
-      const item = list.children[index];
-      if (item.dataset.state !== step.state) {
-        item.dataset.state = step.state;
-        item.children[0].textContent = step.state === 'done' ? '✓' : step.state === 'building' ? '●' : '○';
+    const p = dock.panel;
+    p.title.textContent = trace ? traceHeading(trace) : 'Recorded replay';
+    p.status.textContent = trace ? '' : traceState === 'loading' ? 'Loading the recorded trace…' : 'The recorded trace is not available right now.';
+    p.status.hidden = Boolean(trace);
+    p.list.hidden = !trace;
+    p.axis.hidden = !trace;
+    if (trace && traceOpen && p.built !== trace) buildTraceRows(p);
+    highlightTrace();
+  }
+
+  function buildTraceRows(p) {
+    p.list.textContent = '';
+    p.rows.clear();
+    p.axis.textContent = '';
+    // "Nov 10 … 11" (the month again only if it changes).
+    const [from, to] = [trace.from, trace.to].map(day => traceDates(day, day).replace(/, \d{4}$/, ''));
+    const scale = make('span', 'agentic-trace-axis-scale', p.axis);
+    make('span', '', scale).textContent = from;
+    make('span', '', scale).textContent = to.split(' ')[0] === from.split(' ')[0] ? to.split(' ')[1] : to;
+    const axis = traceAxis(trace.spans);
+    const hidden = (parent, text) => { make('span', 'agentic-visually-hidden', parent).textContent = text; };
+    trace.spans.forEach(span => {
+      const row = make('li', 'agentic-span', p.list);
+      row.dataset.role = span.role;
+      row.dataset.status = span.status;
+      make('span', 'agentic-span-chip', row).setAttribute('aria-hidden', 'true');
+      const body = make('span', 'agentic-span-body', row);
+      make('span', 'agentic-span-action', body).textContent = span.action;
+      if (span.result) {
+        const result = make('span', 'agentic-span-result', body);
+        hidden(result, 'Result: ');
+        result.append(span.result);
       }
-      if (item.children[1].textContent !== step.label) item.children[1].textContent = step.label;
-      const text = planState(step);
-      if (item.children[2].textContent !== text) item.children[2].textContent = text;
+      const meta = make('span', 'agentic-span-meta', body);
+      hidden(meta, 'Role: ');
+      make('span', 'agentic-span-role', meta).textContent = span.role;
+      hidden(meta, ', status: ');
+      make('span', 'agentic-span-status', meta).textContent = span.status;
+      hidden(meta, ', time: ');
+      make('span', 'agentic-span-timing', meta).textContent = span.timing === 'commit' ? 'exact' : 'estimated';
+      hidden(meta, ', commit: ');
+      make('span', 'agentic-span-commit', meta).textContent = span.commit || 'none';
+      const track = make('span', 'agentic-span-track', row);
+      track.setAttribute('aria-hidden', 'true');
+      const bar = make('span', 'agentic-span-bar', track);
+      const at = axis.get(span.id) || { x0: 0, x1: 0 };
+      const w = Math.max(0, at.x1 - at.x0);
+      bar.style.left = `${(at.x0 * 100).toFixed(2)}%`;
+      bar.style.width = `${(w * 100).toFixed(2)}%`;
+      if (w < 0.01) bar.classList.add('is-point');
+      p.rows.set(span.id, row);
     });
+    p.built = trace;
+    p.focus = null;
   }
-  function setPlanStep(index, state) {
-    planSteps.forEach((step, k) => {
-      if (k < index && state === 'building') { step.state = 'done'; step.agents = 0; }
+
+  const traceStopName = () => (tour ? tour.stops[tour.index]?.name || '' : '');
+  function highlightTrace() {
+    if (!dock || !trace) return;
+    const p = dock.panel;
+    const name = traceStopName();
+    const key = `${name}|${p.rows.size}`;
+    if (p.focus === key) return;
+    p.focus = key;
+    const ids = new Set(stopSpans(name).map(span => span.id));
+    p.where.textContent = name ? `Highlighted: the ${ids.size} ${ids.size === 1 ? 'step' : 'steps'} mapped to ${name}.` : '';
+    p.where.hidden = !name;
+    let first = null;
+    p.rows.forEach((row, id) => {
+      const on = ids.has(id);
+      row.classList.toggle('is-current', on);
+      if (on && !first) first = row;
     });
-    if (planSteps[index]) { planSteps[index].state = state; planSteps[index].agents = 0; }
-    renderPlan();
+    if (!traceOpen || !first) return;
+    const top = Math.max(0, first.offsetTop - 6);
+    const smooth = !media?.matches && typeof p.list.scrollTo === 'function';
+    try { if (smooth) p.list.scrollTo({ top, behavior: 'smooth' }); else p.list.scrollTop = top; }
+    catch { p.list.scrollTop = top; }
   }
-  function setPlanOpen(open) {
-    planOpen = Boolean(open && dock);
+
+  function setTraceOpen(open) {
+    traceOpen = Boolean(open && dock);
     if (!dock) return;
-    dock.plan.hidden = !planOpen;
-    dock.toggle.setAttribute('aria-expanded', String(planOpen));
-    dock.root.classList.toggle('is-plan-open', planOpen);
-    if (planOpen) { renderPlan(); placeDock(); }
-    else if (dock.plan.contains(document.activeElement)) dock.toggle.focus({ preventScroll: true });
-    if (!planOpen && !run && !tour) armPill();
+    dock.panel.root.hidden = !traceOpen;
+    dock.toggle.setAttribute('aria-expanded', String(traceOpen));
+    dock.root.classList.toggle('is-trace-open', traceOpen);
+    if (traceOpen) { loadTrace(); dock.panel.focus = null; renderTrace(); placeDock(); }
+    else if (dock.panel.root.contains(document.activeElement)) dock.toggle.focus({ preventScroll: true });
+    if (!traceOpen && !run && !tour) armPill();
+  }
+
+  // ---- the recorded trace: cursor labels -----------------------------------------
+  // Each cursor is shown as its recorded role type, numbered per type in the
+  // roster order (implementation-worker·1, ·2, ...).
+  const nameCache = new Map();
+  function displayName(agent) {
+    if (!trace) return agent.label;
+    const tier = crewTier(width());
+    let names = nameCache.get(tier);
+    if (!names) {
+      names = new Map();
+      const counts = { ...CREWS[tier], orchestrator: 1 };
+      const totals = {};
+      const seen = {};
+      Object.keys(ROLES).forEach(role => { const real = TRACE_ROLE_OF[role]; totals[real] = (totals[real] || 0) + (counts[role] || 0); });
+      Object.keys(ROLES).forEach(role => {
+        const count = counts[role] || 0;
+        const real = TRACE_ROLE_OF[role];
+        for (let n = 1; n <= count; n++) {
+          const k = seen[real] = (seen[real] || 0) + 1;
+          names.set(count > 1 ? `${ROLES[role].label}·${n}` : ROLES[role].label, totals[real] > 1 ? `${real}·${k}` : real);
+        }
+      });
+      nameCache.set(tier, names);
+    }
+    return names.get(agent.label) || TRACE_ROLE_OF[agent.role] || agent.label;
+  }
+  const traceLabelFor = (name, span) => ({
+    value: `${name} · ${shortAction(span.action, TRACE_ACTION[crewTier(width())])}`,
+    status: TRACE_TAGGED.has(span.status) ? span.status : '',
+    quiet: false,
+  });
+  // A working cursor shows a real step mapped to the stop it works on, handed
+  // out per role in turn (no two working cursors on the same step if it can
+  // be helped). A recorded error is followed, on the same cursor, by its
+  // retry or fix (TRACE_STEP_MS later, or at its next job). A role with no
+  // step for this stop works unlabelled.
+  function traceLabel(agent, text) {
+    const name = displayName(agent);
+    const current = run;
+    const book = current?.traceBook;
+    if (!text) {
+      const entry = book?.agents.get(agent);
+      if (entry) entry.text = '';
+      return { value: name, status: '', quiet: false };
+    }
+    const stop = current?.traceStop || traceStopName();
+    if (!current || !stop) return { value: name, status: '', quiet: true };
+    const notes = current.traceBook ||= { turn: {}, agents: new Map() };
+    let entry = notes.agents.get(agent);
+    const busy = busySteps(notes, agent);
+    if (entry && entry.i < entry.chain.length - 1 && !busy.has(entry.chain[entry.i + 1].id)) {
+      entry.i++;
+      entry.at = current.now || 0;
+    } else {
+      const role = TRACE_ROLE_OF[agent.role];
+      const list = traceRotation(trace, stop, role);
+      const errorOk = errorAllowed(current, notes, agent);
+      let k = notes.turn[role] || 0;
+      let chain = null;
+      for (let tries = 0; tries < list.length && !chain; tries++, k++) {
+        const span = list[k % list.length];
+        if (busy.has(span.id)) continue;
+        let next = traceChain(trace, span);
+        // An error that may not show now: its retry or fix instead (an
+        // error with no recorded follow-up is passed over for now).
+        if (next[0].status === 'error' && !errorOk) next = next.slice(1);
+        if (next.length && !next.some(step => busy.has(step.id))) chain = next;
+      }
+      // Every step of this role is already on another working cursor (or held
+      // back): this one works unlabelled rather than repeat or crowd a step.
+      if (!chain) { notes.agents.delete(agent); return { value: name, status: '', quiet: true }; }
+      notes.turn[role] = k;
+      entry = { chain, i: 0, at: current.now || 0 };
+      notes.agents.set(agent, entry);
+      if (chain[0].status === 'error') traceErrorFree = tourNow(current) + TRACE_STEP_MS * (current.anim || 1) + TRACE_ERROR_GAP;
+    }
+    entry.text = text;
+    return traceLabelFor(name, entry.chain[entry.i]);
+  }
+  // Recorded errors are shown one at a time, spaced out, and never in the
+  // hero's first ~2.5 s (`calmUntil`), so the first impression stays readable.
+  const tourNow = current => (current.t0 || 0) + (current.now || 0);
+  function errorAllowed(current, notes, agent) {
+    if (current.calmUntil && (current.now || 0) < current.calmUntil) return false;
+    if (tourNow(current) < traceErrorFree) return false;
+    for (const [who, other] of notes.agents) {
+      if (who !== agent && other.text && other.chain[other.i]?.status === 'error' && who.cursor?.classList.contains('is-working')) return false;
+    }
+    return true;
+  }
+  // Steps on other working cursors (a whole error → retry chain counts).
+  function busySteps(notes, agent) {
+    const busy = new Set();
+    notes.agents.forEach((other, who) => {
+      if (who !== agent && other.text && who.cursor?.classList.contains('is-working')) other.chain.forEach(span => busy.add(span.id));
+    });
+    return busy;
+  }
+  // Errors still showing on a working cursor move on to their retry or fix.
+  function stepTraceLabels(current, t) {
+    current.traceBook.agents.forEach((entry, agent) => {
+      if (!entry.text || entry.i >= entry.chain.length - 1 || t - entry.at < TRACE_STEP_MS * (current.anim || 1)) return;
+      if (!agent.cursor?.classList.contains('is-working')) return;
+      if (busySteps(current.traceBook, agent).has(entry.chain[entry.i + 1].id)) return;
+      entry.i++;
+      entry.at = t;
+      applyLabel(agent, traceLabelFor(displayName(agent), entry.chain[entry.i]));
+    });
   }
 
   // ---- speed ----------------------------------------------------------------
@@ -957,12 +1394,24 @@ export function initAgenticEntrance(document, window, config = {}) {
     const step = stopInfo.step ?? stopIndex;
     d.where.textContent = stopInfo.name;
     d.progress.textContent = `${step + 1} / ${planSteps.length}`;
-    if (planSteps[step]?.state !== 'building') setPlanStep(step, 'building');
+    // Phones, hero stop: a compact dock in the bottom-right corner, beside
+    // the hero's résumé button and links instead of lifted over the intro.
+    d.root.classList.toggle('is-compact', stopIndex === 0 && crewTier(width()) === 'phone');
+    highlightTrace();
     // A `sub` stop continues its section: it is not announced again.
     if (stopInfo.sub && stopIndex > 0) return;
-    announce(stopIndex === 0
-      ? `Build tour: agents are assembling the page, starting with the ${stopInfo.name.toLowerCase()}. Skip tour is available.`
-      : `Building ${stopInfo.name}, section ${step + 1} of ${planSteps.length}.`);
+    // What the tour is: a visual replay of a recorded run, not live work.
+    // A replay is only claimed once the recorded trace is in; until then
+    // (or without it) the wording stays neutral.
+    if (stopIndex === 0) {
+      announce(trace
+        ? `Build tour: a visual replay of the recorded agent run behind ${trace.scope || 'part'} of this page, starting with the ${stopInfo.name.toLowerCase()}. Skip tour is available.`
+        : `Build tour: agents assemble the page, starting with the ${stopInfo.name.toLowerCase()}. Skip tour is available.`);
+    } else {
+      announce(trace
+        ? `Replaying recorded steps for ${stopInfo.name}, section ${step + 1} of ${planSteps.length}.`
+        : `Building ${stopInfo.name}, section ${step + 1} of ${planSteps.length}.`);
+    }
   }
 
   function collapseDock(message, summary) {
@@ -971,23 +1420,24 @@ export function initAgenticEntrance(document, window, config = {}) {
     dock.root.classList.remove('is-busy');
     dock.summary.textContent = summary || `${builtCount || crewSize(width())} agents built this page`;
     dock.dots.textContent = '';
+    dock.root.classList.remove('is-compact');
     setWorking(0);
     hideNote();
-    renderPlan();
+    highlightTrace();
     announce(message);
     armPill();
     placeDock();
   }
 
   // The pill goes on its own after `pillMs` on every screen. It stays while
-  // the plan is open, while the pointer is on it, or while focus is in it
+  // the trace is open, while the pointer is on it, or while focus is in it
   // after keyboard use (focus moved there after a click or tap does not hold it).
   function armPill() {
     if (!dock) return;
     clearTimeout(dock.timer);
     dock.timer = window.setTimeout(() => {
       if (run || tour || !dock) return;
-      if (planOpen || hovered(dock.root) || (lastInput === 'key' && dock.root.contains(document.activeElement))) { armPill(); return; }
+      if (traceOpen || hovered(dock.root) || (lastInput === 'key' && dock.root.contains(document.activeElement))) { armPill(); return; }
       removeDock();
     }, pillMs);
   }
@@ -1003,7 +1453,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     clearTimeout(dock.liftTimer);
     dock.root.remove();
     dock = null;
-    planOpen = false;
+    traceOpen = false;
     if (hadFocus) { replayButton.hidden = false; replayButton.focus({ preventScroll: true }); }
   }
 
@@ -1346,7 +1796,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       const body = make('div', 'agentic-cursor-body', cursor);
       body.innerHTML = SVG;
       agent.badge = make('span', 'agentic-role', body);
-      agent.badge.textContent = agent.label;
+      agent.badge.textContent = trace ? displayName(agent) : agent.label;
       agent.cursor = cursor;
     });
     setDockCrew(current, decoration);
@@ -1355,11 +1805,30 @@ export function initAgenticEntrance(document, window, config = {}) {
   }
 
   function say(agent, text) {
-    const value = text ? `${ROLES[agent.role].label} · ${text}` : agent.label;
-    if (agent.badge.textContent !== value) {
-      agent.badge.textContent = value;
-      // Rough label width (11px mono) so long labels flip before the edge.
-      agent.labelW = Math.max(150, value.length * (width() < 640 ? 6.2 : 7) + 40);
+    applyLabel(agent, trace ? traceLabel(agent, text) : { value: text ? `${ROLES[agent.role].label} · ${text}` : agent.label, status: '', quiet: false });
+  }
+  // `status`: a recorded error / retried / fixed tag after the text (CSS);
+  // `quiet`: a working cursor with nothing recorded to show keeps no label.
+  function applyLabel(agent, { value, status, quiet }) {
+    const badge = agent.badge;
+    if (!badge) return;
+    const changed = badge.textContent !== value || (badge.dataset.status || '') !== status;
+    if (badge.textContent !== value) badge.textContent = value;
+    if ((badge.dataset.status || '') !== status) {
+      if (status) badge.dataset.status = status;
+      else delete badge.dataset.status;
+    }
+    if (quiet !== ('quiet' in badge.dataset)) {
+      if (quiet) badge.dataset.quiet = '';
+      else delete badge.dataset.quiet;
+    }
+    if (changed) {
+      // Rough label width (11px mono, 10px on phones) so long labels flip
+      // before the edge, and are nudged back in when neither side fits.
+      const chars = value.length + (status ? status.length + 2 : 0);
+      const narrow = width() < 640;
+      agent.labelW = Math.max(150, chars * (narrow ? 6.2 : 7) + 40);
+      agent.labelPx = Math.round(chars * (narrow ? 6.1 : 6.7) + 18);
     }
   }
 
@@ -1707,7 +2176,7 @@ export function initAgenticEntrance(document, window, config = {}) {
         const pin = make('div', 'agentic-pin', current.layer);
         pin.style.setProperty('--agent-color', color());
         make('i', 'agentic-pin-dot', pin);
-        make('span', 'agentic-pin-note', pin).textContent = spec.note || 'check';
+        make('span', 'agentic-pin-note', pin).textContent = trace ? pinFinding(current) : spec.note || 'check';
         job.pin = pin;
         // Every pin follows its item each frame until it is gone (updatePins).
         current.pins.push({ node: pin, job, at: pinPoint });
@@ -2986,7 +3455,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       addEvent(current, job.start, () => {
         say(orchestrator, 'handing off');
         if (dock) { dock.where.textContent = 'Handoff'; }
-        announce(`Handoff: ${builtCount} agents built this page.`);
+        announce(trace ? 'Replay ending at the last section.' : 'Handoff: the tour is ending.');
       });
       addEvent(current, job.arrive, now => { job.begin(now); current.active.add(job); });
       addEvent(current, job.end, () => completeJob(current, job));
@@ -3692,6 +4161,7 @@ export function initAgenticEntrance(document, window, config = {}) {
         || Boolean(job.afterJob && job.afterJob.kind === 'paste' && !job.afterJob.done && !job.afterJob.void);
     }
     if (away !== agent.away) { agent.away = away; agent.cursor.classList.toggle('is-away', away); }
+    nudgeLabel(current, agent, x);
     if (agent.x !== undefined && Math.abs(agent.x - x) < 0.05 && Math.abs(agent.y - y) < 0.05) return;
     if (agent.x !== undefined) {
       // Lean into the direction of travel (smoothed), so cursors feel alive.
@@ -3706,6 +4176,24 @@ export function initAgenticEntrance(document, window, config = {}) {
     const flip = x > current.vw - (agent.labelW || 190) && x > current.vw * 0.5;
     if (flip !== agent.flip) { agent.flip = flip; agent.cursor.classList.toggle('is-flip', flip); }
     agent.cursor.style.transform = `translate3d(${(x - 2).toFixed(1)}px,${(y - 1.5).toFixed(1)}px,0)`;
+  }
+
+  // A label too long for either side of its cursor is slid back inside the
+  // view (estimated width; the label's own offsets are 14 px right of the
+  // cursor, or 16 px left of it when flipped).
+  function nudgeLabel(current, agent, x) {
+    const w = agent.labelPx || 0;
+    let shift = 0;
+    if (w) {
+      const flip = agent.flip ?? false;
+      const left = flip ? x - 18 - w : x + 12;
+      if (left + w > current.vw - 4) shift = current.vw - 4 - (left + w);
+      if (left + shift < 4) shift = 4 - left;
+    }
+    shift = Math.round(shift);
+    if (shift === (agent.shift || 0)) return;
+    agent.shift = shift;
+    agent.cursor.style.setProperty('--agentic-label-shift', `${shift}px`);
   }
 
   // ---- runs ---------------------------------------------------------------
@@ -3939,8 +4427,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     let step = -1;
     stops.forEach((stopInfo, index) => { if (!stopInfo.sub || index === 0) step++; stopInfo.step = step; });
     tour = { stops, index: 0, firstVisit: !replay, realStart: clock(), hiddenMs: 0, workers: new Set(), vt: 0, late: 0, rescued: 0, instant: 0 };
-    planSteps = stops.filter((stopInfo, index) => !stopInfo.sub || index === 0).map(stopInfo => ({ label: planName(stopInfo.name), state: 'planned', agents: 0 }));
+    planSteps = stops.filter((stopInfo, index) => !stopInfo.sub || index === 0).map(stopInfo => stopInfo.name);
     carry = null;
+    traceErrorFree = 0;
     sectionsEligible = false;
     replayButton.hidden = true;
     builtCount = crewSize(width());
@@ -3951,8 +4440,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     tourScroll.y = tourY;
     tourScroll.v = 0;
     root.classList.add('agentic-touring');
+    // The recorded trace loads alongside; the tour never waits for it.
+    loadTrace();
     ensureDock();
-    renderPlan();
     showTourDock(0);
     placeDock();
     if (focusOnReplay) dock.skip.focus({ preventScroll: true });
@@ -3968,7 +4458,9 @@ export function initAgenticEntrance(document, window, config = {}) {
   }
 
   // The pill reports what really happened: distinct agents that worked and
-  // the measured tour time (hidden-tab pauses excluded).
+  // the measured tour time (hidden-tab pauses excluded). With the recorded
+  // trace in, the cursors are a visualization of its four role types, so the
+  // pill only claims the replay's own time.
   function finishTour() {
     const agents = tour.workers.size || builtCount;
     const seconds = Math.max(1, Math.round((clock() - tour.realStart - tour.hiddenMs) / 1000));
@@ -3978,14 +4470,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     sectionsEligible = false;
     persist();
     replayButton.hidden = false;
-    planSteps.forEach(step => { step.state = 'done'; step.agents = 0; });
-    collapseDock(`Build tour finished. ${agents} agents built this page in ${seconds} seconds.`, `Built by ${agents} agents in ${seconds} s`);
+    if (trace) collapseDock(`Recorded replay finished in ${seconds} seconds. The Trace button lists every recorded step.`, `Replayed in ${seconds} s`);
+    else collapseDock(`Build tour finished after ${seconds} seconds.`, `Built by ${agents} agents in ${seconds} s`);
     flushTourEnd();
-  }
-
-  // A stopped tour: the section in progress goes back to planned.
-  function settlePlan() {
-    planSteps.forEach(step => { if (step.state === 'building') { step.state = 'planned'; step.agents = 0; } });
   }
 
   function startHero() {
@@ -4008,9 +4495,10 @@ export function initAgenticEntrance(document, window, config = {}) {
     buildStage(current);
     remeasureDots(current);
     current.intro = INTRO.end * introUnit(current);
+    current.calmUntil = TRACE_CALM_MS * current.budget / TIMING.hero[current.tier];
     planHero(current);
     planIntro(current);
-    if (tour) addEvent(current, current.total * 0.55, () => showNote(tour?.stops[0]?.note));
+    if (tour) addEvent(current, current.total * 0.55, () => showNote(stopNote(tour?.stops[0])));
     launch(current, () => {
       if (tour) { advanceTour(); return; }
       phase = 'ready';
@@ -4260,13 +4748,16 @@ export function initAgenticEntrance(document, window, config = {}) {
     planBuild(current, stopInfo);
     readyPool(current);
     if (current.wire) buildWire(current);
-    if (stopInfo.note) addEvent(current, current.total * 0.5, () => showNote(stopInfo.note));
+    if (stopInfo.note) addEvent(current, current.total * 0.5, () => showNote(stopNote(stopInfo)));
     launch(current, advanceTour);
   }
 
   // ---- manual passes (after a cancelled first-visit tour) -----------------
   function startSection(section) {
     const current = prepare('pass', passDuration);
+    // The tour stop this section belongs to (for recorded-trace labels).
+    current.traceStop = TOUR_STOPS.find(stopInfo => section.matches?.(stopInfo.sel))?.name || '';
+    traceErrorFree = 0;
     const candidates = gather(current, SECTION_PLAN, section);
     if (!candidates.size) return false;
     watchElements(current, [...candidates]);
@@ -4290,7 +4781,7 @@ export function initAgenticEntrance(document, window, config = {}) {
       dock.root.classList.add('is-busy');
       const name = TOUR_STOPS.find(stopInfo => section.matches(stopInfo.sel))?.name || section.id || 'section';
       dock.where.textContent = name;
-      announce(`Tracing ${name}.`);
+      announce(trace ? `Replaying recorded steps for ${name}.` : `Tracing ${name}.`);
     }
     buildStage(current);
     remeasureDots(current);
@@ -4338,8 +4829,8 @@ export function initAgenticEntrance(document, window, config = {}) {
   const inDock = event => Boolean(dock && event.target?.closest?.('.agentic-dock'));
   const onKey = event => {
     lastInput = 'key';
-    // Escape first closes the plan list; the tour keeps going.
-    if (event.key === 'Escape' && planOpen) { setPlanOpen(false); if (dock?.root.contains(document.activeElement)) dock.toggle.focus({ preventScroll: true }); return; }
+    // Escape first closes the trace panel (focus back on its toggle); the tour keeps going.
+    if (event.key === 'Escape' && traceOpen) { setTraceOpen(false); if (dock?.root.contains(document.activeElement)) dock.toggle.focus({ preventScroll: true }); return; }
     // Tab between the dock's own controls is not the visitor leaving the tour.
     if (event.key === 'Tab' && inDock(event)) return;
     if ((event.key === 'Escape' || event.key === 'Tab') && (tour || phase !== 'ready' || sectionsEligible)) { stop(); return; }
@@ -4420,6 +4911,9 @@ export function initAgenticEntrance(document, window, config = {}) {
   window.addEventListener('pagehide', onPageHide);
   media?.addEventListener?.('change', onMotion);
   replayButton.addEventListener('click', () => startTour(true));
+  // Injected trace data (tests) is used at once; otherwise the trace file is
+  // only fetched when the tour plays or the Trace panel is opened.
+  if (config.trace && typeof config.trace === 'object') loadTrace();
   // `everyVisit`: play on every load (reloads included), not only the first.
   const everyVisit = Boolean(config.everyVisit);
   const eligible = shouldPlayEntrance({ seen: everyVisit ? false : seen, reducedMotion: Boolean(media?.matches), storageAvailable: Boolean(storage), hash: window.location.hash, navigationType });
@@ -4438,6 +4932,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     get tour() { return tour ? { index: tour.index, total: tour.stops.length, name: tour.stops[tour.index]?.name } : null; },
     get stats() { return run ? statsOf(run) : { ...lastStats, working: 0, visible: 0 }; },
     get speed() { return speed; },
+    // 'off' | 'loading' | 'ready' | 'failed': the recorded trace's state.
+    get traceState() { return traceState; },
     // The tour's scroll model (px, px/s); how many jobs were shown early, how
     // many of those with no agent at all, and how many idle agents rescued.
     get scroll() { return { y: tourScroll.y, v: tourScroll.v, late: tour ? tour.late : 0, instant: tour ? tour.instant : 0, rescued: tour ? tour.rescued : 0 }; },

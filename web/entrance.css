@@ -59,6 +59,19 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 /* Over the hero's label budget: the agent works unlabelled until there is room. */
 .agentic-cursor.is-hush .agentic-role { opacity: 0; scale: .85; }
 .agentic-cursor.is-orchestrator .agentic-role { background: var(--agentic-ink); color: var(--agentic-paper); box-shadow: 0 0 0 1px rgb(243 242 236 / .28), 0 3px 10px -3px rgb(16 17 20 / .45); }
+/* A label too long for either side of its cursor is slid back into the view. */
+.agentic-role { translate: var(--agentic-label-shift, 0px) 0; }
+/* Recorded trace labels: an error, retried or fixed step carries a status tag;
+   a recorded error is also ringed in red until its retry or fix replaces it. */
+.agentic-role[data-status]::after { content: attr(data-status); margin-left: 7px; padding: 1px 5px 0; border-radius: 3px; background: #12130f; color: #f6f9ef; }
+.agentic-cursor .agentic-role[data-status="error"] { box-shadow: 0 0 0 2px #ff5a52, 0 3px 10px -3px rgb(16 17 20 / .42); }
+/* The orchestrator's own label shadow would otherwise win over the ring. */
+.agentic-cursor.is-orchestrator .agentic-role[data-status="error"] { box-shadow: 0 0 0 2px #ff5a52, 0 3px 10px -3px rgb(16 17 20 / .45); }
+.agentic-role[data-status="error"]::after { color: #ff9a92; }
+.agentic-role[data-status="retried"]::after { color: #ffd27a; }
+.agentic-role[data-status="fixed"]::after { color: #9fe0a0; }
+/* A working cursor whose role has no recorded step for this section. */
+.agentic-role[data-quiet] { visibility: hidden; }
 
 /* Selection frames, measured from real element bounds. */
 .agentic-frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid var(--agent-color); background: color-mix(in srgb, var(--agent-color) 7%, transparent); transform-origin: 0 0; transition: opacity .45s ease; }
@@ -111,6 +124,7 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-pin.is-on { opacity: 1; scale: 1; }
 .agentic-pin.is-out { opacity: 0; transition: opacity .4s ease .5s; }
 .agentic-pin-dot { position: relative; display: grid; place-items: center; width: 18px; height: 18px; box-sizing: border-box; border: 2px solid #fbfaf6; border-radius: 50% 50% 50% 2px; background: var(--agent-color); box-shadow: 0 3px 10px -3px rgb(16 17 20 / .5); transition: background-color .25s ease, border-radius .25s ease; }
+.agentic-pin-note:empty { display: none; }
 .agentic-pin-note { padding: 3px 7px 2px; border-radius: 4px; background: #fbfaf6; color: #12130f; font: 700 10.5px/1.15 var(--agentic-mono); white-space: nowrap; box-shadow: 0 3px 10px -3px rgb(16 17 20 / .42); transition: opacity .25s ease; }
 .agentic-pin.is-resolved .agentic-pin-dot { border-radius: 50%; background: #72d27c; }
 .agentic-pin.is-resolved .agentic-pin-dot::after { content: ""; width: 7px; height: 4px; margin-top: -2px; border-left: 2px solid #12130f; border-bottom: 2px solid #12130f; rotate: -45deg; }
@@ -148,36 +162,74 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-dock button:focus-visible { outline: 2px solid #d7e8b9; outline-offset: -3px; }
 .agentic-dock-skip-more { white-space: pre; }
 .agentic-dock-skip { margin-left: 12px !important; border-left: 1px solid rgb(230 237 218 / .16) !important; border-radius: 0 30px 30px 0 !important; text-decoration: underline; text-underline-offset: 3px; }
-.agentic-dock-replay, .agentic-dock-close { display: none !important; }
+.agentic-dock-replay, .agentic-dock-close, .agentic-dock-full { display: none !important; }
 .agentic-dock-close { padding: 0 !important; font-size: 16px !important; color: #b9c5ab !important; }
 
-/* Plan toggle (left), speed toggle (right of the status). */
-.agentic-dock .agentic-dock-plan { gap: 7px; margin-right: 8px; padding: 0 12px 0 15px; border-radius: 30px 0 0 30px; border-right: 1px solid rgb(230 237 218 / .16); color: #d7e8b9; }
-.agentic-plan-icon { position: relative; width: 11px; height: 9px; border-block: 1.5px solid currentColor; box-sizing: border-box; }
-.agentic-plan-icon::after { content: ""; position: absolute; left: 0; right: 0; top: 2.25px; border-top: 1.5px solid currentColor; }
-.agentic-dock.is-plan-open .agentic-dock-plan { background: rgb(238 242 230 / .12); }
+/* Trace toggle (left), speed toggle (right of the status). */
+.agentic-dock .agentic-dock-trace { gap: 7px; margin-right: 8px; padding: 0 12px 0 15px; border-radius: 30px 0 0 30px; border-right: 1px solid rgb(230 237 218 / .16); color: #d7e8b9; }
+/* A tiny waterfall: three staggered bars. */
+.agentic-trace-icon { width: 12px; height: 10px; background: linear-gradient(currentColor, currentColor) 0 0 / 7px 2px no-repeat, linear-gradient(currentColor, currentColor) 3px 4px / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) 6px 8px / 6px 2px no-repeat; }
+.agentic-dock.is-trace-open .agentic-dock-trace { background: rgb(238 242 230 / .12); }
 .agentic-dock .agentic-dock-speed { margin-left: 8px; padding: 0 10px; font-weight: 700; font-variant-numeric: tabular-nums; color: #b9c5ab; }
 .agentic-dock .agentic-dock-speed[aria-pressed="true"] { color: #12130f; background: #d7e8b9; }
 .agentic-dock .agentic-dock-speed[aria-pressed="true"]:hover { background: #e6f1d2; }
 
-/* The orchestrator's task list, opened above the dock. */
-.agentic-plan { position: absolute; left: 50%; bottom: calc(100% + 10px); translate: -50% 0; width: min(330px, calc(100vw - 20px)); max-height: min(60vh, 380px); overflow: auto; box-sizing: border-box; padding: 12px 14px 10px; border: 1px solid rgb(230 237 218 / .2); border-radius: 14px; background: rgb(23 26 22 / .96); color: #eef2e6; white-space: normal; box-shadow: 0 16px 34px -16px rgb(16 17 20 / .7); animation: agentic-plan-in .26s cubic-bezier(.16,1,.3,1) both; }
-.agentic-plan[hidden] { display: none; }
-.agentic-plan-title { margin: 0 0 8px; color: #9aa68e; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
-.agentic-plan-list { margin: 0; padding: 0; list-style: none; }
-.agentic-plan-item { display: grid; grid-template-columns: 14px 1fr auto; align-items: baseline; gap: 8px; padding: 5px 0; border-top: 1px solid rgb(230 237 218 / .08); }
-.agentic-plan-item:first-child { border-top: 0; }
-.agentic-plan-mark { color: #7d8873; text-align: center; }
-.agentic-plan-state { color: #9aa68e; font-variant-numeric: tabular-nums; text-align: right; }
-.agentic-plan-item[data-state="building"] .agentic-plan-mark, .agentic-plan-item[data-state="building"] .agentic-plan-state { color: #f6f9ef; }
-.agentic-plan-item[data-state="building"] .agentic-plan-name { color: #f6f9ef; font-weight: 700; }
-.agentic-plan-item[data-state="done"] .agentic-plan-mark { color: #9fd38a; }
-.agentic-plan-item[data-state="done"] .agentic-plan-name { color: #b9c5ab; }
+/* The recorded trace, opened above the dock: heading, honesty line, then a
+   waterfall of every recorded step (role chip, action, result, status, time
+   accuracy, commit, and a bar on a compressed time axis). */
+.agentic-trace { position: absolute; left: 50%; bottom: calc(100% + 10px); translate: -50% 0; display: flex; flex-direction: column; width: min(500px, calc(100vw - 20px)); max-height: min(64vh, 580px); box-sizing: border-box; padding-top: 12px; border: 1px solid rgb(230 237 218 / .2); border-radius: 14px; background: rgb(23 26 22 / .97); color: #eef2e6; font-size: 11px; line-height: 1.4; white-space: normal; text-align: left; box-shadow: 0 16px 34px -16px rgb(16 17 20 / .7); animation: agentic-trace-in .26s cubic-bezier(.16,1,.3,1) both; }
+.agentic-trace[hidden] { display: none; }
+.agentic-trace-title { margin: 0 14px; color: #d7e8b9; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.agentic-trace-honesty { margin: 6px 14px 0; color: #d3dcc7; font-size: 11px; }
+.agentic-trace-where { margin: 6px 14px 0; color: #b9c5ab; font-size: 11px; }
+.agentic-trace-more { margin: 6px 14px 0; font-size: 11px; }
+.agentic-trace-full, .agentic-dock-full { color: #d7e8b9; text-decoration: underline; text-underline-offset: 3px; }
+.agentic-trace-full { position: relative; display: inline-flex; align-items: center; min-height: 24px; }
+/* A 44 px hit area without changing the link's look (like the site's other small links). */
+.agentic-trace-full::before { content: ""; position: absolute; top: calc(50% - 22px); bottom: calc(50% - 22px); left: min(0px, calc(50% - 22px)); right: min(0px, calc(50% - 22px)); }
+.agentic-trace-full:hover, .agentic-dock-full:hover { color: #f6f9ef; }
+.agentic-trace-full:focus-visible, .agentic-dock-full:focus-visible { outline: 2px solid #d7e8b9; outline-offset: 2px; border-radius: 3px; }
+.agentic-trace-where[hidden], .agentic-trace-status[hidden], .agentic-trace-axis[hidden], .agentic-trace-list[hidden] { display: none; }
+.agentic-trace-status { margin: 10px 14px 14px; color: #b9c5ab; font-size: 11px; }
+.agentic-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* The axis labels sit over the bar column of the rows below. */
+.agentic-trace-axis { display: grid; grid-template-columns: 10px minmax(0, 1fr) 22%; column-gap: 10px; margin: 10px 0 0; padding: 0 14px 5px; color: #a9b59c; font-size: 11px; }
+.agentic-trace-axis-scale { grid-column: 3; display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
+.agentic-trace-list { position: relative; flex: 1 1 auto; min-height: 0; margin: 0; padding: 0 0 6px; border-top: 1px solid rgb(230 237 218 / .1); list-style: none; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgb(230 237 218 / .3) transparent; }
+.agentic-trace-list:focus-visible { outline: 2px solid #d7e8b9; outline-offset: -2px; }
+.agentic-span { display: grid; grid-template-columns: 10px minmax(0, 1fr) 22%; column-gap: 10px; align-items: center; padding: 5px 14px 6px; border-top: 1px solid rgb(230 237 218 / .07); }
+.agentic-span:first-child { border-top: 0; }
+/* The steps mapped to the stop the tour is on. */
+.agentic-span.is-current { background: rgb(238 242 230 / .08); box-shadow: inset 3px 0 0 #d7e8b9; }
+.agentic-span-chip { align-self: start; width: 10px; height: 10px; margin-top: 3px; box-sizing: border-box; border-radius: 3px; }
+/* Each role's chip shows the cursor colours that stand for it. */
+.agentic-span[data-role="orchestrator"] .agentic-span-chip { background: #1d1e1b; border: 1.5px solid #eef2e6; }
+.agentic-span[data-role="implementation-worker"] .agentic-span-chip { background: linear-gradient(135deg, #6f9bff 0 20%, #3ccbb4 20% 40%, #ff6ea9 40% 60%, #ffa04a 60% 80%, #72d27c 80%); }
+.agentic-span[data-role="ui-design-director"] .agentic-span-chip { background: linear-gradient(135deg, #a98cff 0 34%, #55c4f5 34% 67%, #f1cf3a 67%); }
+.agentic-span[data-role="quality-reviewer"] .agentic-span-chip { background: #ff6767; }
+.agentic-span-body { display: grid; gap: 1px; min-width: 0; }
+.agentic-span-action { color: #f6f9ef; font-size: 12px; font-weight: 700; line-height: 1.25; }
+.agentic-span-result { color: #c8d2bb; font-size: 11px; line-height: 1.3; }
+.agentic-span-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin-top: 1px; color: #b0bca3; font-size: 11px; line-height: 1.25; }
+.agentic-span-status, .agentic-span-timing { padding: 0 4px; border: 1px solid currentColor; border-radius: 4px; }
+.agentic-span[data-status="ok"] .agentic-span-status { color: #c3cdb6; }
+.agentic-span[data-status="error"] .agentic-span-status { color: #ff9a92; }
+.agentic-span[data-status="retried"] .agentic-span-status { color: #ffd27a; }
+.agentic-span[data-status="fixed"] .agentic-span-status { color: #9fe0a0; }
+.agentic-span-timing { border-style: dashed; }
+.agentic-span-commit { color: #d7e8b9; font-variant-numeric: tabular-nums; }
+.agentic-span-track { position: relative; height: 8px; border-radius: 4px; background: rgb(238 242 230 / .07); }
+.agentic-span-bar { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 4px; background: #8fa37c; transform-origin: 0 50%; animation: agentic-bar-in .5s cubic-bezier(.22,1,.36,1) both; }
+/* Commit save points: a dot rather than a bar. */
+.agentic-span-bar.is-point { width: 6px !important; min-width: 0; margin-left: -3px; background: #d7e8b9; }
+.agentic-span[data-status="error"] .agentic-span-bar { background: #ff8a80; }
+.agentic-span[data-status="retried"] .agentic-span-bar { background: #ffd166; }
+.agentic-span[data-status="fixed"] .agentic-span-bar:not(.is-point) { background: #9fe0a0; }
 
 /* Handoff note: a short decorative line beside the dock, one at a time. */
 .agentic-note { position: absolute; left: calc(100% + 10px); top: 50%; margin: 0; padding: 6px 10px 5px; border-radius: 20px; background: rgb(23 26 22 / .9); color: #d7e8b9; font-size: 10.5px; white-space: nowrap; pointer-events: none; opacity: 0; translate: -6px -50%; transition: opacity .3s ease, translate .4s cubic-bezier(.16,1,.3,1); }
 .agentic-note.is-on { opacity: 1; translate: 0 -50%; }
-.agentic-dock.is-plan-open .agentic-note, .agentic-dock[data-state="pill"] .agentic-note { display: none; }
+.agentic-dock.is-trace-open .agentic-note, .agentic-dock[data-state="pill"] .agentic-note { display: none; }
 @media (max-width: 1099px) {
   .agentic-note { left: 50%; top: auto; bottom: calc(100% + 8px); translate: -50% 4px; }
   .agentic-note.is-on { translate: -50% 0; }
@@ -187,7 +239,9 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-dock[data-state="pill"] { padding-left: 1px; }
 .agentic-dock[data-state="pill"] .agentic-dock-speed { display: none; }
 .agentic-dock[data-state="pill"] .agentic-dock-skip { display: none; }
-.agentic-dock[data-state="pill"] .agentic-dock-replay, .agentic-dock[data-state="pill"] .agentic-dock-close { display: inline-flex !important; }
+.agentic-dock[data-state="pill"] .agentic-dock-replay, .agentic-dock[data-state="pill"] .agentic-dock-close, .agentic-dock[data-state="pill"] .agentic-dock-full { display: inline-flex !important; }
+/* "Open the full trace": a plain link in the pill, 44 px tall like its buttons. */
+.agentic-dock[data-state="pill"] .agentic-dock-full { align-items: center; min-height: 44px; padding: 0 10px; white-space: pre; }
 .agentic-dock[data-state="pill"] .agentic-dock-replay { margin-left: 6px; padding: 0 12px; text-decoration: underline; text-underline-offset: 3px; }
 .agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-status, .agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-dots { display: none; }
 .agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-summary { display: inline; }
@@ -219,18 +273,29 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 /* Soft settle: a small rise and a barely-there overshoot. */
 @keyframes agentic-pop { 0% { scale: .95; translate: 0 10px; } 62% { scale: 1.005; translate: 0 -1px; } 100% { scale: 1; translate: none; } }
 @keyframes agentic-pop-kid { 0% { scale: .86; translate: 0 5px; } 62% { scale: 1.02; translate: 0 -.5px; } 100% { scale: 1; translate: none; } }
-@keyframes agentic-plan-in { from { opacity: 0; translate: -50% 6px; } }
+@keyframes agentic-trace-in { from { opacity: 0; translate: -50% 6px; } }
+@keyframes agentic-trace-fade { from { opacity: 0; } }
+@keyframes agentic-bar-in { from { scale: 0 1; } }
 
 @media (max-width: 760px) {
   .footer-bottom > .agentic-replay { order: 4; margin-block: -12px -14px; }
 }
 @media (max-width: 639px) {
   .agentic-dock { font-size: 11px; }
-  .agentic-dock .agentic-dock-plan { margin-right: 6px; padding: 0 10px 0 13px; }
-  .agentic-plan-word, .agentic-dock-where, .agentic-dock-skip-more { display: none; }
+  .agentic-dock .agentic-dock-trace { margin-right: 6px; padding: 0 10px 0 13px; }
+  .agentic-trace-word, .agentic-dock-where, .agentic-dock-skip-more { display: none; }
   .agentic-dock .agentic-dock-speed { margin-left: 4px; padding: 0 8px; }
-  /* A small sheet above the dock. */
-  .agentic-plan { width: calc(100vw - 20px); max-height: 52vh; border-radius: 14px 14px 10px 10px; }
+  /* A sheet above the dock, the full width of the screen less 10 px a side. */
+  .agentic-trace { width: calc(100vw - 20px); max-height: min(60vh, 520px); border-radius: 14px 14px 10px 10px; }
+  .agentic-span, .agentic-trace-axis { grid-template-columns: 10px minmax(0, 1fr) 20%; column-gap: 8px; padding-inline: 12px; }
+  .agentic-trace-title, .agentic-trace-honesty, .agentic-trace-where, .agentic-trace-status { margin-inline: 12px; }
+  /* Hero stop: a compact dock in the bottom-right corner, beside the résumé
+     button and links (left-aligned) rather than lifted over the hero copy. */
+  .agentic-dock.is-compact { left: auto; right: max(10px, env(safe-area-inset-right, 0px) + 6px); translate: 0 calc(-1 * var(--agentic-dock-lift, 0px)); }
+  .agentic-dock.is-compact .agentic-dock-speed, .agentic-dock.is-compact .agentic-dock-unit, .agentic-dock.is-compact .agentic-dock-sep, .agentic-dock.is-compact .agentic-dock-progress, .agentic-dock.is-compact .agentic-note { display: none; }
+  .agentic-dock.is-compact .agentic-dock-face { gap: 7px; }
+  .agentic-dock.is-compact .agentic-dock-skip { margin-left: 2px !important; padding: 0 12px !important; }
+  .agentic-dock.is-compact .agentic-trace { left: auto; right: 0; translate: none; animation-name: agentic-trace-fade; }
   .agentic-dock-face { gap: 9px; }
   .agentic-dock-dots { gap: 3px; }
   .agentic-dot { width: 5px; height: 5px; }
@@ -240,14 +305,17 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
   .agentic-dock-skip { margin-left: 4px !important; padding: 0 13px !important; }
   .agentic-role { font-size: 10px; top: 18px; padding: 3px 6px 2px; }
   /* Post-tour pill on phones: a compact chip in the bottom-right corner, away
-     from the left-aligned reading column. The plan toggle stays (icon only) so
-     the plan can still be opened and focus has somewhere to return. */
+     from the left-aligned reading column. The Trace toggle stays (icon only) so
+     the trace can still be opened and focus has somewhere to return. */
   .agentic-dock[data-state="pill"] { left: auto; right: max(10px, env(safe-area-inset-right, 0px) + 6px); translate: 0 calc(-1 * var(--agentic-dock-lift, 0px)); transition: none; min-height: 44px; max-width: calc(100vw - 20px); font-size: 11px; }
   .agentic-dock[data-state="pill"] .agentic-dock-replay { margin-left: 2px; padding: 0 10px; }
-  .agentic-dock[data-state="pill"] .agentic-plan { left: auto; right: 0; translate: none; }
+  .agentic-dock[data-state="pill"] .agentic-dock-full { padding: 0 6px; }
+  .agentic-dock-full-more { display: none; }
+  .agentic-dock[data-state="pill"] .agentic-trace { left: auto; right: 0; translate: none; animation-name: agentic-trace-fade; }
 }
 @media (prefers-reduced-motion: reduce) {
   .agentic-stage, .agentic-dock { display: none; }
+  .agentic-trace, .agentic-span-bar { animation: none; }
   .agentic-target[data-build-state] { opacity: 1 !important; translate: none !important; scale: none !important; clip-path: none !important; animation: none !important; }
 }
 

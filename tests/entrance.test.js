@@ -8,6 +8,9 @@ import { initExplorer } from '../web/explorer.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 const entranceCSS = await readFile(new URL('../web/entrance.css', import.meta.url), 'utf8');
+// The recorded run the tour replays (passed in, so no test needs the network).
+const traceData = JSON.parse(await readFile(new URL('../web/trace/build-trace.json', import.meta.url), 'utf8'));
+const REAL_ROLES = ['orchestrator', 'implementation-worker', 'quality-reviewer', 'ui-design-director'];
 const storageKey = 'cesar:portfolio:agentic-intro:v1';
 const speedKey = 'cesar:portfolio:agentic-tour-speed:v1';
 const fast = { heroDuration: 60, buildDuration: 30, sectionDuration: 30, scrollDuration: 20, handoffDuration: 20 };
@@ -32,8 +35,11 @@ function manualFrames(window) {
   };
 }
 
-function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = false, observeSections = false, width, height, frames = false, media, navigationType, layout = false, config: extra = {} } = {}) {
+function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = false, observeSections = false, width, height, frames = false, media, navigationType, layout = false, fetch, config: extra = {} } = {}) {
   const { window } = new JSDOM(html, { url: `https://portfolio.test/${hash}` });
+  // `fetch`: a stand-in for window.fetch (the trace request). Without one the
+  // tests run with no trace (choreography labels) unless `config.trace` is given.
+  if (fetch) window.fetch = fetch;
   // In a real layout engine (the browser harness), lay the page out at `width`.
   if (layout && width && window.frameElement) window.frameElement.style.width = `${width}px`;
   if (layout && height && window.frameElement) window.frameElement.style.height = `${height}px`;
@@ -56,7 +62,7 @@ function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = f
   if (storageBlocked) Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage denied'); } });
   const clock = frames ? manualFrames(window) : null;
   // Manual frames use the real production timing; real frames use tiny durations.
-  const config = { ...(clock ? { now: clock.now, pillDuration: 600000 } : { ...fast }), ...extra };
+  const config = { ...(fetch ? {} : { trace: false }), ...(clock ? { now: clock.now, pillDuration: 600000 } : { ...fast }), ...extra };
   const controller = initAgenticEntrance(window.document, window, config);
   t.after(() => window.close());
   // Like a real observer entry: an intersecting section is on screen.
@@ -75,7 +81,8 @@ const until = async (condition, ms = 4000) => {
 const dockOf = document => document.querySelector('.agentic-dock');
 const visibleCursors = document => [...document.querySelectorAll('.agentic-cursor.is-in:not(.is-docked)')];
 const cursorPoint = cursor => { const m = /translate3d\(([-\d.]+)px,\s*([-\d.]+)px/.exec(cursor.style.transform || ''); return m ? { x: +m[1], y: +m[2] } : null; };
-const planItems = document => [...dockOf(document).querySelectorAll('.agentic-plan-item')].map(item => [item.querySelector('.agentic-plan-name').textContent, item.querySelector('.agentic-plan-state').textContent]);
+const traceRows = document => [...dockOf(document).querySelectorAll('.agentic-trace-list > li')];
+const currentActions = document => traceRows(document).filter(row => row.classList.contains('is-current')).map(row => row.querySelector('.agentic-span-action').textContent);
 // Experience's `sub` stops (wide screens, travelling stage) keep its name: one entry.
 const stopNames = document => TOUR_STOPS.filter(stop => document.querySelector(stop.sel)).map(stop => stop.name).filter((name, index, all) => name !== all[index - 1]);
 const measurable = document => document.querySelector('#about').getBoundingClientRect().height > 0;
@@ -254,7 +261,7 @@ test('Skip tour is a real control in a labelled region from the first frame, wit
   assert.ok(parseFloat(window.getComputedStyle(skip).minHeight) >= 44);
   assert.equal(dock.querySelector('.agentic-dock-face').getAttribute('aria-hidden'), 'true');
   assert.equal(dock.querySelector('.agentic-dock-live').getAttribute('aria-live'), 'polite');
-  for (const selector of ['[data-agentic-plan]', '[data-agentic-speed]']) {
+  for (const selector of ['[data-agentic-trace]', '[data-agentic-speed]']) {
     const control = dock.querySelector(selector);
     assert.equal(control.tagName, 'BUTTON', selector);
     assert.equal(control.closest('[aria-hidden]'), null, selector);
@@ -472,6 +479,21 @@ test('the dock announces each section once, politely, and keeps decoration out o
   assert.equal(new Set(messages).size, messages.length, 'no repeats');
   assert.match(messages[0], /Skip tour/);
   assert.match(messages.at(-1), /finished/);
+  // Without the recorded trace nothing claims a replay, nor that agents built the page.
+  assert.match(messages[0], /^Build tour: agents assemble the page, starting with the hero\./);
+  assert.ok(messages.slice(1, -1).every(text => /^Building .+, section \d+ of \d+\.$|^Handoff: the tour is ending\.$/.test(text)), messages.join(' | '));
+  assert.ok(messages.every(text => !/replay|recorded|agents built/i.test(text)), messages.join(' | '));
+  // With it, the replay wording, scoped to the rounds it covers.
+  const replayed = setup(t, { width: 1280, frames: true, config: { trace: traceData } });
+  const replayLive = dockOf(replayed.document).querySelector('.agentic-dock-live');
+  const replayMessages = [replayLive.textContent];
+  while (replayed.controller.touring && replayed.clock.now() < 90000) {
+    replayed.clock.step(32);
+    if (replayLive.textContent !== replayMessages.at(-1)) replayMessages.push(replayLive.textContent);
+  }
+  assert.match(replayMessages[0], /^Build tour: a visual replay of the recorded agent run behind rounds 4–5 of this page, starting with the hero\./);
+  assert.ok(replayMessages.slice(1, -1).every(text => /^Replaying recorded steps for .+, section \d+ of \d+\.$|^Replay ending/.test(text)), replayMessages.join(' | '));
+  assert.ok(replayMessages.every(text => !/assembl|agents built|Building /.test(text)), replayMessages.join(' | '));
   // Decoration is hidden; real headings exist once.
   controller.replay();
   const decoration = document.querySelector('.agentic-decoration');
@@ -504,7 +526,8 @@ test('replay is placed inside the footer row without displacing its final item',
   const replay = row.querySelector('[data-agentic-replay]');
   assert.ok(replay);
   assert.notEqual(row.lastElementChild, replay);
-  assert.equal(row.lastElementChild.textContent, 'BUILT IN PLAIN HTML, CSS AND JS.');
+  assert.equal(row.lastElementChild.textContent, 'BUILT IN PLAIN HTML, CSS AND JS. SEE THE AGENT RUN BEHIND IT →');
+  assert.equal(row.lastElementChild.querySelector('a').getAttribute('href'), './lab/build-trace.html');
 });
 
 test('with fast timing the whole first visit completes without residue', async t => {
@@ -582,54 +605,212 @@ test('sections are placed item by item by a big crew on desktop and a small one 
   assert.ok(phonePeak >= 3 && phonePeak <= 9, `phone peak of ${phonePeak} visible cursors`);
 });
 
-test('the dock task list follows the plan, opens without cancelling, and Escape only closes it', t => {
-  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true });
+test('the dock Trace panel lists the recorded steps, follows the tour, and Escape only closes it', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, config: { trace: traceData } });
+  assert.equal(controller.traceState, 'ready');
   const dock = dockOf(document);
-  const toggle = dock.querySelector('[data-agentic-plan]');
-  const list = document.getElementById(toggle.getAttribute('aria-controls'));
-  assert.ok(list && dock.contains(list));
+  const toggle = dock.querySelector('[data-agentic-trace]');
+  const panel = document.getElementById(toggle.getAttribute('aria-controls'));
+  assert.ok(panel && dock.contains(panel));
+  assert.equal(toggle.tagName, 'BUTTON');
+  assert.equal(toggle.textContent, 'Trace');
   assert.equal(toggle.getAttribute('aria-expanded'), 'false');
-  assert.equal(list.hidden, true);
+  assert.equal(panel.hidden, true);
+  assert.equal(panel.getAttribute('role'), 'region');
+  assert.equal(document.getElementById(panel.getAttribute('aria-labelledby')).textContent, 'Recorded replay · rounds 4–5 · 16 commits · Nov 10–11, 2026');
+  // The panel follows its toggle in the DOM, so Tab from the open toggle enters it.
+  assert.ok(toggle.compareDocumentPosition(panel) & window.Node.DOCUMENT_POSITION_FOLLOWING);
+  assert.match(panel.querySelector('.agentic-trace-honesty').textContent, /The number of cursors is a visualization too; the trace counts role types, not separate agents\.$/);
   toggle.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
   toggle.focus();
   toggle.click();
-  assert.equal(controller.touring, true, 'opening the plan does not cancel the tour');
+  assert.equal(controller.touring, true, 'opening the trace does not cancel the tour');
   assert.equal(toggle.getAttribute('aria-expanded'), 'true');
-  assert.equal(list.hidden, false);
+  assert.equal(panel.hidden, false);
   assert.equal(document.activeElement, toggle, 'focus stays on the toggle');
-  const names = stopNames(document);
-  assert.deepEqual(planItems(document).map(([name]) => name), names.map(name => `Build ${name === 'Hero' ? 'hero' : name}`));
-  clock.step(16);
-  stepTo(controller, clock, 0, 2000);
-  let items = planItems(document);
-  assert.match(items[0][1], /^building · \d+ agents?$/);
-  assert.ok(items.slice(1).every(([, state]) => state === 'planned'), JSON.stringify(items));
-  stepTo(controller, clock, 2, 1500);
-  items = planItems(document);
-  assert.deepEqual(items.slice(0, 2).map(([, state]) => state), ['done', 'done']);
-  assert.match(items[2][1], /^building · \d+ agents?$/);
-  assert.equal(items[2][1], `building · ${controller.stats.working} ${controller.stats.working === 1 ? 'agent' : 'agents'}`, 'live agent count');
-  // Escape closes the list; the tour goes on and focus returns to the toggle.
+  assert.ok(panel.textContent.includes('Steps, results and commits are real. Cursor positions and typing are a visualization. Commit times are exact; other times are estimated.'));
+  assert.match(panel.querySelector('.agentic-visually-hidden').textContent, /compressed time axis/);
+  const full = panel.querySelector('a.agentic-trace-full');
+  assert.deepEqual([full.getAttribute('href'), full.textContent], ['./lab/build-trace.html', 'Open the full trace']);
+  // One list item per recorded span: role chip, action, result, status, timing, commit and a bar.
+  const list = panel.querySelector('ol');
+  assert.ok(list.getAttribute('aria-label'));
+  assert.equal(list.tabIndex, 0, 'the list scrolls by keyboard');
+  const rows = traceRows(document);
+  assert.equal(rows.length, traceData.spans.length);
+  assert.ok(rows.every(row => row.tagName === 'LI' && row.querySelector('.agentic-span-chip[aria-hidden="true"]') && row.querySelector('.agentic-span-track[aria-hidden="true"] .agentic-span-bar')));
+  const row = rows.find(item => item.querySelector('.agentic-span-action').textContent === 'Move the project explorer into the Work section');
+  assert.equal(row.querySelector('.agentic-span-role').textContent, 'implementation-worker');
+  assert.equal(row.querySelector('.agentic-span-status').textContent, 'ok');
+  assert.equal(row.querySelector('.agentic-span-timing').textContent, 'estimated');
+  assert.equal(row.querySelector('.agentic-span-commit').textContent, '5bf7267');
+  assert.match(row.querySelector('.agentic-span-result').textContent, /One gallery replaces/);
+  assert.ok(row.querySelector('.agentic-span-bar').style.width.endsWith('%'));
+  assert.deepEqual(new Set(rows.map(item => item.querySelector('.agentic-span-status').textContent)), new Set(['ok', 'error', 'retried', 'fixed']));
+  assert.deepEqual(new Set(rows.map(item => item.querySelector('.agentic-span-timing').textContent)), new Set(['exact', 'estimated']));
+  assert.equal(panel.querySelector('.agentic-trace-list a'), null, 'commits are plain text, no links');
+  // The hero's steps are highlighted, then About's as the tour moves on.
+  const hero = currentActions(document);
+  assert.ok(hero.includes('Save the readability and scroll improvements') && hero.length === 6, hero.join(' | '));
+  stepTo(controller, clock, 1, 300);
+  const about = currentActions(document);
+  assert.ok(about.includes('Open About into the light scene as the visitor scrolls'), about.join(' | '));
+  assert.ok(!about.includes('Save calmer labels and a cleaner tour finish'), 'a hero-only step is no longer highlighted');
+  assert.match(panel.querySelector('.agentic-trace-where').textContent, /About/);
+  // Escape closes the panel; the tour goes on and focus returns to the toggle.
   document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   assert.equal(controller.touring, true);
   assert.equal(toggle.getAttribute('aria-expanded'), 'false');
-  assert.equal(list.hidden, true);
+  assert.equal(panel.hidden, true);
   assert.equal(document.activeElement, toggle);
   // Tabbing between the dock's own controls does not end the tour either.
-  const tab = new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
-  toggle.dispatchEvent(tab);
+  toggle.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
   assert.equal(controller.touring, true);
   toggle.click();
   stepTo(controller, clock, 99);
   assert.equal(controller.touring, false);
-  // The finished plan stays viewable from the pill.
+  // The trace stays available from the pill, with nothing highlighted.
   assert.equal(dock.dataset.state, 'pill');
   assert.ok(dock.contains(toggle) && window.getComputedStyle(toggle).display !== 'none');
-  assert.ok(planItems(document).every(([, state]) => state === 'done'));
-  assert.ok(!/test|pass/i.test(list.textContent), 'planned / building / done only');
-  // Escape closes the list in the pill too.
+  assert.equal(panel.hidden, false);
+  assert.equal(currentActions(document).length, 0);
+  assert.match(dock.querySelector('.agentic-dock-summary').textContent, /^Replayed in \d+ s$/, 'the pill claims only the replay time');
+  const pillLink = dock.querySelector('a.agentic-dock-full');
+  assert.equal(pillLink.getAttribute('href'), './lab/build-trace.html');
+  assert.equal(pillLink.getAttribute('aria-label'), 'Open the full trace');
+  assert.equal(pillLink.textContent, 'Open the full trace');
+  assert.notEqual(window.getComputedStyle(pillLink).display, 'none', 'the pill shows the link');
   document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-  assert.equal(list.hidden, true);
+  assert.equal(panel.hidden, true);
+  // After Skip as well.
+  const skipped = setup(t, { width: 1280, frames: true, config: { trace: traceData } });
+  stepTo(skipped.controller, skipped.clock, 2, 200);
+  skipped.controller.skip();
+  dockOf(skipped.document).querySelector('[data-agentic-trace]').click();
+  assert.equal(traceRows(skipped.document).length, traceData.spans.length);
+});
+
+test('with the recorded trace, working cursors name real steps of their stop, and an error turns into its retry or fix', t => {
+  const { document, controller, clock } = setup(t, { width: 1280, frames: true, layout: true, config: { trace: traceData } });
+  const spread = ['All', 'Tour'];
+  const lower = text => text[0].toLowerCase() + text.slice(1);
+  const last = new Map();
+  const labels = new Set();
+  let recovered = 0;
+  let errors = 0;
+  let mostErrors = 0;
+  const pins = new Map();
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (!controller.touring) break;
+    const stop = controller.tour.name;
+    document.querySelectorAll('.agentic-pin-note').forEach(note => pins.set(note.textContent, stop));
+    // At most one error label on screen, and none in the hero's first 2.5 s.
+    const errorLabels = document.querySelectorAll('.agentic-cursor.is-working:not(.is-docked) .agentic-role[data-status="error"]').length;
+    mostErrors = Math.max(mostErrors, errorLabels);
+    if (stop === 'Hero' && clock.now() < 2500) assert.equal(errorLabels, 0, `error label at ${clock.now()} ms into the hero`);
+    const shown = [...document.querySelectorAll('.agentic-cursor.is-working:not(.is-docked) .agentic-role:not([data-quiet])')]
+      .filter(label => label.textContent.includes(' · '));
+    const actions = [];
+    for (const label of shown) {
+      const text = label.textContent;
+      const [, role, action] = /^([a-z-]+)(?:·\d+)? · (.+)$/.exec(text) || [];
+      assert.ok(REAL_ROLES.includes(role), text);
+      const stem = action.replace(/…$/, '');
+      const match = traceData.spans.find(span => span.role === role && lower(span.action).startsWith(stem)
+        && (span.sections.includes(stop) || span.sections.some(name => spread.includes(name)) || traceData.spans.some(head => head.id === span.parent && head.role === role)));
+      assert.ok(match, `${stop}: ${text} is a recorded step of ${role}`);
+      if (action.endsWith('…')) assert.ok(action.length <= 38, text);
+      const status = label.dataset.status || '';
+      assert.equal(status, ['error', 'retried', 'fixed'].includes(match.status) ? match.status : '', text);
+      if (status === 'error') errors++;
+      if (last.get(label) === 'error' && (status === 'retried' || status === 'fixed')) recovered++;
+      last.set(label, status);
+      actions.push(action);
+      labels.add(text);
+    }
+    assert.equal(new Set(actions).size, actions.length, `no step on two cursors at once: ${actions.join(' | ')}`);
+  }
+  assert.ok(labels.size >= 20, `${labels.size} distinct labels`);
+  assert.ok(errors > 0, 'recorded errors are shown');
+  assert.equal(mostErrors, 1, 'one error label at a time');
+  if (measurable(document)) assert.ok(pins.size >= 1, 'at least one pin with a recorded finding');
+  // QA pins carry real review findings of their stop (none invented).
+  const findings = { 'found frozen review notes': 'Capabilities', 'found tiny text': 'Projects' };
+  for (const [note, stop] of pins) assert.equal(findings[note], stop, `pin "${note}" on ${stop}`);
+  assert.ok(recovered > 0, 'an error label turns into its retry or fix');
+  assert.ok([...labels].every(text => !/dispatching|writing intro|checking/.test(text)), 'no choreography labels once the trace is in');
+  assertNoResidue(document);
+});
+
+test('the trace loads in parallel; a failed, missing or late trace leaves the tour and its labels as they were', async t => {
+  const calls = [];
+  const ok = setup(t, { width: 1280, fetch: url => { calls.push(String(url)); return Promise.resolve({ ok: true, json: () => Promise.resolve(traceData) }); } });
+  assert.equal(ok.controller.touring, true, 'the tour starts without waiting');
+  assert.equal(ok.controller.traceState, 'loading');
+  assert.deepEqual(calls, ['./trace/build-trace.json']);
+  assert.ok(await until(() => ok.controller.traceState === 'ready'));
+  for (const [name, fetch] of [
+    ['rejected', () => Promise.reject(new Error('offline'))],
+    ['404', () => Promise.resolve({ ok: false, json: () => Promise.resolve({}) })],
+    ['invalid', () => Promise.resolve({ ok: true, json: () => Promise.resolve({ spans: 'nope' }) })],
+    ['throws', () => { throw new Error('blocked'); }],
+  ]) {
+    const { controller } = setup(t, { width: 1280, fetch });
+    assert.ok(await until(() => controller.traceState === 'failed'), `${name}: ${controller.traceState}`);
+    assert.equal(controller.touring || controller.phase === 'ready', true, name);
+  }
+  // Lazy: nothing is fetched on returning visits, deep links or reduced motion;
+  // a Replay fetches it (once).
+  for (const options of [{ seen: true }, { hash: '#work' }, { reduced: true }]) {
+    const asked = [];
+    const quiet = setup(t, { width: 1280, ...options, fetch: url => { asked.push(url); return new Promise(() => {}); } });
+    assert.equal(quiet.controller.touring, false, JSON.stringify(options));
+    assert.deepEqual(asked, [], `${JSON.stringify(options)}: no trace request`);
+    assert.equal(quiet.controller.traceState, 'off');
+    if (options.reduced) continue;
+    quiet.document.querySelector('[data-agentic-replay]').click();
+    assert.deepEqual(asked, ['./trace/build-trace.json'], `${JSON.stringify(options)}: Replay loads it`);
+    quiet.controller.skip();
+    const toggle = dockOf(quiet.document).querySelector('[data-agentic-trace]');
+    toggle.click();
+    assert.equal(asked.length, 1, 'opening the panel does not ask again');
+  }
+  // Never arrives: the whole tour plays on choreography labels.
+  const late = setup(t, { width: 1280, frames: true, fetch: () => new Promise(() => {}) });
+  const labels = new Set();
+  while (late.controller.touring && late.clock.now() < 90000) {
+    late.clock.step(16);
+    late.document.querySelectorAll('.agentic-cursor.is-working .agentic-role').forEach(label => labels.add(label.textContent));
+  }
+  assert.equal(late.controller.traceState, 'loading');
+  assert.ok([...labels].some(text => /^copy(·\d)? · writing /.test(text)), 'choreography labels');
+  assert.match(dockOf(late.document).querySelector('.agentic-dock-summary').textContent, /^Built by \d+ agents in \d+ s$/);
+  const toggle = dockOf(late.document).querySelector('[data-agentic-trace]');
+  toggle.click();
+  const panel = late.document.getElementById(toggle.getAttribute('aria-controls'));
+  assert.match(panel.textContent, /Loading the recorded trace/);
+  assert.equal(traceRows(late.document).length, 0);
+  assertNoResidue(late.document);
+});
+
+test('on phones the hero stop keeps a compact dock beside the résumé button, then the full dock returns', t => {
+  const { document, window, controller, clock } = setup(t, { width: 390, height: 844, frames: true, layout: true });
+  const dock = dockOf(document);
+  assert.ok(dock.classList.contains('is-compact'), 'compact during the hero');
+  assert.ok(dock.querySelector('[data-agentic-skip]') && dock.querySelector('[data-agentic-trace]'), 'Skip and Trace stay');
+  if (measurable(document)) {
+    clock.step(400);
+    const cta = document.querySelector('.hero-actions .pill-button').getBoundingClientRect();
+    const box = dock.getBoundingClientRect();
+    const overlap = !(box.right <= cta.left || box.left >= cta.right || box.bottom <= cta.top || box.top >= cta.bottom);
+    assert.ok(cta.height > 0 && !overlap, `dock ${JSON.stringify(box)} clear of the résumé button ${JSON.stringify(cta)}`);
+    assert.ok(cta.bottom <= window.innerHeight, 'the résumé button is on screen');
+  }
+  stepTo(controller, clock, 1, 100);
+  assert.equal(dock.classList.contains('is-compact'), false, 'the full dock after the hero');
+  controller.skip();
+  assert.equal(dock.classList.contains('is-compact'), false);
 });
 
 test('2x speed finishes the tour faster without cancelling it, and is remembered separately', t => {
