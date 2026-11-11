@@ -10,10 +10,16 @@ const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 
 const html = await read('../web/index.html');
 const css = await read('../web/about-scenes.css');
+const styles = await read('../web/styles.css');
 const about = html.match(/<section id="about"[\s\S]*?<\/section>/)?.[0] ?? '';
 const intro = html.match(/<section id="introduction"[\s\S]*?<\/section>/)?.[0] ?? '';
 const art = intro.match(/<div class="cinematic-art"[\s\S]*?(?=<div class="cinematic-topline"|<\/section>)/)?.[0] ?? '';
 const attr = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+// The scroll-timeline blocks gated like the opening; the hold is the one that sets --cine-hold.
+const timed = [...css.matchAll(/@supports \(animation-timeline: view\(\)\) \{\s*@media ([^{]*) \{([\s\S]*?)\n {4}\}\n {2}\}/g)];
+const hold = timed.find(([, , body]) => body.includes('--cine-hold:'));
+const holdBody = hold?.[2] ?? '';
+const base = css.match(/@supports \(animation-timeline: view\(\)\) \{\s*@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n {4}\}/)?.[0] ?? '';
 
 test('the opening replaces the discover button and keeps the reading order', () => {
   assert.ok(about, '#about section');
@@ -30,7 +36,7 @@ test('the opening replaces the discover button and keeps the reading order', () 
 test('the pin only runs on wide, tall screens with motion and JS, behind scroll timelines or motion.js', () => {
   assert.match(ABOUT_OPEN_MEDIA, /prefers-reduced-motion: no-preference/);
   const gates = css.split(`@media ${ABOUT_OPEN_MEDIA}`).length - 1;
-  assert.equal(gates, 2, 'the CSS uses the same query as motion.js for the pin and its timeline');
+  assert.equal(gates, 3, 'the CSS uses the same query as motion.js for the pin, its timeline and the scene hold');
   const pin = css.slice(css.indexOf(`@media ${ABOUT_OPEN_MEDIA}`));
   assert.match(pin, /:root\[data-tour\] #about \.about-scene \{ position: sticky;/, 'pins only once the head script ran');
   assert.match(pin, /:root\[data-tour\] #about \{[^}]*pointer-events: none/, 'the overlap keeps #introduction clickable');
@@ -104,11 +110,12 @@ test('clouds sit behind the art and the copy, and stay decorative', () => {
 });
 
 test('the fall, tumble, halo, light and feathers only move with motion and scroll timelines; at rest otherwise', () => {
-  const block = css.match(/@supports \(animation-timeline: view\(\)\) \{\s*@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n {4}\}/)?.[0] ?? '';
   const moves = { '.beam-fall': 'figure-fall', '.beam-figure': 'figure-tumble', '.beam-halo': 'halo-fade', '.beam-feathers > span': 'feather-shed', '.cinematic-light::after': 'cine-heaven' };
   for (const [sel, name] of Object.entries(moves)) {
-    assert.ok(block.includes(`${sel} { animation: ${name} linear both; animation-timeline: --cine-scene;`), sel);
-    assert.equal(css.split(`animation: ${name}`).length - 1, 1, `no ungated ${name}`);
+    assert.ok(base.includes(`${sel} { animation: ${name} linear both; animation-timeline: --cine-scene;`), sel);
+    // Once in the motion block, and at most once more in the hold (itself behind scroll timelines and motion).
+    const total = css.split(`animation: ${name}`).length - 1;
+    assert.equal(total - (base.split(`animation: ${name}`).length - 1) - (holdBody.split(`animation: ${name}`).length - 1), 0, `no ungated ${name}`);
   }
   // The 45% keyframe (where /#introduction lands) equals the unanimated layout.
   assert.match(css, /@keyframes figure-fall \{[\s\S]*?45% \{ translate: 0 0; \}/);
@@ -131,4 +138,59 @@ test('the fall, tumble, halo, light and feathers only move with motion and scrol
   // Feathers fall slower than he does, so they lag above him.
   assert.match(css, /@keyframes feather-shed \{[\s\S]*?0% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--fall, \d+px\) \* -\.85\)/);
   assert.match(css, /@keyframes feather-shed \{[\s\S]*?100% \{ translate: calc\(cos\(var\(--beam-turn\)\) \* var\(--drift, \d+px\) \* \.4 \* var\(--d\)/);
+});
+
+test('the scene holds after the opening: gated like the opening, sticky for --cine-hold, and nothing else shifts', () => {
+  assert.ok(hold, 'a hold block');
+  assert.equal(hold[1], ABOUT_OPEN_MEDIA, 'same query as the opening (and motion.js), behind scroll timelines');
+  assert.match(holdBody, /^\s*:root\[data-tour\] #about \+ #introduction \{\s*--cine-hold: (\d+)svh;/, 'only where the opening runs (JS ran)');
+  const length = Number(holdBody.match(/--cine-hold: (\d+)svh/)[1]);
+  assert.ok(length >= 30 && length <= 80, `hold ${length}svh`);
+  // Every rule that makes room or pins lives in the hold block: no extra height or sticky stage elsewhere.
+  for (const token of ['--cine-hold:', 'margin-top: calc(24px + var(--cine-hold))', 'position: sticky; top: var(--cine-pad)', 'figure-float ease-in-out']) {
+    assert.equal(css.split(token).length - 1, 1, token);
+    assert.ok(holdBody.includes(token), `${token} is gated`);
+  }
+  // The stage sticks where the opening leaves it (the section's top padding, below the header bar) ...
+  assert.match(css, /\.cinematic \{ --cine-pad: clamp\(90px, 6vw, 110px\); padding: var\(--cine-pad\) /);
+  assert.match(styles, /--header-clear: 76px/);
+  // ... for exactly --cine-hold: its margin (24px + the caption's one mono line) collapses into the caption's
+  // larger top margin, so sticky ends 24px above the caption, as without the hold.
+  assert.match(holdBody, /\.cinematic-stage \{\s*position: sticky; top: var\(--cine-pad\); margin-bottom: calc\(24px \+ var\(--text-label\) \* 1\.55\);/);
+  assert.match(css, /\.cinematic-caption \{[^}]*margin-top: 24px;/);
+  assert.match(html, /<div class="cinematic-caption mono">/);
+  assert.match(styles, /\.mono \{[^}]*font-size: var\(--text-label\);[^}]*line-height: 1\.55;/);
+  // Ranges that ended at cover P% end at the same scroll position in the taller section.
+  for (const sel of ['.cinematic-stage', '.cinematic-light', '.cinematic-topline', '.cinematic-footer']) {
+    const before = base.match(new RegExp(`\\${sel} \\{[^}]*animation-range: (entry \\d+%) cover (\\d+)%;`));
+    assert.ok(before, sel);
+    const [, start, p] = before;
+    const after = holdBody.match(new RegExp(`\\${sel} \\{[^}]*animation-range: ${start} cover calc\\(${p}% - var\\(--cine-hold\\) \\* ([\\d.]+)\\);`));
+    assert.ok(after, `${sel} keeps cover ${p}%`);
+    assert.equal(Number(after[1]), Number(p) / 100, `${sel}: ${p}% of the hold`);
+  }
+  // /#introduction lands on the rest pose, inside the hold.
+  assert.match(holdBody, /scroll-margin-top: calc\(-1 \* var\(--header-clear\) - var\(--cine-hold\) \* \.4\);/);
+});
+
+test('Icarus finishes his fall inside the hold, lands 35-45% in, floats a little and drifts on after it', () => {
+  // The hold begins when #introduction's top meets the window's: 100svh after the cover range starts.
+  assert.match(holdBody, /--hold-in: 100svh;/);
+  const land = Number(holdBody.match(/--hold-land: calc\(var\(--hold-in\) \+ var\(--cine-hold\) \* ([\d.]+)\);/)?.[1]);
+  assert.ok(land >= .35 && land <= .45, `lands ${land} into the hold`);
+  assert.match(holdBody, /--hold-out: calc\(var\(--hold-in\) \+ var\(--cine-hold\)\);/);
+  // The fall keeps its keyframes (rest pose at 45%), stretched so 45% falls on the landing: the last part of the
+  // fall plays in the hold, then the drift carries on through and after it. Figure, halo, feathers and light share it.
+  const fall = 'cover 0% cover calc(var(--hold-land) / .45)';
+  assert.ok(holdBody.includes(`:is(.beam-figure, .beam-halo, .beam-feathers > span),\n      :root[data-tour] #about + #introduction .cinematic-light::after { animation-range: ${fall}; }`));
+  assert.match(holdBody, new RegExp(`\\.beam-fall \\{\\s*animation: figure-fall linear both, figure-float ease-in-out none; animation-composition: replace, add; animation-timeline: --cine-scene, --cine-scene;\\s*animation-range: ${fall.replace(/[().*/]/g, '\\$&')}, cover var\\(--hold-land\\) cover var\\(--hold-out\\);`));
+  // Still at the landing and the release; a few px along the shaft and a slight sway in between.
+  const float = css.match(/@keyframes figure-float \{[\s\S]*?\n {2}\}/)?.[0] ?? '';
+  assert.match(float, /0%, 100% \{ translate: 0 0; rotate: 0deg; \}/);
+  const tilts = [...float.matchAll(/rotate: (-?[\d.]+)deg/g)].map(match => Math.abs(Number(match[1])));
+  assert.ok(Math.max(...tilts) >= 1.5 && Math.max(...tilts) <= 3, `sway ${tilts}`);
+  const shift = Number(float.match(/var\(--float, (\d+)px\)/)?.[1]);
+  const drifts = [...css.matchAll(/--drift: (\d+)px/g)].map(match => Number(match[1]));
+  assert.ok(shift >= 2 && shift <= 8 && shift < Math.min(...drifts), `float ${shift}px stays inside the drift's clearance`);
+  assert.doesNotMatch(float, /--float:/, 'one default');
 });

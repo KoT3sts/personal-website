@@ -5,7 +5,8 @@
    seam. The "opening" (wide screens with JS and motion, see @layer motion):
    the scene pins while the page scrolls through #about; the panel widens into
    a full-screen window, ABOUT ME recedes and #introduction, pulled up under
-   the pinned scene, shows through as one camera move. */
+   the pinned scene, shows through as one camera move; then the light scene holds still for a while (the hold)
+   while Icarus lands. */
 
 /* Progress through the pinned #about: 0 = the ABOUT ME panel, 1 = the window
    fills the screen and #introduction sits exactly behind it. Driven by a
@@ -39,7 +40,7 @@
   /* V04: Icarus falling out of the light shaft, with copy kept on the panel's perimeter. --beam-turn is the shaft's
      angle; the figure rests low in the open area between the topline (--art-top) and the copy (--foot-top, the
      footer's top margin), held --art-clear above the copy so his later drift and tumble can never reach it. */
-  .cinematic { padding: clamp(90px, 6vw, 110px) var(--gutter) 36px; overflow: clip; background: #101114; }
+  .cinematic { --cine-pad: clamp(90px, 6vw, 110px); padding: var(--cine-pad) var(--gutter) 36px; overflow: clip; background: #101114; }
   .cinematic-stage { --beam-turn: 128deg; --art-top: 64px; --foot-top: 440px; position: relative; isolation: isolate; min-height: max(750px, 86svh); border: 1px solid #2e3037; border-radius: 14px; overflow: clip; background: radial-gradient(ellipse at 48% 42%, #191b25 0%, #0a0b11 43%, #090a10 80%); box-shadow: inset 0 0 100px #0005; }
   .cinematic-stage::after { content: ""; pointer-events: none; position: absolute; inset: 0; z-index: -1; opacity: .12; background-image: url("./assets/grain.svg"); }
   /* Dark cloud banks at the edges, between the light and the figure, so the shaft reads as light breaking through.
@@ -136,10 +137,11 @@
       .cinematic-light { animation: cine-light-sweep linear both; animation-timeline: --cine-scene; animation-range: entry 5% cover 50%; }
       .cinematic-light::before { animation: cine-streak-drift linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
       /* Icarus drops out of the bright end of the shaft (--fall, from above the stage's top edge) while the scene
-         comes up, tumbling, and lands in his rest pose at 45% (about where /#introduction lands); from there he only
-         drifts a little further (--drift) so he never reaches the copy while it is read. The feathers he sheds fall
-         slower, so they lag behind and above him, turning as they go; the halo thins as he leaves the light. The
-         45% pose is also the rest state without support, with reduced motion, without JS and in print. */
+         comes up, tumbling, and lands in his rest pose at 45% (about where /#introduction lands; with the hold, see
+         below, 45% is moved into it); from there he only drifts a little further (--drift) so he never reaches the
+         copy while it is read. The feathers he sheds fall slower, so they lag behind and above him, turning as they
+         go; the halo thins as he leaves the light. The 45% pose is also the rest state without support, with reduced
+         motion, without JS and in print. */
       .cinematic-light::after { animation: cine-heaven linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
       .beam-fall { animation: figure-fall linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
       .beam-figure { animation: figure-tumble linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
@@ -241,6 +243,53 @@
     }
   }
   @keyframes about-open { from { --about-p: 0; } to { --about-p: 1; } }
+
+  /* The hold. Where the opening runs on a scroll timeline, the frame it hands over (#introduction's top at the
+     window's top, the stage --cine-pad down, just under the header bar) stands still for --cine-hold more scrolling:
+     the stage sticks there while #introduction, grown by --cine-hold above its caption, scrolls on, then releases.
+     Sticky stops where the stage's margin box meets the section's content box (the caption's bottom), so the stage
+     carries a margin of 24px plus the caption's one mono line; it collapses into the caption's larger top margin, and
+     the stage sticks for exactly --cine-hold and ends 24px above the caption, as without the hold. Icarus finishes his
+     fall inside the hold, lands in the rest pose 40% of the way in, floats until the release, and his drift carries
+     on after it. The other scene ranges below are rewritten so they play exactly as without the hold. Without scroll
+     timelines (motion.js drives the opening) there is no hold and no extra height. */
+  @supports (animation-timeline: view()) {
+    @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+      :root[data-tour] #about + #introduction {
+        --cine-hold: 50svh;
+        /* Offsets from the start of --cine-scene's cover range: 100svh puts #introduction's top at the window's top. */
+        --hold-in: 100svh;
+        --hold-land: calc(var(--hold-in) + var(--cine-hold) * .4);
+        --hold-out: calc(var(--hold-in) + var(--cine-hold));
+        /* /#introduction lands on the rest pose, inside the hold. */
+        scroll-margin-top: calc(-1 * var(--header-clear) - var(--cine-hold) * .4);
+      }
+      :root[data-tour] #about + #introduction .cinematic-stage {
+        position: sticky; top: var(--cine-pad); margin-bottom: calc(24px + var(--text-label) * 1.55);
+        animation-range: entry 0% cover calc(42% - var(--cine-hold) * .42);
+      }
+      :root[data-tour] #about + #introduction .cinematic-caption { margin-top: calc(24px + var(--cine-hold)); }
+      /* cover P% of the taller section, less P% of the hold, is the same scroll position as cover P% without it. */
+      :root[data-tour] #about + #introduction .cinematic-light { animation-range: entry 5% cover calc(50% - var(--cine-hold) * .5); }
+      :root[data-tour] #about + #introduction .cinematic-topline { animation-range: entry 15% cover calc(45% - var(--cine-hold) * .45); }
+      :root[data-tour] #about + #introduction .cinematic-footer { animation-range: entry 25% cover calc(50% - var(--cine-hold) * .5); }
+      /* The fall keeps its keyframes; its range ends where 45% (the rest pose) falls on --hold-land. */
+      :root[data-tour] #about + #introduction :is(.beam-figure, .beam-halo, .beam-feathers > span),
+      :root[data-tour] #about + #introduction .cinematic-light::after { animation-range: cover 0% cover calc(var(--hold-land) / .45); }
+      /* The float runs from the landing to the release and is still at both ends: its few px along the shaft are added
+         to the fall and drift; its sway turns figure and halo about the body point (nothing else turns .beam-fall). */
+      :root[data-tour] #about + #introduction .beam-fall {
+        animation: figure-fall linear both, figure-float ease-in-out none; animation-composition: replace, add; animation-timeline: --cine-scene, --cine-scene;
+        animation-range: cover 0% cover calc(var(--hold-land) / .45), cover var(--hold-land) cover var(--hold-out);
+      }
+    }
+  }
+  /* A few px down the shaft and back up past the rest pose, swaying +-2.5deg. */
+  @keyframes figure-float {
+    0%, 100% { translate: 0 0; rotate: 0deg; }
+    40% { translate: calc(cos(var(--beam-turn)) * var(--float, 5px)) calc(sin(var(--beam-turn)) * var(--float, 5px)); rotate: 2.5deg; }
+    78% { translate: calc(cos(var(--beam-turn)) * var(--float, 5px) * -.5) calc(sin(var(--beam-turn)) * var(--float, 5px) * -.5); rotate: -2.5deg; }
+  }
 
   /* Without scroll timelines: a one-time, decoration-only settle (motion.js sets data-scene). */
   @supports not (animation-timeline: view()) {

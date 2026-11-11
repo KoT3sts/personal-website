@@ -286,6 +286,8 @@ export function initMotion(document, window, { entrance } = {}) {
   // The About opening is CSS only where scroll timelines exist. Elsewhere this
   // drives the same --about-p from #about's position while it is pinned (the
   // CSS pins it whenever JS runs on a wide, tall-enough screen with motion).
+  // The light scene's hold after the opening needs scroll timelines (Icarus's
+  // fall is timed on one), so here the scene simply scrolls on, as before.
   function initAboutOpening() {
     const about = document.querySelector('#about');
     if (!about || window.CSS?.supports?.('animation-timeline: view()')) return null;
