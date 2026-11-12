@@ -35,6 +35,10 @@ Project content sources: BarkingVillage/README.md; shared Work Helper CONTEXT.md
 
 ## Recruiter-ready update — November 7, 2026
 
-Primary audience confirmed: recruiters and hiring managers for ML / AI engineering roles. The visitor action is to download the résumé, open LinkedIn, or email. Do not add an explicit "open to work" banner; the owner is employed and the site is public.
+Primary audience confirmed: recruiters and hiring managers for ML / AI engineering roles. The visitor action is to download the résumé, open LinkedIn, or email. Do not add an explicit "open to work" banner; the owner is employed and the site is public. **Superseded on November 12, 2026:** Cesar decided the hero will carry an availability line, "Open to AI/ML Engineer roles · NYC area, hybrid or remote". A later phase adds it; until then the site shows no availability line.
 
 Owner-supplied facts (used verbatim or condensed, nothing added): role and positioning (Machine Learning Engineer; ML and LLM systems on AWS; Morristown, NJ, NYC area), ADP titles and dates, public-safe experience highlights, Kennesaw State University BCI research, skills, education (Georgia Tech M.S. CS expected Dec 2028; KSU B.S. CS 2021–2024, Magna Cum Laude), spoken languages, two new projects (Companionship Chatbot, Multi-Agent Workflow), and approved contact links. The owner approved publishing `web/assets/Cesar_Tortolero_Resume.pdf`, including the phone number inside the PDF; the phone number must not appear in the HTML.
+
+## Recruiter copy pass — November 12, 2026
+
+Cesar approved the recommended copy fixes for recruiters: plain section headings (Experience, Projects, Skills & Education), BCI work described as "presented" rather than "published", the 250+ figure worded as the résumé states it ("the platform now runs 250+ agents"), no "from research to production" line, side projects labelled as side projects, dates instead of internal round numbers and commit hashes, and the agent-evaluation essay framed as shown on public evidence only.

@@ -68,8 +68,8 @@
         <h1 id="ea-title" class="lab-title">How I evaluate agents</h1>
         <div class="cs-grid cs-summary">
           <div class="cs-main">
-            <p class="cs-lead lab-lead">What I would measure and how I would look for failures, with evidence from the lab and the build trace on this site.</p>
-            <p class="lab-disclaimer">The method sections describe how I approach agent evaluation. They are not a report on any employer system or a record of past practice. The facts and numbers come from this site: my homepage, the <a class="lab-link" href="./sentiment-eval.html">evaluation lab</a>, <a class="lab-link" href="./build-trace.html">the recorded agent run</a> that built the site and, for the figures, the exported telemetry of the agent sessions behind it.</p>
+            <p class="cs-lead lab-lead">How I evaluate agents, shown on public evidence only: the agents that built this site and an open-data lab. No employer systems or data appear here.</p>
+            <p class="lab-disclaimer">The facts and numbers come from this site: my homepage, the <a class="lab-link" href="./sentiment-eval.html">evaluation lab</a>, <a class="lab-link" href="./build-trace.html">the recorded agent run</a> that built the site and, for the figures, the exported telemetry of the agent sessions behind it.</p>
           </div>
           <dl class="cs-rail cs-meta">
             <div><dt class="mono">Topic</dt><dd class="mono">Agent evaluation</dd></div>
@@ -100,7 +100,7 @@
                 <li class="ea-tile ea-tile-missing"><span class="mono ea-tile-label">Task success</span><span class="ea-tile-value">Not measured</span><span class="ea-tile-note">Needs an expected outcome for each task. The telemetry has no task labels.</span></li>
                 <li class="ea-tile ea-tile-missing"><span class="mono ea-tile-label">Groundedness</span><span class="ea-tile-value">Not measured</span><span class="ea-tile-note">Needs each claim checked against its sources. The telemetry keeps no text.</span></li>
                 <li class="ea-tile"><span class="mono ea-tile-label">Tool-call errors</span><span class="ea-tile-value"><span data-ea-m="rate">1.6</span>%</span><span class="ea-tile-note"><span data-ea-m="errors">136</span> of <span data-ea-m="calls">8,271</span> tool calls failed.</span></li>
-                <li class="ea-tile"><span class="mono ea-tile-label">Latency and cost</span><span class="ea-tile-value"><span data-ea-m="p50">5.5</span> s</span><span class="ea-tile-note">Median model step; p90 <span data-ea-m="p90">22.0</span> s over <span data-ea-m="steps">6,290</span> steps. <span data-ea-m="perCall">801</span> generated tokens per tool call. Per successful task needs the success labels.</span></li>
+                <li class="ea-tile"><span class="mono ea-tile-label">Latency and cost</span><span class="ea-tile-value"><span data-ea-m="p50">5.5</span> s</span><span class="ea-tile-note">Median model step; p90 <span data-ea-m="p90">22.0</span> s over <span data-ea-m="steps">6,290</span> steps. <span data-ea-m="perCall">801</span> generated tokens per tool call, all traces pooled. Per successful task needs the success labels.</span></li>
               </ul>
               <div class="ea-split" data-ea-live hidden>
                 <div class="ea-split-head">
@@ -136,7 +136,7 @@
                       <tr><th scope="row">Groundedness</th><td>Not measured, no text kept</td></tr>
                       <tr><th scope="row">Tool-call errors</th><td>136 of 8,271 calls failed, 1.6%</td></tr>
                       <tr><th scope="row">Model step latency</th><td>median 5.5 s, p90 22.0 s, 6,290 steps</td></tr>
-                      <tr><th scope="row">Generated tokens per tool call</th><td>801, from 6,623,374 output and reasoning tokens</td></tr>
+                      <tr><th scope="row">Generated tokens per tool call, all traces pooled</th><td>801, from 6,623,374 output and reasoning tokens</td></tr>
                       <tr><th scope="row">Lab F1 at threshold 0.50</th><td>A 0.795, B 0.803</td></tr>
                       <tr><th scope="row">Lab IMDb accuracy at 0.50</th><td>A 0.775, B 0.750</td></tr>
                     </tbody>
@@ -304,7 +304,7 @@
                 </div>
                 <div class="ea-pairs" data-ea-pairs></div>
               </div>
-              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 61 of the 69, placed by how many calls it made (log scale). Point at a dot to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and round all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out.</figcaption>
+              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 61 of the 69, placed by how many calls it made (log scale). Point at a dot to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and day all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out.</figcaption>
               <details class="ea-data" open>
                 <summary>Data table</summary>
                 <div class="lab-table-wrap">

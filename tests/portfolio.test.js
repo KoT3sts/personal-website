@@ -131,7 +131,7 @@ test('explorer keys open the ring and step through, the index selects and is ann
   assert.equal(document.querySelector('.explorer-caption-title').textContent, 'Work Helper');
   assert.equal(document.querySelector('.explorer-index-count').textContent, '05 / 06');
   await new Promise(resolve => setTimeout(resolve, 250));
-  assert.equal(document.querySelector('.explorer-live').textContent, 'Work Helper, project 5 of 6, opportunity discovery.');
+  assert.equal(document.querySelector('.explorer-live').textContent, 'Work Helper, project 5 of 6, side project.');
   // The caption shows the active project's facts, read from its story; only that panel is live.
   const panels = [...document.querySelectorAll('.explorer-caption .explorer-facts-panel')];
   assert.equal(panels.length, 6);
@@ -263,24 +263,23 @@ test('Open the work: three large cards between Work and Skills, each with a sent
   assert.equal(lab.nextElementSibling.id, 'skills');
   assert.equal(lab.classList.contains('dark-section'), false, 'light, between the light Work and the dark Skills');
   assert.equal(lab.getAttribute('aria-labelledby'), 'lab-title');
-  assert.match(lab.querySelector('.section-top').textContent, /^05 \/ OPEN THE WORK/);
-  assert.equal(lab.querySelector('#lab-title').textContent.replace(/\s+/g, ' ').trim(), 'OPEN THE WORK.');
+  assert.match(lab.querySelector('.section-top').textContent, /^05 \/ INTERACTIVE DEMOS/);
+  assert.equal(lab.querySelector('#lab-title').textContent.replace(/\s+/g, ' ').trim(), 'TRY THE WORK.');
   assert.equal(lab.querySelector('.open-heading > p').textContent, 'Three things you can try, not just read.');
   const cards = [...lab.querySelectorAll('.open-cards > .open-card')];
   assert.deepEqual(cards.map(card => [card.querySelector('h3').textContent, card.querySelector('.open-card-text').textContent, card.querySelector('.work-preview').dataset.preview, card.querySelector('a.open-card-link').getAttribute('href')]), [
-    ['Agent observability', 'Real traces from the agents that built this site, with evaluators on top. Filter, sort and open any trace.', 'obs', './lab/agent-observability.html'],
+    ['Agent observability', 'A dashboard of the AI coding agents that built this site: every step, every failure, and automated quality checks on each run.', 'obs', './lab/agent-observability.html'],
     ['Replay the redesign', 'Two days of redesign (Nov 10–11), step by step: 52 recorded steps, errors and recoveries included.', 'trace', './lab/build-trace.html'],
-    ['How I evaluate agents', 'Trace, classify, test, gate.', 'loop', './lab/evaluating-agents.html'],
+    ['How I evaluate agents', 'How I find agent failures and stop them from shipping.', 'loop', './lab/evaluating-agents.html'],
   ]);
   // The summaries say something without scripts, and only figures the lab pages state.
   const stats = card => [...card.querySelectorAll('.open-stats > div')].map(row => `${row.querySelector('dt').textContent} ${row.querySelector('dd').textContent}`);
   // The observability summary is the same numbers work-previews.js computes from the JSON
   // (tests/work-previews.test.js checks those against the file).
   assert.deepEqual(stats(cards[0]), ['Traces 69', 'Tool calls 8,271', 'Tool error rate 1.6%']);
-  assert.equal(cards[0].querySelector('.open-note').textContent, 'NOV 7–12, 2026 · 6 PASS/FAIL CHECKS · 7 EVALUATORS, NO LLM JUDGE');
-  assert.deepEqual(stats(cards[1]), ['Steps 52', 'Errors recovered 6 of 8', 'Commits 16']);
-  assert.match(cards[1].querySelector('.open-note').textContent, /^NOV 10–11, 2026 · /);
-  assert.match(cards[1].querySelector('.open-note').textContent, /RECOVERED: A RETRY OR FIX IS RECORDED/, 'what recovered means, as the trace page says it');
+  assert.equal(cards[0].querySelector('.open-note').textContent, 'NOV 7–12, 2026 · 7 AUTOMATED CHECKS · NO LLM JUDGE');
+  assert.deepEqual(stats(cards[1]), ['Steps 52', 'Errors retried or fixed 6 of 8', 'Commits 16']);
+  assert.equal(cards[1].querySelector('.open-note').textContent, 'NOV 10–11, 2026');
   assert.deepEqual([...cards[2].querySelectorAll('.open-loop > li > .mono')].map(step => step.textContent), ['TRACE', 'CLASSIFY', 'FIXED TEST SET', 'GATE']);
   // The sentiment lab is not on the homepage list any more; it stays linked from the chatbot story.
   assert.equal(document.querySelectorAll('a[href="./lab/sentiment-eval.html"]').length, 1);
@@ -363,7 +362,7 @@ test('home charts: the proof figures keep their final text, four capability card
   initHomeCharts(document, window);
   // Without an observer (or with reduced motion) nothing counts: final figures only, as before.
   assert.deepEqual([...document.querySelectorAll('.hero-proof .proof-figure')].map(figure => figure.textContent), before);
-  assert.equal(document.querySelectorAll('.proof-count').length, 2, '350 and 250+ (Minutes stays text)');
+  assert.equal(document.querySelectorAll('.proof-count').length, 2, '350 and 250+ ("Day to minutes" stays text)');
   for (const count of document.querySelectorAll('.proof-count')) {
     assert.equal(count.querySelector('.proof-count-ink').getAttribute('aria-hidden'), 'true');
     assert.equal(count.classList.contains('is-counting'), false);
@@ -401,11 +400,11 @@ test('skill tags used on a card or role are toggle buttons that mark those place
   window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
   const { skills } = initHomeCharts(document, window);
   const buttons = [...document.querySelectorAll('#skills .skill-list .tag-list > li > button.skill-tag')];
-  assert.deepEqual(buttons.map(button => button.textContent), ['Python', 'TypeScript', 'MCP', 'MLflow', 'Amazon SageMaker', 'AWS Lambda']);
+  assert.deepEqual(buttons.map(button => button.textContent), ['Python', 'TypeScript', 'MCP', 'LangChain', 'MLflow', 'AWS Bedrock AgentCore', 'Amazon SageMaker', 'AWS Lambda', 'Terraform', 'FastAPI']);
   buttons.forEach(button => { assert.equal(button.type, 'button'); assert.equal(button.getAttribute('aria-pressed'), 'false'); });
   // Tags nothing else lists stay plain text.
   const plain = [...document.querySelectorAll('#skills .skill-list .tag-list > li')].filter(item => !item.querySelector('button')).map(item => item.textContent);
-  assert.deepEqual(plain, ['SQL', 'RAG', 'LLM evaluation', 'scikit-learn', 'TensorFlow', 'Docker']);
+  assert.deepEqual(plain, ['SQL', 'RAG', 'LLM evaluation', 'scikit-learn', 'TensorFlow', 'Docker', 'pytest']);
   const usage = document.querySelector('#skills .skill-usage');
   const live = document.querySelector('#skills .skill-usage-live');
   assert.equal(usage.hasAttribute('aria-live'), false, 'the visible line is not live');

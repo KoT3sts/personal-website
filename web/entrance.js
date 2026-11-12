@@ -361,7 +361,6 @@ export const TOUR_STOPS = [
     { sel: '#approach-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.approach-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
     { sel: '.approach-list > details', roles: ['copy', 'type', 'links'], kind: 'place', multi: 3, label: true, name: 'summary > span:nth-child(2)', act: 'placing', sub: ':scope > p', kids: '.approach-focus li, .approach-link' },
-    { sel: '.closing-note > .mono', within: '#notes', role: 'copy', kind: 'type', act: 'writing note line', charMs: 35 },
     { sel: '.closing-note > p', within: '#notes', role: 'type', kind: 'type', act: 'setting closing line', charMs: 80 },
     { sel: '.approach-list', role: 'a11y', kind: 'review', act: 'checking disclosures' },
     { sel: '.approach-heading', role: 'qa', kind: 'review', act: 'checking alignment' },

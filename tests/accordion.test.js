@@ -18,7 +18,7 @@ test('the approach section is a light scene, so the header turns light over it',
   assert.match(openTag, /class="approach"/);
   assert.doesNotMatch(openTag, /dark-section/);
   assert.match(openTag, /aria-labelledby="approach-title"/);
-  assert.match(section, /<h2 id="approach-title">MAKE IT WORK\. <br><span>MAKE IT MATTER\.<\/span><\/h2>/);
+  assert.match(section, /<h2 id="approach-title">HOW I <br><span>WORK\.<\/span><\/h2>/);
 });
 
 test('three native disclosures form one exclusive group with the first row open', () => {
@@ -35,7 +35,7 @@ test('row titles and body copy carry one real example each', () => {
   const bodies = rows.map(row => strip((/<\/summary><p>([\s\S]*?)<\/p>/.exec(row) || [])[1] || ''));
   assert.deepEqual(bodies, [
     'Watch how the work gets done today before adding a feature. Checking firewall rules across our 24 AWS accounts took a developer about a day of manual testing, one account at a time. Asking why led to a diagnostics app that runs the same checks from one screen in minutes.',
-    'A working version makes an idea easier to question. The first firewall checker was a small local app, rough but real. Using it showed which checks mattered, and those became a serverless API that tests accounts in parallel with bounded retries.',
+    'A working version makes an idea easier to question. For my capstone, the companionship chatbot ran as a real app with logins, chat and past conversations, and its sentiment module was tested by feeding it labelled prompts and checking the emotion it named.',
     'The details are part of the work. Each of the 18+ workshops showed where developers got stuck, such as missing secrets, access groups and network rules, and the onboarding guide changed to match. It has been revised more than 40 times.',
   ]);
 });

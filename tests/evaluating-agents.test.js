@@ -261,7 +261,7 @@ test('the static fallbacks match the telemetry and the lab JSON', () => {
     ['Groundedness', 'Not measured, no text kept'],
     ['Tool-call errors', `${T.errors} of ${comma(T.calls)} calls failed, ${T.rate}%`],
     ['Model step latency', `median ${T.p50} s, p90 ${T.p90} s, ${comma(T.llm.n)} steps`],
-    ['Generated tokens per tool call', `${T.perCall}, from ${comma(T.tokens)} output and reasoning tokens`],
+    ['Generated tokens per tool call, all traces pooled', `${T.perCall}, from ${comma(T.tokens)} output and reasoning tokens`],
     ['Lab F1 at threshold 0.50', `A ${a.f1.toFixed(3)}, B ${b.f1.toFixed(3)}`],
     ['Lab IMDb accuracy at 0.50', `A ${T.ref.slices.A.imdb.accuracy.toFixed(3)}, B ${T.ref.slices.B.imdb.accuracy.toFixed(3)}`],
   ]);

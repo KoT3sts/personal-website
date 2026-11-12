@@ -58,8 +58,9 @@ test('the ABOUT ME panel keeps its highlight dim enough for 4.5:1 text', () => {
   }
 });
 
-test('the skills title is sized so TRAINING. keeps its period', () => {
-  assert.match(styles, /\.skills-layout h2 \{ font-size: clamp\(44px, 5\.7vw, 100px\);/);
+test('the skills title is sized so EDUCATION. keeps its period', () => {
+  // EDUCATION. is about 5.5em wide; the left column is about 27% of the viewport (36px gap from 761 to 1100).
+  assert.match(styles, /\.skills-layout h2 \{ font-size: clamp\(36px, 4\.8vw, 92px\);/);
 });
 
 test('the closing note sets "making." in the real Archivo Italic, not Georgia or a faked slant', () => {

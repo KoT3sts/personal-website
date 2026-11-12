@@ -307,8 +307,8 @@
               <h3>Review before commit</h3>
               <p class="obs-eval-q">Was the change reviewed before it was saved?</p>
               <p><strong>Rule.</strong> Passes when a quality-reviewer run finished after the previous commit in the same session (or the start of the window) and before the trace’s last commit.</p>
-              <p class="mono obs-eval-count"><span data-pass>10</span> pass · <span data-fail>18</span> fail · scored on <span data-scored>28</span> traces</p>
               <p class="obs-eval-note">Needs context. The check looks back only to the previous commit in the same session, so when a reviewed commit is followed by a quick “go ahead” turn that commits small fixes, that later commit has no review of its own and fails, even though the work around it was reviewed. Read the fails trace by trace before calling them gaps.</p>
+              <p class="mono obs-eval-count"><span data-pass>10</span> pass · <span data-fail>18</span> fail · scored on <span data-scored>28</span> traces</p>
             </li>
             <li data-eval="tests_run_before_commit">
               <h3>Tests before commit</h3>
@@ -340,7 +340,7 @@
           </div>
           <ul class="cs-main cs-points lab-points">
             <li><strong>Where it comes from.</strong> OpenCode, the coding agent I work in, keeps every session in a local database. A script reads it read-only and writes <a class="lab-link" href="./data/agent-traces.json">agent-traces.json</a> in an OpenInference-style shape: agent, LLM, tool and merged-step spans with times, status and token counts.</li>
-            <li><strong>What it covers.</strong> The website work from November 7 to 12, 2026: <span data-requests>68</span> requests and one automatic context compaction in five sessions, with 65 subagent sessions nested under the calls that started them. Unrelated work in the same sessions is left out.</li>
+            <li><strong>What it covers.</strong> The website work from November 7 to 12, 2026: <span data-requests>68</span> requests and one automatic context compaction in five sessions, with 65 subagent sessions nested under the calls that started them. Some sessions ran more than once, so the dashboard counts 88 subagent runs. Unrelated work in the same sessions is left out.</li>
             <li><strong>What is never published.</strong> Prompts, responses, reasoning, tool inputs and outputs, file names and contents, and commands. A shell call carries only a category (test, build, commit and so on). Calls to tools outside an allowlist are dropped: <span data-dropped>24</span> of them.</li>
             <li><strong>What is estimated.</strong> Model latency, from message timings. Tool and agent times come straight from recorded timestamps.</li>
             <li><strong>Merged spans.</strong> 1,050 of 14,718 spans are published one by one; runs of ordinary steps become summary spans that keep their step, tool-call, error and token counts. Every total, percentile and evaluator result is computed from all spans before merging.</li>

@@ -410,8 +410,10 @@ test('chart tables match the values recorded in the ledger, row by row', async (
   // Totals the captions state.
   const sum = (slug, first) => chartTables(html[slug]).find(table => table[0]?.label === first).reduce((total, row) => total + Number(digits(row.cells[0])), 0);
   assert.equal(sum('agent-workflow', 'nov 7'), 55, 'commits per day add up to 55');
-  assert.match(plain(mainOf(html['agent-workflow'])), /55 commits over five days, through round 8/);
-  assert.match(html['agent-workflow'], /through round 8 \(commit 92a6746\)/, 'the site counts are pinned to a commit');
+  assert.match(plain(mainOf(html['agent-workflow'])), /55 commits over five days, through November 11, 2026/);
+  assert.match(plain(mainOf(html['agent-workflow'])), /stop at a fixed commit from November 11/, 'the site counts are pinned to a commit');
+  // Dates, not internal round numbers or commit hashes, in the visible text.
+  assert.doesNotMatch(plain(mainOf(html['agent-workflow'])), /\brounds?\b|\b[0-9a-f]{7}\b/i, 'no rounds or commit hashes');
   assert.equal(sum('companion-chatbot', 'joy'), 10, 'the test set has 10 prompts');
   assert.ok(sum('agent-workflow', 'general purpose') <= 527, 'the top roles fit in 527 delegations');
 });

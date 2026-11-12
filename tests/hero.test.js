@@ -146,15 +146,17 @@ test('the proof strip: three facts under the intro, each linking to where it is 
   assert.ok(hero.indexOf('class="hero-intro"') < hero.indexOf('class="hero-proof"') && hero.indexOf('class="hero-proof"') < hero.indexOf('class="hero-actions'), 'after the intro, before the actions (reading order)');
   const links = [...strip.matchAll(/<li><a href="(#[a-z]+)"><span class="proof-figure">([\s\S]*?)<\/span> <span class="proof-label mono">([^<]+?) <span class="icon icon-arrow-s" aria-hidden="true"><\/span><\/span><\/a><\/li>/g)];
   assert.deepEqual(links.map(([, href]) => href), ['#experience', '#experience', '#approach']);
-  assert.deepEqual(links.map(([, , figure]) => plainText(figure)), ['~ 350', '250+', 'Minutes']);
-  assert.deepEqual(links.map(([, , , label]) => label), ['Developers I helped train', 'Agents built by teams I helped train', 'Firewall checks that took about a day']);
+  assert.deepEqual(links.map(([, , figure]) => plainText(figure)), ['~ 350', '250+', 'Day minutes']);
+  assert.deepEqual(links.map(([, , , label]) => label), ['Developers I helped train', 'Agents running on the platform I teach', 'Firewall checks across 24 AWS accounts']);
+  // The arrow in "Day → minutes" is a drawn icon; screen readers hear "Day to minutes".
+  assert.match(links[2][2], /^Day <span class="icon icon-arrow-e" aria-hidden="true"><\/span><span class="visually-hidden">to <\/span>minutes$/);
   // "~" is not read out: screen readers hear "About 350".
   assert.match(links[0][2], /^<span aria-hidden="true">~<\/span><span class="visually-hidden">About <\/span>350$/);
   // Every fact is stated where the link lands.
   const experience = plainText(sectionOf('experience'));
   const approach = plainText(sectionOf('approach'));
   assert.match(experience, /to ~350 developers/);
-  assert.match(experience, /Those teams have built 250\+ agents/);
+  assert.match(experience, /The platform now runs 250\+ agents/);
   assert.match(approach, /about a day of manual testing[^.]*\. Asking why led to a diagnostics app that runs the same checks from one screen in minutes\./);
   // The build tour sets it during the hero stop (one grouped job, so the label cap holds).
   const entrance = await read('../web/entrance.js');
@@ -175,7 +177,8 @@ test('each headline figure is stated once on the page (plus the strip), where it
   assert.equal(count(/250\+/g), 1, '250+: the Experience bullet');
   assert.equal(count(/18\+/g), 2, '18+: the Experience bullet and the Approach story');
   assert.equal(count(/\b24(?:-account| AWS accounts)/g), 2, '24 accounts: the Experience bullet and the Approach story');
-  assert.equal(count(/about a day/g), 2, 'a day to minutes: the Experience bullet and the Approach story');
+  assert.equal(count(/about a day/g), 1, 'a day to minutes: the Approach story only (plus the strip)');
+  assert.equal(count(/firewall/gi), 2, 'the firewall app: the Experience bullet and one Approach story');
   assert.doesNotMatch(html, /class="xp-marks"/, 'no milestone rows repeating the bullets');
   const capabilities = plainText(sectionOf('capabilities'));
   assert.doesNotMatch(capabilities, /~350|250\+|18\+|\b24\b|about a day/);
@@ -183,14 +186,15 @@ test('each headline figure is stated once on the page (plus the strip), where it
   for (const [, chips] of sectionOf('approach').matchAll(/<ul class="approach-focus mono" aria-label="In practice">([\s\S]*?)<\/ul>/g)) assert.doesNotMatch(chips, /\d|→/, chips);
 });
 
-test('skills: a compact grid of twelve core skills in four groups, all from the earlier list', () => {
+test('skills: a compact grid of core skills in five groups, each on the résumé', () => {
   const list = html.match(/<dl class="skill-list">([\s\S]*?)<\/dl>/)[1];
   const groups = [...list.matchAll(/<div><dt>([^<]+)<\/dt><dd><ul class="tag-list">([\s\S]*?)<\/ul><\/dd><\/div>/g)].map(([, name, tags]) => [name.replace('&amp;', '&'), [...tags.matchAll(/<li>([^<]+)<\/li>/g)].map(match => match[1])]);
   assert.deepEqual(groups, [
     ['Languages', ['Python', 'SQL', 'TypeScript']],
-    ['LLMs & agents', ['MCP', 'RAG', 'LLM evaluation']],
+    ['LLMs & agents', ['MCP', 'LangChain', 'RAG', 'LLM evaluation']],
     ['ML & MLOps', ['scikit-learn', 'TensorFlow', 'MLflow']],
-    ['Cloud & infra', ['Amazon SageMaker', 'AWS Lambda', 'Docker']],
+    ['Cloud & infra', ['AWS Bedrock AgentCore', 'Amazon SageMaker', 'AWS Lambda', 'Terraform', 'Docker']],
+    ['Backend & testing', ['FastAPI', 'pytest']],
   ]);
 });
 

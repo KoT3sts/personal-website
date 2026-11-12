@@ -195,7 +195,7 @@
     {
       "page": "agent-workflow",
       "section": "In 30 seconds · Result",
-      "sentence": "The build trace is a recorded run of this same workflow: 52 steps and 16 commits across two rounds of this site, errors and retries included.",
+      "sentence": "The build trace is a recorded run of this same workflow: 52 steps and 16 commits from the Nov 10–11, 2026 redesign of this site, errors and retries included.",
       "source": [
         "cesar-answers",
         "lab",
@@ -204,22 +204,11 @@
       "quote": [
         "The build trace is a run of this same workflow",
         "Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix.",
-        "16 commits after the baseline"
+        "16 commits after the baseline",
+        "Recorded Nov 10–11, 2026: the redesign of this site, step by step."
       ],
       "wording": "reworded",
       "status": "approved"
-    },
-    {
-      "page": "agent-workflow",
-      "section": "In 30 seconds · Proof",
-      "sentence": "The site’s repository goes public with the next push.",
-      "source": "cesar-answers",
-      "quote": [
-        "OK to link the site's own GitHub repository (once pushed)"
-      ],
-      "wording": "reworded",
-      "status": "approved",
-      "note": "Not linked until it is pushed."
     },
     {
       "page": "agent-workflow",
@@ -301,10 +290,11 @@
     {
       "page": "agent-workflow",
       "section": "The workflow in numbers · counters",
-      "sentence": "55 commits over five days, through round 8.",
+      "sentence": "55 commits over five days, through November 11, 2026.",
       "source": "metrics",
       "quote": [
-        "55 commits over five days, through round 8 (commit 92a6746)"
+        "55 commits over five days, through round 8 (commit 92a6746)",
+        "Measured through November 11, 2026"
       ],
       "wording": "reworded",
       "status": "approved"
@@ -630,6 +620,18 @@
     {
       "page": "agent-workflow",
       "section": "Where the work goes · chart",
+      "sentence": "This window starts earlier than the 514 above, which count from October 9.",
+      "source": "metrics",
+      "quote": [
+        "than the 514 above (Oct 9–Nov 11), so the two totals differ"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Explains why the role chart (527) and the counter (514) differ: different windows."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Where the work goes · chart",
       "sentence": "The green bars, Implementation, Quality review and Verification, are the three agent roles of the loop.",
       "source": "cesar-answers",
       "quote": [
@@ -657,10 +659,11 @@
     {
       "page": "agent-workflow",
       "section": "This site as a test",
-      "sentence": "Through round 8 it took 55 commits over five days, in eight documented rounds.",
+      "sentence": "Up to a fixed commit on November 11, 2026, it took 55 commits over five days.",
       "source": "metrics",
       "quote": [
-        "55 commits over five days, through round 8 (commit 92a6746), eight documented rounds"
+        "55 commits over five days, through round 8 (commit 92a6746)",
+        "17 (2026-11-11)"
       ],
       "wording": "reworded",
       "status": "approved"
@@ -675,7 +678,7 @@
       ],
       "quote": [
         "the curated replay covers 52 steps and 16 commits",
-        "This recording covers those two days only, commits 3839873 to 7395a47."
+        "This recording covers those two days only."
       ],
       "wording": "reworded",
       "status": "approved",
@@ -684,7 +687,7 @@
     {
       "page": "agent-workflow",
       "section": "This site as a test · chart",
-      "sentence": "Commits to this site’s working branch per day, November 7 to 11, 2026: 55 in total, through round 8 (commit 92a6746).",
+      "sentence": "Commits to this site’s working branch per day, November 7 to 11, 2026: 55 in total, up to a fixed commit from November 11.",
       "source": "metrics",
       "quote": [
         "Commits per day on this site's working branch, Nov 7–11, 2026: Nov 7: 2; Nov 8: 11; Nov 9: 7; Nov 10: 18; Nov 11: 17 (55 in total, through round 8, commit 92a6746)."
@@ -736,20 +739,39 @@
         "`node --test` 102 pass",
         "`node --test` 139 pass",
         "`node --test` 160 pass",
-        "163 node tests"
+        "163 node tests",
+        "November 9 (source Mac), polish + motion session",
+        "November 10 (source Mac, after midnight), round 2",
+        "November 10, round 3",
+        "November 11, round 5",
+        "November 11, round 6",
+        "November 11, round 7",
+        "November 11, round 8"
       ],
       "wording": "reworded",
       "status": "approved",
       "values": {
-        "Nov 9 polish": "39",
-        "Round 2": "65",
-        "Round 3": "94",
-        "Round 5": "102",
-        "Round 6": "139",
-        "Round 7": "160",
-        "Round 8": "163"
+        "Nov 9": "39",
+        "Nov 10 (a)": "65",
+        "Nov 10 (b)": "94",
+        "Nov 11 (a)": "102",
+        "Nov 11 (b)": "139",
+        "Nov 11 (c)": "160",
+        "Nov 11 (d)": "163"
       },
-      "note": "Round 4 recorded no count, so it has no point."
+      "note": "Row labels are the checkpoint dates from HANDOFF.md instead of internal round numbers (Nov 9 polish session; rounds 2–3 on Nov 10; rounds 5–8 on Nov 11), lettered in order within a day. Round 4 recorded no count, so it has no point."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test · chart",
+      "sentence": "Checkpoints on the same day are lettered in order.",
+      "source": "method",
+      "quote": [
+        "Row labels of the test-count chart in web/projects/agent-workflow.html"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Explains the (a), (b), … row labels; not a claim."
     },
     {
       "page": "agent-workflow",
@@ -930,11 +952,12 @@
     {
       "page": "thoughts-to-text",
       "section": "In 30 seconds · Result",
-      "sentence": "A published method: an autoencoder compresses the EEG into a low-dimensional space, and t-SNE maps it to 2D to show how the characters separate.",
+      "sentence": "A method presented in 2022: an autoencoder compresses the EEG into a low-dimensional space, and t-SNE maps it to 2D to show how the characters separate.",
       "source": "ksu-bci-136",
       "quote": [
         "start by using an autoencoder to compress the data into a low-dimensional space, then use t-SNE for mapping the compressed data to a 2D plane",
-        "visualizing similarity relationships in high-dimensional data"
+        "visualizing similarity relationships in high-dimensional data",
+        "Fall 2022 Symposium of Student Scholars"
       ],
       "wording": "reworded",
       "status": "approved"
@@ -1058,7 +1081,7 @@
     {
       "page": "thoughts-to-text",
       "section": "Pipeline · caption",
-      "sentence": "The published pipeline, from the EEG of attempted handwriting to a 2D map of the characters.",
+      "sentence": "The pipeline as presented, from the EEG of attempted handwriting to a 2D map of the characters.",
       "source": "ksu-bci-136",
       "quote": [
         "the neural representation of attempted handwriting",
@@ -1311,7 +1334,7 @@
     {
       "page": "thoughts-to-text",
       "section": "One limit",
-      "sentence": "The published work maps how the characters separate; it is not a finished real-time typing system.",
+      "sentence": "The presented work maps how the characters separate; it is not a finished real-time typing system.",
       "source": "cesar-answers",
       "quote": [
         "the work shows the representation, not a finished real-time typing system"
@@ -1960,8 +1983,7 @@
       "sentence": "Can writing signals be explained, and a text revised, without losing what it means?",
       "source": "homepage",
       "quote": [
-        "A local prototype for explainable writing-signal analysis and meaning-preserving revision.",
-        "Understand the signals. Keep the meaning."
+        "A local prototype for explainable writing-signal analysis and meaning-preserving revision."
       ],
       "wording": "reworded",
       "status": "approved"
@@ -2013,11 +2035,12 @@
     {
       "page": "agent-workflow",
       "section": "The workflow in numbers · caption",
-      "sentence": "The site’s counts stop at round 8 (commit 92a6746).",
+      "sentence": "The site’s counts stop at a fixed commit from November 11, so later work doesn’t change them.",
       "source": "metrics",
       "quote": [
         "through round 8 (commit 92a6746)",
-        "Pinned to that commit so later commits don't change it."
+        "Pinned to that commit so later commits don't change it.",
+        "17 (2026-11-11)"
       ],
       "wording": "reworded",
       "status": "approved"
@@ -2025,24 +2048,32 @@
     {
       "page": "thoughts-to-text",
       "section": "In 30 seconds · My part",
-      "sentence": "As lead researcher, I presented the work at NCUR, the National Conference on Undergraduate Research.",
-      "source": "homepage",
-      "quote": [
-        "As lead researcher, I presented the work at NCUR, the National Conference on Undergraduate Research"
+      "sentence": "As lead researcher, I worked on decoding attempted handwriting from non-invasive EEG, one character at a time, with an autoencoder and t-SNE.",
+      "source": [
+        "homepage",
+        "ksu-bci-136"
       ],
-      "wording": "verbatim",
-      "status": "approved"
+      "quote": [
+        "Lead Researcher, Thoughts-to-Text BCI",
+        "Researched decoding attempted handwriting from EEG, one character at a time, and mapped how characters separate with an autoencoder and t-SNE.",
+        "Brain-to-text communication through a non-invasive BCI"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Matches the résumé line (November 2026): \"Researched decoding attempted handwriting from non-invasive EEG, one character at a time (autoencoder + t-SNE)\"."
     },
     {
       "page": "thoughts-to-text",
       "section": "In 30 seconds · My part",
-      "sentence": "I presented it in two KSU symposium presentations in 2022, plus a related motor-imagery talk.",
+      "sentence": "I presented the work at NCUR, the National Conference on Undergraduate Research, and in two KSU symposium presentations in 2022, plus a related motor-imagery talk.",
       "source": [
+        "homepage",
         "ksu-bci-255",
         "ksu-bci-136",
         "ksu-motor-163"
       ],
       "quote": [
+        "As lead researcher, I presented the work at NCUR, the National Conference on Undergraduate Research",
         "Brain-to-text communication through an invasive BC",
         "26th Annual Symposium of Student Scholars - 2022",
         "Brain-to-text communication through a non-invasive BCI",

@@ -32,6 +32,7 @@
 
   .xp-org { color: #a4a59f; font-size: 11px; letter-spacing: .06em; }
   .xp-when { color: #d6d8cf; font-size: 12px; letter-spacing: .05em; }
+  .xp-note { margin-top: 10px; max-width: 34em; color: #b9bcb1; font-size: var(--text-body, 15px); line-height: 1.45; }
   /* Outlined title with a solid layer set a hair up and left of it: the
      outline reads as the print plate behind. In travel mode the solid layer
      wipes in only while its chapter is current. */

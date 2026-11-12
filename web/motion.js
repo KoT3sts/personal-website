@@ -18,7 +18,7 @@ export const REVEAL_GROUPS = [
   ['.open-heading > p', 'rise'], ['.open-card', 'rise'],
   ['.skill-list > div', 'rise'], ['.education-layout > *', 'rise'],
   ['.approach-heading > p', 'rise'], ['.approach-list details', 'rise'],
-  ['.closing-note > .mono', 'rise'], ['.closing-note > p', 'heading'],
+  ['.closing-note > p', 'heading'],
   ['.contact-intro', 'rise'], ['.contact-actions, #contact > .contact-button', 'rise'], ['.contact-links li', 'rise'],
 ];
 

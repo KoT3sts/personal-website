@@ -21,8 +21,9 @@ test('the page: title, honesty sentence, no-JS link to the raw trace, own script
     assert.match(page, new RegExp(`(?:name|property)="${name}" content="The recorded agent run behind this portfolio’s redesign on Nov 10–11, 2026: 16 commits`), name);
   }
   for (const name of ['og:title', 'twitter:title']) assert.match(page, new RegExp(`(?:name|property)="${name}" content="The agent run behind this site — Cesar Tortolero"`), name);
-  assert.match(page, /This recording covers those two days only, commits 3839873 to 7395a47\. Earlier work and everything since, including this page, are not in it\./);
-  assert.deepEqual([data.run.from, data.run.to], ['3839873', '7395a47'], 'the commits the page names');
+  assert.match(page, /This recording covers those two days only\. Earlier work and everything since, including this page, are not in it\./);
+  assert.deepEqual([data.run.from, data.run.to], ['3839873', '7395a47'], 'the commits the recording covers');
+  assert.doesNotMatch(page, /3839873|7395a47/, 'dates in the page text, not commit hashes');
   assert.equal(data.title, 'The agent run behind this site');
   assert.doesNotMatch(page + data.title, /\brounds? \d/i, 'no internal round numbers');
   assert.equal(HONESTY, TRACE_HONESTY, 'the same sentence as the dock panel');

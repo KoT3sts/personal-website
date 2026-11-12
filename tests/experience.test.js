@@ -20,7 +20,8 @@ const all = (pattern, source = section) => [...source.matchAll(pattern)];
 test('the section stays a labelled dark landmark with its heading and summary', () => {
   assert.ok(start > 0, 'experience section found');
   assert.match(section, /^<section id="experience" class="experience dark-section" aria-labelledby="experience-title">/);
-  assert.match(section, /<h2 id="experience-title">BUILD\. TEACH\. ?<br><span>SHIP\. DEBUG\.<\/span><\/h2>/);
+  assert.match(section, /<h2 id="experience-title">WORK <br><span>EXPERIENCE\.<\/span><\/h2>/);
+  assert.match(section, /<span>BUILD · TEACH · SHIP · DEBUG<\/span>/, 'the old slogan stays as the small header line');
   assert.match(section, /Machine learning engineering at ADP since July 2024\. Before that, brain-computer interface research at Kennesaw State University\./);
   assert.match(section, /03 \/ EXPERIENCE/);
 });
