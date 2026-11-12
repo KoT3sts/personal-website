@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, typoFor, TOUR_STOPS, SCROLL, RESCUE, HOLE_CAP } from '../web/entrance.js';
+import { initAgenticEntrance, shouldPlayEntrance, crewSize, crewTier, typoFor, TOUR_STOPS, SCROLL, RESCUE, HOLE_CAP, GATE_CAP_MS } from '../web/entrance.js';
 import { initExperience } from '../web/experience.js';
 import { initExplorer } from '../web/explorer.js';
 
@@ -2092,4 +2092,81 @@ test('the pill goes on its own after Skip, even with focus moved onto it, and sa
   assert.equal(dock.querySelector('.agentic-dock-summary').textContent, 'Tour skipped ·');
   assert.ok(dock.contains(document.activeElement), 'focus moved to the pill (Replay)');
   assert.ok(await until(() => !dockOf(document), 2000), 'the pill dismissed itself');
+});
+
+// ---- Round 10: Open the work (#lab) ----------------------------------------
+test('the Lab stop places the three cards, wires each preview once its card is down, then the links, in a short stop', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, height: 800, frames: true, layout: true });
+  // As on the page: the explorer above it is a ring and the project stories are
+  // hidden (app.js), so the scroll from Projects is the real one.
+  initExplorer(document, window);
+  document.body.classList.add('js-enabled');
+  const stop = TOUR_STOPS.find(item => item.name === 'Lab');
+  assert.equal(stop.sel, '#lab');
+  const names = stopNames(document);
+  assert.equal(names[names.indexOf('Projects') + 1], 'Lab', 'right after Projects');
+  assert.equal(names[names.indexOf('Lab') + 1], 'Skills');
+  const labels = new Set();
+  const first = new Map();
+  let start = null;
+  let end = null;
+  while (controller.touring && clock.now() < 90000) {
+    clock.step(16);
+    if (controller.tour?.name !== 'Lab') { if (start !== null && end === null) end = clock.now(); continue; }
+    start ??= clock.now();
+    document.querySelectorAll('.agentic-cursor.is-working .agentic-role').forEach(label => labels.add(label.textContent));
+    document.querySelectorAll('#lab [data-build-state="placing"], #lab [data-build-state="typing"]').forEach(element => { if (!first.has(element)) first.set(element, clock.now()); });
+  }
+  assertNoResidue(document);
+  assert.ok(start !== null && end !== null, 'the tour went through Lab');
+  // About 4 s at 1280x800 in Chrome, most of it the scroll down from the explorer.
+  assert.ok(end - start <= 5000, `Lab stop took ${end - start}ms`);
+  if (!measurable(document)) return;
+  const cards = [...document.querySelectorAll('#lab .open-card')];
+  cards.forEach((card, index) => {
+    const preview = card.querySelector('.work-preview');
+    const link = card.querySelector('.open-card-link');
+    assert.ok(first.has(card), `card ${index + 1} placed`);
+    assert.ok(first.has(preview) && first.get(preview) >= first.get(card), `preview ${index + 1} wired after its card`);
+    assert.ok(first.has(link) && first.get(link) >= first.get(card), `link ${index + 1} wired after its card`);
+  });
+  assert.ok([...labels].some(text => /placing 'Evaluation lab'$/.test(text)), [...labels].join(' | '));
+  assert.ok([...labels].some(text => / · wiring preview$/.test(text)), [...labels].join(' | '));
+});
+
+test('the Lab stop waits for its gate (the live previews), at most GATE_CAP_MS; the gate is first asked as the tour starts', async t => {
+  const labStep = document => `${stopNames(document).indexOf('Lab') + 1} / ${stopNames(document).length}`;
+  const progress = document => document.querySelector('.agentic-dock-progress')?.textContent;
+  // A gate that settles while the stop waits: Lab starts once it does.
+  let asked = 0;
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const held = setup(t, { width: 1280, frames: true, config: { stopGates: { '#lab': () => { asked++; return gate; } } } });
+  assert.equal(asked, 1, 'asked as the tour starts, so the previews load early');
+  const toLab = ({ controller, clock }) => { while (controller.touring && controller.tour.name !== 'Lab' && clock.now() < 90000) clock.step(16); };
+  toLab(held);
+  assert.equal(held.controller.tour.name, 'Lab');
+  for (let i = 0; i < 30; i++) held.clock.step(16);
+  assert.notEqual(progress(held.document), labStep(held.document), 'not started while the gate is open');
+  release();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  held.clock.step(16);
+  assert.equal(progress(held.document), labStep(held.document), 'started once it settled');
+  while (held.controller.touring && held.clock.now() < 120000) held.clock.step(16);
+  assertNoResidue(held.document);
+  // A gate that never settles holds the stop for GATE_CAP_MS (real time) only.
+  const stuck = setup(t, { width: 1280, frames: true, config: { stopGates: { '#lab': () => new Promise(() => {}) } } });
+  toLab(stuck);
+  stuck.clock.step(16);
+  assert.notEqual(progress(stuck.document), labStep(stuck.document));
+  await new Promise(resolve => setTimeout(resolve, GATE_CAP_MS + 100));
+  stuck.clock.step(16);
+  assert.equal(progress(stuck.document), labStep(stuck.document), 'started after the cap');
+  // Skip while it waits: nothing starts later.
+  const skipped = setup(t, { width: 1280, frames: true, config: { stopGates: { '#lab': () => new Promise(() => {}) } } });
+  toLab(skipped);
+  skipped.controller.skip();
+  await new Promise(resolve => setTimeout(resolve, GATE_CAP_MS + 100));
+  assert.equal(skipped.controller.touring, false);
+  assertNoResidue(skipped.document);
 });

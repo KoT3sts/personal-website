@@ -15,6 +15,7 @@ export const REVEAL_GROUPS = [
   ['.capabilities-heading > p', 'rise'], ['.capability', 'rise'],
   ['.experience-heading > p', 'rise'],
   ['.work-heading > p', 'rise'],
+  ['.open-heading > p', 'rise'], ['.open-card', 'rise'],
   ['.skill-list > div', 'rise'], ['.education-layout > *', 'rise'],
   ['.approach-heading > p', 'rise'], ['.approach-list details', 'rise'],
   ['.closing-note > .mono', 'rise'], ['.closing-note > p', 'heading'],
@@ -22,7 +23,7 @@ export const REVEAL_GROUPS = [
 ];
 
 // The oversized section headlines: the site's signature scroll moment.
-export const HEADLINES = ['#about-title', '#capabilities-title', '#experience-title', '#work-title', '#skills-title', '#approach-title', '#contact-title'].join(', ');
+export const HEADLINES = ['#about-title', '#capabilities-title', '#experience-title', '#work-title', '#lab-title', '#skills-title', '#approach-title', '#contact-title'].join(', ');
 
 // Light scenes set type like a press: a crisp rise from behind the line's own
 // edge. Dark scenes light it as it surfaces: shorter travel, a fade up from

@@ -366,10 +366,15 @@ def generated_blocks(data: dict) -> dict[str, str]:
     else:
         verdict = (f'but the bootstrap interval for the gap ({signed(lo)} to {signed(hi)}) crosses zero: '
                    f'on {n_test} sentences that is not a reliable win.')
+    # Each number links down to the interactive scorecard, which sits right after the strip.
+    def to_scorecard(value: str) -> str:
+        return f'<a class="lab-strip-link" href="#scorecard">{value}<span class="visually-hidden">, see the scorecard</span></a>'
+
+    best_f1 = f'{ref[best]["f1"]:.3f}'
     strip = [
-        f'<div><dt class="mono">Test sentences</dt><dd>{n_test:,}</dd></div>',
-        f'<div><dt class="mono">Best F1</dt><dd>{ref[best]["f1"]:.3f} <span class="lab-unit">model {best}</span></dd></div>',
-        f'<div><dt class="mono">F1 gap, B minus A</dt><dd>{signed(b["f1"] - a["f1"])}</dd></div>',
+        f'<div><dt class="mono">Test sentences</dt><dd>{to_scorecard(f"{n_test:,}")}</dd></div>',
+        f'<div><dt class="mono">Best F1</dt><dd>{to_scorecard(best_f1)} <span class="lab-unit">model {best}</span></dd></div>',
+        f'<div><dt class="mono">F1 gap, B minus A</dt><dd>{to_scorecard(signed(b["f1"] - a["f1"]))}</dd></div>',
         f'<div class="lab-strip-take"><dt class="mono">Takeaway</dt><dd>Model {best} {"edges" if gap < 0.02 else "beats"} '
         f'model {other} by {gap * 100:.1f} F1 points at the default threshold, {verdict}</dd></div>',
     ]

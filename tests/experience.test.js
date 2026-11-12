@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { DISTANCE_PER_CHAPTER, HOLD_SHARE, travelPlan, trackAt } from '../web/experience.js';
+import { DISTANCE_PER_CHAPTER, HOLD_SHARE, travelPlan, trackAt, hitBoxes, MIN_HIT, monthIndex, monthLabel, nowMonth, roleRange, rangeText, yearsIn, timelinePlan } from '../web/experience.js';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const html = read('web/index.html');
@@ -81,7 +81,7 @@ test('the pinned travel is opt-in: script-gated, screen-only, and never wider th
   assert.match(js, /if \(!timeline\) travel\.style\.setProperty\('--xp-q'/);
   // Phones, short windows and reduced motion stay stacked (no pinning).
   assert.match(js, /min-width: 761px\) and \(min-height: 600px\) and \(prefers-reduced-motion: no-preference\)/);
-  assert.match(js, /export function initExperience\(document, window\)/);
+  assert.match(js, /export function initExperience\(document, window(?:, options = \{\})?\)/);
   assert.match(js, /addEventListener\('scroll', schedule, \{ passive: true \}\)/);
   assert.doesNotMatch(js, /preventDefault\(\)[^;]*wheel|addEventListener\('wheel'/, 'the wheel is never captured');
   // Keyboard: chapters become focusable in travel mode and focus brings them into view.
@@ -162,4 +162,135 @@ test('degenerate plans fall back to a straight map', () => {
   const flat = travelPlan([0], 0, 0);
   assert.equal(flat.distance, 0);
   assert.equal(trackAt(flat, 0.4), 0.4);
+});
+
+// ---- Career timeline (round 10) ----
+// The same inputs experience.js reads from the DOM, taken from the markup as text.
+const chapterWhens = all(/<p class="xp-when mono">([\s\S]*?)<\/p>/g).map(match => ({ times: all(/<time datetime="([^"]+)">/g, match[1]).map(time => time[1]), text: text(match[1]) }));
+const groupYears = all(/<div class="xp-group-head"><span class="mono">([^<]+)<\/span>/g).flatMap(match => yearsIn(match[1]));
+const education = [...html.matchAll(/<li><span class="school">[^<]*<\/span><span class="degree">([^<]+)<\/span><span class="mono school-meta">([^<]+)<\/span><\/li>/g)]
+  .map(match => ({ degree: match[1], from: yearsIn(match[2])[0], to: yearsIn(match[2]).at(-1) }));
+const NOV_2026 = nowMonth(new Date(2026, 10, 12));
+const roles = chapterWhens.map(when => roleRange(when.times, when.text));
+
+test('timeline roles, gap and year markers come from the markup', () => {
+  assert.equal(monthIndex('2024-07'), 2024 * 12 + 6);
+  assert.equal(monthLabel(monthIndex('2021-09')), 'Sep 2021');
+  assert.deepEqual(yearsIn('2024 – 2025'), [2024, 2025]);
+  assert.deepEqual(yearsIn('RESEARCH'), []);
+  assert.deepEqual(roles.map(rangeText), ['Aug 2026 – present', 'Jul 2024 – Jul 2026', 'Sep 2021 – May 2023']);
+  assert.ok(education.some(item => /^B\.S\./.test(item.degree)), 'the KSU degree row is read');
+
+  const plan = timelinePlan(roles, { now: NOV_2026, years: groupYears, education });
+  // Sep 2021 to the end of Nov 2026: 63 months.
+  assert.equal(monthLabel(plan.from), 'Sep 2021');
+  assert.equal(plan.total, 63);
+  const months = span => Math.round((span.to - span.from) * plan.total);
+  assert.deepEqual(plan.spans.map(months), [4, 25, 21], 'ML (to now), Associate, KSU');
+  assert.equal(plan.spans[0].to, 1, 'the current role runs to now');
+  assert.ok(Math.abs(plan.spans[1].to - plan.spans[0].from) < 1e-9, 'Associate ends where ML starts');
+  assert.deepEqual(plan.order, [2, 1, 0], 'chronological: KSU, Associate, ML');
+  // The gap after KSU is labelled only because the B.S. years (2021 – 2024) cover it.
+  assert.equal(plan.gaps.length, 1);
+  // Only the months strictly between the roles: KSU owns May 2023, Associate owns Jul 2024.
+  assert.equal(rangeText({ start: plan.gaps[0].start, end: plan.gaps[0].end }), 'Jun 2023 – Jun 2024');
+  assert.equal(Math.round((plan.gaps[0].to - plan.gaps[0].from) * plan.total), 13, 'the dashed span covers those 13 months');
+  assert.equal(plan.gaps[0].label, 'Finishing B.S.');
+  assert.equal(timelinePlan(roles, { now: NOV_2026, years: groupYears, education: [] }).gaps[0].label, undefined, 'no source, no label');
+  assert.equal(timelinePlan(roles, { now: NOV_2026, education: [{ degree: 'B.S. Computer Science', from: 2019, to: 2023 }] }).gaps[0].label, undefined, 'a degree that ended before the gap does not explain it');
+  // Group years (2022 – 2023, 2024 – 2025, 2026) as markers at each January, then Now.
+  assert.deepEqual(plan.markers.map(marker => marker.year), ['2022', '2023', '2024', '2025', '2026', 'Now']);
+  assert.ok(Math.abs(plan.markers[0].at - 4 / 63) < 1e-9);
+  // A clock behind the markup never cuts a role short; a later "now" stretches the axis.
+  assert.equal(timelinePlan(roles, { now: monthIndex('2020-01') }).total, 60);
+  assert.equal(timelinePlan(roles, { now: monthIndex('2027-11') }).total, 75);
+});
+
+test('timeline is built with DOM APIs only and reuses the chapter index buttons', () => {
+  const build = js.slice(js.indexOf('function buildTimeline()'), js.indexOf('function setCurrentButton'));
+  assert.ok(build.length > 500);
+  assert.doesNotMatch(js, /innerHTML|insertAdjacentHTML|outerHTML|setAttribute\('style'|\.style\.(?!setProperty|removeProperty|getPropertyValue)\w+\s*=/, 'no HTML strings or style attributes');
+  for (const match of js.matchAll(/style\.setProperty\('([^']+)'/g)) assert.ok(match[1].startsWith('--'), `custom properties only: ${match[1]}`);
+  assert.match(build, /document\.createElement\(tag\)/);
+  assert.match(build, /node\.textContent = text/);
+  // Names like "Associate ML Engineer, Jul 2024 – Jul 2026"; aria-current stays on the button for the current chapter.
+  assert.match(build, /button\.setAttribute\('aria-label', `\$\{name\}, \$\{dates\}`\)/);
+  assert.match(js, /button\.setAttribute\('aria-current', 'true'\)/);
+  // No new live region: the chapter announcement stays the only one.
+  assert.equal((js.match(/aria-live/g) || []).length, 1);
+  // The decorative parts are hidden from assistive tech.
+  for (const part of ['text', 'lane', 'node', 'axis', 'marks']) assert.match(build, new RegExp(`${part}\\.setAttribute\\('aria-hidden', 'true'\\)`), part);
+  // The real "now" by default; tests and the tour can pin it.
+  assert.match(build, /nowMonth\(options\.now instanceof Date \? options\.now : new Date\(\)\)/);
+  // Stacked, a span scrolls to its chapter; on the stage it uses the chapter buttons' goTo.
+  assert.match(js, /if \(state\.mode === 'travel'\) goTo\(Number\(button\.dataset\.xpGo\), \{ announce: true \}\);\s*else chart\?\.jump/);
+});
+
+test('timeline fits the controls band, draws in once with motion, and stays readable', () => {
+  // The axis lives in the controls band (72-96px), so the pinned stretch keeps its length.
+  const band = Number(/--xp-bar: clamp\((\d+)px/.exec(css)[1]);
+  const axis = Number(/\.xp-tl\[data-xp-layout="axis"\] \{[^}]*height: (\d+)px/.exec(css)[1]);
+  assert.ok(axis <= band - 8, `axis ${axis}px in a ${band}px band`);
+  assert.match(css, /\.xp-tl\[data-xp-layout="axis"\] \{[^}]*width: min\(760px, 100cqw - 2 \* var\(--gutter\) - 240px\)/);
+  // Phones and stacked chapters: rows that never exceed the column.
+  assert.match(css, /\.xp-tl\[data-xp-layout="rows"\] \{[^}]*width: min\(100%, 760px\)/);
+  // The draw-in only exists with motion; pending is set by the script only then.
+  const motion = css.slice(css.indexOf('@media screen and (prefers-reduced-motion: no-preference) {'));
+  assert.ok(motion.length > 0);
+  assert.match(motion.slice(0, motion.indexOf('\n  }')), /\.xp-tl\[data-xp-draw="pending"\] :is\(\.xp-tl-axis, \.xp-tl-bar\) \{ transform: scaleX\(0\); \}/);
+  assert.equal((css.match(/\[data-xp-draw="pending"\]/g) || []).length, 2, 'only inside the motion block');
+  assert.match(js, /if \(window\.IntersectionObserver && !reduce\?\.matches\) \{\s*nav\.dataset\.xpDraw = 'pending';/);
+  // Text at least 11px and 4.5:1 on the night ground; bars at least 3:1.
+  const lum = hex => {
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+  const rules = [...css.matchAll(/([^{}]*\.xp-tl[^{}]*)\{([^{}]*)\}/g)];
+  assert.ok(rules.length > 20);
+  for (const [, selector, body] of rules) {
+    for (const size of body.matchAll(/font-size: ([\d.]+)px/g)) assert.ok(Number(size[1]) >= 11, `${selector.trim()} ${size[0]}`);
+    for (const color of body.matchAll(/(?:^|[ ;])color: #([0-9a-f]{6})/g)) assert.ok(ratio(color[1], '101114') >= 4.5, `${selector.trim()} #${color[1]}`);
+  }
+  assert.ok(ratio(/--xp-tl-bar: #([0-9a-f]{6})/.exec(css)[1], '101114') >= 3, 'inactive bars');
+  assert.match(css, /@media print \{ \.xp-tl \{ display: none; \} \}/);
+});
+
+test('every role span is at least 44px to hit, its bar still to scale and no hit areas overlap', () => {
+  const plan = timelinePlan(roles, { now: NOV_2026 });
+  const spans = plan.spans;
+  assert.equal(MIN_HIT, 44);
+  // Axis widths at 900, 1280/1496 (760 cap) and a narrow 451 (761 px window).
+  for (const width of [451, 577, 760]) {
+    const boxes = hitBoxes(spans, width);
+    boxes.forEach((box, k) => {
+      assert.ok(box.w >= 44 - 1e-9, `${width}: span ${k} ${box.w}`);
+      assert.ok(box.x >= -1e-9 && box.x + box.w <= width + 1e-9, `${width}: span ${k} inside the axis`);
+      // The bar stays at its months and inside its box.
+      assert.ok(Math.abs(box.x + box.barX - spans[k].from * width) < 1e-9 && Math.abs(box.barW - (spans[k].to - spans[k].from) * width) < 1e-9, `${width}: bar ${k} to scale`);
+      // A bar starts inside its own box; where a short neighbour took a few px, the bar runs on
+      // under that neighbour's (later, so topmost) box rather than stopping short of its months.
+      assert.ok(box.barX >= -1e-9 && box.barX < box.w, `${width}: bar ${k} starts in its box`);
+    });
+    const sorted = [...boxes].sort((a, b) => a.x - b.x);
+    sorted.slice(1).forEach((box, k) => assert.ok(box.x >= sorted[k].x + sorted[k].w - 1e-9, `${width}: no overlap`));
+  }
+  // At 900 (577px axis) ML is ~37px of months: it widens leftwards, Associate gives up the difference.
+  const [ml, associate] = hitBoxes(spans, 577);
+  assert.equal(ml.x + ml.w, 577);
+  assert.equal(ml.w, 44);
+  assert.equal(associate.x + associate.w, ml.x);
+  // Two tiny neighbours push apart instead of sharing pixels.
+  const tiny = hitBoxes([{ from: 0.5, to: 0.52 }, { from: 0.52, to: 0.54 }], 400);
+  assert.ok(tiny[1].x >= tiny[0].x + tiny[0].w - 1e-9 && tiny.every(box => box.w >= 44 - 1e-9));
+  assert.match(css, /\.xp-tl\[data-xp-layout="axis"\] > \.xp-tl-span \{ left: var\(--xp-hit-x, [^;]+\); width: var\(--xp-hit-w, [^;]+\); min-width: 44px; \}/);
+  assert.match(css, /\.xp-tl\[data-xp-layout="axis"\] \.xp-tl-lane \{[^}]*left: var\(--xp-bar-x, 0px\); width: var\(--xp-bar-w, 100%\)/);
+});
+
+test('in forced colors the bars keep system colours: CanvasText, the current role in Highlight, the gap dashed', () => {
+  const forced = css.slice(css.indexOf('@media (forced-colors: active) {'));
+  const block = forced.slice(0, forced.indexOf('\n  }'));
+  assert.match(block, /\.xp-tl :is\(\.xp-tl-bar, \.xp-tl-axis\), \.xp-tl-year::before \{ forced-color-adjust: none; background: CanvasText; \}/);
+  assert.match(block, /\.xp-tl \.xp-tl-span\[aria-current="true"\] \.xp-tl-bar \{ background: Highlight; \}/);
+  assert.match(block, /\.xp-tl \.xp-tl-gap \.xp-tl-bar \{ background: none; outline: 1px dashed CanvasText;/);
 });

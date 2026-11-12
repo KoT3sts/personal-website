@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { initPortfolio } from '../web/app.js';
+import { initPortfolio, loadWorkPreviews } from '../web/app.js';
+import { initHomeCharts } from '../web/home-charts.js';
 import { initExplorer } from '../web/explorer.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
@@ -37,6 +38,14 @@ test('About navigation covers both scenes while header colors follow the actual 
   assert.ok(header.classList.contains('is-dark'));
   layout({ work: { top: -300, bottom: 600 } });
   assert.equal(nav(), '#work');
+  // Open the work (#lab) has its own nav entry and a light tone.
+  layout({ work: { top: -1200, bottom: 100 }, lab: { top: 100, bottom: 1300 } });
+  assert.equal(nav(), '#lab');
+  assert.equal(header.classList.contains('is-dark'), false, 'light lab section behind the header');
+  layout({ lab: { top: -1000, bottom: 300 }, skills: { top: 300, bottom: 1500 } });
+  assert.equal(nav(), '#lab', 'Lab stays marked until Skills reaches the reading line');
+  layout({ lab: { top: -1100, bottom: 200 }, skills: { top: 200, bottom: 1400 } });
+  assert.equal(nav(), '#skills');
   assert.equal(header.classList.contains('is-dark'), false);
   // Regression: at the very bottom the dark footer filled the nav band while the
   // light closing note was still behind the header, so the wordmark vanished.
@@ -203,7 +212,7 @@ test('the first heading states the role and the page keeps one h1 with ordered s
   assert.match(document.querySelector('h1').textContent, /Cesar Tortolero, Machine Learning Engineer/);
   assert.match(document.title, /Machine Learning Engineer/);
   assert.match(document.querySelector('meta[name="description"]').content, /Machine Learning Engineer/);
-  for (const id of ['about', 'experience', 'work', 'skills', 'contact']) assert.ok(document.querySelector(`.main-nav a[href="#${id}"]`), `nav link for ${id}`);
+  for (const id of ['about', 'experience', 'work', 'lab', 'skills', 'contact']) assert.ok(document.querySelector(`.main-nav a[href="#${id}"]`), `nav link for ${id}`);
   let previous = 1;
   for (const heading of document.querySelectorAll('main h1, main h2, main h3, main h4')) {
     const level = Number(heading.tagName[1]);
@@ -215,7 +224,7 @@ test('the first heading states the role and the page keeps one h1 with ordered s
 test('About scenes lead into capabilities, then experience, work, skills and approach, with the Currently note in the scene', () => {
   const { document } = new JSDOM(html).window;
   const order = [...document.querySelectorAll('main > section[id]')].map(section => section.id);
-  assert.deepEqual(order, ['home', 'about', 'introduction', 'capabilities', 'experience', 'work', 'skills', 'approach', 'notes']);
+  assert.deepEqual(order, ['home', 'about', 'introduction', 'capabilities', 'experience', 'work', 'lab', 'skills', 'approach', 'notes']);
   assert.ok(document.querySelector('footer#contact'));
   assert.equal(document.querySelector('#introduction').dataset.navSection, 'about');
   const sceneLinks = [...document.querySelectorAll('#introduction .scene-pill')].map(link => link.getAttribute('href'));
@@ -224,7 +233,7 @@ test('About scenes lead into capabilities, then experience, work, skills and app
   assert.match(document.querySelector('#introduction-title').textContent, /AI agents/);
   assert.match(document.querySelector('#introduction .cinematic-copy').textContent, /Machine Learning Engineer at ADP/);
   const labels = [...document.querySelectorAll('.about-transition-meta > :first-child, .section-top > :first-child')].map(label => label.textContent.match(/^(\d{2}) \//)?.[1]).filter(Boolean);
-  assert.deepEqual(labels, ['01', '02', '03', '04', '05', '06', '07'], 'mono section labels count up in page order');
+  assert.deepEqual(labels, ['01', '02', '03', '04', '05', '06', '07', '08'], 'mono section labels count up in page order');
   const items = [...document.querySelectorAll('#capabilities .capability')];
   assert.equal(items.length, 7);
   for (const item of items) {
@@ -239,7 +248,199 @@ test('About scenes lead into capabilities, then experience, work, skills and app
 
 test('every anchor the first-visit entrance targets still exists in the markup', () => {
   const { document } = new JSDOM(html).window;
-  for (const selector of ['.wordmark', '.main-nav', '.hero-kicker', '#hero-title', '.hero-art', '.hero-portrait', '.sculpture', '.hero-orbit', '.hero-intro', '.hero-proof', '.hero-note', '.scroll-cue', '#introduction .cinematic-art', '#introduction .cinematic-copy', '#introduction .scene-actions', '.explorer-item .explorer-cover', '#explorer-title', '.footer-bottom']) {
+  for (const selector of ['.wordmark', '.main-nav', '.hero-kicker', '#hero-title', '.hero-art', '.hero-portrait', '.sculpture', '.hero-orbit', '.hero-intro', '.hero-proof', '.hero-note', '.scroll-cue', '#introduction .cinematic-art', '#introduction .cinematic-copy', '#introduction .scene-actions', '.explorer-item .explorer-cover', '#explorer-title', '#lab-title', '.open-heading > p', '.open-card .open-card-text', '.open-card .work-preview', '.open-card-link', '.footer-bottom']) {
     assert.ok(document.querySelector(selector), `entrance anchor ${selector}`);
   }
+});
+
+// ---- Round 10: Open the work (#lab), home charts, skill links -------------------
+
+test('Open the work: three large cards between Work and Skills, each with a sentence, a preview with a static summary and one link', async () => {
+  const { document } = new JSDOM(html).window;
+  const lab = document.querySelector('#lab');
+  assert.equal(lab.previousElementSibling.id, 'work');
+  assert.equal(lab.nextElementSibling.id, 'skills');
+  assert.equal(lab.classList.contains('dark-section'), false, 'light, between the light Work and the dark Skills');
+  assert.equal(lab.getAttribute('aria-labelledby'), 'lab-title');
+  assert.match(lab.querySelector('.section-top').textContent, /^05 \/ OPEN THE WORK/);
+  assert.equal(lab.querySelector('#lab-title').textContent.replace(/\s+/g, ' ').trim(), 'OPEN THE WORK.');
+  assert.equal(lab.querySelector('.open-heading > p').textContent, 'Three things you can try, not just read.');
+  const cards = [...lab.querySelectorAll('.open-cards > .open-card')];
+  assert.deepEqual(cards.map(card => [card.querySelector('h3').textContent, card.querySelector('.open-card-text').textContent, card.querySelector('.work-preview').dataset.preview, card.querySelector('a.open-card-link').getAttribute('href')]), [
+    ['Evaluation lab', 'Two sentiment models on 3,000 public review sentences. Drag the threshold.', 'lab', './lab/sentiment-eval.html'],
+    ['The agent run behind this site', '52 recorded steps, errors and recoveries included.', 'trace', './lab/build-trace.html'],
+    ['How I evaluate agents', 'Trace, classify, test, gate.', 'loop', './lab/evaluating-agents.html'],
+  ]);
+  // The summaries say something without scripts, and only figures the lab pages state.
+  const stats = card => [...card.querySelectorAll('.open-stats > div')].map(row => `${row.querySelector('dt').textContent} ${row.querySelector('dd').textContent}`);
+  assert.deepEqual(stats(cards[0]), ['F1, model B 0.803', 'F1, model A 0.795', 'Test sentences 596']);
+  assert.deepEqual(stats(cards[1]), ['Steps 52', 'Errors recovered 6 of 8', 'Commits 16']);
+  assert.match(cards[1].querySelector('.open-note').textContent, /RECOVERED: A RETRY OR FIX IS RECORDED/, 'what recovered means, as the trace page says it');
+  assert.deepEqual([...cards[2].querySelectorAll('.open-loop > li > .mono')].map(step => step.textContent), ['TRACE', 'CLASSIFY', 'FIXED TEST SET', 'GATE']);
+  const lab1 = await readFile(new URL('../web/lab/sentiment-eval.html', import.meta.url), 'utf8');
+  for (const figure of ['3,000 public review sentences', '596 test', '0.803', '0.795']) assert.ok(lab1.includes(figure), figure);
+  const essay = await readFile(new URL('../web/lab/evaluating-agents.html', import.meta.url), 'utf8');
+  assert.match(essay, /Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix/);
+  for (const [, step] of [...cards[2].querySelectorAll('.open-loop > li')].map(li => [li, li.lastChild.textContent.trim()])) assert.ok(essay.includes(step), step);
+  // The previews' stylesheet is linked; the module is loaded by app.js, not by a tag.
+  assert.match(html, /<link rel="stylesheet" href="\.\/work-previews\.css">/);
+  assert.doesNotMatch(html, /<(?:script|link)[^>]*work-previews\.js/);
+  // In the main nav, shown on phones in place of About (the section right under the hero).
+  assert.ok(document.querySelector('.main-nav a[href="#lab"]:not(.nav-optional)'));
+  assert.ok(document.querySelector('.main-nav a[href="#about"].nav-optional'));
+});
+
+test('the live previews are optional: a missing or failing module keeps the summaries, never throws, and settles', async () => {
+  const fresh = () => { const { window } = new JSDOM(html, { url: 'https://portfolio.test/' }); delete window.IntersectionObserver; return window; };
+  const quiet = window => { window.console.warn = () => {}; return window; };
+  let window = quiet(fresh());
+  const before = window.document.querySelector('#lab .work-preview').innerHTML;
+  let previews = loadWorkPreviews(window.document, window, () => Promise.reject(new Error('404')));
+  assert.equal(await previews.done, false);
+  await previews.settled;
+  assert.equal(window.document.querySelector('#lab .work-preview').innerHTML, before);
+  assert.ok(window.document.querySelector('#lab').classList.contains('previews-off'), 'no room reserved for previews that will not come');
+  window = quiet(fresh());
+  previews = loadWorkPreviews(window.document, window, () => ({ initWorkPreviews() { throw new Error('boom'); } }));
+  assert.equal(await previews.done, false);
+  await previews.settled;
+  window = quiet(fresh());
+  assert.equal(await loadWorkPreviews(window.document, window, () => ({})).done, false, 'a module without initWorkPreviews');
+  // A working module: `settled` waits for the module's own settled promise (sync or async init).
+  window = quiet(fresh());
+  let called = null;
+  let finish;
+  previews = loadWorkPreviews(window.document, window, () => ({ async initWorkPreviews(doc, win) { called = [doc, win]; return { settled: new Promise(resolve => { finish = resolve; }) }; } }));
+  assert.equal(await previews.done, true);
+  assert.deepEqual(called, [window.document, window]);
+  let isSettled = false;
+  previews.settled.then(() => { isSettled = true; });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(isSettled, false, 'not before the previews settle');
+  finish();
+  await previews.settled;
+  assert.equal(window.document.querySelector('#lab').classList.contains('previews-off'), false);
+  // A rejected `settled` still settles.
+  window = quiet(fresh());
+  previews = loadWorkPreviews(window.document, window, () => ({ initWorkPreviews() { return { settled: Promise.reject(new Error('json')) }; } }));
+  await previews.settled;
+  // It waits for the section to come near when an observer exists, unless the tour starts it first.
+  window = fresh();
+  let observed = null;
+  let loads = 0;
+  window.IntersectionObserver = class { constructor(callback) { observed = { callback }; } observe(target) { observed.target = target; } disconnect() { observed.gone = true; } };
+  previews = loadWorkPreviews(window.document, window, () => { loads++; return { initWorkPreviews() {} }; });
+  assert.equal(observed.target.id, 'lab');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(loads, 0, 'not fetched with the page');
+  observed.callback([{ isIntersecting: true }]);
+  assert.equal(await previews.done, true);
+  assert.equal(loads, 1);
+  assert.ok(observed.gone);
+  window = fresh();
+  window.IntersectionObserver = class { observe() {} disconnect() {} };
+  loads = 0;
+  previews = loadWorkPreviews(window.document, window, () => { loads++; return { initWorkPreviews() {} }; });
+  assert.equal(await previews.start(), true, 'the build tour starts it early');
+  await previews.start();
+  assert.equal(loads, 1, 'once');
+});
+
+test('home charts: the proof figures keep their final text, four capability cards get a chart drawn from their own sentence', () => {
+  const { window } = new JSDOM(html, { url: 'https://portfolio.test/' });
+  const { document } = window;
+  window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+  delete window.IntersectionObserver;
+  const before = [...document.querySelectorAll('.hero-proof .proof-figure')].map(figure => figure.textContent);
+  initHomeCharts(document, window);
+  // Without an observer (or with reduced motion) nothing counts: final figures only, as before.
+  assert.deepEqual([...document.querySelectorAll('.hero-proof .proof-figure')].map(figure => figure.textContent), before);
+  assert.equal(document.querySelectorAll('.proof-count').length, 2, '350 and 250+ (Minutes stays text)');
+  for (const count of document.querySelectorAll('.proof-count')) {
+    assert.equal(count.querySelector('.proof-count-ink').getAttribute('aria-hidden'), 'true');
+    assert.equal(count.classList.contains('is-counting'), false);
+  }
+  assert.deepEqual([...document.querySelectorAll('.proof-count-final')].map(final => final.textContent), ['350', '250+']);
+  const charts = [...document.querySelectorAll('.capability .cap-chart')];
+  assert.deepEqual(charts.map(chart => chart.closest('.capability').dataset.chart), ['records', 'inventory', 'jobs', 'videos']);
+  charts.forEach(chart => {
+    assert.equal(chart.getAttribute('aria-hidden'), 'true');
+    assert.equal(chart.previousElementSibling.className, 'capability-proof', 'right under the proof line');
+    assert.equal(chart.classList.contains('is-armed'), false, 'drawn in full, no animation');
+  });
+  const [records, inventory, jobs, videos] = charts;
+  assert.equal(records.querySelector('.cap-band-label').textContent, '2,400+ RECORDS');
+  assert.deepEqual([...records.querySelectorAll('.cap-tick')].map(tick => tick.textContent), ['PRECISION', 'RECALL', 'F1']);
+  assert.doesNotMatch(records.textContent, /0\.\d/, 'metric names only, no values');
+  assert.equal(inventory.querySelectorAll('rect').length, 296);
+  assert.deepEqual([...jobs.querySelectorAll('.cap-row')].map(row => [row.querySelector('.cap-row-label').textContent, row.querySelectorAll('rect.cap-on').length, row.querySelector('.cap-row-value').textContent]), [['US', 58, '58/58'], ['EU', 21, '21/21']]);
+  assert.equal(videos.querySelectorAll('.cap-dot').length, 12);
+  // No chart where the card states no number.
+  for (const title of ['Build and ship AI agents and MCP integrations on AWS', 'Build serverless backends and cloud infrastructure', 'Do applied ML research']) {
+    const card = [...document.querySelectorAll('.capability')].find(item => item.querySelector('h3').textContent === title);
+    assert.equal(card.querySelector('.cap-chart'), null, title);
+  }
+  // Running it twice draws nothing twice.
+  initHomeCharts(document, window);
+  assert.equal(document.querySelectorAll('.cap-chart').length, 4);
+  assert.equal(document.querySelectorAll('.proof-count').length, 2);
+  window.close();
+});
+
+test('skill tags used on a card or role are toggle buttons that mark those places; only presses are announced; Escape clears', async () => {
+  const { window } = new JSDOM(html, { url: 'https://portfolio.test/' });
+  const { document } = window;
+  window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+  const { skills } = initHomeCharts(document, window);
+  const buttons = [...document.querySelectorAll('#skills .skill-list .tag-list > li > button.skill-tag')];
+  assert.deepEqual(buttons.map(button => button.textContent), ['Python', 'TypeScript', 'MCP', 'MLflow', 'Amazon SageMaker', 'AWS Lambda']);
+  buttons.forEach(button => { assert.equal(button.type, 'button'); assert.equal(button.getAttribute('aria-pressed'), 'false'); });
+  // Tags nothing else lists stay plain text.
+  const plain = [...document.querySelectorAll('#skills .skill-list .tag-list > li')].filter(item => !item.querySelector('button')).map(item => item.textContent);
+  assert.deepEqual(plain, ['SQL', 'RAG', 'LLM evaluation', 'scikit-learn', 'TensorFlow', 'Docker']);
+  const usage = document.querySelector('#skills .skill-usage');
+  const live = document.querySelector('#skills .skill-usage-live');
+  assert.equal(usage.hasAttribute('aria-live'), false, 'the visible line is not live');
+  assert.equal(live.getAttribute('aria-live'), 'polite');
+  assert.equal(usage.previousElementSibling.className, 'skill-list');
+  const hint = 'Tags with a dot are used on a card or role above. Pick one to see where.';
+  assert.equal(usage.textContent, hint);
+  const settle = () => new Promise(resolve => setTimeout(resolve, 200));
+  const tag = name => buttons.find(button => button.textContent === name);
+  const matched = () => [...document.querySelectorAll('.is-skill-match')].map(node => node.querySelector('h3, h4').textContent);
+  // Focus (or hover) previews visually only: the line changes, nothing is announced.
+  tag('AWS Lambda').dispatchEvent(new window.FocusEvent('focus'));
+  assert.deepEqual(matched(), ['Build serverless backends and cloud infrastructure', 'Cloud infrastructure & release engineering']);
+  assert.match(usage.textContent, /^AWS Lambda — used in: /);
+  tag('AWS Lambda').dispatchEvent(new window.FocusEvent('blur'));
+  await settle();
+  assert.deepEqual(matched(), []);
+  assert.equal(usage.textContent, hint);
+  assert.equal(live.textContent, '', 'no announcement for focus, hover or blur');
+  // A press marks the places and is announced once.
+  tag('MLflow').click();
+  assert.equal(tag('MLflow').getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(matched(), ['Run MLOps and model deployment', 'MLOps & GenAI']);
+  assert.deepEqual([...document.querySelectorAll('.is-skill-hit')].map(node => node.textContent), ['MLflow', 'MLflow']);
+  const text = 'MLflow — used in: Run MLOps and model deployment · MLOps & GenAI (Associate ML Engineer).';
+  assert.equal(usage.textContent, text);
+  await settle();
+  assert.equal(live.textContent, text);
+  // One at a time; a second press of the same tag clears it.
+  tag('MCP').click();
+  assert.deepEqual(buttons.filter(button => button.getAttribute('aria-pressed') === 'true').map(button => button.textContent), ['MCP']);
+  assert.deepEqual(matched(), ['Build and ship AI agents and MCP integrations on AWS', 'AI agent platform & applied AI']);
+  tag('MCP').click();
+  await settle();
+  assert.deepEqual(matched(), []);
+  assert.equal(live.textContent, 'Highlight cleared.');
+  assert.equal(usage.textContent, hint);
+  // Escape clears a pressed tag.
+  tag('Amazon SageMaker').click();
+  assert.equal(skills.pressed, 'Amazon SageMaker');
+  document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(skills.pressed, null);
+  assert.deepEqual(matched(), []);
+  assert.ok(buttons.every(button => button.getAttribute('aria-pressed') === 'false'));
+  window.close();
 });

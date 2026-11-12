@@ -30,8 +30,116 @@ export const HOLD_SHARE = 0.22;
 const CURRENT_LINE = 0.4;
 // A chapter has arrived once its left edge passes this share of the stage.
 const REACH_LINE = 0.94;
+// Two timeline labels closer than this (px) count as colliding.
+const LABEL_GAP = 10;
+// Smallest hit area (px) of a role span on the axis.
+export const MIN_HIT = 44;
 
-export function initExperience(document, window) {
+// Career timeline. Built at runtime from the chapter markup (each chapter's
+// <time datetime> range in .xp-when, the group heads' years, the education
+// list for a gap between roles) by enhancing the chapter index: its buttons
+// become the role spans on a month axis from the first start to now. Travel
+// mode: one axis in the controls band (no extra height, so the pinned scroll
+// is unchanged). Stack mode: a compact chart above the chapters, one row per
+// role. Without the script nothing is added (the chapters show their dates).
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const monthIndex = value => {
+  const match = /^(\d{4})-(\d{2})/.exec(value || '');
+  return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : NaN;
+};
+export const monthLabel = index => `${MONTHS[((index % 12) + 12) % 12]} ${Math.floor(index / 12)}`;
+export const nowMonth = (date = new Date()) => date.getFullYear() * 12 + date.getMonth();
+
+// A role's months from its <time datetime> values: the end is inclusive, or
+// null while the text says the role is current ("present").
+export function roleRange(datetimes, text = '') {
+  const [start, end] = datetimes.map(monthIndex);
+  if (!Number.isFinite(start)) return null;
+  if (Number.isFinite(end)) return { start, end: Math.max(start, end) };
+  return /present|current|now/i.test(text) ? { start, end: null } : { start, end: start };
+}
+
+export const rangeText = role => `${monthLabel(role.start)} – ${role.end === null ? 'present' : monthLabel(role.end)}`;
+
+// Every year named in a label: "2026", "2024 – 2025" (each year of the range), none in "RESEARCH".
+export function yearsIn(text) {
+  const found = [...String(text).matchAll(/\b(19|20)\d{2}\b/g)].map(match => Number(match[0]));
+  if (found.length === 2 && found[1] > found[0]) return Array.from({ length: found[1] - found[0] + 1 }, (_, k) => found[0] + k);
+  return found;
+}
+
+// The month axis. `roles` in chapter order ({ start, end | null }), `now` a
+// month index (the axis ends with the month `now` is in, never before the
+// latest date in the markup), `years` group years for the markers,
+// `education` [{ degree, from, to }] (years) to explain a gap between roles:
+// a gap is labelled only when a degree's years cover it. Fractions are 0..1
+// along the axis; `order` is the chronological rank.
+export function timelinePlan(roles, { now, years = [], education = [] } = {}) {
+  const valid = roles.filter(Boolean);
+  if (!valid.length) return null;
+  const latest = Math.max(...valid.map(role => (role.end === null ? role.start : role.end)));
+  const last = Math.max(Number.isFinite(now) ? now : latest, latest);
+  const from = Math.min(...valid.map(role => role.start));
+  const to = last + 1;
+  const total = to - from;
+  const at = month => Math.min(1, Math.max(0, (month - from) / total));
+  const spans = roles.map((role, index) => (role ? { index, start: role.start, end: role.end, from: at(role.start), to: at((role.end === null ? last : role.end) + 1), present: role.end === null } : null));
+  const chrono = spans.filter(Boolean).sort((a, b) => a.start - b.start || a.index - b.index);
+  chrono.forEach((span, order) => { span.order = order; });
+  const gaps = [];
+  chrono.slice(1).forEach((next, k) => {
+    const prev = chrono[k];
+    if (prev.end === null || next.start <= prev.end + 1) return;
+    // Only the months strictly between the two roles (they own their first and last months).
+    const gap = { after: prev.index, before: next.index, start: prev.end + 1, end: next.start - 1, from: prev.to, to: next.from, order: prev.order + 0.5 };
+    const first = Math.floor(gap.start / 12);
+    const lastYear = Math.floor(gap.end / 12);
+    const degree = education.find(item => item.from <= first && item.to >= lastYear && /^(B\.?\s?[AS]\.?|Bachelor)/i.test(item.degree || ''));
+    if (degree) gap.label = `Finishing ${/^(B\.?\s?[AS]\.?)/i.exec(degree.degree)?.[1].replace(/\s/g, '') || 'degree'}`;
+    gaps.push(gap);
+  });
+  const markers = [...new Set(years)].sort((a, b) => a - b)
+    .map(year => ({ year: String(year), at: (year * 12 - from) / total }))
+    .filter(marker => marker.at > 0.001 && marker.at < 0.97);
+  if (spans.some(span => span?.present)) markers.push({ year: 'Now', at: 1, end: true });
+  return { from, to, total, spans, gaps, markers, order: chrono.map(span => span.index) };
+}
+
+// Hit areas of the role spans on an axis `width` px wide. Each bar keeps its
+// true length (`barX`/`barW`, px inside its box); a box shorter than `min`
+// widens around its bar, stays inside the axis, and takes the room from its
+// wider neighbour instead of overlapping it.
+export function hitBoxes(spans, width, min = MIN_HIT) {
+  const boxes = spans.map(span => {
+    const bl = span.from * width;
+    const br = span.to * width;
+    const grow = Math.max(0, min - (br - bl)) / 2;
+    return { l: bl - grow, r: br + grow, bl, br };
+  });
+  const order = boxes.map((_, k) => k).sort((a, b) => boxes[a].bl - boxes[b].bl);
+  boxes.forEach(box => {
+    if (box.l < 0) { box.r = Math.max(box.r, Math.min(width, min)); box.l = 0; }
+    if (box.r > width) { box.l = Math.max(0, Math.min(box.l, width - min)); box.r = width; }
+  });
+  for (let k = 1; k < order.length; k += 1) {
+    const a = boxes[order[k - 1]];
+    const b = boxes[order[k]];
+    if (b.l >= a.r) continue;
+    if (b.l - a.l >= min) a.r = b.l;
+    else if (b.r - a.r >= min) b.l = a.r;
+    else { b.l = a.r; b.r = Math.max(b.r, b.l + min); }
+  }
+  // Pushed past the end: walk back, giving way to the right.
+  for (let k = order.length - 1; k >= 0; k -= 1) {
+    const b = boxes[order[k]];
+    const next = boxes[order[k + 1]];
+    const limit = next ? next.l : width;
+    if (b.r > limit) { b.r = limit; b.l = Math.max(0, Math.min(b.l, b.r - min)); }
+  }
+  return boxes.map(box => ({ x: box.l, w: box.r - box.l, barX: box.bl - box.l, barW: box.br - box.bl }));
+}
+
+export function initExperience(document, window, options = {}) {
   const section = document.querySelector('#experience');
   const travel = section?.querySelector('.xp-travel');
   const stage = travel?.querySelector('.xp-stage');
@@ -49,9 +157,190 @@ export function initExperience(document, window) {
   const pad = n => String(n + 1).padStart(2, '0');
 
   const state = { mode: 'stack', shift: 0, distance: 0, stageW: 0, lefts: [], stops: [], plan: null, current: -1, frame: 0, measureFrame: 0 };
+  const chart = buildTimeline();
+
+  // ---- career timeline ------------------------------------------------------
+  function buildTimeline() {
+    const nav = stage.querySelector('.xp-index');
+    const buttons = indexButtons.filter(button => nav?.contains(button) && chapters[Number(button.dataset.xpGo)]);
+    if (!nav || !buttons.length) return null;
+    const roles = chapters.map(chapter => {
+      const when = chapter.querySelector('.xp-when');
+      const times = when ? [...when.querySelectorAll('time[datetime]')].map(time => time.getAttribute('datetime')) : [];
+      return roleRange(times, when?.textContent || '');
+    });
+    if (roles.some(role => !role)) return null;
+    const years = [...track.querySelectorAll('.xp-group-head .mono')].flatMap(label => yearsIn(label.textContent));
+    const education = [...document.querySelectorAll('.education-list li')].map(item => {
+      const span = yearsIn(item.querySelector('.school-meta')?.textContent || '');
+      return { degree: item.querySelector('.degree')?.textContent.trim() || '', from: span[0], to: span[span.length - 1] };
+    }).filter(item => Number.isFinite(item.from));
+    const now = nowMonth(options.now instanceof Date ? options.now : new Date());
+    const plan = timelinePlan(roles, { now, years, education });
+    if (!plan) return null;
+
+    const el = (tag, className, text) => {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    };
+    // Label + dates, then the lane its bar sits in (both hidden from the
+    // accessibility tree: the button's name says the same).
+    const parts = (target, name, dates) => {
+      const text = el('span', 'xp-tl-text');
+      text.setAttribute('aria-hidden', 'true');
+      text.append(el('span', 'xp-tl-label', name), el('span', 'xp-tl-dates mono', dates.toUpperCase()));
+      const lane = el('span', 'xp-tl-lane');
+      lane.setAttribute('aria-hidden', 'true');
+      lane.append(el('span', 'xp-tl-bar'));
+      target.append(text, lane);
+    };
+    const place = (node, span) => {
+      node.style.setProperty('--xp-from', span.from.toFixed(4));
+      node.style.setProperty('--xp-span', (span.to - span.from).toFixed(4));
+      node.style.setProperty('--xp-order', String(span.order));
+    };
+
+    const items = [];
+    buttons.forEach(button => {
+      const index = Number(button.dataset.xpGo);
+      const span = plan.spans[index];
+      const chapter = chapters[index];
+      const title = chapter.querySelector('.xp-title');
+      const name = button.querySelector('.xp-index-name')?.textContent.replace(/\s+/g, ' ').trim()
+        || title?.dataset.ghost || title?.textContent.replace(/\s+/g, ' ').trim() || `Chapter ${index + 1}`;
+      const dates = rangeText(span);
+      button.setAttribute('aria-label', `${name}, ${dates}`);
+      button.classList.add('xp-tl-span');
+      [...button.children].forEach(child => child.setAttribute('aria-hidden', 'true'));
+      parts(button, name, dates);
+      place(button, span);
+      items.push({ node: button, span, start: span.start });
+    });
+    plan.gaps.forEach(gap => {
+      const node = el('span', 'xp-tl-gap');
+      node.setAttribute('aria-hidden', 'true');
+      parts(node, gap.label || '', rangeText({ start: gap.start, end: gap.end }));
+      if (!gap.label) node.dataset.xpUnlabelled = '';
+      place(node, { from: gap.from, to: gap.to, order: gap.order });
+      items.push({ node, span: gap, start: gap.start + 0.5 });
+    });
+    // Chronological, left to right: the tab order follows the axis.
+    items.sort((a, b) => a.start - b.start).forEach(item => nav.append(item.node));
+    const axis = el('span', 'xp-tl-axis');
+    axis.setAttribute('aria-hidden', 'true');
+    const marks = el('span', 'xp-tl-years');
+    marks.setAttribute('aria-hidden', 'true');
+    plan.markers.forEach(marker => {
+      const mark = el('span', 'xp-tl-year mono', marker.year.toUpperCase());
+      mark.style.setProperty('--xp-at', marker.at.toFixed(4));
+      mark.toggleAttribute('data-xp-edge', Boolean(marker.end));
+      marks.append(mark);
+    });
+    nav.prepend(axis, marks);
+    nav.classList.add('xp-tl');
+    nav.style.setProperty('--xp-count', String(items.length));
+
+    const home = { parent: nav.parentNode, next: nav.nextSibling };
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    // Draws itself once, the first time it comes into view (static without motion).
+    let observer = null;
+    if (window.IntersectionObserver && !reduce?.matches) {
+      nav.dataset.xpDraw = 'pending';
+      observer = new window.IntersectionObserver(entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return;
+        observer.disconnect();
+        raf(() => { nav.dataset.xpDraw = 'done'; });
+      }, { threshold: 0.6 });
+      observer.observe(nav);
+    }
+
+    // Labels on one axis: each starts at its span, or ends at it when it
+    // would run off the axis. If any two collide, only the current one (and
+    // a hovered or focused one) shows.
+    function fit() {
+      if (nav.dataset.xpLayout !== 'axis') { nav.removeAttribute('data-xp-crowded'); return; }
+      const width = nav.clientWidth;
+      if (!(width > 0)) return;
+      // Role buttons: at least MIN_HIT wide, bars still to scale.
+      const roles = items.filter(item => item.node.tagName === 'BUTTON');
+      hitBoxes(roles.map(item => item.span), width).forEach((box, k) => {
+        const style = roles[k].node.style;
+        style.setProperty('--xp-hit-x', `${box.x.toFixed(1)}px`);
+        style.setProperty('--xp-hit-w', `${box.w.toFixed(1)}px`);
+        style.setProperty('--xp-bar-x', `${box.barX.toFixed(1)}px`);
+        style.setProperty('--xp-bar-w', `${box.barW.toFixed(1)}px`);
+        style.setProperty('--xp-bar-r', `${(box.w - box.barX - box.barW).toFixed(1)}px`);
+      });
+      // Labels start at their bar, or end at it when they would run off the axis.
+      const boxes = items.filter(item => item.node.querySelector('.xp-tl-label').textContent).map(item => {
+        const label = item.node.querySelector('.xp-tl-label');
+        const w = label.offsetWidth;
+        const from = item.span.from * width;
+        const to = item.span.to * width;
+        const end = from + w > width;
+        item.node.toggleAttribute('data-xp-end-label', end);
+        const x = end ? to - w : from;
+        return [x, x + w];
+      }).sort((a, b) => a[0] - b[0]);
+      const crowded = boxes.some((box, k) => k > 0 && box[0] < boxes[k - 1][1] + LABEL_GAP) || boxes.some(box => box[0] < 0);
+      nav.toggleAttribute('data-xp-crowded', crowded);
+    }
+
+    // Travel: in the controls band, one axis. Stack: above the chapters, one row per role.
+    function mount(mode) {
+      const focused = nav.contains(document.activeElement) ? document.activeElement : null;
+      if (mode === 'travel') {
+        if (nav.parentNode !== home.parent) home.parent.insertBefore(nav, home.next?.parentNode === home.parent ? home.next : null);
+        nav.dataset.xpLayout = 'axis';
+      } else {
+        if (nav.parentNode !== travel) travel.prepend(nav);
+        nav.dataset.xpLayout = 'rows';
+        nav.removeAttribute('data-xp-crowded');
+      }
+      if (focused && document.activeElement !== focused) focused.focus({ preventScroll: true });
+    }
+
+    // Stack mode: the chapter whose top has passed 40% of the window is current.
+    function current() {
+      const line = (window.innerHeight || 800) * CURRENT_LINE;
+      let index = 0;
+      chapters.forEach((chapter, k) => { if (chapter.getBoundingClientRect().top <= line) index = k; });
+      return index;
+    }
+
+    // Stack mode: a span scrolls to its chapter and moves focus there.
+    function jump(index) {
+      const chapter = chapters[index];
+      if (!chapter) return;
+      if (!chapter.hasAttribute('tabindex')) {
+        chapter.setAttribute('tabindex', '-1');
+        chapter.addEventListener('blur', () => { if (state.mode !== 'travel') chapter.removeAttribute('tabindex'); }, { once: true });
+      }
+      chapter.scrollIntoView({ behavior: reduce?.matches ? 'auto' : 'smooth', block: 'start' });
+      chapter.focus({ preventScroll: true });
+    }
+
+    return { nav, plan, fit, mount, current, jump };
+  }
+
+  function setCurrentButton(current) {
+    indexButtons.forEach(button => {
+      if (Number(button.dataset.xpGo) === current) button.setAttribute('aria-current', 'true');
+      else button.removeAttribute('aria-current');
+    });
+  }
+
+  function updateStack() {
+    state.frame = 0;
+    if (state.mode !== 'stack' || !chart) return;
+    setCurrentButton(chart.current());
+  }
 
   function setMode(mode) {
     state.mode = mode;
+    chart?.mount(mode);
     if (mode === 'travel') {
       section.dataset.xp = 'travel';
       if (!timeline) section.dataset.xpDriver = 'script';
@@ -108,6 +397,7 @@ export function initExperience(document, window) {
     section.style.setProperty('--xp-distance', `${state.distance}px`);
     travel.style.setProperty('--xp-p', state.plan.css);
     chapters.forEach((chapter, index) => chapter.style.setProperty('--xp-at', (state.plan.holds[index]?.[0] ?? 0).toFixed(4)));
+    chart?.fit();
     update();
   }
 
@@ -143,10 +433,7 @@ export function initExperience(document, window) {
       live.textContent = `Chapter ${current + 1} of ${chapters.length}${title ? `, ${title}` : ''}`;
     }
     chapters.forEach((chapter, index) => chapter.classList.toggle('is-current', index === current));
-    indexButtons.forEach((button, index) => {
-      if (index === current) button.setAttribute('aria-current', 'true');
-      else button.removeAttribute('aria-current');
-    });
+    setCurrentButton(current);
     stepButtons.forEach(button => {
       const step = Number(button.dataset.xpStep);
       const target = current + step;
@@ -155,7 +442,11 @@ export function initExperience(document, window) {
     if (counter) counter.textContent = pad(current);
   }
 
-  const schedule = () => { if (!state.frame && state.mode === 'travel') state.frame = raf(update); };
+  const schedule = () => {
+    if (state.frame) return;
+    if (state.mode === 'travel') state.frame = raf(update);
+    else if (chart) state.frame = raf(updateStack);
+  };
   const remeasure = () => { if (!state.measureFrame) state.measureFrame = raf(measure); };
 
   // The page scroll position that shows chapter `index` at the stage's left:
@@ -192,7 +483,11 @@ export function initExperience(document, window) {
     window.scrollTo({ top: scrollTargetFor(target), behavior });
   }
 
-  indexButtons.forEach(button => button.addEventListener('click', () => goTo(Number(button.dataset.xpGo), { announce: true })));
+  // Stacked, a timeline span scrolls to its chapter instead.
+  indexButtons.forEach(button => button.addEventListener('click', () => {
+    if (state.mode === 'travel') goTo(Number(button.dataset.xpGo), { announce: true });
+    else chart?.jump(Number(button.dataset.xpGo));
+  }));
   stepButtons.forEach(button => button.addEventListener('click', () => {
     if (button.getAttribute('aria-disabled') === 'true') return;
     goTo(Math.max(0, state.current) + Number(button.dataset.xpStep), { announce: true });
@@ -227,7 +522,9 @@ export function initExperience(document, window) {
   document.fonts?.ready?.then(remeasure, () => {});
   window.addEventListener('load', remeasure, { once: true });
 
+  chart?.mount(state.mode);
   measure();
+  if (state.mode === 'stack') updateStack();
   return {
     get mode() { return state.mode; },
     get current() { return state.current; },

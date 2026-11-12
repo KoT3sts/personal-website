@@ -21,6 +21,24 @@ code { font-family: var(--font-mono); font-size: .88em; padding: 1px 5px; border
 .lab-strip dd { margin: 0; font-size: clamp(30px, 3.4vw, 50px); line-height: .95; font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .lab-unit { display: block; margin-top: 8px; color: #a4a59f; font-family: var(--font-mono); font-size: 11px; font-weight: 400; font-stretch: 100%; letter-spacing: .035em; text-transform: uppercase; }
 .lab-strip .lab-strip-take dd { font-size: 16px; line-height: 1.5; font-weight: 400; font-stretch: 100%; letter-spacing: 0; color: #dfe3d6; }
+/* Each number links down to the scorecard. */
+.lab-strip-link { color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #5c6152; text-underline-offset: .12em; }
+.lab-strip-link:hover { text-decoration-color: currentColor; }
+.lab-strip-link:focus-visible { outline: 2px solid var(--green); outline-offset: 4px; border-radius: 2px; }
+
+/* The sentiment page keeps its intro short so the strip and the top of the scorecard
+   share the first screen (1280 x 800). Scoped: the other lab pages also load this file. */
+.lab-eval .cs-intro { padding-top: clamp(18px, 4vh, 40px); padding-bottom: clamp(22px, 2.6vw, 34px); }
+.lab-eval .lab-kicker { margin-bottom: 12px; }
+.lab-eval .lab-title { font-size: clamp(32px, 6vw, 80px); }
+.lab-eval .cs-summary { margin-top: clamp(16px, 2.2vw, 28px); }
+.lab-eval .lab-lead { max-width: 44ch; font-size: clamp(20px, 1.8vw, 25px); }
+.lab-eval .lab-disclaimer { margin-top: 14px; }
+.lab-eval .cs-body { padding-top: clamp(20px, 2vw, 28px); }
+.lab-eval .lab-strip > div { padding: clamp(18px, 1.9vw, 26px); }
+.lab-eval .lab-scorecard { padding-top: 22px; }
+.lab-scorecard { scroll-margin-top: 12px; }
+.lab-cue { display: inline-flex; align-items: center; gap: 8px; justify-self: start; margin-bottom: 6px; padding: 5px 12px 5px 10px; border-radius: 50px; background: #e1e7d3; color: #34401f; }
 
 /* Section rails with a short note under the heading. */
 .lab-rail-note { max-width: 30ch; margin-top: 14px; color: var(--muted); font-size: 14px; line-height: 1.55; }
@@ -34,7 +52,7 @@ code { font-family: var(--font-mono); font-size: .88em; padding: 1px 5px; border
 /* Scorecard controls. */
 .lab-score { min-width: 0; }
 .lab-live { display: grid; gap: 30px; }
-.lab-controls { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 22px 40px; align-items: start; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+.lab-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px 40px; align-items: start; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
 .lab-toggle { min-width: 0; margin: 0; padding: 0; border: 0; }
 .lab-toggle legend { margin-bottom: 10px; padding: 0; color: var(--label); }
 .lab-toggle-options { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -117,6 +135,7 @@ code { font-family: var(--font-mono); font-size: .88em; padding: 1px 5px; border
 .lab-cite { color: var(--muted); font-size: 14px; line-height: 1.6; }
 
 @media (prefers-reduced-motion: no-preference) {
+  html:has(.lab-eval) { scroll-behavior: smooth; }
   .lab-toggle label, .lab-link { transition: color .2s ease, background-color .2s ease, border-color .2s ease, text-decoration-color .2s ease; }
 }
 
@@ -129,6 +148,8 @@ code { font-family: var(--font-mono); font-size: .88em; padding: 1px 5px; border
   .lab-rail-note { margin-bottom: 18px; }
 }
 @media (max-width: 560px) {
+  .lab-eval .cs-summary { gap: 18px; }
+  .lab-eval .cs-meta > div { padding: 7px 0; }
   .lab-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lab-strip > div:nth-child(3) { grid-column: 1 / -1; border-left: 0; border-top: 1px solid #33382c; }
   .lab-strip dd { font-size: 32px; }

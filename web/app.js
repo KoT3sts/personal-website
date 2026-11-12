@@ -3,6 +3,7 @@ import { initMotion } from './motion.js';
 import { initHeader } from './header.js';
 import { initExperience } from './experience.js';
 import { initExplorer } from './explorer.js';
+import { initHomeCharts } from './home-charts.js';
 
 // The page shell: header, hero tilt and the footer year. The one project
 // gallery is the explorer (explorer.js); its covers link to the case studies.
@@ -69,11 +70,59 @@ export function deferAboutFlow(document, window) {
   if (document.documentElement.dataset.tour === 'play') timer = window.setTimeout(load, Math.max(0, FLOW_TOUR_LEAD_MS - (window.performance?.now?.() ?? 0)));
 }
 
+// ---- live previews in "Open the work" (#lab) -----------------------------------
+// work-previews.js turns each `.work-preview` summary into a live preview. It is
+// fetched once the section is about a screen away (or at once without an
+// observer), or as soon as the build tour starts (`start()`), and is optional:
+// if it is missing or fails, the static summaries stay and nothing throws.
+// Returns { done, settled, start }: `done` resolves true once the module is
+// wired (false if it is missing or failed); `settled` resolves (never rejects)
+// once every preview is live or kept its summary, or the module failed; the
+// tour's Lab stop waits on it briefly (entrance.js stopGates).
+export const PREVIEWS_URL = './work-previews.js';
+export function loadWorkPreviews(document, window, load = () => import(PREVIEWS_URL)) {
+  const section = document.querySelector('#lab');
+  if (!section || !section.querySelector('.work-preview')) {
+    const done = Promise.resolve(false);
+    return { done, settled: Promise.resolve(), start: () => done };
+  }
+  let resolveDone;
+  let resolveSettled;
+  const done = new Promise(resolve => { resolveDone = resolve; });
+  const settled = new Promise(resolve => { resolveSettled = resolve; });
+  let started = null;
+  let observer = null;
+  const start = () => {
+    if (started) return started;
+    observer?.disconnect();
+    started = Promise.resolve().then(load).then(async module => {
+      if (typeof module?.initWorkPreviews !== 'function') return false;
+      const handle = await module.initWorkPreviews(document, window);
+      Promise.resolve(handle?.settled).catch(() => {}).then(() => resolveSettled());
+      return true;
+    }).catch(error => { window.console?.warn?.('work previews unavailable; keeping the summaries', error); return false; });
+    // Without the module the summaries need no reserved room (styles.css).
+    started.then(ok => { if (!ok) { section.classList.add('previews-off'); resolveSettled(); } resolveDone(ok); });
+    return started;
+  };
+  if (typeof window.IntersectionObserver !== 'function') start();
+  else {
+    observer = new window.IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) start(); }, { rootMargin: '100% 0px 100% 0px' });
+    observer.observe(section);
+  }
+  return { done, settled, start };
+}
+let previews = null;
+
 // ---- build tour bootstrap -----------------------------------------------------
 // The tour plays on every normal load (everyVisit). Deep links, back/forward and
 // reduced motion skip it, so entrance.js is only fetched when it will play or when
 // the visitor asks for a Replay.
-const ENTRANCE_OPTIONS = { everyVisit: true };
+// `stopGates`: the Lab stop waits briefly (entrance.js caps it) for the live
+// previews, so they are not swapped in under the agents building the cards.
+// Asking for the gate also starts the previews' import: entrance.js asks once
+// as the tour starts.
+const ENTRANCE_OPTIONS = { everyVisit: true, stopGates: { '#lab': () => { previews?.start(); return previews?.settled; } } };
 // Same key prefix as entrance.js's storage probe.
 const ENTRANCE_PROBE_KEY = 'cesar:portfolio:agentic-intro:v1:probe';
 // If the tour script takes longer than this to arrive, the page shows as is and the
@@ -244,5 +293,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   initPortfolio(document, window);
   try { initExperience(document, window); } catch (error) { console.error(error); }
   try { initExplorer(document, window); } catch (error) { console.error(error); }
+  try { initHomeCharts(document, window); } catch (error) { console.error(error); }
+  previews = loadWorkPreviews(document, window);
   bootEntrance(document, window);
 }

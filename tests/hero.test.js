@@ -264,3 +264,24 @@ test('deferAboutFlow: nothing at the fold edge, loads on intent, a real overlap,
   tour.timers[0].fn();
   assert.equal(tour.image.src, './assets/about-flow.svg', 'loaded ahead of the tour reaching About');
 });
+
+// ---- Round 10: the proof figures count up (an enhancement) ----
+
+test('the proof figures count up over a hidden copy; the markup and screen readers keep the final figures', async () => {
+  // The markup is unchanged: no-script and screen readers get the final figures.
+  const strip = hero.match(/<ul class="hero-proof" aria-label="Highlights">([\s\S]*?)<\/ul>/)?.[1] ?? '';
+  assert.doesNotMatch(strip, /proof-count|data-count/);
+  const charts = await read('../web/home-charts.js');
+  const css = await read('../web/home-charts.css');
+  // The counting copy is aria-hidden and laid over the final text, which keeps the width.
+  assert.match(charts, /document\.querySelectorAll\('\.hero-proof \.proof-figure'\)/);
+  assert.match(charts, /ink\.setAttribute\('aria-hidden', 'true'\)/);
+  assert.match(css, /\.proof-count\.is-counting \.proof-count-final \{ color: transparent; \}/);
+  assert.match(css, /\.proof-count-ink \{ position: absolute;/);
+  // It starts when the strip is shown (after the tour places it) and never with reduced motion.
+  assert.match(charts, /whenShown\(document, window, counter\.figure\.closest\('li'\)/);
+  assert.match(charts, /if \(!counters\.length \|\| !motionAllowed\(window\)\) return counters;/);
+  const app = await read('../web/app.js');
+  assert.match(app, /try \{ initHomeCharts\(document, window\); \} catch/);
+  assert.ok(app.indexOf('initHomeCharts(document, window)') < app.indexOf('bootEntrance(document, window);\n}'), 'drawn before the tour plans its targets');
+});

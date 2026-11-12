@@ -93,7 +93,69 @@
     /* Focus frames the chapter's copy, not the controls band below it. */
     .experience[data-xp="travel"] .xp-chapter:focus-visible { outline: none; }
     .experience[data-xp="travel"] .xp-chapter:focus-visible::after { content: ""; position: absolute; z-index: 3; inset: calc(var(--xp-top) - 16px) 14px calc(var(--xp-bar) + 6px) 8px; border-radius: 6px; outline: 2px solid var(--green); pointer-events: none; }
+
+    /* ---- career timeline (experience.js turns the chapter index into it) ----
+       Each role is a button spanning its months on one axis, Sep 2021 to now;
+       --xp-from / --xp-span are fractions of the axis. A gap between roles is
+       a dashed, non-interactive span. Year markers sit on the axis. */
+    .xp-tl { --xp-tl-bar: #6f7469; position: relative; }
+    .xp-tl .xp-index-button.xp-tl-span { display: block; min-height: 44px; padding: 0; border: 0; border-radius: 4px; background: none; color: #a9aba4; font-size: 13px; letter-spacing: -.01em; text-align: left; white-space: normal; }
+    .xp-tl .xp-tl-span > :not(.xp-tl-text, .xp-tl-lane) { display: none; }
+    .xp-tl-text { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+    .xp-tl-label { white-space: nowrap; }
+    .xp-tl-dates { color: #a4a59f; font-size: 11px; letter-spacing: .05em; white-space: nowrap; }
+    .xp-tl-lane { position: relative; display: block; }
+    .xp-tl-bar { position: absolute; inset: 0; border-radius: 2px; background: var(--xp-tl-bar); transform-origin: 0 50%; }
+    .xp-tl-gap { color: #a4a59f; font-size: 12px; }
+    .xp-tl-gap .xp-tl-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+    .xp-tl-gap .xp-tl-bar { background: repeating-linear-gradient(90deg, var(--xp-tl-bar) 0 4px, transparent 4px 8px); }
+    .xp-tl-years { position: absolute; inset: 0; pointer-events: none; }
+    .xp-tl-year { position: absolute; left: calc(var(--xp-at) * 100%); translate: -50% 0; color: #a4a59f; font-size: 11px; line-height: 14px; letter-spacing: .05em; white-space: nowrap; }
+    .xp-tl-year[data-xp-edge] { translate: -100% 0; }
+    .xp-tl .xp-tl-span:hover { color: var(--paper); }
+    .xp-tl .xp-tl-span:focus-visible { outline-offset: 3px; }
+    .xp-tl .xp-tl-span:hover .xp-tl-bar { background: #b7bab0; }
+    .xp-tl .xp-tl-span[aria-current="true"] { background: none; color: var(--paper); }
+    .xp-tl .xp-tl-span[aria-current="true"] .xp-tl-bar { background: var(--paper); }
+    .xp-tl .xp-tl-span[aria-current="true"] .xp-tl-dates { color: #d6d8cf; }
+
+    /* One axis inside the controls band (travel mode): label above the bar,
+       years below it, 58px tall so the band (72-96px) keeps its height. */
+    .xp-tl[data-xp-layout="axis"] { display: block; width: min(760px, 100cqw - 2 * var(--gutter) - 240px); height: 58px; }
+    /* experience.js sets each role's hit box (--xp-hit-x/-w, at least 44px)
+       and its bar inside it (--xp-bar-x/-w/-r), so short roles stay to scale. */
+    .xp-tl[data-xp-layout="axis"] > .xp-tl-span, .xp-tl[data-xp-layout="axis"] > .xp-tl-gap { position: absolute; top: 0; left: calc(var(--xp-from) * 100%); width: calc(var(--xp-span) * 100%); height: 44px; }
+    .xp-tl[data-xp-layout="axis"] > .xp-tl-span { left: var(--xp-hit-x, calc(var(--xp-from) * 100%)); width: var(--xp-hit-w, calc(var(--xp-span) * 100%)); min-width: 44px; }
+    .xp-tl[data-xp-layout="axis"] > .xp-tl-gap { pointer-events: none; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-text { position: absolute; top: 5px; left: var(--xp-bar-x, 0px); display: block; line-height: 16px; }
+    .xp-tl[data-xp-layout="axis"] [data-xp-end-label] .xp-tl-text { left: auto; right: var(--xp-bar-r, 0px); }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-dates { display: none; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-gap .xp-tl-text { top: 7px; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-lane { position: absolute; top: 28px; pointer-events: none; left: var(--xp-bar-x, 0px); width: var(--xp-bar-w, 100%); height: 3px; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-span[aria-current="true"] .xp-tl-lane { top: 27px; height: 5px; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-axis { position: absolute; top: 29px; left: 0; right: 0; height: 1px; background: var(--night-line); }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-year { top: 34px; padding-top: 8px; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-year::before { content: ""; position: absolute; top: 0; left: calc(50% - .5px); width: 1px; height: 5px; background: var(--xp-tl-bar); }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-year[data-xp-edge]::before { left: auto; right: 0; }
+    /* Labels too close to share the axis: only the current one (or a hovered or focused one) shows. */
+    .xp-tl[data-xp-crowded] .xp-tl-gap .xp-tl-text, .xp-tl[data-xp-crowded] .xp-tl-span:not([aria-current="true"]) .xp-tl-text { visibility: hidden; }
+    .xp-tl[data-xp-crowded] .xp-tl-span:is(:hover, :focus-visible) { z-index: 1; }
+    .xp-tl[data-xp-crowded] .xp-tl-span:is(:hover, :focus-visible) .xp-tl-text { visibility: visible; padding: 0 4px; background: var(--night); }
+    .xp-tl[data-xp-crowded]:has(.xp-tl-span:is(:hover, :focus-visible):not([aria-current="true"])) .xp-tl-span[aria-current="true"] .xp-tl-text { visibility: hidden; }
+
+    /* Stacked chapters: a compact chart above them, one row per role (oldest
+       first, so the bars step right), year lines behind the rows. */
+    .xp-tl[data-xp-layout="rows"] { display: grid; gap: 4px; width: min(100%, 760px); margin: 0 0 clamp(30px, 4vw, 48px); padding-top: 24px; }
+    .xp-tl[data-xp-layout="rows"] > .xp-tl-span, .xp-tl[data-xp-layout="rows"] > .xp-tl-gap { position: relative; display: grid; align-content: center; gap: 7px; min-height: 44px; }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-gap[data-xp-unlabelled] .xp-tl-text { justify-content: flex-end; }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-lane { height: 4px; border-radius: 2px; background: rgb(238 237 232 / .06); }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-bar { left: calc(var(--xp-from) * 100%); right: auto; width: max(4px, calc(var(--xp-span) * 100%)); }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-axis { display: none; }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-year { top: 0; bottom: 0; }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-year::before { content: ""; position: absolute; top: 20px; bottom: 0; left: calc(50% - .5px); width: 1px; background: rgb(238 237 232 / .07); }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-year[data-xp-edge]::before { left: auto; right: 0; }
   }
+  @media print { .xp-tl { display: none; } }
 }
 
 @layer motion {
@@ -103,6 +165,18 @@
     .experience[data-xp="travel"] .xp-title::after { clip-path: inset(-.3em 101% -.3em -.3em); transition: clip-path .55s cubic-bezier(.55, 0, .15, 1); }
     .experience[data-xp="travel"] .xp-chapter.is-current .xp-title::after { clip-path: inset(-.3em -.3em -.3em -.3em); transition: clip-path 1.15s cubic-bezier(.16, 1, .3, 1) .08s; }
     .xp-index-button, .xp-step { transition: background-color .25s, color .25s, border-color .25s; }
+  }
+  /* Timeline draw-in, once, the first time it is in view (experience.js sets
+     data-xp-draw="pending" only when motion is allowed): the axis runs out,
+     then each span grows in time order, then the years appear. */
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .xp-tl-axis, .xp-tl-bar { transition: transform .9s cubic-bezier(.16, 1, .3, 1) calc(.2s + var(--xp-order, 0) * .16s), background-color .25s; }
+    .xp-tl-axis { transform-origin: 0 50%; transition-delay: 0s; }
+    .xp-tl-text, .xp-tl-year { transition: opacity .6s ease calc(.45s + var(--xp-order, 0) * .16s); }
+    .xp-tl-year { transition-delay: .5s; }
+    .xp-tl[data-xp-draw="pending"] :is(.xp-tl-axis, .xp-tl-bar) { transform: scaleX(0); }
+    .xp-tl[data-xp-draw="pending"] :is(.xp-tl-text, .xp-tl-year) { opacity: 0; }
+    .xp-tl-lane { transition: top .3s, height .3s; }
   }
   /* Build tour: chapters still off to the right wait unseen, so the tour
      neither builds nor hides them; each arrives sideways as the track
@@ -121,6 +195,7 @@
     .xp-title { font-size: clamp(40px, 7vw, 72px); }
     .xp-index-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .xp-index-button { padding: 0 16px; }
+    .xp-tl .xp-index-button.xp-tl-span { padding: 0; }
     /* Tablets: the current chapter's title column and first group share one screen. */
     .experience[data-xp="travel"] .xp-head { width: clamp(290px, 40cqw, 440px); }
     .experience[data-xp="travel"] .xp-group { width: clamp(310px, 42cqw, 440px); }
@@ -140,5 +215,13 @@
     .xp-title { color: CanvasText; -webkit-text-stroke: 0; }
     .xp-title::after { content: none; }
     .xp-index-button[aria-current="true"] { outline: 2px solid Highlight; }
+    /* Timeline: bars keep their own system colours (backgrounds are otherwise dropped). */
+    .xp-tl :is(.xp-tl-bar, .xp-tl-axis), .xp-tl-year::before { forced-color-adjust: none; background: CanvasText; }
+    .xp-tl .xp-tl-axis, .xp-tl .xp-tl-year::before { background: GrayText; }
+    .xp-tl .xp-tl-span[aria-current="true"] .xp-tl-bar { background: Highlight; }
+    .xp-tl .xp-tl-gap .xp-tl-bar { background: none; outline: 1px dashed CanvasText; outline-offset: -1px; }
+    /* Year lines through the rows and the huge background years would be forced to full-strength text colours. */
+    .xp-tl[data-xp-layout="rows"] .xp-tl-year::before { content: none; }
+    .xp-year { display: none; }
   }
 }

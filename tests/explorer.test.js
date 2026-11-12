@@ -20,7 +20,7 @@ test('the explorer is the one project gallery, in #work right under the heading'
   assert.ok(work.indexOf('<div class="work-heading">') < work.indexOf('<div class="explorer">'), 'explorer after the heading');
   assert.ok(work.indexOf('<div class="explorer">') < work.indexOf('<div class="project-stories">'), 'stories stay below');
   const order = [...html.matchAll(/<section id="([^"]+)"/g)].map(match => match[1]).filter(id => !id.startsWith('project-'));
-  assert.deepEqual(order.slice(order.indexOf('work'), order.indexOf('work') + 2), ['work', 'skills']);
+  assert.deepEqual(order.slice(order.indexOf('work'), order.indexOf('work') + 2), ['work', 'lab']);
   // The centre label sits under the section's h2.
   assert.match(section, /<h3 id="explorer-title">/);
   assert.doesNotMatch(section, /<h2/);
@@ -60,7 +60,7 @@ test('the build tour builds the explorer on the Projects stop, with no separate 
   const stop = entrance.slice(work, skills);
   for (const sel of ['#explorer-title', '.explorer-item', '.explorer-index', '.explorer-hint']) assert.ok(stop.includes(`sel: '${sel}'`), `builds ${sel}`);
   assert.doesNotMatch(stop, /project-card|gallery-/);
-  assert.equal([...entrance.matchAll(/^ {2}\{ sel: '#[a-z]+', name: '/gm)].length, 9, 'nine stops');
+  assert.equal([...entrance.matchAll(/^ {2}\{ sel: '#[a-z]+', name: '/gm)].length, 10, 'ten stops (Lab added in round 10)');
 });
 
 test('reduced motion and touch have their own paths in the stylesheet', () => {

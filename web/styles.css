@@ -93,7 +93,7 @@
   .site-header.is-dark .main-nav a { color: #b9bab3; }
   .site-header.is-dark .main-nav a[aria-current] { color: var(--paper); background: rgb(238 237 232 / .14); box-shadow: 0 0 0 1px rgb(238 237 232 / .12); }
   .site-header.is-dark .main-nav a:hover { color: var(--paper); }
-  .header-contact { display: flex; align-items: center; gap: 8px; font-size: 11px; padding: 12px 0; }
+  .header-contact { display: flex; flex: none; align-items: center; gap: 8px; font-size: 11px; padding: 12px 0; white-space: nowrap; }
   .header-contact .icon { width: 1.2em; height: 1.2em; }
   .site-header.is-dark .wordmark, .site-header.is-dark .header-contact { color: var(--paper); }
   .hero { position: relative; min-height: 720px; height: 100svh; max-height: 1150px; padding: 146px var(--gutter) 0; isolation: isolate; overflow: clip; }
@@ -135,10 +135,10 @@
   .about-flow img:not([src]) { display: none; }
   .cinematic-copy .currently { margin-top: 16px; padding-top: 14px; border-top: 1px solid #ffffff1f; color: #d8d9de; }
   .currently .mono { display: block; margin-bottom: 6px; color: var(--green); font-size: 11px; letter-spacing: .06em; }
-  .work-heading, .experience-heading, .capabilities-heading { display: flex; justify-content: space-between; align-items: end; gap: 30px; padding: 78px 0 20px; }
-  .work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: clamp(55px, 7.6vw, 125px); letter-spacing: var(--display-tracking); line-height: .9; font-weight: var(--display-weight); font-stretch: var(--display-stretch); }
-  .work-heading h2 span { color: #808477; }
-  .work-heading > p, .experience-heading > p, .capabilities-heading > p { font-size: var(--text-body); color: #65685d; line-height: 1.55; padding: 0 4px 8px 0; max-width: 340px; text-wrap: pretty; }
+  .open-heading, .work-heading, .experience-heading, .capabilities-heading { display: flex; justify-content: space-between; align-items: end; gap: 30px; padding: 78px 0 20px; }
+  .open-heading h2, .work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: clamp(55px, 7.6vw, 125px); letter-spacing: var(--display-tracking); line-height: .9; font-weight: var(--display-weight); font-stretch: var(--display-stretch); }
+  .work-heading h2 span, .open-heading h2 span { color: #808477; }
+  .open-heading > p, .work-heading > p, .experience-heading > p, .capabilities-heading > p { font-size: var(--text-body); color: #65685d; line-height: 1.55; padding: 0 4px 8px 0; max-width: 340px; text-wrap: pretty; }
   .capabilities { padding: 0 var(--gutter) 90px; }
   .capabilities-heading h2 span { color: #8c9285; }
   .capabilities-heading > p { color: #a5ada0; }
@@ -192,6 +192,38 @@
   .work-end { display: flex; justify-content: space-between; gap: 20px; padding: 22px 0 30px; border-top: 1px solid var(--line); margin-top: 75px; color: #676b5e; font-size: var(--text-label); }
   .work-end a { color: var(--ink); }
   .work-end-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 28px; }
+  /* Open the work (#lab): three lab pages to try, each a card with a preview
+     (work-previews.js; a static summary without it) and one large link. */
+  .open-work { padding: 0 var(--gutter) 96px; }
+  .open-cards { list-style: none; margin: 52px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.6vw, 24px); }
+  .open-card { display: flex; flex-direction: column; min-width: 0; padding: clamp(22px, 2vw, 30px); background: #f7f6f0; border: 1px solid var(--line); border-radius: 22px; transition: border-color .25s ease; }
+  .open-card:has(.open-card-link:hover) { border-color: #9b9d92; }
+  .open-card-index { margin: 0; color: var(--label); }
+  .open-card h3 { margin-top: 18px; font-size: clamp(26px, 2.3vw, 36px); font-weight: 800; font-stretch: var(--display-stretch); letter-spacing: -.035em; line-height: 1.02; text-wrap: balance; }
+  .open-card-text { margin-top: 12px; font-size: var(--text-body); line-height: 1.55; color: #55584e; text-wrap: pretty; }
+  .open-card .work-preview { margin: 22px 0 26px; min-width: 0; }
+  /* Room for the live previews (work-previews.js), measured in Chrome at 360-1728: the
+     summary sits in a box as tall as the live preview, so swapping it in never moves the
+     page. The loop diagram scales with its width (about .54 x width + a caption line),
+     so its reserve is in container units of the card. No reserve without scripts, once
+     the module failed (.previews-off) or where a preview kept its summary. */
+  .open-card { container-type: inline-size; }
+  .js-enabled .open-work:not(.previews-off) .work-preview:not([data-preview-state="fallback"]) { min-height: var(--reserve, auto); }
+  .js-enabled .open-work .work-preview[data-preview="lab"] { --reserve: 432px; }
+  .js-enabled .open-work .work-preview[data-preview="trace"] { --reserve: 300px; }
+  .js-enabled .open-work .work-preview[data-preview="loop"] { --reserve: calc(54.2cqi + 72px); }
+  .open-card-link { margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 22px; border-radius: 50px; background: var(--ink); color: var(--paper); font-size: 13px; box-shadow: 0 12px 24px -16px #17171699; }
+  .open-card-link .icon { width: 1.15em; height: 1.15em; }
+  .open-card-link:hover { background: #32342e; }
+  /* The static summaries inside each preview (shown until, or unless, the live preview takes over). */
+  .open-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 14px 12px; margin: 0; padding: 16px 0 0; border-top: 1px solid var(--line); }
+  .open-stats > div { display: grid; align-content: start; gap: 6px; }
+  .open-stats dd { font-size: clamp(26px, 2.2vw, 34px); font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: -.035em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .open-note { margin-top: 14px; color: var(--label); }
+  .open-loop { list-style: none; counter-reset: loop; margin: 0; padding: 16px 0 0; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+  .open-loop li { counter-increment: loop; display: grid; grid-template-columns: 2.4em minmax(0, 1fr); column-gap: 4px; font-size: 14px; line-height: 1.45; color: #55584e; }
+  .open-loop li::before { content: counter(loop, decimal-leading-zero); grid-row: 1 / span 2; font-family: var(--font-mono); font-size: var(--text-label); color: var(--label); line-height: 1.6; }
+  .open-loop .mono { display: block; color: var(--ink); }
   .closing-note { display: flex; align-items: center; flex-direction: column; justify-content: center; padding: 100px var(--gutter); min-height: 480px; text-align: center; position: relative; overflow: clip; }
   .closing-note > .mono { font-size: var(--text-label); color: var(--label); }
   .closing-note p { font-size: clamp(63px, 8.6vw, 140px); font-weight: 800; font-stretch: var(--display-stretch); letter-spacing: var(--display-tracking); line-height: .95; margin: 26px 0 0; position: relative; z-index: 1; }
@@ -220,7 +252,7 @@
   :is(.main-nav a, .hero-links a, .contact-links a, .work-end a, .section-top a, .footer-trace) { position: relative; }
   :is(.main-nav a, .hero-links a, .contact-links a, .work-end a, .section-top a, .footer-trace)::before { content: ""; position: absolute; top: calc(50% - 22px); bottom: calc(50% - 22px); left: min(0px, calc(50% - 22px)); right: min(0px, calc(50% - 22px)); }
   /* Tight display tracking also narrows the word space; give it back so words stay distinct. */
-  .hero h1, .work-heading h2, .experience-heading h2, .capabilities-heading h2, .skills-layout h2, .approach-heading h2, .closing-note p, .contact h2, .about-title-panel h2 { word-spacing: .06em; }
+  .hero h1, .work-heading h2, .open-heading h2, .experience-heading h2, .capabilities-heading h2, .skills-layout h2, .approach-heading h2, .closing-note p, .contact h2, .about-title-panel h2 { word-spacing: .06em; }
 }
 @layer motion {
   a, button { transition: background-color .2s, color .2s, border-color .2s; }
@@ -244,8 +276,24 @@
     .hero-intro { max-width: 440px; }.scroll-cue { display: none; }
     .hero-rule { position: static; margin-top: 56px; padding-bottom: 22px; }
 
+    /* One card per row; on tablets the preview sits beside the card's text. */
+    .open-cards { grid-template-columns: minmax(0, 1fr); margin-top: 40px; }
     .skills-layout, .education-layout { column-gap: 36px; }.skill-list > div { grid-template-columns: 130px minmax(0, 1fr); }
   }
+  @media (min-width: 761px) and (max-width: 1100px) {
+    /* The preview beside the card's text; the link row takes the spare height. */
+    .open-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: 32px; }
+    .open-card > :not(.work-preview) { grid-column: 1; }
+    .open-card .work-preview { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
+    /* The preview column is 1.2 / 2.2 of the card's content width less the 32 px gap. */
+    .js-enabled .open-work .work-preview[data-preview="lab"] { --reserve: 420px; }
+    .js-enabled .open-work .work-preview[data-preview="trace"] { --reserve: 285px; }
+    .js-enabled .open-work .work-preview[data-preview="loop"] { --reserve: calc((100cqi - 32px) * .296 + 60px); }
+    .open-card-link { margin-top: 24px; justify-self: start; align-self: end; }
+  }
+  /* Small tablets: six nav links and the résumé link do not fit beside the wordmark;
+     About and Skills step out (as on phones), Lab stays. */
+  @media (max-width: 900px) { .nav-optional { display: none; } }
   @media (max-width: 760px) {
     :root { --header-top: 16px; --header-bar-pad: 10px; --header-clear: 62px; }.site-header { gap: 12px; }.wordmark { font-size: 20px; }.main-nav a { padding: 9px 10px; }.main-nav { padding: 4px; }.header-contact, .nav-optional { display: none; }
     .hero { padding-top: 90px; }.hero-kicker { gap: 7px; }.hero h1 { font-size: 15.4vw; margin-top: 16px; line-height: .86; }.hero-line > span { display: block; }
@@ -254,11 +302,12 @@
     .hero-bottom { grid-template-columns: 1fr; gap: 16px; }.hero-intro p:first-of-type { font-size: 24px; margin-top: 8px; }.hero-intro .hero-scope { margin-top: 8px; }.hero-actions { justify-self: start; align-items: flex-start; gap: 10px; }.hero-links a { padding: 6px 0; }.hero-rule { margin-top: 46px; padding-top: 12px; }
     .hero-proof { column-gap: 10px; padding-top: 12px; }.proof-label { letter-spacing: .01em; }
     .section-top { gap: 24px; padding: 25px 0; }.section-top > :last-child { text-align: right; max-width: 46%; }
-    .work-heading, .experience-heading, .capabilities-heading { display: block; padding-top: 55px; }.work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: 12.4vw; }.work-heading > p, .experience-heading > p, .capabilities-heading > p { margin-top: 25px; }
+    .open-heading, .work-heading, .experience-heading, .capabilities-heading { display: block; padding-top: 55px; }.open-heading h2, .work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: 12.4vw; }.open-heading > p, .work-heading > p, .experience-heading > p, .capabilities-heading > p { margin-top: 25px; }
     .capabilities { padding-bottom: 60px; }.capability-list { grid-template-columns: 1fr; margin-top: 36px; }.capability-list > :nth-last-child(2) { border-bottom: 0; }.capability { padding: 24px 0 28px; }.capability h3 { font-size: 23px; }.capability-proof { font-size: 14.5px; }
     .skills-layout, .education-layout { grid-template-columns: 1fr; }.skills-layout { padding: 55px 0 0; row-gap: 34px; }.skills-layout h2 { font-size: 12.4vw; }.skill-list > div { grid-template-columns: 1fr; gap: 12px; }
     .education-layout h3 { padding-bottom: 0; border-bottom: 0 !important; }.education-list, .spoken-languages { grid-column: 1; border-top: 0 !important; padding-top: 16px !important; }.education-layout { padding-bottom: 64px; }
     .work-end { margin-top: 50px; }
+    .open-work { padding-bottom: 64px; }.open-card { border-radius: 18px; }
     .closing-note { min-height: 410px; padding-block: 75px; }.closing-note p { font-size: 17vw; }.note-orbit { right: -80px; top: 27%; }
     .contact-intro { padding-top: 65px; }.contact h2 { font-size: 10.1vw; margin-top: 24px; }.contact-button { margin-top: 35px; padding: 13px 20px; font-size: 13px; gap: 18px; }.contact-links { margin: 26px 0 70px; gap: 8px 26px; }.footer-bottom { flex-direction: column; gap: 10px; }.footer-bottom > :last-child { margin-left: 0; text-align: left; }.story-lead { font-size: 21px; }
   }

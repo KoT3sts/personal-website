@@ -91,6 +91,8 @@ const NARROW_IDLE = 3;
 // `lead`: how early an agent is reserved before the item comes into view;
 // travel is quicker than a planned move (`travel` min/max).
 export const RESCUE = { cap: 450, lead: 420, travel: [200, 420], spare: 120 };
+// The longest a stop waits (real ms) for its `config.stopGates` promise.
+export const GATE_CAP_MS = 1200;
 
 export const ROLES = {
   orchestrator: { label: 'orchestrator', color: '#1d1e1b' },
@@ -253,7 +255,7 @@ export const TOUR_STOPS = [
   // rest of the first rows; editors write each pasted card's name and proof
   // over its placeholders and a tag agent swaps its tags. The cards further
   // down (and every card in a single-column list, `columns`) are placed directly.
-  { sel: '#capabilities', name: 'Capabilities', weight: 0.9, span: 1.0, frameMs: 750, columns: '.capability-list', note: 'copy → type · cards pasted', jobs: [
+  { sel: '#capabilities', name: 'Capabilities', weight: 0.8, span: 1.0, frameMs: 750, columns: '.capability-list', note: 'copy → type · cards pasted', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#capabilities-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
     { sel: '.capabilities-heading > p', role: 'a11y', kind: 'wipe', act: 'writing summary' },
@@ -323,6 +325,21 @@ export const TOUR_STOPS = [
     { sel: '.explorer-covers', role: 'a11y', kind: 'review', act: 'checking keys and labels', size: true },
     { sel: '.explorer-pick[data-explorer-pick="0"]', role: 'links', kind: 'pick', label: true, name: '.explorer-pick-name', act: 'opening', after: '*', afterOf: '.explorer-item, .explorer-pick', work: 2300, only: 'wide' },
   ] },
+  // Open the work (#lab): three lab cards. Each card is placed with its name and
+  // sentence; once it is down, its preview is wired (a live preview from
+  // work-previews.js, or its static summary) and its link goes in. The
+  // recorded run (rounds 4–5) predates this section, so its cursors replay
+  // only the run-wide (All/Tour) steps.
+  { sel: '#lab', name: 'Lab', weight: 0.4, pace: 0.8, span: 0.55, note: 'art → links · previews wired', jobs: [
+    { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
+    { sel: '#lab-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
+    { sel: '.open-heading > p', role: 'copy', kind: 'wipe', act: 'writing summary' },
+    { sel: '.open-card', roles: ['copy', 'type', 'copy'], kind: 'place', multi: 3, label: true, name: 'h3', act: 'placing', sub: '.open-card-text', key: 'card', stagger: 120 },
+    // Phones (one tall card per screen, a small crew): the preview and link come in with their card.
+    { sel: '.open-card .work-preview', roles: ['art', 'motion', 'art'], kind: 'reveal', multi: 3, act: 'wiring preview', after: 'card', afterAt: 0.4, work: 520, only: 'wide' },
+    { sel: '.open-card-link', roles: ['links', 'links', 'links'], kind: 'place', multi: 3, act: 'wiring link', after: 'card', afterAt: 0.6, only: 'wide' },
+    { sel: '.open-cards', role: 'a11y', kind: 'review', act: 'checking link targets', size: true },
+  ] },
   { sel: '#skills', name: 'Skills', weight: 0.7, pace: 0.85, span: 0.6, note: 'copy → a11y · tags listed', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
     { sel: '#skills-title', role: 'type', kind: 'type', act: 'setting title', charMs: 70 },
@@ -333,6 +350,8 @@ export const TOUR_STOPS = [
     { sel: '.education-list .degree', roles: ['copy', 'copy'], kind: 'wipe', multi: 2, label: true, act: 'writing' },
     { sel: '.education-list .school-meta', roles: ['links', 'links'], kind: 'type', multi: 2, label: true, act: 'writing dates', charMs: 40 },
     { sel: '.spoken-languages', role: 'copy', kind: 'wipe', act: 'writing languages' },
+    // The "Used in" line under the tags (home-charts.js adds it).
+    { sel: '.skill-usage', role: 'a11y', kind: 'wipe', act: 'writing usage hint' },
     { sel: '.skills-layout', role: 'a11y', kind: 'review', act: 'checking tag lists' },
   ] },
   // The closing note between Approach and Contact is built on the Approach
@@ -363,7 +382,7 @@ export const TOUR_STOPS = [
 // The dock lifts itself above these so it never covers in-page controls near
 // the bottom edge: résumé/contact links, the introduction's scene pills and
 // the Experience chapter bar (year index, previous/next).
-const PROTECTED = '.hero-actions .pill-button, .hero-links a, .scene-pill, .xp-index-button, .xp-step, .contact-button, .contact-copy, .contact-links a, .footer-bottom > *';
+const PROTECTED = '.hero-actions .pill-button, .hero-links a, .scene-pill, .open-card-link, .xp-index-button, .xp-step, .contact-button, .contact-copy, .contact-links a, .footer-bottom > *';
 
 // Arrow glyphs are outside the self-hosted fonts (they fell back to a system
 // font, oversized): text set here draws them as styles.css icons instead.
@@ -4443,6 +4462,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     let step = -1;
     stops.forEach((stopInfo, index) => { if (!stopInfo.sub || index === 0) step++; stopInfo.step = step; });
     tour = { stops, index: 0, firstVisit: !replay, realStart: clock(), hiddenMs: 0, workers: new Set(), vt: 0, late: 0, rescued: 0, instant: 0 };
+    tour.gates = armGates();
     planSteps = stops.filter((stopInfo, index) => !stopInfo.sub || index === 0).map(stopInfo => stopInfo.name);
     carry = null;
     traceErrorFree = 0;
@@ -4465,12 +4485,44 @@ export function initAgenticEntrance(document, window, config = {}) {
     startHero();
   }
 
+  // `config.stopGates` ({ selector: () => promise }): a stop whose content may
+  // still be swapping in (the Lab's live previews) waits for it, at most
+  // GATE_CAP_MS (real time), before it is planned. Each gate is asked once as
+  // the tour starts (so the work begins early) and again when its stop comes up;
+  // one that has already settled costs nothing.
+  function armGates() {
+    const gates = new Map();
+    Object.entries(config.stopGates || {}).forEach(([sel, gate]) => {
+      if (typeof gate !== 'function') return;
+      const entry = { done: false, promise: null };
+      try { entry.promise = gate(); } catch { entry.promise = null; }
+      if (entry.promise && typeof entry.promise.then === 'function') entry.promise.then(() => { entry.done = true; }, () => { entry.done = true; });
+      else entry.done = true;
+      gates.set(sel, entry);
+    });
+    return gates;
+  }
+
   function advanceTour() {
     if (!tour) return;
     tour.index++;
     while (tour.index < tour.stops.length && !stopActive(tour.stops[tour.index])) tour.index++;
     if (tour.index >= tour.stops.length) { finishTour(); return; }
-    startBuild(tour.stops[tour.index]);
+    const stopInfo = tour.stops[tour.index];
+    const gate = tour.gates?.get(stopInfo.sel);
+    if (!gate || gate.done || stopInfo.sub) { startBuild(stopInfo); return; }
+    const mine = tour;
+    const index = tour.index;
+    let gone = false;
+    const proceed = () => {
+      if (gone) return;
+      gone = true;
+      gate.done = true;
+      window.clearTimeout(timer);
+      if (!destroyed && tour === mine && tour.index === index) startBuild(stopInfo);
+    };
+    const timer = window.setTimeout(proceed, GATE_CAP_MS);
+    try { Promise.resolve(config.stopGates[stopInfo.sel]()).then(proceed, proceed); } catch { proceed(); }
   }
 
   // The pill reports what really happened: distinct agents that worked and

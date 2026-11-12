@@ -69,7 +69,7 @@
     <a class="cs-back" href="../#work"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> All projects</a>
   </header>
   <main id="main">
-    <article aria-labelledby="lab-title">
+    <article class="lab-eval" aria-labelledby="lab-title">
       <header class="cs-intro">
         <p class="mono lab-kicker">Evaluation lab · public reproduction</p>
         <h1 id="lab-title" class="lab-title">Sentiment, measured</h1>
@@ -90,16 +90,16 @@
         <h2 class="visually-hidden" id="strip-title">The 30-second version</h2>
         <dl class="lab-strip">
           <!-- generated:strip -->
-          <div><dt class="mono">Test sentences</dt><dd>596</dd></div>
-          <div><dt class="mono">Best F1</dt><dd>0.803 <span class="lab-unit">model B</span></dd></div>
-          <div><dt class="mono">F1 gap, B minus A</dt><dd>+0.008</dd></div>
+          <div><dt class="mono">Test sentences</dt><dd><a class="lab-strip-link" href="#scorecard">596<span class="visually-hidden">, see the scorecard</span></a></dd></div>
+          <div><dt class="mono">Best F1</dt><dd><a class="lab-strip-link" href="#scorecard">0.803<span class="visually-hidden">, see the scorecard</span></a> <span class="lab-unit">model B</span></dd></div>
+          <div><dt class="mono">F1 gap, B minus A</dt><dd><a class="lab-strip-link" href="#scorecard">+0.008<span class="visually-hidden">, see the scorecard</span></a></dd></div>
           <div class="lab-strip-take"><dt class="mono">Takeaway</dt><dd>Model B edges model A by 0.8 F1 points at the default threshold, but the bootstrap interval for the gap (−0.021 to +0.038) crosses zero: on 596 sentences that is not a reliable win.</dd></div>
           <!-- /generated:strip -->
         </dl>
       </section>
 
       <div class="cs-body">
-        <section class="cs-grid cs-section" aria-labelledby="score-title">
+        <section class="cs-grid cs-section lab-scorecard" id="scorecard" aria-labelledby="score-title">
           <div class="cs-rail lab-rail">
             <h2 id="score-title">Scorecard</h2>
             <p class="lab-rail-note">Held-out test set. Every number is computed in your browser from the published predictions.</p>
@@ -135,6 +135,15 @@
             </div>
             <div class="lab-live" data-lab-live hidden>
               <div class="lab-controls">
+                <div class="lab-threshold">
+                  <p class="lab-cue mono"><span class="icon icon-arrow-s" aria-hidden="true"></span> Start here: drag the threshold</p>
+                  <div class="lab-threshold-head">
+                    <label class="mono" for="threshold">Decision threshold</label>
+                    <output class="lab-threshold-value" id="threshold-value" for="threshold" aria-live="off">0.50</output>
+                  </div>
+                  <input type="range" id="threshold" min="0.05" max="0.95" step="0.01" value="0.5" aria-describedby="threshold-help">
+                  <p class="lab-help" id="threshold-help">Call a sentence positive when the model’s P(positive) is at least this value. Raise it and fewer sentences pass: precision tends to rise, recall can only fall.</p>
+                </div>
                 <fieldset class="lab-toggle">
                   <legend class="mono">Model</legend>
                   <div class="lab-toggle-options">
@@ -143,14 +152,6 @@
                     <input type="radio" name="lab-model" id="model-both" value="both" checked><label for="model-both">Both</label>
                   </div>
                 </fieldset>
-                <div class="lab-threshold">
-                  <div class="lab-threshold-head">
-                    <label class="mono" for="threshold">Decision threshold</label>
-                    <output class="lab-threshold-value" id="threshold-value" for="threshold" aria-live="off">0.50</output>
-                  </div>
-                  <input type="range" id="threshold" min="0.05" max="0.95" step="0.01" value="0.5" aria-describedby="threshold-help">
-                  <p class="lab-help" id="threshold-help">Call a sentence positive when the model’s P(positive) is at least this value. Raise it and fewer sentences pass: precision tends to rise, recall can only fall.</p>
-                </div>
               </div>
 
               <div class="lab-table-wrap">

@@ -1,0 +1,87 @@
+@charset "UTF-8";
+/* Homepage "Open the work" previews (web/work-previews.js). Only the .wp-* parts are
+   styled here; the card around each .work-preview belongs to the homepage. Text and
+   lines use currentColor, so the previews read on a light or a dark card at the card's
+   own text contrast. Role and dot hues are mid-tones with 3:1 or more against both the
+   paper (#eeede8) and the night (#101114). Text is 11px or larger, targets 44px. */
+
+.wp-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.wp-lab, .wp-trace, .wp-loop { --wp-line: currentColor; --wp-tint: transparent; position: relative; display: grid; gap: 14px; min-width: 0; margin: 0; font-size: 13px; line-height: 1.4; }
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+  .wp-lab, .wp-trace, .wp-loop { --wp-line: color-mix(in srgb, currentColor 34%, transparent); --wp-tint: color-mix(in srgb, currentColor 10%, transparent); }
+}
+.wp-label { font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 11px; font-weight: 400; letter-spacing: .04em; text-transform: uppercase; }
+.wp-caption { font-size: 13px; line-height: 1.45; }
+
+/* Lab: threshold, model toggle, three scores and a 2 x 2 matrix. */
+.wp-lab-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.wp-lab-value { font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.wp-range { display: block; width: 100%; height: 44px; margin: 0; background: transparent; color: inherit; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.wp-range:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.wp-range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--wp-line); }
+.wp-range::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -9px; border: 0; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 5px var(--wp-tint); -webkit-appearance: none; appearance: none; }
+.wp-range::-moz-range-track { height: 4px; border-radius: 4px; background: var(--wp-line); }
+.wp-range::-moz-range-thumb { width: 22px; height: 22px; border: 0; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 5px var(--wp-tint); }
+.wp-seg { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.wp-seg input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
+.wp-seg label { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 1px solid var(--wp-line); border-radius: 50px; font-size: 13px; line-height: 1.2; cursor: pointer; user-select: none; }
+.wp-seg label:hover { border-color: currentColor; }
+.wp-seg input:checked + label { border-color: currentColor; background: var(--wp-tint); box-shadow: inset 0 0 0 1px currentColor; font-weight: 700; }
+.wp-seg input:focus-visible + label { outline: 2px solid currentColor; outline-offset: 2px; }
+.wp-scores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.wp-scores > div { display: grid; gap: 4px; min-width: 0; padding-top: 8px; border-top: 1px solid var(--wp-line); }
+.wp-scores dd { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.wp-matrix { width: 100%; border-collapse: separate; border-spacing: 4px; font-variant-numeric: tabular-nums; }
+.wp-matrix caption { padding: 0 4px 2px; text-align: left; }
+.wp-matrix th { padding: 2px 4px; text-align: center; }
+.wp-matrix th[scope="row"] { text-align: left; }
+.wp-matrix td { padding: 6px 4px; border: 1px solid transparent; border-radius: 4px; text-align: center; }
+.wp-hit { background: var(--wp-tint); }
+.wp-miss { border-color: var(--wp-line); border-style: dashed; }
+.wp-count { display: block; font-size: 18px; font-weight: 800; line-height: 1.1; }
+.wp-key { font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 11px; letter-spacing: .04em; }
+
+/* Trace: one bar per recorded step, coloured by role, with a status mark below. */
+.wp-trace { --wp-orchestrator: currentColor; --wp-implementation-worker: #3c7be0; --wp-quality-reviewer: #e0483f; --wp-ui-design-director: #9b6bf0; }
+.wp-trace [data-role="orchestrator"] { --wp-role: var(--wp-orchestrator); }
+.wp-trace [data-role="implementation-worker"] { --wp-role: var(--wp-implementation-worker); }
+.wp-trace [data-role="quality-reviewer"] { --wp-role: var(--wp-quality-reviewer); }
+.wp-trace [data-role="ui-design-director"] { --wp-role: var(--wp-ui-design-director); }
+.wp-trace-scrub { position: relative; display: grid; align-items: center; min-height: 44px; border-radius: 4px; }
+.wp-trace-scrub:focus-within { outline: 2px solid currentColor; outline-offset: 4px; }
+.wp-trace-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.wp-trace-range { position: absolute; top: 0; bottom: 0; left: calc(100% * 5 / 520); width: calc(100% - 100% * 10 / 520); height: 100%; margin: 0; padding: 0; opacity: 0; cursor: crosshair; -webkit-appearance: none; appearance: none; }
+.wp-trace-range::-webkit-slider-thumb { width: 2px; height: 44px; -webkit-appearance: none; appearance: none; }
+.wp-trace-range::-moz-range-thumb { width: 2px; height: 44px; border: 0; }
+.wp-mark { transform-box: fill-box; }
+.wp-bar { fill: var(--wp-role, currentColor); }
+.wp-glyph { fill: none; stroke: currentColor; stroke-width: 1.6px; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.wp-glyph-error { stroke-width: 2.2px; }
+.wp-cursor { fill: var(--wp-tint); stroke: currentColor; stroke-width: 1; opacity: 0; }
+.wp-trace[data-cursor="true"] .wp-cursor { opacity: 1; }
+.wp-readout { display: grid; align-content: start; gap: 4px; min-height: 4.6em; }
+.wp-action { font-size: 14px; line-height: 1.4; }
+.wp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 11px; letter-spacing: .02em; }
+.wp-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.wp-chip { width: 10px; height: 10px; border-radius: 2px; background: var(--wp-role, currentColor); }
+.wp-legend-glyph { width: 14px; height: 14px; overflow: visible; }
+
+/* Loop: four stages on one path; the dot goes round once (4.8 s, constant speed). */
+.wp-loop-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.wp-loop-path { fill: none; stroke: var(--wp-line); stroke-width: 2; stroke-linejoin: round; }
+.wp-loop-arrow { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wp-loop-node { fill: currentColor; }
+.wp-loop-dot { fill: var(--wp-dot, #2a9065); }
+/* SVG text is in viewBox units; work-previews.js sets --wp-loop-text so it renders at 12.5px. */
+.wp-loop-text { fill: currentColor; font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: var(--wp-loop-text, 14px); letter-spacing: .03em; text-transform: uppercase; }
+
+@keyframes wp-rise { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: no-preference) {
+  .wp-trace[data-play="wait"] .wp-mark { opacity: 0; }
+  .wp-trace[data-play="on"] .wp-mark { animation: wp-rise .45s cubic-bezier(.2, .7, .2, 1) calc(var(--i, 0) * 42ms) both; }
+  .wp-seg label { transition: border-color .2s ease, background-color .2s ease; }
+}
+@media (max-width: 420px) {
+  .wp-scores dd { font-size: 20px; }
+  .wp-lab-value { font-size: 24px; }
+}

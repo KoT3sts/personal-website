@@ -9,7 +9,7 @@ export const SECTION_PLAN = [
   { sel: '.cinematic-copy, .approach-heading > p', role: 'copy', kind: 'review', act: 'reviewing copy' },
   { sel: '.section-top, .about-transition-meta, .cinematic-topline', role: 'layout', kind: 'frame', act: 'framing layout' },
   { sel: '.scene-actions, .contact-button', role: 'links', kind: 'review', size: true, act: 'checking links' },
-  { sel: '.approach-list details, .capability-list, .xp-group, .skill-list', role: 'qa', kind: 'review', multi: 2, act: 'checking spacing' },
+  { sel: '.approach-list details, .capability-list, .xp-group, .open-cards, .skill-list', role: 'qa', kind: 'review', multi: 2, act: 'checking spacing' },
 ];
 // Everything a manual pass may frame; motion.js keeps these still meanwhile.
 export const SECTION_TARGETS = SECTION_PLAN.map(spec => spec.sel).join(', ');

@@ -131,6 +131,11 @@ function start(data) {
   slider.addEventListener('input', () => render({ speak: true }));
   for (const radio of radios) radio.addEventListener('change', () => render({ speak: true }));
   render({ speak: false });
+  // The strip's numbers link here: land on the slider, ready to drag or use the arrow keys
+  // (after the jump, which would otherwise take focus back).
+  for (const link of document.querySelectorAll('a[href="#scorecard"]')) {
+    link.addEventListener('click', () => setTimeout(() => slider.focus({ preventScroll: true }), 0));
+  }
   live.hidden = false;
   if (fallback) fallback.hidden = true;
   fitChartText(chartRoot);

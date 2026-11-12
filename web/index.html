@@ -70,6 +70,8 @@
   <link rel="stylesheet" href="./accordion.css">
   <link rel="stylesheet" href="./experience.css">
   <link rel="stylesheet" href="./explorer.css">
+  <link rel="stylesheet" href="./home-charts.css">
+  <link rel="stylesheet" href="./work-previews.css">
   <link rel="stylesheet" href="./motion.css">
   <link rel="stylesheet" href="./entrance.css">
   <link rel="modulepreload" href="./motion.js">
@@ -78,6 +80,7 @@
   <link rel="modulepreload" href="./experience.js">
   <link rel="modulepreload" href="./explorer.js">
   <link rel="modulepreload" href="./explorer-state.js">
+  <link rel="modulepreload" href="./home-charts.js">
   <script type="module" src="./app.js"></script>
 </head>
 <body>
@@ -85,9 +88,10 @@
   <header class="site-header">
     <a class="wordmark" href="#home" aria-label="Cesar Tortolero home"><span class="wordmark-first">CESAR<span class="brand-dot"></span></span> <span class="wordmark-last">TORTOLERO</span></a>
     <nav class="main-nav" aria-label="Main navigation">
-      <a href="#about">About</a>
+      <a href="#about" class="nav-optional">About</a>
       <a href="#experience">Experience</a>
       <a href="#work">Work</a>
+      <a href="#lab">Lab</a>
       <a href="#skills" class="nav-optional">Skills</a>
       <a href="#contact">Contact</a>
     </nav>
@@ -222,7 +226,7 @@
           <p class="capability-proof"><span class="mono">PROOF</span> The teams I helped train build and run their agents on the platform.</p>
           <ul class="tag-list" aria-label="Tools"><li>Strands Agents</li><li>MCP</li><li>Bedrock AgentCore</li></ul>
         </li>
-        <li class="capability">
+        <li class="capability" data-chart="records">
           <h3>Trace and evaluate LLM systems</h3>
           <p class="capability-proof"><span class="mono">PROOF</span> Evaluated a skill-extraction model on 2,400+ records with precision, recall, F1 and slice analysis.</p>
           <ul class="tag-list" aria-label="Tools"><li>Arize AX</li><li>OpenTelemetry</li><li>OpenInference</li></ul>
@@ -232,17 +236,17 @@
           <p class="capability-proof"><span class="mono">PROOF</span> Built a cross-account network-testing API and a firewall diagnostics app on AWS.</p>
           <ul class="tag-list" aria-label="Tools"><li>FastAPI</li><li>AWS Lambda</li><li>Private API Gateway</li><li>Terraform</li><li>DynamoDB</li><li>NestJS</li></ul>
         </li>
-        <li class="capability">
+        <li class="capability" data-chart="inventory">
           <h3>Run MLOps and model deployment</h3>
           <p class="capability-proof"><span class="mono">PROOF</span> Supported model migrations to Unity Catalog and MLflow, including Spark batch inference, across a 296-model inventory.</p>
           <ul class="tag-list" aria-label="Tools"><li>Databricks Unity Catalog</li><li>MLflow</li><li>Spark</li><li>Amazon SageMaker</li></ul>
         </li>
-        <li class="capability">
+        <li class="capability" data-chart="jobs">
           <h3>Run multi-region releases</h3>
           <p class="capability-proof"><span class="mono">PROOF</span> Weekly releases, for example 58/58 US and 21/21 EU jobs green. I wrote the runbook.</p>
           <ul class="tag-list" aria-label="Tools"><li>Jenkins</li><li>Terraform</li><li>Artifactory</li></ul>
         </li>
-        <li class="capability">
+        <li class="capability" data-chart="videos">
           <h3>Teach and unblock developers</h3>
           <p class="capability-proof"><span class="mono">PROOF</span> Hands-on workshops for developers across payroll, HR, tax and analytics, an onboarding guide and 12 demo videos. I debug production integrations: IAM signing, OAuth, secrets and network rules.</p>
         </li>
@@ -404,8 +408,46 @@
       <div class="work-end mono"><span>SIX PROJECTS, FROM RESEARCH TO PRODUCTION.</span><span class="work-end-links"><a href="./lab/sentiment-eval.html">EVALUATION LAB <span class="icon icon-arrow-e" aria-hidden="true"></span></a><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">MORE ON GITHUB <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></span></div>
     </section>
 
+    <!-- Three lab pages to try. Each preview holds a static summary; work-previews.js
+         (loaded by app.js when the section is near) may turn it into a live preview. -->
+    <section id="lab" class="open-work" aria-labelledby="lab-title">
+      <div class="section-top mono"><span>05 / OPEN THE WORK</span><span>PAGES YOU CAN USE</span></div>
+      <div class="open-heading"><h2 id="lab-title">OPEN THE <br><span>WORK.</span></h2><p>Three things you can try, not just read.</p></div>
+      <ul class="open-cards" role="list">
+        <li class="open-card">
+          <p class="open-card-index mono">01 / PUBLIC DATA</p>
+          <h3 id="open-lab-title">Evaluation lab</h3>
+          <p class="open-card-text">Two sentiment models on 3,000 public review sentences. Drag the threshold.</p>
+          <div class="work-preview" data-preview="lab">
+            <dl class="open-stats"><div><dt>F1, model B</dt><dd>0.803</dd></div><div><dt>F1, model A</dt><dd>0.795</dd></div><div><dt>Test sentences</dt><dd>596</dd></div></dl>
+            <p class="open-note mono">AT THE DEFAULT THRESHOLD, 0.50</p>
+          </div>
+          <a class="open-card-link" href="./lab/sentiment-eval.html">Open the lab<span class="visually-hidden">: two sentiment models on public review sentences</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        </li>
+        <li class="open-card">
+          <p class="open-card-index mono">02 / RECORDED RUN</p>
+          <h3 id="open-trace-title">The agent run behind this site</h3>
+          <p class="open-card-text">52 recorded steps, errors and recoveries included.</p>
+          <div class="work-preview" data-preview="trace">
+            <dl class="open-stats"><div><dt>Steps</dt><dd>52</dd></div><div><dt>Errors recovered</dt><dd>6 of 8</dd></div><div><dt>Commits</dt><dd>16</dd></div></dl>
+            <p class="open-note mono">ROUNDS 4–5 OF THIS SITE · RECOVERED: A RETRY OR FIX IS RECORDED</p>
+          </div>
+          <a class="open-card-link" href="./lab/build-trace.html">See the run<span class="visually-hidden">: the recorded agent run behind this site</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        </li>
+        <li class="open-card">
+          <p class="open-card-index mono">03 / METHOD</p>
+          <h3 id="open-loop-title">How I evaluate agents</h3>
+          <p class="open-card-text">Trace, classify, test, gate.</p>
+          <div class="work-preview" data-preview="loop">
+            <ol class="open-loop"><li><span class="mono">TRACE</span> Every run, every span</li><li><span class="mono">CLASSIFY</span> One bucket per failure</li><li><span class="mono">FIXED TEST SET</span> Real failures, expected outcomes</li><li><span class="mono">GATE</span> Block a release while it fails</li></ol>
+          </div>
+          <a class="open-card-link" href="./lab/evaluating-agents.html">Read the method<span class="visually-hidden">: how I evaluate agents</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        </li>
+      </ul>
+    </section>
+
     <section id="skills" class="skills dark-section" aria-labelledby="skills-title">
-      <div class="section-top mono"><span>05 / SKILLS &amp; EDUCATION</span><span>WHAT I WORK WITH</span></div>
+      <div class="section-top mono"><span>06 / SKILLS &amp; EDUCATION</span><span>WHAT I WORK WITH</span></div>
       <div class="skills-layout">
         <h2 id="skills-title">TOOLS &amp; <br><span>TRAINING.</span></h2>
         <dl class="skill-list">
@@ -427,7 +469,7 @@
     </section>
 
     <section id="approach" class="approach" aria-labelledby="approach-title">
-      <div class="section-top mono"><span>06 / THE APPROACH</span><span>HOW I THINK ABOUT BUILDING</span></div>
+      <div class="section-top mono"><span>07 / THE APPROACH</span><span>HOW I THINK ABOUT BUILDING</span></div>
       <div class="approach-heading"><h2 id="approach-title">MAKE IT WORK. <br><span>MAKE IT MATTER.</span></h2><p>Start from the person who will use it, then build.</p></div>
       <div class="approach-list">
         <details name="approach" open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true"></span></summary><p>Watch how the work gets done today before adding a feature. Checking firewall rules across our 24 AWS accounts took a developer about a day of manual testing, one account at a time. Asking why led to a diagnostics app that runs the same checks from one screen in minutes.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Watch the work today</li><li>Ask why</li><li>One screen</li></ul><a class="approach-link mono" href="#experience">See the experience <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div></details>
@@ -440,7 +482,7 @@
   </main>
 
   <footer id="contact" class="contact dark-section" aria-labelledby="contact-title">
-    <div class="section-top mono"><span>07 / SAY HELLO</span><a href="#home">BACK TO THE TOP <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div>
+    <div class="section-top mono"><span>08 / SAY HELLO</span><a href="#home">BACK TO THE TOP <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div>
     <p class="contact-intro">Email is the fastest way to reach me.</p>
     <h2 id="contact-title">LET’S <span>CONNECT.</span></h2>
     <a class="contact-button" href="mailto:Lucenatrujillo.cesar@gmail.com"><span class="contact-address">Lucenatrujillo.cesar@gmail.com</span><span class="icon icon-arrow-ne" aria-hidden="true"></span></a>

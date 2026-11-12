@@ -1,11 +1,11 @@
 // Reading floor and touch targets (styles.css, about-scenes.css, experience.css,
-// explorer.css), checked as text.
+// explorer.css, home-charts.css and the lab pages), checked as text.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const files = ['web/styles.css', 'web/about-scenes.css', 'web/experience.css', 'web/explorer.css', 'web/accordion.css', 'web/project.css', 'web/404.css', 'web/lab/lab.css', 'web/lab/build-trace.css', 'web/lab/evaluating-agents.css'];
+const files = ['web/styles.css', 'web/about-scenes.css', 'web/experience.css', 'web/explorer.css', 'web/accordion.css', 'web/project.css', 'web/404.css', 'web/lab/lab.css', 'web/lab/build-trace.css', 'web/lab/evaluating-agents.css', 'web/home-charts.css'];
 const sheets = Object.fromEntries(files.map(file => [file, read(file)]));
 const styles = sheets['web/styles.css'];
 
@@ -131,4 +131,41 @@ test('arrows are drawn icons, not font glyphs: aria-hidden, defined and sized in
   }
   // The 404 page keeps root-absolute url()s, so its one arrow is inline SVG in currentColor.
   assert.match(read('web/404.html'), /<svg class="icon" viewBox="0 0 16 16"[^>]*aria-hidden="true" focusable="false"><path [^>]*stroke="currentColor"/);
+});
+
+// ---- Round 10 ----
+
+test('Open the work: card links are 48px pills, the cards stack on phones and tablets, and card copy uses the body token', () => {
+  assert.match(styles, /\.open-card-link \{[^}]*min-height: 48px;/);
+  assert.match(styles, /\.open-card-text \{[^}]*font-size: var\(--text-body\)/);
+  assert.match(styles, /\.open-heading > p, \.work-heading > p/);
+  assert.match(styles, /@media \(max-width: 1100px\) \{[^@]*\.open-cards \{ grid-template-columns: minmax\(0, 1fr\);/);
+  // Card labels on the card fill (#f7f6f0): the label colour keeps 4.5:1.
+  const label = /--label: #([0-9a-f]{6});/.exec(styles)[1];
+  assert.ok(contrast(label, 'f7f6f0') >= 4.5, `label ${contrast(label, 'f7f6f0').toFixed(2)}:1`);
+  assert.ok(contrast('55584e', 'f7f6f0') >= 4.5, 'card sentence');
+  // Phones: Lab joins the nav in place of About (both About and Skills are optional there).
+  const phone = styles.indexOf('@media (max-width: 760px) {');
+  assert.ok(phone > 0 && styles.indexOf('.header-contact, .nav-optional { display: none; }', phone) > phone);
+});
+
+test('chart labels and the skill usage line keep 4.5:1 on the dark sections', () => {
+  const chart = sheets['web/home-charts.css'];
+  for (const [selector, hex] of [['.cap-chart', /\.cap-chart \{[^}]*color: #([0-9a-f]{6})/], ['.skill-usage', /\.skill-usage \{[^}]*color: #([0-9a-f]{6})/], ['.skill-tag', /\.skill-tag \{[^}]*color: #([0-9a-f]{6})/]]) {
+    const color = hex.exec(chart)?.[1];
+    assert.ok(color, selector);
+    assert.ok(contrast(color, '101114') >= 4.5, `${selector} ${contrast(color, '101114').toFixed(2)}:1`);
+  }
+  // Pressed tag: night text on the green fill.
+  assert.ok(contrast('101114', 'c7d2a8') >= 4.5);
+});
+
+test('Open the work reserves the live previews’ height (measured at 360-1728) so the swap never moves the page', () => {
+  assert.match(styles, /\.open-card \{ container-type: inline-size; \}/);
+  assert.match(styles, /\.js-enabled \.open-work:not\(\.previews-off\) \.work-preview:not\(\[data-preview-state="fallback"\]\) \{ min-height: var\(--reserve, auto\); \}/);
+  // Live heights (Chrome, Nov 12): lab 413-428, trace 255-292, loop about .54 x its width + 50-70 px.
+  const reserve = kind => [...styles.matchAll(new RegExp(`\\.work-preview\\[data-preview="${kind}"\\] \\{ --reserve: ([^;]+);`, 'g'))].map(match => match[1]);
+  assert.deepEqual(reserve('lab'), ['432px', '420px']);
+  assert.deepEqual(reserve('trace'), ['300px', '285px']);
+  assert.deepEqual(reserve('loop'), ['calc(54.2cqi + 72px)', 'calc((100cqi - 32px) * .296 + 60px)']);
 });
