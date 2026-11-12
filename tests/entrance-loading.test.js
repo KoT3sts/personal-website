@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { entranceWillPlay, bindTourButton, lazyEntrance, TOUR_BUTTON_LABELS } from '../web/app.js';
+import { entranceWillPlay, bindTourButton, lazyEntrance, TOUR_BUTTON_LABELS, bootPage } from '../web/app.js';
 import { shouldPlayEntrance } from '../web/entrance.js';
 
 const read = path => readFile(new URL(`../web/${path}`, import.meta.url), 'utf8');
@@ -34,7 +34,7 @@ test('entranceWillPlay matches shouldPlayEntrance: first visit only (the seen fl
 // The inline <head> script runs before any module: run it against stand-ins for
 // each combination and compare its decision with entrance.js.
 const KEY = 'cesar:portfolio:agentic-intro:v1';
-function runHeadScript(source, { seen, reducedMotion, storageAvailable, hash, navigationType }) {
+function runHeadScript(source, { seen, reducedMotion, storageAvailable, hash, navigationType }, { booted = false } = {}) {
   const store = new Map(seen ? [[KEY, 'seen']] : []);
   const guard = () => { if (!storageAvailable) throw new Error('Storage denied'); };
   const localStorage = {
@@ -44,16 +44,40 @@ function runHeadScript(source, { seen, reducedMotion, storageAvailable, hash, na
   };
   const classes = new Set();
   const appended = [];
-  const root = { dataset: {}, classList: { add: name => classes.add(name) } };
-  const document = { documentElement: root, createElement: () => ({}), head: { append: node => appended.push(node) } };
+  const listeners = [];
+  const windowListeners = [];
+  const root = { dataset: {}, classList: { add: name => classes.add(name), remove: name => classes.delete(name) } };
+  const document = {
+    documentElement: root, createElement: () => ({}), head: { append: node => appended.push(node) },
+    addEventListener: (type, listener, capture) => listeners.push({ type, listener, capture }),
+  };
   const performance = { getEntriesByType: () => (navigationType ? [{ type: navigationType }] : []) };
   const timers = [];
   const setTimeout = (callback, ms) => timers.push({ callback, ms });
-  new Function('document', 'localStorage', 'matchMedia', 'location', 'performance', 'setTimeout', source)(
-    document, localStorage, () => ({ matches: reducedMotion }), { hash }, performance, setTimeout);
-  const restoring = 'restoring' in root.dataset;
-  timers.forEach(timer => timer.callback());
-  return { tour: root.dataset.tour, pending: classes.has('agentic-pending'), preload: appended.map(node => node.href), stored: [...store.keys()], restoring, cleared: !('restoring' in root.dataset), waits: timers.map(timer => timer.ms) };
+  new Function('document', 'localStorage', 'matchMedia', 'location', 'performance', 'setTimeout', 'addEventListener', source)(
+    document, localStorage, () => ({ matches: reducedMotion }), { hash }, performance, setTimeout, (type, listener) => windowListeners.push({ type, listener }));
+  const attributes = Object.keys(root.dataset);
+  const tour = root.dataset.tour;
+  const pendingAtStart = classes.has('agentic-pending');
+
+  // A failed load of another file (an image, entrance.js) changes nothing; app.js's drops data-tour.
+  const fail = src => listeners.filter(entry => entry.type === 'error').forEach(entry => entry.listener({ target: { src } }));
+  fail('https://portfolio.test/assets/cesar-portrait-640.png');
+  fail('https://portfolio.test/entrance.js');
+  const keptOtherErrors = 'tour' in root.dataset;
+  fail('https://portfolio.test/app.js');
+  const droppedOnAppError = !('tour' in root.dataset);
+  // Back to the start, then window load: app.js has run by then (module scripts delay it) and
+  // marked data-booted if it booted.
+  root.dataset.tour = tour;
+  if (pendingAtStart) classes.add('agentic-pending');
+  if (booted) root.dataset.booted = '';
+  windowListeners.filter(entry => entry.type === 'load').forEach(entry => entry.listener({}));
+  const afterLoad = { tour: root.dataset.tour, pending: classes.has('agentic-pending'), loadListeners: windowListeners.filter(entry => entry.type === 'load').length };
+  return {
+    tour, attributes, pending: pendingAtStart, afterLoad, preload: appended.map(node => node.href), stored: [...store.keys()],
+    timers: timers.length, errorCapture: listeners.filter(entry => entry.type === 'error').map(entry => entry.capture), keptOtherErrors, droppedOnAppError,
+  };
 }
 
 test('the inline head script mirrors shouldPlayEntrance exactly, reading the same seen flag', async () => {
@@ -69,16 +93,29 @@ test('the inline head script mirrors shouldPlayEntrance exactly, reading the sam
     assert.deepEqual(result.preload, play ? ['./entrance.js'] : [], JSON.stringify(input));
     // The probe leaves nothing behind; the flag itself is entrance.js's to write.
     assert.deepEqual(result.stored, input.seen ? [KEY] : [], JSON.stringify(input));
-    // A reload or back/forward stays hidden until app.js has laid the page out (1.5 s at most).
-    const restores = !play && (input.navigationType === 'reload' || input.navigationType === 'back_forward');
-    assert.equal(result.restoring, restores, `${JSON.stringify(input)}: hidden only while a restored scroll position waits for app.js`);
-    assert.deepEqual(result.waits, restores ? [1500] : [], JSON.stringify(input));
-    assert.equal(result.cleared, true, `${JSON.stringify(input)}: never hidden for good`);
+    // Nothing is hidden on a reload or back/forward any more (the scripted layout applies from the
+    // first paint instead): data-tour is the only attribute, and no timer runs.
+    assert.deepEqual(result.attributes, ['tour'], `${JSON.stringify(input)}: no data-restoring`);
+    assert.equal(result.timers, 0, JSON.stringify(input));
+    // If app.js cannot load, data-tour goes, and with it the scripted first-paint layout.
+    assert.deepEqual(result.errorCapture, [true], 'one capturing error listener (element errors do not bubble)');
+    assert.equal(result.keptOtherErrors, true, `${JSON.stringify(input)}: other failed files change nothing`);
+    assert.equal(result.droppedOnAppError, true, `${JSON.stringify(input)}: app.js failing restores the no-script layout`);
+    // An import that fails to load or parse, or throws while it runs, reports to window, not to the
+    // script element: app.js never boots, and on window load data-tour (and the black cover) go.
+    assert.equal(result.afterLoad.loadListeners, 1);
+    assert.equal(result.afterLoad.tour, undefined, `${JSON.stringify(input)}: not booted by load -> no-script layout`);
+    assert.equal(result.afterLoad.pending, false, JSON.stringify(input));
+    // Booted: the decision stays.
+    const booted = runHeadScript(source, input, { booted: true });
+    assert.equal(booted.afterLoad.tour, play ? 'play' : 'skip', `${JSON.stringify(input)}: booted keeps data-tour`);
+    assert.equal(booted.afterLoad.pending, play, JSON.stringify(input));
   }
-  const styles = await read('styles.css');
-  assert.match(styles, /html\[data-restoring\] body \{ visibility: hidden; \}/);
-  const appSource = await read('app.js');
-  assert.match(appSource, /bootEntrance\(document, window\);\n[^\n]*\n  delete document\.documentElement\.dataset\.restoring;/, 'app.js shows the page once it is laid out');
+  // The old hide is gone everywhere.
+  for (const file of ['index.html', 'styles.css', 'app.js', 'explorer.css', 'experience.css', 'home-charts.css']) {
+    assert.doesNotMatch(await read(file), /data-restoring|dataset\.restoring/, `${file}: no reload hide`);
+  }
+  assert.doesNotMatch(await read('styles.css'), /body \{ visibility: hidden/);
   // One key everywhere: entrance.js writes it, app.js and the head script read it.
   const entrance = await read('entrance.js');
   const app = await read('app.js');
@@ -224,4 +261,85 @@ test('the head script records the tour decision that app.js follows', async () =
   assert.match(html, /root\.dataset\.tour = play \? 'play' : 'skip'/);
   const app = await read('app.js');
   assert.match(app, /document\.documentElement\.dataset\.tour/);
+});
+
+// bootPage with stand-ins: every failure gives back the no-script layout (the stylesheets give the
+// scripted one from the first paint, keyed to html[data-tour]).
+function fakePage() {
+  const classes = new Set();
+  const sections = {};
+  const node = (name) => {
+    const own = new Set();
+    const attributes = {};
+    return {
+      name, classList: { add: c => own.add(c), contains: c => own.has(c) }, own, attributes,
+      setAttribute: (k, v) => { attributes[k] = v; },
+      cloneNode: () => ({ ...node(`${name} (copy)`), clone: true }),
+      replaceWith(other) { sections.replaced = other; },
+    };
+  };
+  sections['#experience'] = node('experience');
+  sections['#work .explorer'] = node('explorer');
+  sections['#capabilities'] = node('capabilities');
+  sections['#skills'] = node('skills');
+  const root = { dataset: { tour: 'skip' }, classList: { add: c => classes.add(c), remove: c => classes.delete(c), has: c => classes.has(c) } };
+  classes.add('agentic-pending');
+  const document = {
+    documentElement: root,
+    querySelector: selector => sections[selector] || null,
+    querySelectorAll: list => list.split(',').map(selector => sections[selector.trim()]).filter(Boolean),
+  };
+  const errors = [];
+  const window = { console: { error: error => errors.push(error) } };
+  return { document, window, root, classes, sections, errors };
+}
+const ok = () => ({});
+const parts = overrides => ({ portfolio: ok, experience: ok, explorer: ok, charts: ok, workPreviews: () => null, entrance: () => {}, ...overrides });
+
+test('bootPage marks the page booted once the scripted layout is in place', () => {
+  const page = fakePage();
+  const calls = [];
+  assert.equal(bootPage(page.document, page.window, parts({ entrance: () => calls.push('entrance') })), true);
+  assert.ok('booted' in page.root.dataset);
+  assert.equal(page.root.dataset.tour, 'skip');
+  assert.deepEqual(calls, ['entrance']);
+  assert.equal(page.sections.replaced, undefined);
+  assert.deepEqual(page.errors, []);
+});
+
+test('bootPage: the shell throwing gives the whole no-script page back (data-tour and the cover go)', () => {
+  const page = fakePage();
+  const later = [];
+  const result = bootPage(page.document, page.window, parts({
+    portfolio: () => { throw new Error('initPortfolio failed'); },
+    experience: () => { later.push('experience'); return {}; },
+    explorer: () => { later.push('explorer'); return {}; },
+  }));
+  assert.equal(result, false);
+  assert.equal('tour' in page.root.dataset, false);
+  assert.equal('booted' in page.root.dataset, false);
+  assert.equal(page.classes.has('agentic-pending'), false);
+  assert.deepEqual(later, [], 'nothing else lays out over the no-script page');
+  assert.equal(page.errors.length, 1);
+});
+
+test('bootPage: a section that fails, or finds no markup, goes back to its no-script form alone', () => {
+  // Experience returning null (or throwing) stacks; the explorer is put back as in the HTML, .is-off.
+  for (const experience of [() => null, () => { throw new Error('experience'); }]) {
+    const page = fakePage();
+    bootPage(page.document, page.window, parts({ experience, explorer: () => { throw new Error('explorer'); } }));
+    assert.equal(page.sections['#experience'].attributes['data-xp'], 'stack');
+    assert.equal(page.sections.replaced?.clone, true, 'a copy taken before explorer.js ran');
+    assert.ok(page.sections.replaced.own.has('is-off'));
+    assert.ok('booted' in page.root.dataset, 'the rest still boots');
+    assert.equal(page.root.dataset.tour, 'skip');
+  }
+  const missing = fakePage();
+  bootPage(missing.document, missing.window, parts({ explorer: () => null }));
+  assert.ok(missing.sections.replaced?.own.has('is-off'), 'no explorer handle counts as a failure');
+  // The charts module throwing gives back the reserved chart and skill room.
+  const charts = fakePage();
+  bootPage(charts.document, charts.window, parts({ charts: () => { throw new Error('charts'); } }));
+  assert.ok(charts.sections['#capabilities'].own.has('widgets-off'));
+  assert.ok(charts.sections['#skills'].own.has('widgets-off'));
 });

@@ -188,7 +188,7 @@ test('each headline figure is stated once on the page (plus the strip), where it
 
 test('skills: a compact grid of core skills in five groups, each on the résumé', () => {
   const list = html.match(/<dl class="skill-list">([\s\S]*?)<\/dl>/)[1];
-  const groups = [...list.matchAll(/<div><dt>([^<]+)<\/dt><dd><ul class="tag-list">([\s\S]*?)<\/ul><\/dd><\/div>/g)].map(([, name, tags]) => [name.replace('&amp;', '&'), [...tags.matchAll(/<li>([^<]+)<\/li>/g)].map(match => match[1])]);
+  const groups = [...list.matchAll(/<div><dt>([^<]+)<\/dt><dd><ul class="tag-list">([\s\S]*?)<\/ul><\/dd><\/div>/g)].map(([, name, tags]) => [name.replace('&amp;', '&'), [...tags.matchAll(/<li(?: data-skill-used)?>([^<]+)<\/li>/g)].map(match => match[1])]);
   assert.deepEqual(groups, [
     ['Languages', ['Python', 'SQL', 'TypeScript']],
     ['LLMs & agents', ['MCP', 'LangChain', 'RAG', 'LLM evaluation']],
@@ -286,8 +286,11 @@ test('the proof figures count up over a hidden copy; the markup and screen reade
   assert.match(charts, /whenShown\(document, window, counter\.figure\.closest\('li'\)/);
   assert.match(charts, /if \(!counters\.length \|\| !motionAllowed\(window\)\) return counters;/);
   const app = await read('../web/app.js');
-  assert.match(app, /try \{ initHomeCharts\(document, window\); \} catch/);
-  assert.ok(app.indexOf('initHomeCharts(document, window)') < app.indexOf('  bootEntrance(document, window);\n'), 'drawn before the tour plans its targets');
+  // bootPage runs the charts (default part: initHomeCharts) in a try, before the tour plans its targets.
+  assert.match(app, /charts = initHomeCharts,/);
+  assert.match(app, /try \{ charts\(document, window\); \}\s*catch/);
+  const boot = app.slice(app.indexOf('export function bootPage'));
+  assert.ok(boot.indexOf('charts(document, window)') > 0 && boot.indexOf('charts(document, window)') < boot.indexOf('entrance(document, window);'), 'drawn before the tour plans its targets');
 });
 
 // ---- November 12: availability line, intro, and the first-visit-only build tour ----

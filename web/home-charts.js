@@ -365,11 +365,16 @@ export function initSkillLinks(document, window) {
   return { buttons, usage, live, clear, get pressed() { return pressed?.label || null; } };
 }
 
+// home-charts.css reserves the charts' and the skill buttons' room from the first
+// paint (html[data-tour]); a part that fails, or finds nothing to enhance, marks
+// its section .widgets-off so the empty room is given back.
 export function initHomeCharts(document, window) {
   const run = (name, fn) => { try { return fn(document, window); } catch (error) { window.console?.error?.(`home-charts ${name}`, error); return null; } };
-  return {
-    counters: run('counters', initProofCounters),
-    charts: run('charts', initCapabilityCharts),
-    skills: run('skills', initSkillLinks),
-  };
+  const release = selector => document.querySelector?.(selector)?.classList.add('widgets-off');
+  const counters = run('counters', initProofCounters);
+  const charts = run('charts', initCapabilityCharts);
+  if (!charts) release('#capabilities');
+  const skills = run('skills', initSkillLinks);
+  if (!skills) release('#skills');
+  return { counters, charts, skills };
 }

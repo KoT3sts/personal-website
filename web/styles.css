@@ -36,8 +36,6 @@
   /* Guard against sideways scrolling; clip (not hidden) keeps the sticky stages working. */
   html, body { overflow-x: clip; }
   html { scroll-behavior: smooth; scroll-padding-top: var(--header-clear); scrollbar-color: #9a9d90 var(--paper); }
-  /* A reload or back/forward is hidden until app.js has laid the page out (see the inline <head> script). */
-  html[data-restoring] body { visibility: hidden; }
   body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-weight: 400; font-stretch: 100%; font-kerning: normal; word-spacing: .035em; -webkit-font-smoothing: antialiased; overflow-wrap: break-word; }
   ::selection { background: var(--green); color: var(--ink); }
   .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
@@ -196,7 +194,8 @@
   .spoken-languages .mono { color: #9ea595; font-size: 11px; letter-spacing: .035em; }
   .work { padding: 0 var(--gutter); overflow: clip; }
   .project-stories { display: grid; gap: 25px; margin-top: 60px; }
-  .js-enabled .project-stories { display: none; }
+  /* With scripts the explorer shows each story (html[data-tour], set by the inline <head> script, so from the first paint); if explorer.js fails (.is-off), the stories come back. */
+  :root[data-tour] .explorer:not(.is-off) + .project-stories { display: none; }
   .project-story { padding: 30px; border-top: 1px solid var(--line); }
   .project-story h3 { font-size: 47px; font-weight: 800; font-stretch: var(--display-stretch); letter-spacing: -.045em; line-height: 1; margin-top: 15px; }
   .story-category { color: var(--label); font-size: 11px; }
@@ -226,10 +225,10 @@
      so its reserve is in container units of the card. No reserve without scripts, once
      the module failed (.previews-off) or where a preview kept its summary. */
   .open-card { container-type: inline-size; }
-  .js-enabled .open-work:not(.previews-off) .work-preview:not([data-preview-state="fallback"]) { min-height: var(--reserve, auto); }
-  .js-enabled .open-work .work-preview[data-preview="obs"] { --reserve: 360px; }
-  .js-enabled .open-work .work-preview[data-preview="trace"] { --reserve: 300px; }
-  .js-enabled .open-work .work-preview[data-preview="loop"] { --reserve: calc(54.2cqi + 72px); }
+  :root[data-tour] .open-work:not(.previews-off) .work-preview:not([data-preview-state="fallback"]) { min-height: var(--reserve, auto); }
+  :root[data-tour] .open-work .work-preview[data-preview="obs"] { --reserve: 360px; }
+  :root[data-tour] .open-work .work-preview[data-preview="trace"] { --reserve: 300px; }
+  :root[data-tour] .open-work .work-preview[data-preview="loop"] { --reserve: calc(54.2cqi + 72px); }
   .open-card-link { margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 22px; border-radius: 50px; background: var(--ink); color: var(--paper); font-size: 13px; box-shadow: 0 12px 24px -16px #17171699; }
   .open-card-link .icon { width: 1.15em; height: 1.15em; }
   .open-card-link:hover { background: #32342e; }
@@ -303,9 +302,9 @@
     .open-card > :not(.work-preview) { grid-column: 1; }
     .open-card .work-preview { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
     /* The preview column is 1.2 / 2.2 of the card's content width less the 32 px gap. */
-    .js-enabled .open-work .work-preview[data-preview="obs"] { --reserve: 346px; }
-    .js-enabled .open-work .work-preview[data-preview="trace"] { --reserve: 285px; }
-    .js-enabled .open-work .work-preview[data-preview="loop"] { --reserve: calc((100cqi - 32px) * .296 + 60px); }
+    :root[data-tour] .open-work .work-preview[data-preview="obs"] { --reserve: 346px; }
+    :root[data-tour] .open-work .work-preview[data-preview="trace"] { --reserve: 285px; }
+    :root[data-tour] .open-work .work-preview[data-preview="loop"] { --reserve: calc((100cqi - 32px) * .296 + 60px); }
     .open-card-link { margin-top: 24px; justify-self: start; align-self: end; }
   }
   /* Small tablets: six nav links and the résumé link do not fit beside the wordmark;
@@ -327,7 +326,7 @@
     .work-end { margin-top: 50px; }
     .open-work { padding-bottom: 64px; }.open-card { border-radius: 18px; }
     /* The observability grid's caption and readout wrap to more lines on a phone (measured 343-376px at 360-430). */
-    .js-enabled .open-work .work-preview[data-preview="obs"] { --reserve: 378px; }
+    :root[data-tour] .open-work .work-preview[data-preview="obs"] { --reserve: 378px; }
     .closing-note { min-height: 410px; padding-block: 75px; }.closing-note p { font-size: 17vw; }.note-orbit { right: -80px; top: 27%; }
     .contact-intro { padding-top: 65px; }.contact h2 { font-size: 10.1vw; margin-top: 24px; }.contact-button { margin-top: 35px; padding: 13px 20px; font-size: 13px; gap: 18px; }.contact-links { margin: 26px 0 70px; gap: 8px 26px; }.footer-bottom { flex-direction: column; gap: 10px; }.footer-bottom > :last-child { margin-left: 0; text-align: left; }.story-lead { font-size: 21px; }
   }

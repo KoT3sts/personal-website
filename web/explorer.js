@@ -55,7 +55,7 @@ export function readFacts(story) {
 }
 
 // One facts panel, built with createElement/textContent only (never HTML from data).
-function buildFacts(document, title, facts) {
+export function buildFacts(document, title, facts) {
   const panel = element(document, 'div', 'explorer-facts-panel');
   panel.setAttribute('role', 'group');
   panel.setAttribute('aria-label', `${title}: key facts`);
@@ -137,15 +137,23 @@ export function initExplorer(document, window) {
   const storyFor = href => stories.find(story => href && story.querySelector('.story-case-link')?.getAttribute('href') === href);
   // The active project's facts, one panel per project stacked in one cell,
   // so the block is as tall as the tallest and nothing below it moves.
-  const factsBox = caption ? element(document, 'div', 'explorer-facts') : null;
-  const factPanels = factsBox ? items.map((_, index) => {
-    const panel = buildFacts(document, projects[index].title, readFacts(storyFor(links[index]?.getAttribute('href'))));
-    factsBox.append(panel);
-    return panel;
-  }) : [];
-  if (factsBox) {
+  // index.html carries them already (the caption sets the stage's height on
+  // tablets and phones, so it must be as tall before this script as after);
+  // without them, or with the wrong count, they are built from the stories.
+  let factsBox = caption?.querySelector('.explorer-facts') || null;
+  let factPanels = factsBox ? [...factsBox.children].filter(child => child.classList.contains('explorer-facts-panel')) : [];
+  if (caption && factPanels.length !== count) {
+    factsBox?.remove();
+    factsBox = element(document, 'div', 'explorer-facts');
+    factPanels = items.map((_, index) => {
+      const panel = buildFacts(document, projects[index].title, readFacts(storyFor(links[index]?.getAttribute('href'))));
+      factsBox.append(panel);
+      return panel;
+    });
     if (captionOpen) caption.insertBefore(factsBox, captionOpen);
     else caption.append(factsBox);
+  }
+  if (factsBox) {
     // The caption's title, category and links repeat the active cover (hidden
     // from screen readers); the facts are new, so they are read.
     caption.removeAttribute('aria-hidden');

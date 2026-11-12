@@ -47,8 +47,46 @@ test('the index is a list of buttons, one per project, with a live region beside
   assert.match(section, /<ol role="list" aria-labelledby="explorer-index-label">/);
   assert.match(section, /id="explorer-index-label"/);
   assert.match(section, /class="explorer-live visually-hidden" aria-live="polite" aria-atomic="true"/);
-  // Script-only parts start hidden so the no-script page is a plain list.
-  for (const part of ['explorer-caption', 'explorer-index', 'explorer-hint']) assert.match(section, new RegExp(`class="${part}[^"]*"[^>]*hidden>`));
+  // Script-only parts: hidden by the stylesheet unless scripts run (html[data-tour], set by the
+  // inline <head> script), so the no-script page is a plain list and, with scripts, the stage has
+  // its final height from the first paint. No hidden attribute: that would wait for explorer.js.
+  for (const part of ['explorer-caption', 'explorer-index', 'explorer-hint']) assert.doesNotMatch(section, new RegExp(`class="${part}[^"]*"[^>]*hidden>`));
+  assert.match(css, /^\.explorer-caption, \.explorer-index, \.explorer-hint \{ display: none; \}$/m);
+  assert.match(css, /^:root\[data-tour\] \.explorer:not\(\.is-off\) :is\(\.explorer-caption, \.explorer-index, \.explorer-hint\) \{ display: block; \}$/m);
+});
+
+test('no first-paint stage rule matches an explorer marked .is-off (explorer.js failed): it is the no-script grid', () => {
+  // Top-level commas only (not those inside :not(...) or :is(...)).
+  const split = list => { const out = ['']; let depth = 0; for (const ch of list) { if (ch === '(') depth++; if (ch === ')') depth--; if (ch === ',' && !depth) out.push(''); else out[out.length - 1] += ch; } return out.map(part => part.trim()); };
+  const rules = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}@]+)\{[^{}]*\}/g)].flatMap(([, list]) => split(list)).filter(Boolean);
+  const gated = rules.filter(selector => selector.includes('[data-tour]'));
+  assert.ok(gated.length > 60, `${gated.length} gated selectors`);
+  for (const selector of gated) assert.match(selector, /\.explorer:not\((?:\.is-ready, )?\.is-off\)/, selector);
+  // Ungated, the parts that only exist with the stage take no room.
+  assert.match(css, /^\.explorer-caption, \.explorer-index, \.explorer-hint \{ display: none; \}$/m);
+});
+
+test('with scripts the stage layout applies from the first paint, so a reload lands where it left off', async () => {
+  const styles = await readFile(new URL('../web/styles.css', import.meta.url), 'utf8');
+  const app = await readFile(new URL('../web/app.js', import.meta.url), 'utf8');
+  // Every enhanced rule is gated on html[data-tour] (the head script), none on .is-ready (explorer.js).
+  assert.equal((css.match(/\.explorer\.is-ready/g) || []).length, 0);
+  assert.ok((css.match(/:root\[data-tour\] \.explorer:not\(\.is-off\) /g) || []).length > 50);
+  assert.match(css, /^:root\[data-tour\] \.explorer:not\(\.is-off\) \.explorer-stage \{[^}]*height: clamp\(600px, 100svh, 1200px\);/m);
+  // The covers wait unseen until explorer.js places them (or failed: .is-off).
+  assert.match(css, /^:root\[data-tour\] \.explorer:not\(\.is-ready, \.is-off\) \.explorer-item \{ visibility: hidden; \}$/m);
+  // The stories (the no-script view) go with scripts, and come back if explorer.js fails.
+  assert.match(styles, /:root\[data-tour\] \.explorer:not\(\.is-off\) \+ \.project-stories \{ display: none; \}/);
+  assert.doesNotMatch(styles, /\.js-enabled \.project-stories/);
+  assert.match(app, /pristine\.classList\.add\('is-off'\); gallery\.replaceWith\(pristine\);/);
+  // Phones: the markup starts in ring mode and must lay out as the stack explorer.js switches to.
+  const phone = css.slice(css.indexOf('@media (max-width: 699px)'));
+  for (const rule of [/\[data-explorer-mode\] \.explorer-caption \{ padding-top: 10px; \}/, /\[data-explorer-mode\] \.explorer-caption-open \{ display: none; \}/, /\[data-explorer-mode\] \.explorer-caption-title \{ font-size: min\(40px, 12\.2cqi\); \}/]) assert.match(phone, rule);
+  // The facts panels are in the page (the caption sets the stage height on tablets and phones);
+  // portfolio.test.js checks they equal what explorer.js builds from the stories.
+  const panels = [...section.matchAll(/<div class="explorer-facts-panel( is-active)?" role="group" aria-label="([^"]+): key facts"( inert)?>/g)];
+  assert.deepEqual(panels.map(match => match[2]), ['Multi-Agent Workflow', 'Thoughts-to-Text BCI', 'Companionship Chatbot', 'VoiceLab', 'Work Helper', 'Barking Village']);
+  assert.deepEqual(panels.map(match => [Boolean(match[1]), Boolean(match[3])]), [[true, false], ...Array(5).fill([false, true])], 'the first is shown, the others inert');
 });
 
 test('the build tour builds the explorer on the Projects stop, with no separate Index stop', () => {
@@ -217,18 +255,18 @@ test('drags, keys and indexes stay inside the list', () => {
 
 test('the ring shows the active project too: title, category and a way into its case study', async () => {
   const js = await readFile(new URL('../web/explorer.js', import.meta.url), 'utf8');
-  const caption = section.match(/<div class="explorer-caption"[\s\S]*?<\/div>/)?.[0] || '';
-  assert.match(caption, /^<div class="explorer-caption" aria-hidden="true" hidden>/);
+  const caption = section.match(/<div class="explorer-caption"[\s\S]*?<\/a>\n {10}<\/div>/)?.[0] || '';
+  assert.match(caption, /^<div class="explorer-caption" aria-hidden="true">/);
   // A pointer convenience: out of the tab order (the active cover is the same link for keys and screen readers).
   assert.match(caption, /<a class="explorer-caption-open mono" href="\.\/projects\/agent-workflow\.html" tabindex="-1">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"><\/span><\/a>/);
   assert.match(js, /captionOpen\.setAttribute\('href', href\)/);
   // Visible in both modes; in the ring it sits under the index (desktop) or beside it (tablet).
-  assert.doesNotMatch(css, /\.explorer\.is-ready \.explorer-caption \{[^}]*(visibility: hidden|opacity: 0)/);
+  assert.doesNotMatch(css, /:root\[data-tour\] \.explorer:not\(\.is-off\) \.explorer-caption \{[^}]*(visibility: hidden|opacity: 0)/);
   assert.match(css, /\[data-explorer-mode="ring"\] \.explorer-caption \{ top: auto; bottom: 64px; left: auto; right: 0;/);
   assert.match(css, /\[data-explorer-mode="ring"\] \.explorer-caption-open \{ display: inline-flex; \}/);
   assert.match(css, /\.explorer-caption-open \{[^}]*min-height: 44px/);
   // The tour does not build it, so it waits out the tour.
-  assert.match(css, /html\.agentic-touring \.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-caption \{ visibility: hidden; \}/);
+  assert.match(css, /html\.agentic-touring\[data-tour\] \.explorer:not\(\.is-off\) \[data-explorer-mode="ring"\] \.explorer-caption \{ visibility: hidden; \}/);
 });
 
 // Each story's facts, as explorer.js reads them (dl rows; a row of tags is the stack).
@@ -286,17 +324,17 @@ test('the explorer builds the facts from the stories with textContent, and annou
 test('tablets keep one caption layout in ring and stack; the lab link has a 44px hit area', () => {
   // The desktop ring's narrow-column facts rules stay on desktop.
   const desktop = css.slice(css.indexOf('@media (min-width: 1100px) {'));
-  assert.match(desktop, /^@media \(min-width: 1100px\) \{\s*\.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-facts \{ min-height: \d+px;[^}]*\}\s*\.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-fact \{ grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(desktop, /^@media \(min-width: 1100px\) \{\s*:root\[data-tour\] \.explorer:not\(\.is-off\) \[data-explorer-mode="ring"\] \.explorer-facts \{ min-height: \d+px;[^}]*\}\s*:root\[data-tour\] \.explorer:not\(\.is-off\) \[data-explorer-mode="ring"\] \.explorer-fact \{ grid-template-columns: minmax\(0, 1fr\);/);
   assert.equal(css.match(/\[data-explorer-mode="ring"\] \.explorer-fact \{/g).length, 1);
   const tablet = css.slice(css.indexOf('@media (max-width: 1099px)'), css.indexOf('@media (max-width: 699px)'));
   assert.match(tablet, /\[data-explorer-mode="ring"\] \.explorer-caption-title \{ line-height: \.88; \}/);
   assert.match(tablet, /\[data-explorer-mode="ring"\] \.explorer-caption-lead \{ display: block; \}/);
-  assert.match(tablet, /\.explorer\.is-ready \.explorer-caption-open \{ display: inline-flex; \}/);
+  assert.match(tablet, /:root\[data-tour\] \.explorer:not\(\.is-off\) \.explorer-caption-open \{ display: inline-flex; \}/);
   // Hidden, not removed, in the stack: it keeps its place. Never visibility: visible (the tour hides the ring caption).
   assert.match(tablet, /\[data-explorer-mode="stack"\] \.explorer-caption-open \{ visibility: hidden; \}/);
   assert.doesNotMatch(css, /explorer-caption-open \{[^}]*visibility: visible/);
   const phone = css.slice(css.indexOf('@media (max-width: 699px)'));
-  assert.match(phone, /\.explorer\.is-ready \.explorer-caption-open \{ display: none; \}/);
+  assert.match(phone, /:root\[data-tour\] \.explorer:not\(\.is-off\) \[data-explorer-mode\] \.explorer-caption-open \{ display: none; \}/);
   assert.match(css, /\.explorer-facts-link \{ position: relative;/);
   assert.match(css, /\.explorer-facts-link::before \{ content: ""; position: absolute; top: calc\(50% - 22px\); bottom: calc\(50% - 22px\); left: min\(0px, calc\(50% - 22px\)\); right: min\(0px, calc\(50% - 22px\)\); \}/);
 });
@@ -313,7 +351,7 @@ test('the facts block keeps its height, crossfades, and reads at 11px+ with 4.5:
   assert.match(tablet, /\.explorer-caption-title \{ min-height: 1\.76em; \}/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[^@]*\.explorer-facts-panel, \.explorer-facts-panel\.is-active \{ transition: none; \}/);
   // Short desktop windows give up the tags, then the facts, in the ring only.
-  assert.match(css, /\(min-width: 1480px\) and \(max-height: 729px\) \{\s*\.explorer\.is-ready \[data-explorer-mode="ring"\] \.explorer-fact-stack \{ display: none; \}/);
+  assert.match(css, /\(min-width: 1480px\) and \(max-height: 729px\) \{\s*:root\[data-tour\] \.explorer:not\(\.is-off\) \[data-explorer-mode="ring"\] \.explorer-fact-stack \{ display: none; \}/);
   // Type: mono labels on the label token, values at 14px, tags at 12px.
   assert.match(css, /\.explorer-fact dt \{[^}]*font-size: var\(--text-label\);[^}]*text-transform: uppercase;/);
   assert.match(css, /\.explorer-fact dd \{[^}]*font-size: 14px;/);

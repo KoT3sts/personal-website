@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LPlC6JOsCNvlvxcLDI4qjZ2AFWltlvfHGk8cS8O43sg='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cotA06SiTGADRBDfMMTvHHO2HvGdhDlnlCtOQBaHUxM='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#eeede8">
   <meta name="description" content="Cesar Tortolero is a Machine Learning Engineer in Morristown, NJ (NYC area) who builds AI agents, MCP integrations and LLM evaluation on AWS Bedrock AgentCore, plus serverless Python and MLOps.">
@@ -51,28 +51,28 @@
   // entranceWillPlay() in app.js and shouldPlayEntrance() in entrance.js: the
   // tour plays once (entrance.js marks the visit "seen" as it starts), never
   // under reduced motion, on a deep link or on back/forward.
-  // app.js follows the decision recorded in data-tour.
-  // A reload or back/forward puts the old scroll position back before app.js
-  // has laid the page out (the explorer, charts and timeline change section
-  // heights), which read as a layout shift: the page stays hidden
-  // (html[data-restoring], styles.css) until app.js is done, 1.5 s at most.
+  // app.js follows the decision recorded in data-tour. It also tells the
+  // stylesheets that scripts run, so what app.js lays out (the explorer,
+  // Experience, the charts, the Lab previews) has its final size from the
+  // first paint and a reload or back/forward lands where it left off. If
+  // app.js does not boot (its file or an import fails to load or run), it
+  // goes and the page keeps its no-script layout: at once when the file
+  // fails to load, otherwise at the latest on window load (module scripts
+  // have run by then), unless app.js marked html[data-booted].
   (() => {
     const root = document.documentElement;
     let play = false;
-    let restoring = false;
     try {
       const nav = performance.getEntriesByType?.('navigation')?.[0];
-      restoring = nav?.type === 'reload' || nav?.type === 'back_forward';
       const key = 'cesar:portfolio:agentic-intro:v1';
       const seen = localStorage.getItem(key) === 'seen';
       localStorage.setItem(`${key}:probe`, '1'); localStorage.removeItem(`${key}:probe`);
       play = !(seen || matchMedia('(prefers-reduced-motion: reduce)').matches || (location.hash && location.hash !== '#home') || nav?.type === 'back_forward');
     } catch { play = false; }
     root.dataset.tour = play ? 'play' : 'skip';
-    if (restoring && !play) {
-      root.dataset.restoring = '';
-      setTimeout(() => delete root.dataset.restoring, 1500);
-    }
+    const fallback = () => { delete root.dataset.tour; root.classList.remove('agentic-pending'); };
+    document.addEventListener('error', event => { if (/\/app\.js$/.test(event.target?.src || '')) fallback(); }, true);
+    addEventListener('load', () => { if (!('booted' in root.dataset)) fallback(); });
     if (!play) return;
     root.classList.add('agentic-pending');
     const link = document.createElement('link'); link.rel = 'modulepreload'; link.href = './entrance.js'; document.head.append(link);
@@ -399,13 +399,24 @@
             <li class="explorer-item" data-explorer-item="4"><a class="explorer-card" href="./projects/work-helper.html" aria-label="Work Helper, side project: finding opportunities and three steps for a job search. Read the case study."><span class="explorer-cover"><img src="./assets/work-helper.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Work Helper</span><span class="mono explorer-card-category">05 / SIDE PROJECT · IN DEVELOPMENT</span><span class="explorer-card-lead">A tool in development to help people find job opportunities and take the next step.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
             <li class="explorer-item" data-explorer-item="5"><a class="explorer-card" href="./projects/barking-village.html" aria-label="Barking Village, side project: a staff sidebar and care planning panels. Read the case study."><span class="explorer-cover"><img src="./assets/barking-village.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Barking Village</span><span class="mono explorer-card-category">06 / SIDE PROJECT · FULL-STACK APP</span><span class="explorer-card-lead">A full-stack app that puts dog-care staff workflows in one place.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
           </ol>
-          <div class="explorer-caption" aria-hidden="true" hidden>
+          <div class="explorer-caption" aria-hidden="true">
             <p class="explorer-caption-title">Multi-Agent Workflow</p>
             <p class="explorer-caption-meta mono"><span class="explorer-caption-category">AGENT TOOLING</span> <span class="explorer-caption-count">01 / 06</span></p>
             <p class="explorer-caption-lead">A specialist for each step. Context they can read, not change.</p>
+            <!-- Key facts of each project, as explorer.js would build them from the stories below (readFacts,
+                 buildFacts; tests/portfolio.test.js keeps the two equal). In the page from the start so the
+                 caption, which sets the stage's height on tablets and phones, is as tall before the script as after. -->
+            <div class="explorer-facts">
+              <div class="explorer-facts-panel is-active" role="group" aria-label="Multi-Agent Workflow: key facts"><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Focus</dt><dd>Clear roles and read-only access to delivery tools</dd></div><div class="explorer-fact explorer-fact-stack"><dt class="mono">Stack</dt><dd><ul class="tag-list explorer-tags" role="list"><li>MCP</li><li>Coding subagents</li><li>CI</li><li>Source control</li></ul></dd></div></dl></div>
+              <div class="explorer-facts-panel" role="group" aria-label="Thoughts-to-Text BCI: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Role</dt><dd>Lead researcher, Sep 2021 – May 2023</dd></div><div class="explorer-fact"><dt class="mono">Presented</dt><dd>2 KSU symposium presentations, 2022</dd></div><div class="explorer-fact explorer-fact-stack"><dt class="mono">Stack</dt><dd><ul class="tag-list explorer-tags" role="list"><li>EEG</li><li>Autoencoder</li><li>t-SNE</li></ul></dd></div></dl></div>
+              <div class="explorer-facts-panel" role="group" aria-label="Companionship Chatbot: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Award</dt><dd>First Place, KSU C-Day, Spring 2024</dd></div><div class="explorer-fact"><dt class="mono">Role</dt><dd>Team lead, backend LLM</dd></div><div class="explorer-fact explorer-fact-stack"><dt class="mono">Stack</dt><dd><ul class="tag-list explorer-tags" role="list"><li>DistilGPT-2</li><li>Sentiment analysis</li><li>Python</li><li>React Native</li><li>Firebase</li></ul></dd></div></dl><p class="explorer-facts-more"><a class="explorer-facts-link mono" href="./lab/sentiment-eval.html">How I evaluate a classifier (public data)<span class="visually-hidden">: two sentiment classifiers tested on open review data, not the chatbot’s original model</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></p></div>
+              <div class="explorer-facts-panel" role="group" aria-label="VoiceLab: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Focus</dt><dd>Explainable analysis and thoughtful revision</dd></div><div class="explorer-fact"><dt class="mono">Stage</dt><dd>Local prototype</dd></div></dl></div>
+              <div class="explorer-facts-panel" role="group" aria-label="Work Helper: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Focus</dt><dd>Making opportunity discovery more approachable</dd></div><div class="explorer-fact"><dt class="mono">Stage</dt><dd>In development</dd></div></dl></div>
+              <div class="explorer-facts-panel" role="group" aria-label="Barking Village: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Focus</dt><dd>Everyday operational workflows</dd></div><div class="explorer-fact"><dt class="mono">Exploring</dt><dd>Clear interfaces for complex, connected tasks</dd></div></dl></div>
+            </div>
             <a class="explorer-caption-open mono" href="./projects/agent-workflow.html" tabindex="-1">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
           </div>
-          <div class="explorer-index" hidden>
+          <div class="explorer-index">
             <p class="explorer-index-label mono" id="explorer-index-label">Index <span class="explorer-index-count" aria-hidden="true">01 / 06</span></p>
             <ol role="list" aria-labelledby="explorer-index-label">
               <li><button class="explorer-pick" type="button" data-explorer-pick="0"><span class="mono explorer-pick-no">01</span><span class="explorer-pick-name">Multi-Agent Workflow</span></button></li>
@@ -416,7 +427,7 @@
               <li><button class="explorer-pick" type="button" data-explorer-pick="5"><span class="mono explorer-pick-no">06</span><span class="explorer-pick-name">Barking Village</span></button></li>
             </ol>
           </div>
-          <p class="explorer-hint mono" aria-hidden="true" hidden><span class="explorer-hint-fine">SCROLL OR DRAG <span class="icon icon-arrow-ns" aria-hidden="true"></span> · ARROW KEYS</span><span class="explorer-hint-touch">SWIPE <span class="icon icon-arrow-ew" aria-hidden="true"></span> OR TAP A PROJECT</span></p>
+          <p class="explorer-hint mono" aria-hidden="true"><span class="explorer-hint-fine">SCROLL OR DRAG <span class="icon icon-arrow-ns" aria-hidden="true"></span> · ARROW KEYS</span><span class="explorer-hint-touch">SWIPE <span class="icon icon-arrow-ew" aria-hidden="true"></span> OR TAP A PROJECT</span></p>
           <p class="explorer-live visually-hidden" aria-live="polite" aria-atomic="true"></p>
         </div>
       </div>
@@ -474,11 +485,11 @@
       <div class="skills-layout">
         <h2 id="skills-title">SKILLS &amp; <br><span>EDUCATION.</span></h2>
         <dl class="skill-list">
-          <div><dt>Languages</dt><dd><ul class="tag-list"><li>Python</li><li>SQL</li><li>TypeScript</li></ul></dd></div>
-          <div><dt>LLMs &amp; agents</dt><dd><ul class="tag-list"><li>MCP</li><li>LangChain</li><li>RAG</li><li>LLM evaluation</li></ul></dd></div>
-          <div><dt>ML &amp; MLOps</dt><dd><ul class="tag-list"><li>scikit-learn</li><li>TensorFlow</li><li>MLflow</li></ul></dd></div>
-          <div><dt>Cloud &amp; infra</dt><dd><ul class="tag-list"><li>AWS Bedrock AgentCore</li><li>Amazon SageMaker</li><li>AWS Lambda</li><li>Terraform</li><li>Docker</li></ul></dd></div>
-          <div><dt>Backend &amp; testing</dt><dd><ul class="tag-list"><li>FastAPI</li><li>pytest</li></ul></dd></div>
+          <div><dt>Languages</dt><dd><ul class="tag-list"><li data-skill-used>Python</li><li>SQL</li><li data-skill-used>TypeScript</li></ul></dd></div>
+          <div><dt>LLMs &amp; agents</dt><dd><ul class="tag-list"><li data-skill-used>MCP</li><li data-skill-used>LangChain</li><li>RAG</li><li>LLM evaluation</li></ul></dd></div>
+          <div><dt>ML &amp; MLOps</dt><dd><ul class="tag-list"><li>scikit-learn</li><li>TensorFlow</li><li data-skill-used>MLflow</li></ul></dd></div>
+          <div><dt>Cloud &amp; infra</dt><dd><ul class="tag-list"><li data-skill-used>AWS Bedrock AgentCore</li><li data-skill-used>Amazon SageMaker</li><li data-skill-used>AWS Lambda</li><li data-skill-used>Terraform</li><li>Docker</li></ul></dd></div>
+          <div><dt>Backend &amp; testing</dt><dd><ul class="tag-list"><li data-skill-used>FastAPI</li><li>pytest</li></ul></dd></div>
         </dl>
       </div>
       <div class="education-layout">

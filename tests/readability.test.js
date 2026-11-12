@@ -152,7 +152,7 @@ test('Open the work: card links are 48px pills, the cards stack on phones and ta
 
 test('chart labels and the skill usage line keep 4.5:1 on the dark sections', () => {
   const chart = sheets['web/home-charts.css'];
-  for (const [selector, hex] of [['.cap-chart', /\.cap-chart \{[^}]*color: #([0-9a-f]{6})/], ['.skill-usage', /\.skill-usage \{[^}]*color: #([0-9a-f]{6})/], ['.skill-tag', /\.skill-tag \{[^}]*color: #([0-9a-f]{6})/]]) {
+  for (const [selector, hex] of [['.cap-chart', /\.cap-chart \{[^}]*color: #([0-9a-f]{6})/], ['.skill-usage', /\.skill-usage[^{]*\{[^}]*color: #([0-9a-f]{6})/], ['.skill-tag', /\.skill-tag \{[^}]*color: #([0-9a-f]{6})/]]) {
     const color = hex.exec(chart)?.[1];
     assert.ok(color, selector);
     assert.ok(contrast(color, '101114') >= 4.5, `${selector} ${contrast(color, '101114').toFixed(2)}:1`);
@@ -163,7 +163,9 @@ test('chart labels and the skill usage line keep 4.5:1 on the dark sections', ()
 
 test('Open the work reserves the live previews’ height (measured at 360-2000) so the swap never moves the page', () => {
   assert.match(styles, /\.open-card \{ container-type: inline-size; \}/);
-  assert.match(styles, /\.js-enabled \.open-work:not\(\.previews-off\) \.work-preview:not\(\[data-preview-state="fallback"\]\) \{ min-height: var\(--reserve, auto\); \}/);
+  // From the first paint with scripts (html[data-tour], inline <head> script), not once app.js has run.
+  assert.match(styles, /:root\[data-tour\] \.open-work:not\(\.previews-off\) \.work-preview:not\(\[data-preview-state="fallback"\]\) \{ min-height: var\(--reserve, auto\); \}/);
+  assert.doesNotMatch(styles, /\.js-enabled/);
   // Live heights (Chrome, Nov 12): obs 310-359 wide, 310-345 tablet, 343-376 phone; trace 255-292; loop about .54 x its width + 50-70 px.
   const reserve = kind => [...styles.matchAll(new RegExp(`\\.work-preview\\[data-preview="${kind}"\\] \\{ --reserve: ([^;]+);`, 'g'))].map(match => match[1]);
   assert.deepEqual(reserve('obs'), ['360px', '346px', '378px']);

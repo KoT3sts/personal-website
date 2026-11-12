@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { initPortfolio, loadWorkPreviews } from '../web/app.js';
+import { initPortfolio, loadWorkPreviews, bootPage } from '../web/app.js';
 import { initHomeCharts } from '../web/home-charts.js';
-import { initExplorer } from '../web/explorer.js';
+import { initExplorer, buildFacts, readFacts } from '../web/explorer.js';
 
 const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
 
@@ -103,6 +103,71 @@ test('one gallery: the explorer in #work, every cover a link to its case study, 
   links.forEach(link => assert.match(link.getAttribute('href'), /^\.\/projects\/[a-z-]+\.html$/));
   // The stories stay in the page (no-script fallback; the case studies repeat them).
   assert.equal(document.querySelectorAll('.project-stories > .project-story').length, 6);
+});
+
+test('the facts panels in the page are exactly what explorer.js would build from the stories', () => {
+  // index.html carries them so the caption (the stage's height on tablets and phones) is as tall
+  // before explorer.js runs as after; a reload or back/forward then lands where it left off.
+  const { document } = setup();
+  const panels = [...document.querySelectorAll('.explorer-caption > .explorer-facts > .explorer-facts-panel')];
+  const covers = [...document.querySelectorAll('.explorer-card')];
+  const stories = [...document.querySelectorAll('.project-stories .project-story')];
+  assert.equal(panels.length, covers.length);
+  const bare = node => { const copy = node.cloneNode(true); copy.classList.remove('is-active'); copy.removeAttribute('inert'); return copy.outerHTML; };
+  covers.forEach((cover, index) => {
+    const story = stories.find(item => item.querySelector('.story-case-link')?.getAttribute('href') === cover.getAttribute('href'));
+    const built = buildFacts(document, cover.querySelector('.explorer-card-name').textContent, readFacts(story));
+    assert.equal(bare(panels[index]), bare(built), `panel ${index + 1}`);
+  });
+  // explorer.js uses them as they are (no second set), and without them builds its own.
+  const { window, document: fresh } = setup();
+  initExplorer(fresh, window);
+  assert.equal(fresh.querySelectorAll('.explorer-facts').length, 1);
+  assert.equal(fresh.querySelectorAll('.explorer-facts-panel').length, 6);
+  const { window: bareWindow, document: without } = setup();
+  without.querySelector('.explorer-facts').remove();
+  initExplorer(without, bareWindow);
+  assert.equal(without.querySelectorAll('.explorer-caption .explorer-facts-panel').length, 6);
+  assert.ok(without.querySelector('.explorer-facts').nextElementSibling.matches('.explorer-caption-open'));
+});
+
+test('if explorer.js fails mid-way, the HTML explorer comes back .is-off: the plain grid and the stories, nothing of the stage', async () => {
+  const { window } = new JSDOM(html, { url: 'https://portfolio.test/' });
+  const { document } = window;
+  window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+  document.documentElement.dataset.tour = 'skip';
+  const ok = () => ({});
+  bootPage(document, window, {
+    portfolio: ok, experience: ok, charts: ok, workPreviews: () => null, entrance: () => {},
+    // Fails after it has styled the covers, added shades and tab stops.
+    explorer: (doc, win) => { initExplorer(doc, win); throw new Error('explorer failed'); },
+  });
+  const explorer = document.querySelector('#work .explorer');
+  assert.ok(explorer.classList.contains('is-off'));
+  assert.equal(explorer.classList.contains('is-ready'), false);
+  assert.ok('booted' in document.documentElement.dataset, 'the rest of the page still boots');
+  assert.equal(explorer.querySelector('.explorer-shade'), null);
+  assert.deepEqual([...explorer.querySelectorAll('.explorer-item, .explorer-card')].filter(node => node.hasAttribute('style') || node.hasAttribute('tabindex') || node.hasAttribute('aria-current')).length, 0, 'no leftover transforms or tab stops');
+  // No first-paint rule (explorer.css, styles.css) matches anything in it, or hides the stories.
+  const sheets = await Promise.all(['explorer.css', 'styles.css'].map(file => readFile(new URL(`../web/${file}`, import.meta.url), 'utf8')));
+  const split = list => { const out = ['']; let depth = 0; for (const ch of list) { if (ch === '(') depth++; if (ch === ')') depth--; if (ch === ',' && !depth) out.push(''); else out[out.length - 1] += ch; } return out.map(part => part.trim()); };
+  const gated = sheets.flatMap(css => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}@]+)\{[^{}]*\}/g)].flatMap(([, list]) => split(list)))
+    .filter(selector => selector.includes('[data-tour]') && selector.includes('.explorer'))
+    .map(selector => selector.replace(/::?(before|after)\b/g, '').replace(/:(hover|focus-visible)\b/g, ''));
+  assert.ok(gated.length > 60);
+  const nodes = [explorer, ...explorer.querySelectorAll('*'), document.querySelector('.project-stories')];
+  let checked = 0;
+  for (const selector of gated) {
+    let hits;
+    try { hits = nodes.filter(node => node.matches(selector)); checked++; } catch { continue; }
+    assert.deepEqual(hits.map(node => node.className), [], selector);
+  }
+  assert.ok(checked > 60, `${checked} selectors checked`);
+  // With scripts and a working explorer the same selectors do apply.
+  const live = document.createElement('div');
+  live.className = 'explorer';
+  explorer.after(live);
+  assert.ok(live.matches(':root[data-tour] .explorer:not(.is-off)'));
 });
 
 test('explorer keys open the ring and step through, the index selects and is announced', async () => {
@@ -284,7 +349,9 @@ test('Open the work: three large cards between Work and Skills, each with a sent
   assert.equal(cards[1].querySelector('.open-note').textContent, 'NOV 10–11, 2026');
   assert.deepEqual([...cards[2].querySelectorAll('.open-loop > li > .mono')].map(step => step.textContent), ['TRACE', 'CLASSIFY', 'FIXED TEST SET', 'GATE']);
   // The sentiment lab is not on the homepage list any more; it stays linked from the chatbot story.
-  assert.equal(document.querySelectorAll('a[href="./lab/sentiment-eval.html"]').length, 1);
+  // (The chatbot's facts panel in the explorer repeats the story's link.)
+  assert.deepEqual([...document.querySelectorAll('a[href="./lab/sentiment-eval.html"]')].map(link => link.closest('.project-story, .explorer-facts-panel, section')?.className), ['explorer-facts-panel', 'project-story']);
+  assert.equal(lab.querySelector('a[href="./lab/sentiment-eval.html"]'), null);
   assert.ok(document.querySelector('#project-chatbot a.story-lab-link[href="./lab/sentiment-eval.html"]'));
   assert.equal(document.querySelector('.story-lab-link').firstChild.textContent, 'How I evaluate a classifier (public data)');
   assert.doesNotMatch(html, /rounds? 4|EVALUATION LAB/i);

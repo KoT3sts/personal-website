@@ -19,7 +19,11 @@
 // per chapter, `--xp-at`: the scroll progress (0..1) where that chapter's rest
 // begins, so `travel top + at * distance` shows it aligned.
 
-const TRAVEL_MEDIA = '(min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)';
+// Where the chapters fit one screen (fits() below), measured in Chrome at 761-1920 px wide: the
+// narrower the window, the taller it must be. experience.css lays the section out for travel from the
+// first paint under the same query, so it must stay close to fits(): a window where the two disagree
+// changes height once this script runs. Re-measure (and update both) if the chapters' copy grows.
+const TRAVEL_MEDIA = '(min-width: 761px) and (prefers-reduced-motion: no-preference) and (((min-width: 1500px) and (min-height: 600px)) or ((min-width: 1050px) and (min-height: 620px)) or ((min-width: 950px) and (min-height: 660px)) or ((min-width: 900px) and (min-height: 700px)) or ((min-width: 850px) and (min-height: 800px)) or (min-height: 1000px))';
 // Pinned scroll per chapter for the moves, in stage heights (the track moves
 // about 2.5x as far sideways). With the rests, the whole pinned stretch is
 // about 1.7 stage heights for three chapters (1,385 px at 1280 x 800).
@@ -156,7 +160,9 @@ export function initExperience(document, window, options = {}) {
   const raf = window.requestAnimationFrame?.bind(window) || (fn => window.setTimeout(fn, 16));
   const pad = n => String(n + 1).padStart(2, '0');
 
-  const state = { mode: 'stack', shift: 0, distance: 0, stageW: 0, lefts: [], stops: [], plan: null, current: -1, frame: 0, measureFrame: 0 };
+  // mode '' until the first measure() sets data-xp ("travel" or "stack"): until then
+  // experience.css lays the section out as travel would on wide screens (html[data-tour]).
+  const state = { mode: '', shift: 0, distance: 0, stageW: 0, lefts: [], stops: [], plan: null, current: -1, frame: 0, measureFrame: 0 };
   const chart = buildTimeline();
 
   // ---- career timeline ------------------------------------------------------
@@ -347,7 +353,8 @@ export function initExperience(document, window, options = {}) {
       chapters.forEach(chapter => chapter.setAttribute('tabindex', '0'));
       if (controls) controls.hidden = false;
     } else {
-      delete section.dataset.xp;
+      // Explicit, so experience.css's first-paint travel layout no longer applies.
+      section.dataset.xp = 'stack';
       delete section.dataset.xpDriver;
       ['--xp-shift', '--xp-distance', '--xp-tail'].forEach(name => section.style.removeProperty(name));
       travel.style.removeProperty('--xp-p');

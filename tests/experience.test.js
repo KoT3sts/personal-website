@@ -67,10 +67,22 @@ test('controls ship hidden, are real buttons and keep 44px targets', () => {
 });
 
 test('the pinned travel is opt-in: script-gated, screen-only, and never wider than the page', () => {
-  // Stacked is the default; travel rules only apply under data-xp="travel" inside @media screen.
-  const travel = css.slice(css.indexOf('@media screen {'));
-  assert.ok(css.indexOf('@media screen {') > css.indexOf('.xp-chapter {'), 'stacked rules come first');
-  assert.match(travel, /\.experience\[data-xp="travel"\] \.xp-stage \{ position: sticky; top: 0; height: 100svh; overflow: clip;/);
+  // Stacked is the default; travel rules only apply with scripts (html[data-tour], set by the inline
+  // <head> script, so from the first paint), on screens matching TRAVEL_MEDIA, unless
+  // experience.js found the chapters do not fit (data-xp="stack").
+  const media = js.match(/const TRAVEL_MEDIA = '([^']+)';/)[1];
+  const travelAt = css.indexOf(`@media screen and ${media} {`);
+  assert.ok(travelAt > css.indexOf('.xp-chapter {'), 'stacked rules come first; the travel query mirrors TRAVEL_MEDIA');
+  const travel = css.slice(travelAt, css.indexOf('\n  }\n', travelAt));
+  assert.match(travel, /:root\[data-tour\] \.experience:not\(\[data-xp="stack"\]\) \.xp-stage \{ position: sticky; top: 0; height: 100svh; overflow: clip;/);
+  assert.doesNotMatch(css.replace(/html\.agentic-touring \.experience\[data-xp="travel"\][^\n]*/g, ''), /\.experience\[data-xp="travel"\]/, 'only the tour rules wait for experience.js');
+  // Every use of the first-paint selector sits inside the travel query (the tablet sizes nest one).
+  for (const match of css.matchAll(/:root\[data-tour\] \.experience:not\(\[data-xp="stack"\]\)/g)) {
+    const before = css.slice(0, match.index);
+    assert.ok(before.lastIndexOf(`@media screen and ${media} {`) > before.lastIndexOf('\n  }\n'), `inside the travel query at ${match.index}`);
+  }
+  assert.match(js, /section\.dataset\.xp = 'stack';/, 'stacking is explicit, so the first-paint travel layout lets go');
+  assert.doesNotMatch(js, /delete section\.dataset\.xp;/);
   assert.match(css, /\.experience \{[^}]*overflow-x: clip/);
   assert.match(css, /animation-timeline: view\(block 0px 0px\); animation-range: contain 0% contain 100%/);
   assert.match(css, /@property --xp-p/);
@@ -81,7 +93,7 @@ test('the pinned travel is opt-in: script-gated, screen-only, and never wider th
   assert.match(js, /travel\.style\.setProperty\('--xp-p', state\.plan\.css\)/);
   assert.match(js, /if \(!timeline\) travel\.style\.setProperty\('--xp-q'/);
   // Phones, short windows and reduced motion stay stacked (no pinning).
-  assert.match(js, /min-width: 761px\) and \(min-height: 600px\) and \(prefers-reduced-motion: no-preference\)/);
+  assert.match(js, /const TRAVEL_MEDIA = '\(min-width: 761px\) and \(prefers-reduced-motion: no-preference\) and \(\(\(min-width: 1500px\) and \(min-height: 600px\)\) or /);
   assert.match(js, /export function initExperience\(document, window(?:, options = \{\})?\)/);
   assert.match(js, /addEventListener\('scroll', schedule, \{ passive: true \}\)/);
   assert.doesNotMatch(js, /preventDefault\(\)[^;]*wheel|addEventListener\('wheel'/, 'the wheel is never captured');
@@ -294,4 +306,35 @@ test('in forced colors the bars keep system colours: CanvasText, the current rol
   assert.match(block, /\.xp-tl :is\(\.xp-tl-bar, \.xp-tl-axis\), \.xp-tl-year::before \{ forced-color-adjust: none; background: CanvasText; \}/);
   assert.match(block, /\.xp-tl \.xp-tl-span\[aria-current="true"\] \.xp-tl-bar \{ background: Highlight; \}/);
   assert.match(block, /\.xp-tl \.xp-tl-gap \.xp-tl-bar \{ background: none; outline: 1px dashed CanvasText;/);
+});
+
+test('before experience.js measures, the pinned stretch and the stacked timeline already take their room', () => {
+  // Travel: 100svh + the distance travelPlan gives whenever the track moves further than the moves
+  // need (true at every travel size measured): chapters x DISTANCE_PER_CHAPTER stage heights of
+  // moves, which are 1 - HOLD_SHARE of the distance.
+  const chapters = all(/<article class="xp-chapter"/g).length;
+  const fallback = css.match(/height: calc\(100svh \+ var\(--xp-distance, 100svh \* ([\d.]+) \/ ([\d.]+)\)\)/);
+  assert.ok(fallback, 'the travel height has a first-paint fallback');
+  assert.equal(Number(fallback[1]), Number((chapters * DISTANCE_PER_CHAPTER).toFixed(4)));
+  assert.equal(Number(fallback[2]), Number((1 - HOLD_SHARE).toFixed(4)));
+  const vh = 800;
+  const moves = chapters * DISTANCE_PER_CHAPTER * vh;
+  assert.equal(travelPlan([0, 1600, 2700], 2740, moves).distance, Math.round(vh * Number(fallback[1]) / Number(fallback[2])));
+  // Stacked: the rows chart experience.js prepends (24px above, 44px rows 4px apart), one row per
+  // span timelinePlan draws from the markup: the three roles and the gap between them.
+  const reserve = css.match(/:root\[data-tour\] \.experience:not\(\[data-xp\]\) \.xp-travel::before \{ content: ""; display: block; height: calc\(24px \+ (\d+) \* 44px \+ (\d+) \* 4px\); margin-bottom: clamp\(30px, 4vw, 48px\); \}/);
+  assert.ok(reserve, 'the stacked timeline reserve');
+  assert.match(css, /\.xp-tl\[data-xp-layout="rows"\] \{ display: grid; gap: 4px; width: min\(100%, 760px\); margin: 0 0 clamp\(30px, 4vw, 48px\); padding-top: 24px; \}/);
+  assert.match(css, /\.xp-tl\[data-xp-layout="rows"\] > \.xp-tl-span, \.xp-tl\[data-xp-layout="rows"\] > \.xp-tl-gap \{[^}]*min-height: 44px;/);
+  const roles = all(/<p class="xp-when mono">([\s\S]*?)<\/p>/g).map(([, when]) => roleRange([...when.matchAll(/datetime="([^"]+)"/g)].map(match => match[1]), text(when)));
+  const plan = timelinePlan(roles, { now: nowMonth(new Date(2026, 10, 12)) });
+  assert.ok(plan, 'the timeline plan builds from the markup');
+  const rows = plan.spans.filter(Boolean).length + plan.gaps.length;
+  assert.equal(Number(reserve[1]), rows, 'one reserved row per span');
+  assert.equal(Number(reserve[2]), rows - 1);
+  assert.match(css, /@media screen \{\n    :root\[data-tour\] \.experience:not\(\[data-xp\]\) \.xp-travel::before/);
+  // The travel layout (later in the file, same specificity) drops it: the timeline sits in the controls band there.
+  assert.ok(css.indexOf(':root[data-tour] .experience:not([data-xp="stack"]) .xp-travel::before { content: none; }') > css.indexOf('.xp-travel::before { content: ""'));
+  // If experience.js fails, app.js stacks the chapters (the no-script form).
+  assert.match(read('web/app.js'), /document\.querySelector\('#experience'\)\?\.setAttribute\('data-xp', 'stack'\)/);
 });

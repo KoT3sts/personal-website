@@ -1,10 +1,16 @@
 /* Circular / stacked work explorer (SPECIFICATION V07): the site's one project
    gallery, a dark rounded band inside the light #work section (like the
    Approach accordion's open row). Unlayered, scoped to .explorer. Without
-   JavaScript (no .is-ready) it is a plain grid of case-study links. With it,
-   explorer.js writes transform, opacity and (only when the order changes)
-   z-index on each .explorer-item, and the geometry as custom properties on
-   .explorer-stage on resize.
+   JavaScript it is a plain grid of case-study links. With it, the stage
+   layout applies from the first paint (html[data-tour], set by the inline
+   <head> script whenever scripts run), so the section is already as tall
+   as it will be when explorer.js is done and a reload or back/forward lands
+   where it left off; the covers stay hidden until explorer.js places them
+   (.is-ready). If explorer.js fails, app.js puts the HTML's explorer back
+   and marks it .is-off: no stage rule matches it, so it is the no-script
+   grid again (and the stories show). explorer.js writes transform, opacity
+   and (only when the order changes) z-index on each .explorer-item, and the
+   geometry as custom properties on .explorer-stage on resize.
 
    The build tour hides and pops .explorer-cover (the tour owns its opacity,
    translate and scale), so nothing here sets those on it. */
@@ -51,9 +57,15 @@
 .explorer-card-category { color: var(--explorer-quiet); }
 .explorer-card-lead { color: #b9bbb1; font-size: 14px; line-height: 1.55; }
 .explorer-card-open { display: none; }
+/* The caption, index and hint only exist with the stage. */
+.explorer-caption, .explorer-index, .explorer-hint { display: none; }
 
 /* ---- Enhanced stage ---- */
-.explorer.is-ready .explorer-stage {
+:root[data-tour] .explorer:not(.is-off) :is(.explorer-caption, .explorer-index, .explorer-hint) { display: block; }
+/* Until explorer.js places them, the covers would sit piled at the centre:
+   they wait unseen (the hub, caption and index already show). */
+:root[data-tour] .explorer:not(.is-ready, .is-off) .explorer-item { visibility: hidden; }
+:root[data-tour] .explorer:not(.is-off) .explorer-stage {
   --explorer-card-w: 384px;
   --explorer-card-h: 265px;
   --explorer-stack-x: 0px;
@@ -67,9 +79,9 @@
   user-select: none;
   transition: --explorer-fade .9s var(--explorer-ease);
 }
-.explorer.is-ready .explorer-stage[data-explorer-mode="ring"] { --explorer-fade: 0%; }
+:root[data-tour] .explorer:not(.is-off) .explorer-stage[data-explorer-mode="ring"] { --explorer-fade: 0%; }
 /* Light pool behind the stack: the covers are lit, the room stays dark. */
-.explorer.is-ready .explorer-stage::before {
+:root[data-tour] .explorer:not(.is-off) .explorer-stage::before {
   content: "";
   position: absolute;
   z-index: -1;
@@ -81,10 +93,10 @@
   opacity: .55;
   transition: opacity .9s var(--explorer-ease);
 }
-.explorer.is-ready [data-explorer-mode="stack"]::before { opacity: 1; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"]::before { opacity: 1; }
 
 /* The deck: the covers' box. Covers move only by transform inside it. */
-.explorer.is-ready .explorer-covers {
+:root[data-tour] .explorer:not(.is-off) .explorer-covers {
   position: absolute;
   inset: 0;
   display: block;
@@ -98,8 +110,8 @@
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--explorer-fade), #000 calc(98% - var(--explorer-fade)), transparent);
   mask-image: linear-gradient(180deg, transparent, #000 var(--explorer-fade), #000 calc(98% - var(--explorer-fade)), transparent);
 }
-.explorer.is-ready .is-dragging .explorer-covers { cursor: grabbing; }
-.explorer.is-ready .explorer-item {
+:root[data-tour] .explorer:not(.is-off) .is-dragging .explorer-covers { cursor: grabbing; }
+:root[data-tour] .explorer:not(.is-off) .explorer-item {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -109,20 +121,20 @@
   transform-origin: 50% 50%;
   backface-visibility: hidden;
 }
-.explorer.is-ready .is-moving .explorer-item,
-.explorer.is-ready .is-dragging .explorer-item { will-change: transform, opacity; }
+:root[data-tour] .explorer:not(.is-off) .is-moving .explorer-item,
+:root[data-tour] .explorer:not(.is-off) .is-dragging .explorer-item { will-change: transform, opacity; }
 /* Out of sight but still in the accessibility tree: the list stays whole. */
-.explorer.is-ready .explorer-item[data-away] { pointer-events: none; }
-.explorer.is-ready .explorer-card { display: block; position: relative; width: 100%; height: 100%; border-radius: 6px; outline-offset: 8px; -webkit-user-drag: none; }
-.explorer.is-ready .explorer-cover { width: 100%; height: 100%; }
-.explorer.is-ready .explorer-card-text {
+:root[data-tour] .explorer:not(.is-off) .explorer-item[data-away] { pointer-events: none; }
+:root[data-tour] .explorer:not(.is-off) .explorer-card { display: block; position: relative; width: 100%; height: 100%; border-radius: 6px; outline-offset: 8px; -webkit-user-drag: none; }
+:root[data-tour] .explorer:not(.is-off) .explorer-cover { width: 100%; height: 100%; }
+:root[data-tour] .explorer:not(.is-off) .explorer-card-text {
   position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
-.explorer.is-ready .explorer-card:hover img { transform: scale(1.035); }
+:root[data-tour] .explorer:not(.is-off) .explorer-card:hover img { transform: scale(1.035); }
 .explorer-shade { position: absolute; inset: 0; border-radius: 6px; background: #0c0d0f; opacity: 0; pointer-events: none; }
 
 /* The active cover carries its own way in. */
-.explorer.is-ready .explorer-card-open {
+:root[data-tour] .explorer:not(.is-off) .explorer-card-open {
   position: absolute;
   right: 12px;
   bottom: 12px;
@@ -142,11 +154,11 @@
   transition: opacity .25s ease, translate .25s ease, background-color .2s ease, color .2s ease;
   pointer-events: none;
 }
-.explorer.is-ready [data-explorer-mode="stack"] .is-active .explorer-card-open { opacity: 1; translate: none; transition-delay: .25s; }
-.explorer.is-ready [data-explorer-mode="stack"] .is-active .explorer-card:hover .explorer-card-open { background: var(--explorer-ink); color: var(--night); transition-delay: 0s; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .is-active .explorer-card-open { opacity: 1; translate: none; transition-delay: .25s; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .is-active .explorer-card:hover .explorer-card-open { background: var(--explorer-ink); color: var(--night); transition-delay: 0s; }
 
 /* Centre label, at the hub of the ring. */
-.explorer.is-ready .explorer-hub {
+:root[data-tour] .explorer:not(.is-off) .explorer-hub {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -158,16 +170,16 @@
   pointer-events: none;
   transition: opacity .45s ease, scale .7s var(--explorer-ease);
 }
-.explorer.is-ready .explorer-hub h3 { max-width: 8.6ch; font-size: clamp(30px, 3.6vw, 64px); }
-.explorer.is-ready .explorer-hub-count::before { content: "· "; content: "· " / ""; }
-.explorer.is-ready .explorer-hub-count::after { content: " ·"; content: " ·" / ""; }
-.explorer.is-ready [data-explorer-mode="stack"] .explorer-hub { opacity: 0; scale: .9; }
+:root[data-tour] .explorer:not(.is-off) .explorer-hub h3 { max-width: 8.6ch; font-size: clamp(30px, 3.6vw, 64px); }
+:root[data-tour] .explorer:not(.is-off) .explorer-hub-count::before { content: "· "; content: "· " / ""; }
+:root[data-tour] .explorer:not(.is-off) .explorer-hub-count::after { content: " ·"; content: " ·" / ""; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .explorer-hub { opacity: 0; scale: .9; }
 
 /* Large active title, left of the stack. In the ring the same caption sits
    under the index, smaller, with its own way into the case study, so a
    skimmer sees one project without touching anything (explorer.js fades it
    in at each change of place). */
-.explorer.is-ready .explorer-caption {
+:root[data-tour] .explorer:not(.is-off) .explorer-caption {
   position: absolute;
   top: 50%;
   left: 0;
@@ -177,12 +189,12 @@
   container-type: inline-size;
   pointer-events: none;
 }
-.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption { top: auto; bottom: 64px; left: auto; right: 0; width: clamp(220px, 19vw, 290px); translate: none; }
-.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-title { font-size: min(36px, 12.2cqi); line-height: .9; }
-.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-meta { margin-top: 14px; }
-.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-lead { display: none; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption { top: auto; bottom: 64px; left: auto; right: 0; width: clamp(220px, 19vw, 290px); translate: none; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-title { font-size: min(36px, 12.2cqi); line-height: .9; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-meta { margin-top: 14px; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-lead { display: none; }
 /* The build tour does not build this caption: it waits until the tour is over. */
-html.agentic-touring .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption { visibility: hidden; }
+html.agentic-touring[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption { visibility: hidden; }
 .explorer-caption-title {
   font-size: min(clamp(38px, 4.4vw, 80px), 12.2cqi);
   font-weight: var(--display-weight);
@@ -214,7 +226,7 @@ html.agentic-touring .explorer.is-ready [data-explorer-mode="ring"] .explorer-ca
   transition: background-color .2s ease, color .2s ease, border-color .2s ease;
 }
 .explorer-caption-open:hover { background: var(--explorer-ink); border-color: var(--explorer-ink); color: var(--night); }
-.explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-open { display: inline-flex; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-open { display: inline-flex; }
 
 /* The active project's facts (explorer.js reads them from its story below):
    up to three term/value rows, the stack as tags, the lab link for the
@@ -241,9 +253,9 @@ html.agentic-touring .explorer.is-ready [data-explorer-mode="ring"] .explorer-ca
 /* In the desktop ring the caption is a narrow column under the index: terms
    sit over their values. (Tablets keep one caption layout in both modes.) */
 @media (min-width: 1100px) {
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-facts { min-height: 150px; margin-top: 16px; }
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-fact { grid-template-columns: minmax(0, 1fr); row-gap: 3px; }
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-fact-stack dt { padding-top: 0; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-facts { min-height: 150px; margin-top: 16px; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-fact { grid-template-columns: minmax(0, 1fr); row-gap: 3px; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-fact-stack dt { padding-top: 0; }
 }
 /* Short desktop windows: the ring caption must stay under the index, so it
    drops the stack tags (the stack view still shows them), then the facts.
@@ -252,15 +264,15 @@ html.agentic-touring .explorer.is-ready [data-explorer-mode="ring"] .explorer-ca
 @media (min-width: 1100px) and (max-width: 1279px) and (max-height: 779px),
   (min-width: 1280px) and (max-width: 1479px) and (max-height: 759px),
   (min-width: 1480px) and (max-height: 729px) {
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-fact-stack { display: none; }
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-facts { min-height: 96px; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-fact-stack { display: none; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-facts { min-height: 96px; }
 }
 @media (min-width: 1100px) and (max-height: 690px) {
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-facts { display: none; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-facts { display: none; }
 }
 
 /* Compact index, upper right (the ring keeps clear of it). */
-.explorer.is-ready .explorer-index { position: absolute; top: clamp(20px, 5vh, 56px); right: 0; z-index: 4; width: clamp(220px, 19vw, 290px); }
+:root[data-tour] .explorer:not(.is-off) .explorer-index { position: absolute; top: clamp(20px, 5vh, 56px); right: 0; z-index: 4; width: clamp(220px, 19vw, 290px); }
 .explorer-index-label { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--explorer-rule); color: var(--explorer-quiet); font-size: var(--text-label); letter-spacing: .08em; text-transform: uppercase; }
 .explorer-index-count { color: var(--green); }
 .explorer-index ol { margin: 0; padding: 0; list-style: none; }
@@ -291,7 +303,7 @@ html.agentic-touring .explorer.is-ready [data-explorer-mode="ring"] .explorer-ca
 
 /* Drag / scroll hint, bottom right under the index: the ring reaches the
    bottom edge, so the centre bottom is taken. */
-.explorer.is-ready .explorer-hint {
+:root[data-tour] .explorer:not(.is-off) .explorer-hint {
   position: absolute;
   bottom: 18px;
   right: 0;
@@ -311,7 +323,7 @@ html.agentic-touring .explorer.is-ready [data-explorer-mode="ring"] .explorer-ca
 
 /* ---- Tablet: the deck on top, caption and index side by side below. ---- */
 @media (max-width: 1099px) {
-  .explorer.is-ready .explorer-stage {
+  :root[data-tour] .explorer:not(.is-off) .explorer-stage {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     /* The deck is as tall as its width allows the ring (explorer-state.js), within the window. */
@@ -320,57 +332,59 @@ html.agentic-touring .explorer.is-ready [data-explorer-mode="ring"] .explorer-ca
     column-gap: 36px;
     height: auto;
   }
-  .explorer.is-ready .explorer-covers { position: relative; inset: auto; grid-area: deck; }
-  .explorer.is-ready .explorer-hub { grid-area: deck; position: relative; inset: auto; }
-  .explorer.is-ready .explorer-caption, .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption { grid-area: caption; position: relative; inset: auto; width: auto; padding-top: 18px; translate: none; }
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-title { font-size: min(clamp(34px, 5.4vw, 56px), 12.2cqi); }
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-meta { margin-top: 24px; }
-  .explorer.is-ready .explorer-index { grid-area: index; position: relative; top: auto; right: auto; width: auto; padding-top: 24px; }
-  .explorer.is-ready .explorer-hint { grid-area: hint; position: relative; bottom: auto; right: auto; justify-self: center; padding: 26px 0 22px; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-covers { position: relative; inset: auto; grid-area: deck; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub { grid-area: deck; position: relative; inset: auto; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-caption, :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption { grid-area: caption; position: relative; inset: auto; width: auto; padding-top: 18px; translate: none; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-title { font-size: min(clamp(34px, 5.4vw, 56px), 12.2cqi); }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-meta { margin-top: 24px; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-index { grid-area: index; position: relative; top: auto; right: auto; width: auto; padding-top: 24px; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hint { grid-area: hint; position: relative; bottom: auto; right: auto; justify-self: center; padding: 26px 0 22px; }
   .explorer-caption-title { font-size: min(clamp(34px, 5.4vw, 56px), 12.2cqi); }
   /* The caption sits in the flow here: two-line title and lead and the
      tallest facts are reserved, so the index and hint stay put. */
-  .explorer.is-ready .explorer-caption-title { min-height: 1.76em; }
-  .explorer.is-ready .explorer-caption-lead { min-height: 3.1em; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-caption-title { min-height: 1.76em; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-caption-lead { min-height: 3.1em; }
   .explorer-facts { min-height: 144px; }
   /* One caption layout in both modes, so ring <-> stack moves nothing: the
      lead shows in the ring too, and the ring's case-study button keeps its
      place (invisible) in the stack, where the cover carries its own. */
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-title { line-height: .88; }
-  .explorer.is-ready [data-explorer-mode="ring"] .explorer-caption-lead { display: block; }
-  .explorer.is-ready .explorer-caption-open { display: inline-flex; }
-  .explorer.is-ready [data-explorer-mode="stack"] .explorer-caption-open { visibility: hidden; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-title { line-height: .88; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-lead { display: block; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-caption-open { display: inline-flex; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .explorer-caption-open { visibility: hidden; }
 }
 
 /* ---- Phones: a flat vertical deck (no ring), the same index below. ---- */
 @media (max-width: 699px) {
-  .explorer.is-ready .explorer-stage {
+  :root[data-tour] .explorer:not(.is-off) .explorer-stage {
     grid-template-columns: minmax(0, 1fr);
     /* The active cover sits near the top of the deck (not centred), so the first
        screen of Work shows a cover instead of an empty band above it. */
     grid-template-rows: auto calc(min(420px, max(220px, (100vw - 2 * var(--gutter) - 2 * var(--explorer-pad)) * .86)) * .689 * 1.84) auto auto auto;
     grid-template-areas: "hub" "deck" "caption" "index" "hint";
   }
-  .explorer.is-ready .explorer-hub { grid-area: hub; place-items: start; padding: 40px 0 0; text-align: left; }
-  .explorer.is-ready [data-explorer-mode="stack"] .explorer-hub { opacity: 1; scale: none; }
-  .explorer.is-ready .explorer-hub h3 { max-width: none; font-size: clamp(34px, 10.5vw, 46px); }
-  .explorer.is-ready .explorer-hub-count::before { content: none; }
-  .explorer.is-ready .explorer-hub-count::after { content: none; }
-  .explorer.is-ready .explorer-hub-count { display: inline; margin: 0 0 0 6px; vertical-align: super; font-size: 11px; }
-  .explorer.is-ready .explorer-covers { -webkit-mask-image: linear-gradient(180deg, transparent, #000 6%, #000 91%, transparent); mask-image: linear-gradient(180deg, transparent, #000 6%, #000 91%, transparent); }
-  .explorer.is-ready .explorer-item { top: calc(var(--explorer-card-h) * .66); }
-  .explorer.is-ready .explorer-caption { padding-top: 10px; }
-  /* No ring on phones, so no ring button to make room for. */
-  .explorer.is-ready .explorer-caption-open { display: none; }
-  .explorer.is-ready .explorer-index { padding-top: 28px; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub { grid-area: hub; place-items: start; padding: 40px 0 0; text-align: left; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .explorer-hub { opacity: 1; scale: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub h3 { max-width: none; font-size: clamp(34px, 10.5vw, 46px); }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub-count::before { content: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub-count::after { content: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub-count { display: inline; margin: 0 0 0 6px; vertical-align: super; font-size: 11px; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-covers { -webkit-mask-image: linear-gradient(180deg, transparent, #000 6%, #000 91%, transparent); mask-image: linear-gradient(180deg, transparent, #000 6%, #000 91%, transparent); }
+  :root[data-tour] .explorer:not(.is-off) .explorer-item { top: calc(var(--explorer-card-h) * .66); }
+  /* No ring on phones (explorer.js turns it into the stack at once), so no
+     ring button to make room for. These match either mode: the markup starts
+     in ring mode and lays out exactly as the stack from the first paint. */
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode] .explorer-caption { padding-top: 10px; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode] .explorer-caption-open { display: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-index { padding-top: 28px; }
   .explorer-pick { font-size: 15px; }
-  .explorer-caption-title { font-size: min(40px, 12.2cqi); }
-  .explorer.is-ready .explorer-hint { padding-top: 20px; }
+  .explorer-caption-title, :root[data-tour] .explorer:not(.is-off) [data-explorer-mode] .explorer-caption-title { font-size: min(40px, 12.2cqi); }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hint { padding-top: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .explorer-cover img, .explorer-pick::after, .explorer.is-ready .explorer-hub, .explorer.is-ready .explorer-stage::before { transition: none; }
-  .explorer.is-ready .explorer-card:hover img { transform: none; }
+  .explorer-cover img, .explorer-pick::after, :root[data-tour] .explorer:not(.is-off) .explorer-hub, :root[data-tour] .explorer:not(.is-off) .explorer-stage::before { transition: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-card:hover img { transform: none; }
   .explorer-caption-open { transition: none; }
   .explorer-facts-panel, .explorer-facts-panel.is-active { transition: none; }
 }

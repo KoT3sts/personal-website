@@ -334,13 +334,45 @@ function bootEntrance(document, window) {
   }).catch(withoutTour);
 }
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  initPortfolio(document, window);
-  try { initExperience(document, window); } catch (error) { console.error(error); }
-  try { initExplorer(document, window); } catch (error) { console.error(error); }
-  try { initHomeCharts(document, window); } catch (error) { console.error(error); }
-  previews = loadWorkPreviews(document, window);
-  bootEntrance(document, window);
-  // The page is laid out: a reload or back/forward can be shown (inline <head> script).
-  delete document.documentElement.dataset.restoring;
+// Boots the page. The stylesheets give the explorer, Experience, the charts and
+// the Lab previews their scripted layout from the first paint (html[data-tour],
+// inline <head> script), so every failure here must give the no-script layout
+// back: if the shell fails, data-tour goes (the whole page is the no-script
+// page); if one section fails, that section alone goes back (Experience stacks,
+// the explorer is restored as it was in the HTML and marked .is-off, so its
+// cover grid and the stories show). html[data-booted] tells the head script
+// the layout is in place (without it, data-tour goes on window load). `parts`
+// is injectable for tests.
+export function bootPage(document, window, parts = {}) {
+  const {
+    portfolio = initPortfolio, experience = initExperience, explorer = initExplorer,
+    charts = initHomeCharts, workPreviews = loadWorkPreviews, entrance = bootEntrance,
+  } = parts;
+  const root = document.documentElement;
+  const report = error => window.console?.error?.(error);
+  try { portfolio(document, window); }
+  catch (error) {
+    report(error);
+    delete root.dataset.tour;
+    root.classList.remove(PENDING_CLASS);
+    return false;
+  }
+  try { if (!experience(document, window)) throw new Error('experience markup missing'); }
+  catch (error) { report(error); document.querySelector('#experience')?.setAttribute('data-xp', 'stack'); }
+  // A clean copy, from before explorer.js adds its styles, shades, tab stops and listeners.
+  const gallery = document.querySelector('#work .explorer');
+  const pristine = gallery?.cloneNode(true);
+  try { if (!explorer(document, window)) throw new Error('explorer markup missing'); }
+  catch (error) {
+    report(error);
+    if (pristine) { pristine.classList.add('is-off'); gallery.replaceWith(pristine); }
+  }
+  try { charts(document, window); }
+  catch (error) { report(error); document.querySelectorAll('#capabilities, #skills').forEach(section => section.classList.add('widgets-off')); }
+  root.dataset.booted = '';
+  previews = workPreviews(document, window);
+  entrance(document, window);
+  return true;
 }
+
+if (typeof window !== 'undefined' && typeof document !== 'undefined') bootPage(document, window);

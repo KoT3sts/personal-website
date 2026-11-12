@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CHART_PARSERS, COUNT_MS, countAt, easeOutCubic, formatCount, normalizeTag, parseFigure, usageText } from '../web/home-charts.js';
+import { initHomeCharts, CHART_PARSERS, COUNT_MS, countAt, easeOutCubic, formatCount, normalizeTag, parseFigure, usageText } from '../web/home-charts.js';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const html = read('web/index.html');
@@ -86,7 +86,7 @@ test('the widgets build DOM only (no HTML strings), keep charts out of the acces
 
 test('skill tags keep a 44px-tall hit area without overlapping the next row', () => {
   const pill = Number(/\.skill-tag \{[^}]*min-height: (\d+)px/.exec(css)?.[1]);
-  const gap = Number(/\.has-skill-links \.skill-list \.tag-list \{ row-gap: (\d+)px; \}/.exec(css)?.[1]);
+  const gap = Number(/:root\[data-tour\] \.skills:not\(\.widgets-off\) \.skill-list \.tag-list \{ row-gap: (\d+)px; \}/.exec(css)?.[1]);
   const reach = Number(/\.skill-tag::before \{[^}]*inset: -(\d+)px 0;/.exec(css)?.[1]);
   assert.ok(pill + 2 * reach >= 44, `${pill} + 2 x ${reach}`);
   assert.ok(reach * 2 <= gap, 'hit areas of stacked rows do not overlap');
@@ -125,4 +125,64 @@ test('capability charts: labels at 11px or more, one scale for both job rows, ev
   for (const [, size] of css.matchAll(/font-size: ([\d.]+)px/g)) assert.ok(Number(size) >= 11, `${size}px`);
   assert.match(js, /const widest = Math\.max\(\.\.\.runs\.map\(run => run\.total\)\);/, 'both regions share the widest total as the scale');
   assert.match(js, /for \(let i = 0; i < run\.total; i\+\+\) svgEl\(document, 'rect', \{ x: i \* \(cell \+ gap\)/, 'one block per job, from x = 0');
+});
+
+test('with scripts each chart, the skill buttons and the usage line take their room from the first paint', () => {
+  const proof = kind => plain(html.match(new RegExp(`<li class="capability" data-chart="${kind}">[\\s\\S]*?<p class="capability-proof">([\\s\\S]*?)</p>`))?.[1] || '');
+  // The reserve sits where the chart goes (after the proof line), only until the chart is there.
+  assert.match(css, /:root\[data-tour\] \.capabilities:not\(\.widgets-off\) \.capability\[data-chart\]:not\(:has\(\.cap-chart\)\) \.capability-proof::after \{ content: ""; display: block; height: var\(--cap-reserve, 0px\); margin-top: 18px; \}/);
+  assert.match(css, /\.cap-chart \{ display: grid; gap: 8px; margin-top: 18px; max-width: 420px;/);
+  assert.match(css, /\.cap-chart-caption \{ margin: 2px 0 0; \}/);
+  assert.match(css, /\.cap-chart \.mono \{ font-size: var\(--text-label\); letter-spacing: \.05em; line-height: 1\.3; \}/);
+  // Each SVG's viewBox ratio, from the sentence, as DRAW lays it out.
+  const { count: models } = CHART_PARSERS.inventory(proof('inventory'));
+  const cols = Math.ceil(models / 8);
+  assert.match(css, new RegExp(`--cap-reserve: calc\\(min\\(294px, 100cqi\\) \\* ${8 * 8 - 2} / ${cols * 8 - 2} \\+ 10px \\+ 1\\.3 \\* var\\(--text-label\\)\\)`));
+  assert.match(css, /\.cap-waffle \{ max-width: 294px; \}/);
+  const { count: videos } = CHART_PARSERS.videos(proof('videos'));
+  assert.match(css, new RegExp(`--cap-reserve: calc\\(min\\(306px, 100cqi\\) \\* 18 / ${videos * 26 - 8} \\+ 10px \\+ 1\\.3 \\* var\\(--text-label\\)\\)`));
+  assert.match(css, /\.cap-dots \{ max-width: 306px; \}/);
+  const { runs } = CHART_PARSERS.jobs(proof('jobs'));
+  const widest = Math.max(...runs.map(run => run.total));
+  assert.equal(runs.length, 2, 'two rows reserved');
+  assert.match(css, new RegExp(`--cap-reserve: calc\\(2 \\* max\\(1\\.3 \\* var\\(--text-label\\), \\(var\\(--cap-chart-w\\) - 38\\.4px - 20px - 3\\.25 \\* var\\(--text-label\\)\\) \\* 14 / ${widest * 6 - 2}\\) \\+ 18px \\+ 1\\.3 \\* var\\(--text-label\\)\\)`));
+  assert.ok(runs.every(run => `${run.passed}/${run.total}`.length === 5), 'the value column holds five mono characters');
+  assert.match(css, /\.cap-row \{ display: grid; grid-template-columns: 2\.4em minmax\(0, 1fr\) auto; align-items: center; gap: 10px; \}/);
+  assert.match(css, /\.capability\[data-chart="records"\] \{ --cap-reserve: calc\(50px \+ 1\.3 \* var\(--text-label\)\); \}/);
+  assert.match(css, /\.cap-band \{[^}]*min-height: 30px;/);
+  assert.match(css, /\.cap-tick \{ position: relative; padding-top: 12px;/);
+  // Skill tags that become buttons are marked in the page, and only those.
+  const skills = html.match(/<dl class="skill-list">([\s\S]*?)<\/dl>/)[1];
+  const marked = [...skills.matchAll(/<li data-skill-used>([^<]+)<\/li>/g)].map(match => match[1]);
+  const lists = [...html.matchAll(/<li class="capability"[\s\S]*?<\/li>\s*(?=<li class="capability"|<\/ul>)|<div class="xp-group">[\s\S]*?<\/ul>\s*<\/div>/g)].map(match => match[0]);
+  const elsewhere = new Set(lists.flatMap(block => [...block.matchAll(/<ul class="tag-list"[^>]*>([\s\S]*?)<\/ul>/g)].flatMap(([, tags]) => [...tags.matchAll(/<li>([^<]+)<\/li>/g)].map(match => normalizeTag(match[1])))));
+  const expected = [...skills.matchAll(/<li(?: data-skill-used)?>([^<]+)<\/li>/g)].map(match => match[1]).filter(tag => elsewhere.has(normalizeTag(tag)));
+  assert.deepEqual(marked, expected);
+  assert.equal(marked.length, 10);
+  // Their first-paint width is the button's: 13px sides, 8px gap and 6px dot inside a 1px border.
+  assert.match(css, /\.skill-tag \{[^}]*gap: 8px;[^}]*padding: 6px 13px 7px; border: 1px solid/);
+  assert.match(css, /:root\[data-tour\] \.skills:not\(\.widgets-off\) \.skill-list \.tag-list li\[data-skill-used\]:not\(\.has-skill-tag\) \{ padding-left: 13px; padding-right: 27px; \}/);
+  // The usage line's first text holds its place, unseen and unread, until the script adds it.
+  const hint = js.match(/const hint = '([^']+)';/)[1];
+  assert.ok(css.includes(`:root[data-tour] .skills:not(.widgets-off) .skills-layout:not(:has(.skill-usage))::after { content: "${hint}" / ""; visibility: hidden;`));
+});
+
+test('a widget part that fails, or finds nothing to enhance, gives its reserved room back (.widgets-off)', () => {
+  const marked = new Set();
+  const section = id => ({ classList: { add: name => marked.add(`${id}.${name}`) } });
+  const document = {
+    documentElement: { classList: { contains: () => false } },
+    querySelectorAll: () => { throw new Error('broken DOM'); },
+    querySelector: selector => (selector === '#capabilities' || selector === '#skills' ? section(selector) : null),
+  };
+  const errors = [];
+  const result = initHomeCharts(document, { console: { error: (...args) => errors.push(args) }, matchMedia: () => ({ matches: true }) });
+  assert.deepEqual([...marked].sort(), ['#capabilities.widgets-off', '#skills.widgets-off']);
+  assert.equal(result.charts, null);
+  assert.ok(errors.length >= 2);
+  // Every reserve is scoped to sections without .widgets-off.
+  for (const rule of css.matchAll(/^\s*([^{}\n]*\[data-tour\][^{}\n]*)\{/gm)) {
+    if (/container-type/.test(css.slice(rule.index, css.indexOf('}', rule.index)))) continue;
+    assert.match(rule[1], /\.(capabilities|skills):not\(\.widgets-off\)/, rule[1]);
+  }
 });
