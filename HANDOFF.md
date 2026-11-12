@@ -1,8 +1,14 @@
 # Personal Website handoff
 
-Updated: November 12, 2026 (America/New_York), round 13 (evaluators + Arize-style dashboard) after round 12: hover lag, recruiter copy, first-visit tour + hero pill, chart palette, CSS bundles and zero layout shift. Commits a7ad5b1..e81851a, not pushed.
+Updated: November 12, 2026 (America/New_York), round 14 (labels note, reload fix) after round 13 (evaluators + Arize-style dashboard) after round 12: hover lag, recruiter copy, first-visit tour + hero pill, chart palette, CSS bundles and zero layout shift. Commits a7ad5b1..e81851a, not pushed.
 
 ## Confirmed state
+
+- November 12, round 14 (not pushed): **finish-up.**
+  - **Labels note:** "What my labels showed" on the dashboard (static, every number re-derived in tests/obs-eval.test.js): run size (under 40 tool calls = Good, the pre-existing large-trace rule) agrees 77%, κ 0.50, beating every check; 18 of 33 long runs bad vs 3 of 44 small; on long runs only Recovered after error agrees (κ 0.35, all 8 fails bad), the rest ≤ 0.07; the 10% error threshold never fires on a long run (bad median 1.9% vs 0.5%). Next: a run-length budget and a lower error threshold, tested on new labels with a reason, not these 77.
+  - **Reload blank page fixed:** html[data-restoring] removed. With scripts on (`html[data-tour]`), each homepage section has its booted size from first paint (explorer stage + static facts panels, Experience travel heights and `TRAVEL_MEDIA` fit thresholds duplicated in CSS and tested, chart/skill/Lab reserves). Reload/back-forward CLS ≤ 0.004 (footer buttons), restored positions exact, throttled first paint ~1.1 s → ~0.85 s, never hidden. Fallbacks: head script drops `data-tour` if app.js fails to load or never sets `data-booted` by `load`; `bootPage` handles init throws (whole page, Experience → stack, explorer → clean no-script copy `.is-off`, charts → `.widgets-off`). CSP hash `sha256-cotA06Si…`.
+  - Exporter: round "Evaluators" closed at 5b2cd4a, open round renamed "Next round"; data files byte-identical (dataset 451379e2607c, labels still valid). Do not re-export with new windows without re-labelling (new traces change the dataset hash and set the labels aside).
+  - Verified: python OK; repo node 300/303 (3 jsdom-loader suites), temp-copy jsdom 87/88 (veil); check/build/diff; tours 54.8 s @1280, 51.7 s @390, 0 errors; reviews' findings fixed; simulated failures (explorer throw, import 404, syntax error, init throw) all readable.
 
 - November 12, round 13 (not pushed, e895aa3..5b2cd4a): **Arize-style evaluators and dashboard.** Cesar asked for more evaluators and Arize research (AX/Phoenix docs: agent trajectory, sessions, human review / align evals, experiments, monitors, online evals, OpenInference conventions).
   - **Data refresh:** windows now include round 11 (proud-river to 02:50) and round 12 (new root S6, Harness turn excluded). 77 traces, 6 sessions, 17,412 spans (1,015 published), 162 failed calls. `meta.dataset` fingerprint; `OPEN_ROUND` labels traces after the last commit in `ROUNDS` (move it into `ROUNDS` once this round has commits — it has now: e895aa3/5b2cd4a).
