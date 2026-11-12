@@ -27,6 +27,8 @@
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
   <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./side-demos.css">
+  <script type="module" src="./side-demos.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -94,6 +96,65 @@
           <h2 class="cs-rail" id="exploring-title">Exploring</h2>
           <div class="cs-main cs-prose">
             <p>Clear interfaces for complex, connected tasks</p>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="board-title">
+          <h2 class="cs-rail" id="board-title">A day on one board</h2>
+          <div class="cs-main sd-stack">
+            <div class="cs-prose">
+              <p>This page shows the idea with sample data; the project itself isn’t shown here.</p>
+              <p>Care sessions, daily planning, room status and dog records sit on one board below. Move the clock and they stay in step; choose a session to open that dog’s record.</p>
+            </div>
+            <figure class="sd-figure sd-barking" data-demo="barking-village">
+              <figcaption class="sd-caption"><strong class="sd-tag">Sample data</strong><span class="sd-sr">:</span> an illustrated day board. Rooms, dogs and times are made up. No customer or operational data is shown.</figcaption>
+              <div class="sd-controls" data-bv-controls hidden></div>
+              <div class="sd-block">
+                <p class="mono sd-block-title">Rooms at <time data-bv-clock>10:45</time></p>
+                <ul class="sd-rooms" data-bv-rooms>
+                  <li class="sd-room is-session" data-room="Bath"><p class="mono sd-room-name">Bath</p><p class="sd-room-state">In session</p><p class="sd-room-detail">Biscuit · until 11:00</p><span class="sd-room-progress" aria-hidden="true"><span></span></span></li>
+                  <li class="sd-room is-cleaning" data-room="Grooming"><p class="mono sd-room-name">Grooming</p><p class="sd-room-state">Cleaning</p><p class="sd-room-detail">Ready at 11:00</p><span class="sd-room-progress" aria-hidden="true"><span></span></span></li>
+                  <li class="sd-room is-free" data-room="Play yard"><p class="mono sd-room-name">Play yard</p><p class="sd-room-state">Free</p><p class="sd-room-detail">Next at 12:30</p><span class="sd-room-progress" aria-hidden="true"><span></span></span></li>
+                  <li class="sd-room is-session" data-room="Quiet room"><p class="mono sd-room-name">Quiet room</p><p class="sd-room-state">In session</p><p class="sd-room-detail">Juniper · until 12:00</p><span class="sd-room-progress" aria-hidden="true"><span></span></span></li>
+                  <li class="sd-room is-cleaning" data-room="Training"><p class="mono sd-room-name">Training</p><p class="sd-room-state">Cleaning</p><p class="sd-room-detail">Ready at 11:00</p><span class="sd-room-progress" aria-hidden="true"><span></span></span></li>
+                </ul>
+              </div>
+              <div class="sd-block" data-bv-timeline hidden></div>
+              <div class="sd-bv-bottom">
+                <div class="sd-dog" data-bv-dog aria-live="polite">
+                  <p class="mono sd-block-title">Dog record</p>
+                  <p class="sd-dog-name" data-bv-dog-name>Biscuit</p>
+                  <dl class="sd-dog-fields">
+                    <div><dt class="mono">Breed</dt><dd data-bv-dog-breed>Beagle mix</dd></div>
+                    <div><dt class="mono">Today</dt><dd><ul data-bv-dog-today><li>08:00 Morning play, Play yard</li><li>10:00 Bath and brush, Bath</li><li>13:00 Recall practice, Training</li></ul></dd></div>
+                    <div><dt class="mono">Note</dt><dd data-bv-dog-note>Shy around the dryer; likes a treat after a bath.</dd></div>
+                  </dl>
+                </div>
+                <details class="sd-details" data-bv-details open>
+                  <summary class="mono">The day plan as a table</summary>
+                  <div class="sd-table-wrap">
+                    <table class="sd-table" data-bv-table>
+                      <thead><tr><th scope="col">Time</th><th scope="col">Room</th><th scope="col">Dog</th><th scope="col">Care</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">08:00–09:00</th><td>Play yard</td><td>Biscuit</td><td>Morning play</td></tr>
+                        <tr><th scope="row">08:30–09:30</th><td>Bath</td><td>Juniper</td><td>Bath and dry</td></tr>
+                        <tr><th scope="row">09:00–10:30</th><td>Grooming</td><td>Pepper</td><td>Full groom</td></tr>
+                        <tr><th scope="row">09:30–10:30</th><td>Training</td><td>Moose</td><td>Leash practice</td></tr>
+                        <tr><th scope="row">10:00–11:00</th><td>Bath</td><td>Biscuit</td><td>Bath and brush</td></tr>
+                        <tr><th scope="row">10:30–12:00</th><td>Quiet room</td><td>Juniper</td><td>Rest</td></tr>
+                        <tr><th scope="row">11:00–12:00</th><td>Grooming</td><td>Moose</td><td>Nail trim</td></tr>
+                        <tr><th scope="row">12:30–13:30</th><td>Play yard</td><td>Pepper</td><td>Group play</td></tr>
+                        <tr><th scope="row">13:00–14:00</th><td>Training</td><td>Biscuit</td><td>Recall practice</td></tr>
+                        <tr><th scope="row">14:00–15:30</th><td>Grooming</td><td>Juniper</td><td>Full groom</td></tr>
+                        <tr><th scope="row">14:30–15:30</th><td>Bath</td><td>Moose</td><td>Bath and dry</td></tr>
+                        <tr><th scope="row">15:00–16:00</th><td>Quiet room</td><td>Pepper</td><td>Rest</td></tr>
+                        <tr><th scope="row">16:00–17:00</th><td>Play yard</td><td>Moose</td><td>Evening play</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="sd-hint">In this sample, a room is cleaned for 30 minutes after each session.</p>
+                </details>
+              </div>
+            </figure>
           </div>
         </section>
       </div>

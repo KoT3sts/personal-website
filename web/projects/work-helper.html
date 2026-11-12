@@ -27,6 +27,8 @@
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
   <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./side-demos.css">
+  <script type="module" src="./side-demos.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -88,6 +90,57 @@
           <h2 class="cs-rail" id="focus-title">Focus</h2>
           <div class="cs-main cs-prose">
             <p>Making opportunity discovery more approachable</p>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="idea-title">
+          <h2 class="cs-rail" id="idea-title">The idea</h2>
+          <div class="cs-main sd-stack">
+            <div class="cs-prose">
+              <p>This page shows the idea with sample data; the prototype itself isn’t shown here.</p>
+              <p>A job search often starts with a loose sense of what you like. The path below turns that into role ideas, then into one small step you can take.</p>
+            </div>
+            <figure class="cs-flow sd-flow sd-path" data-reveal="path">
+              <ol class="cs-flow-steps">
+                <li><p class="mono cs-flow-label">Interests</p><p class="cs-flow-text">What you enjoy or want to learn</p></li>
+                <li><p class="mono cs-flow-label">Role ideas</p><p class="cs-flow-text">Roles that share those interests</p></li>
+                <li class="sd-flow-end"><p class="mono cs-flow-label">Next step</p><p class="cs-flow-text">One small action you can take this week</p></li>
+              </ol>
+              <figcaption>Illustration: the path from interests to a next step, drawn to show the idea.</figcaption>
+            </figure>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="try-title">
+          <h2 class="cs-rail" id="try-title">Try it</h2>
+          <div class="cs-main sd-stack">
+            <div class="cs-prose">
+              <p>Pick two or three interests. The page matches them against a small hand-written table and suggests where to start.</p>
+            </div>
+            <figure class="sd-figure sd-work-helper" data-demo="work-helper">
+              <figcaption class="sd-caption"><strong class="sd-tag">Sample data</strong><span class="sd-sr">:</span> role ideas and next steps written for this page. They are not job listings or advice.</figcaption>
+              <div class="sd-wh-ui" data-wh-ui hidden></div>
+              <details class="sd-details" data-wh-details open>
+                <summary class="mono">The whole sample table</summary>
+                <div class="sd-table-wrap">
+                  <table class="sd-table" data-wh-table>
+                    <thead><tr><th scope="col">Role idea</th><th scope="col">Interests</th><th scope="col">Suggested next step</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">Data analyst</th><td>Data, Organizing</td><td>Clean and chart one public dataset, then write up what you found.</td></tr>
+                      <tr><th scope="row">Technical writer</th><td>Writing, Building things</td><td>Rewrite the setup guide of a tool you use and share the before and after.</td></tr>
+                      <tr><th scope="row">UX researcher</th><td>Helping people, Design, Writing</td><td>Ask three people how they use one everyday app and sum up where they get stuck.</td></tr>
+                      <tr><th scope="row">Product designer</th><td>Design, Building things</td><td>Redesign one screen you use every day and explain each change.</td></tr>
+                      <tr><th scope="row">Customer success specialist</th><td>Helping people, Organizing</td><td>Answer questions in a community forum for a week and note the ones that come up most.</td></tr>
+                      <tr><th scope="row">Software developer</th><td>Building things, Data</td><td>Build a small tool that solves one problem you have, and put the code online.</td></tr>
+                      <tr><th scope="row">Instructional designer</th><td>Teaching, Writing, Design</td><td>Turn something you know well into a short lesson and try it on a friend.</td></tr>
+                      <tr><th scope="row">Project coordinator</th><td>Organizing, Helping people</td><td>Plan one small event from start to finish with a simple timeline.</td></tr>
+                      <tr><th scope="row">Health data analyst</th><td>Health, Data</td><td>Explore a public health dataset and chart one trend you did not expect.</td></tr>
+                      <tr><th scope="row">Community health educator</th><td>Health, Teaching, Helping people</td><td>Volunteer at a community health event and help explain the information.</td></tr>
+                      <tr><th scope="row">Tutor</th><td>Teaching, Helping people</td><td>Offer one free session in a subject you know well.</td></tr>
+                      <tr><th scope="row">Content strategist</th><td>Writing, Organizing, Data</td><td>Review a small website and suggest which pages to keep, merge or cut.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </figure>
           </div>
         </section>
       </div>

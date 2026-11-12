@@ -133,7 +133,7 @@ test('explorer keys open the ring and step through, the index selects and is ann
   assert.deepEqual([...panels[4].querySelectorAll('dd')].map(value => value.textContent), ['Making opportunity discovery more approachable', 'In development']);
   assert.equal(document.querySelector('.explorer-caption').hasAttribute('aria-hidden'), false, 'the facts are read');
   assert.equal(document.querySelector('.explorer-caption-title').getAttribute('aria-hidden'), 'true', 'the repeated title is not');
-  assert.deepEqual([...panels[1].querySelectorAll('.explorer-tags li')].map(tag => tag.textContent), ['EEG', 'Signal preprocessing', 'Classification']);
+  assert.deepEqual([...panels[1].querySelectorAll('.explorer-tags li')].map(tag => tag.textContent), ['EEG', 'Autoencoder', 't-SNE']);
   assert.equal(panels[2].querySelector('.explorer-facts-link').getAttribute('href'), './lab/sentiment-eval.html');
   assert.equal(panels.filter(panel => panel.querySelector('.explorer-facts-link')).length, 1, 'the lab link only for the chatbot');
   // Focus on the lab link when the project changes goes to the new cover, not <body>.

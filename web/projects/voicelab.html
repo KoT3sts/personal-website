@@ -27,6 +27,8 @@
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
   <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./side-demos.css">
+  <script type="module" src="./side-demos.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -88,6 +90,76 @@
           <h2 class="cs-rail" id="focus-title">Focus</h2>
           <div class="cs-main cs-prose">
             <p>Explainable analysis and thoughtful revision</p>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="signals-title">
+          <h2 class="cs-rail" id="signals-title">Try the signals</h2>
+          <div class="cs-main sd-stack">
+            <div class="cs-prose">
+              <p>This page shows the idea with sample text; the prototype itself isn’t shown here.</p>
+              <p>Every signal below is computed by this page, in your browser, as you type. The text is never sent anywhere.</p>
+            </div>
+            <figure class="sd-figure sd-voicelab" data-demo="voicelab">
+              <figcaption class="sd-caption"><strong class="sd-tag">Sample data</strong><span class="sd-sr">:</span> a short paragraph written for this page. Edit it or paste your own text.</figcaption>
+              <div class="sd-field">
+                <p><label class="mono" for="vl-text">Your text</label></p>
+                <textarea class="sd-textarea" id="vl-text" rows="7" spellcheck="false" aria-describedby="vl-private">The library on the corner opens at nine. Most mornings, a short line forms outside before the doors unlock, and someone usually brings coffee for the staff. Inside, the reading room stays quiet until the school groups arrive. By noon the tables are full. People come to the library for the books, but many stay for the quiet, the long windows, and the sense that nobody is in a hurry.</textarea>
+                <p class="sd-hint" id="vl-private">It stays in this tab: nothing is sent or stored.</p>
+              </div>
+              <div class="sd-block">
+                <p class="mono sd-block-title">Words per sentence</p>
+                <div class="sd-bars" data-vl-bars aria-hidden="true"></div>
+                <p class="mono sd-lengths" data-vl-lengths>8 · 19 · 11 · 6 · 26</p>
+              </div>
+              <dl class="sd-signals">
+                <div class="sd-signal">
+                  <dt class="mono">Average sentence</dt>
+                  <dd class="sd-value"><span data-vl="avg">14.0</span> <span class="sd-unit">words</span><span class="sd-meter" aria-hidden="true"><span data-vl-meter="avg"></span></span></dd>
+                  <dd class="sd-note">Words per sentence. It shows rhythm, not quality.</dd>
+                </div>
+                <div class="sd-signal">
+                  <dt class="mono">Word variety</dt>
+                  <dd class="sd-value"><span data-vl="variety">0.76</span> <span class="sd-unit" data-vl="distinct">53 of 70 words are distinct</span><span class="sd-meter" aria-hidden="true"><span data-vl-meter="variety"></span></span></dd>
+                  <dd class="sd-note">Distinct words divided by all words, the type/token ratio. It falls as a text gets longer, so compare texts of similar length.</dd>
+                </div>
+                <div class="sd-signal">
+                  <dt class="mono">Long words</dt>
+                  <dd class="sd-value"><span data-vl="long">11%</span> <span class="sd-unit">seven letters or more</span><span class="sd-meter" aria-hidden="true"><span data-vl-meter="long"></span></span></dd>
+                  <dd class="sd-note">A hint of density. It says nothing about whether a word is the right one.</dd>
+                </div>
+                <div class="sd-signal">
+                  <dt class="mono">Reading ease</dt>
+                  <dd class="sd-value"><span data-vl="flesch">75</span> <span class="sd-unit" data-vl="band">fairly easy</span><span class="sd-meter" aria-hidden="true"><span data-vl-meter="flesch"></span></span></dd>
+                  <dd class="sd-note">Flesch reading ease: 206.835 − 1.015 × (words ÷ sentences) − 84.6 × (syllables ÷ words). Higher reads easier. Syllables are estimated, and the formula was made for English.</dd>
+                </div>
+                <div class="sd-signal sd-signal-wide">
+                  <dt class="mono">Most repeated</dt>
+                  <dd class="sd-value"><ul class="sd-words" data-vl="repeated"><li>library ×2</li><li>quiet ×2</li></ul></dd>
+                  <dd class="sd-note">Most frequent words, leaving out common ones like “the” and “and”. Repetition can be a choice; this only counts it.</dd>
+                </div>
+              </dl>
+              <p class="sd-sr" aria-live="polite" data-vl-live></p>
+            </figure>
+            <div class="cs-prose">
+              <p>None of these signals says who wrote a text. This experiment does not establish authorship.</p>
+            </div>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="revision-title">
+          <h2 class="cs-rail" id="revision-title">Keeping the meaning</h2>
+          <div class="cs-main sd-stack">
+            <div class="cs-prose">
+              <p>A meaning-preserving revision is an edit that still says the same thing. The drawing shows one way to check that, step by step.</p>
+            </div>
+            <figure class="cs-flow sd-flow" data-reveal="revision">
+              <ol class="cs-flow-steps sd-flow-4">
+                <li><p class="mono cs-flow-label">Original</p><p class="cs-flow-text">“The meeting, which had been planned for later in the week, was moved to Monday.”</p></li>
+                <li><p class="mono cs-flow-label">Suggested edit</p><p class="cs-flow-text">“The meeting moved from later in the week to Monday.”</p></li>
+                <li><p class="mono cs-flow-label">Meaning check</p><p class="cs-flow-text">Same event, same change, same day. Nothing added, nothing lost.</p></li>
+                <li class="sd-flow-end"><p class="mono cs-flow-label">Keep or reject</p><p class="cs-flow-text">Keep it. Had the day or the event changed, the original would stay.</p></li>
+              </ol>
+              <figcaption>Illustration: how a meaning-preserving revision could be checked. It shows the idea, not a measured system.</figcaption>
+            </figure>
           </div>
         </section>
       </div>

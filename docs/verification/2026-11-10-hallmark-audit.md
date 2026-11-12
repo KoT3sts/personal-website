@@ -29,7 +29,8 @@ npm 503. The site's own browser checks at 390, 1280 and 1728 cover the layout si
   positioned inside the fixed dock; it can't widen the page (measured overflow 0).
 - **56, two sticky `top: 0` elements**: the About opening and the Experience stage are
   never on screen together.
-- **46a, "95% accuracy"**: Cesar's own reported result (resume).
+- **46a, "95% accuracy"**: removed from the site on November 11, 2026 (round 9): no public record
+  or other source supports it (docs/case-study-answers.md, Q11–Q15).
 - **58, 1627 visible words** and **F8, 16 scroll patterns**: this is a long portfolio with a
   guided tour, not a landing page; the budget does not apply.
 

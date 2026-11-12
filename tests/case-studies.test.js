@@ -1,12 +1,15 @@
-// Project pages in web/projects/: metadata, links, the "In 30 seconds" block, and
-// that every factual sentence on a page is already published (homepage, a lab page
-// or the build trace) or recorded with its source in docs/case-study-facts.json.
-// Plain text checks, no DOM.
+// Project pages in web/projects/: metadata, links, the "In 30 seconds" block, the
+// charts, and that every factual sentence and number on a page is already published
+// (homepage, a lab page or the build trace) or recorded with its source in a ledger,
+// docs/case-study-facts*.json. Ledger quotes from files (docs/case-study-sources/,
+// docs/case-study-answers.md, HANDOFF.md) are checked word for word. Plain text checks,
+// no DOM, plus the pure helpers of web/projects/case-charts.js.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { access, readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { countText, formatNumber, makeClusters, parseNumber, placePoints, rng, wrap } from '../web/projects/case-charts.js';
 
 const web = new URL('../web/', import.meta.url);
 const projects = new URL('projects/', web);
@@ -44,24 +47,77 @@ const corpus = (async () => {
   return { homepage, lab, trace, all: [homepage, lab, trace].join(' | ') };
 })();
 const RESUME = 'résumé 2026-11';
-const SOURCES = ['homepage', 'lab', 'trace', RESUME];
-const facts = readFile(new URL('../docs/case-study-facts.json', import.meta.url), 'utf8').then(JSON.parse).then(file => file.facts);
+// "method" (docs/case-study-facts-side.json): how an on-page demo works; quotes point at code
+// or a named reference, so they are not text-checked, but each entry explains itself in a note.
+const METHOD = 'method';
+// "opinion": Cesar's views written in his voice. Published because he asked for them, but they
+// wait for his read (pending-cesar), like résumé-only facts. No other source may be pending.
+const OPINION = 'opinion';
+const MAY_WAIT = [RESUME, OPINION];
+// A ledger entry's chart values: a list ["142", …] or rows {"Implementation": "104", …}
+// (a row may hold one value per column: {"Two servers": ["about 2,400", …]}).
+const valuesOf = fact => strings(fact.values ?? []);
+// Row header text without its .cc-mark note ("Nov 10 (in the replay)" -> "Nov 10").
+const rowLabel = th => norm(plain(th.replace(/<span class="cc-mark">[\s\S]*?<\/span>/g, '')));
+function chartTables(html) {
+  return [...mainOf(html).matchAll(/<figure[^>]*data-chart="[\w-]+"[^>]*>([\s\S]*?)<\/figure>/g)].flatMap(([, inner]) => [...inner.matchAll(/<table[\s\S]*?<\/table>/g)].map(([table]) => {
+    const body = table.match(/<tbody>([\s\S]*?)<\/tbody>/)?.[1] ?? '';
+    return [...body.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)].map(([, row]) => ({
+      label: rowLabel(row.match(/<th[^>]*>([\s\S]*?)<\/th>/)?.[1] ?? ''),
+      cells: [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(match => plain(match[1])),
+    }));
+  }));
+}
+const BUILT_IN = ['homepage', 'lab', 'trace'];
+const root = new URL('../', import.meta.url);
+const docs = new URL('../docs/', import.meta.url);
+// Every ledger: docs/case-study-facts.json, docs/case-study-facts-side.json, …
+const ledgers = (async () => {
+  const names = (await readdir(docs)).filter(name => /^case-study-facts.*\.json$/.test(name)).sort();
+  return Promise.all(names.map(async name => ({ name, ...JSON.parse(await read(new URL(name, docs))) })));
+})();
+const facts = ledgers.then(list => list.flatMap(ledger => ledger.facts.map(fact => ({ ...fact, ledger: ledger.name }))));
+const sourceList = fact => [].concat(fact.source);
+// Source ids backed by a file in the repository: { file: 'docs/…' } or a plain path string.
+const sourceFiles = ledgers.then(async list => {
+  const files = {};
+  for (const ledger of list) {
+    for (const [id, value] of Object.entries(ledger.sources || {})) {
+      if (BUILT_IN.includes(id)) continue;
+      const file = typeof value === 'object' && value ? value.file : (/^[\w./-]+\.(?:txt|md|json)$/.test(value) ? value : null);
+      if (file && await exists(new URL(file, root))) files[id] = norm(decode(await read(new URL(file, root))));
+    }
+  }
+  return files;
+});
+const knownSources = ledgers.then(list => new Set([...BUILT_IN, RESUME, METHOD, OPINION, ...list.flatMap(ledger => Object.keys(ledger.sources || {}))]));
+// Digits compared without thousands separators: "$5,070.56" matches "$5070.56".
+const digits = text => norm(text).replace(/(\d),(?=\d{3})/g, '$1');
 // A sentence as compared: normalised, without its closing period, colon or question mark.
 const clean = text => norm(text).replace(/[.:?]$/, '');
 const mainOf = html => html.match(/<main[^>]*>([\s\S]*?)<\/main>/)[1];
-// Diagram node labels (e.g. "Input", "My part") are labels like <dt>, not claims.
+// Short mono labels (diagram node labels like "Input", link-card kinds like "PDF · KSU",
+// chart legends) are labels like <dt>, not claims: at most four words and no digits.
 const FLOW_LABEL = /<p class="mono cs-flow-label">([^<]*)<\/p>/g;
+const MONO_LABEL = /<(span|p) class="mono(?: [\w-]+)*">([^<]*)<\/\1>/g;
+const isLabel = text => text.trim().split(/\s+/).length <= 4 && !/\d/.test(text);
+// Chart data tables are checked as numbers (below), not as sentences.
+const stripData = html => html.replace(/<table[\s\S]*?<\/table>/g, ' ').replace(/<(?:button|svg|summary)[\s\S]*?<\/(?:button|svg|summary)>/g, ' ');
 function claims(html) {
-  const main = mainOf(html);
+  const main = stripData(mainOf(html));
   const labels = [...main.matchAll(FLOW_LABEL)].map(match => match[1]);
   const body = main
     .replace(/<h[12][^>]*>[\s\S]*?<\/h[12]>/g, '')       // headings
     .replace(/<dt[^>]*>[\s\S]*?<\/dt>/g, '')             // labels
     .replace(FLOW_LABEL, '')                              // diagram labels
+    .replace(/<ul class="cc-legend"[^>]*>([\s\S]*?)<\/ul>/g, (_, items) => { labels.push(...[...items.matchAll(/<li[^>]*>([^<]*)<\/li>/g)].map(match => match[1])); return ''; })
+    .replace(MONO_LABEL, (match, _, text) => (isLabel(text) ? (labels.push(text), '') : match))
     .replace(/<dd class="mono">\d\d \/ 06<\/dd>/g, '');  // position in the set
   const lines = body.replace(/<\/(?:p|li|dd|figcaption)>/g, '\n').split('\n').map(plain).filter(Boolean);
   return { labels, sentences: lines.flatMap(line => line.split(/(?<=[.!?])\s+/)) };
 }
+// Numbers are scanned everywhere in <main> except the synthetic data of an illustration.
+const numbersOf = html => mainOf(html).replace(/(<figure[^>]*data-illustration[^>]*>)([\s\S]*?<\/figure>)/g, (_, open, rest) => open + rest.replace(/<table[\s\S]*?<\/table>/g, ' '));
 
 const pages = Promise.all(SLUGS.map(async slug => ({ slug, html: await read(new URL(`${slug}.html`, projects)) })));
 
@@ -89,7 +145,10 @@ test('every project page exists with title, description, canonical, Open Graph a
     assert.equal(ld.author.name, 'Cesar Tortolero');
     assert.ok(ld.image.startsWith(site) && await exists(new URL(ld.image.slice(site.length), web)), `${slug} JSON-LD image exists`);
     assert.equal(html.match(/<h1[\s>]/g)?.length, 1, `${slug} has one h1`);
-    assert.doesNotMatch(html, /<script(?![^>]*application\/ld\+json)/, `${slug} needs no JavaScript`);
+    // At most one script: the page's own module (case-charts.js or side-demos.js), no inline code.
+    const scripts = [...html.matchAll(/<script(?![^>]*application\/ld\+json)[^>]*>[\s\S]*?<\/script>/g)].map(match => match[0]);
+    assert.ok(scripts.length <= 1, `${slug}: one module script at most`);
+    for (const tag of scripts) assert.match(tag, /^<script type="module" src="\.\/(?:case-charts|side-demos)\.js"><\/script>$/, `${slug}: ${tag}`);
   }
 });
 
@@ -146,24 +205,28 @@ test('each homepage story links to its project page, and each cover is described
   }
 });
 
-test('every factual sentence on a project page is on the homepage, a lab page, in the trace, or in docs/case-study-facts.json', async () => {
+test('every factual sentence and number on a project page is on the homepage, a lab page, in the trace, or in a ledger', async () => {
   const { all } = await corpus;
   const recorded = await facts;
   for (const { slug, html } of await pages) {
-    const listed = recorded.filter(fact => fact.page === slug).map(fact => clean(fact.sentence));
+    const mine = recorded.filter(fact => fact.page === slug);
+    const listed = mine.map(fact => clean(fact.sentence));
+    const values = mine.flatMap(valuesOf).map(digits);
     const { labels, sentences } = claims(html);
     assert.ok(sentences.length >= 4, `${slug} has content`);
     for (const label of labels) {
-      assert.ok(label.split(/\s+/).length <= 3 && !/\d/.test(label), `${slug}: diagram label "${label}" is a short label, not a claim`);
+      assert.ok(isLabel(label), `${slug}: label "${label}" is a short label, not a claim`);
     }
     for (const sentence of sentences) {
       const text = clean(sentence);
-      assert.ok(all.includes(text) || listed.some(fact => fact.includes(text)), `${slug}: "${sentence}" is not on the homepage, a lab page or in the trace, and not in docs/case-study-facts.json`);
+      assert.ok(all.includes(text) || listed.some(fact => fact.includes(text)), `${slug}: "${sentence}" is not on the homepage, a lab page or in the trace, and not in a ledger`);
     }
-    // Numbers and named venues are published somewhere or recorded with a source.
-    const metrics = plain(mainOf(html)).match(/[+$]?\d[\d,.]*%?|NCUR|CDay|1st Place/g) || [];
+    // Numbers and named venues are published somewhere or recorded with a source
+    // (chart values through a ledger entry's "values").
+    const metrics = plain(numbersOf(html)).match(/[+$]?\d[\d,.]*%?|NCUR|CDay|1st Place/g) || [];
     for (const metric of metrics.map(token => token.replace(/[.,]$/, '')).filter(token => token !== '06' && !/^0\d$/.test(token))) {
-      assert.ok(all.includes(norm(metric)) || listed.some(fact => fact.includes(norm(metric))), `${slug}: ${metric} has a source`);
+      const token = digits(metric);
+      assert.ok(all.includes(norm(metric)) || listed.some(fact => digits(fact).includes(token)) || values.includes(token), `${slug}: ${metric} has a source`);
     }
     const description = meta(html, 'name', 'description');
     for (const metric of description.match(/\d[\d,]*%|\$[\d,]+|NCUR|CDay \d+/g) || []) {
@@ -172,37 +235,63 @@ test('every factual sentence on a project page is on the homepage, a lab page, i
   }
 });
 
-test('every entry in docs/case-study-facts.json is still on its page and backed by its source', async () => {
-  const sources = await corpus;
+test('every ledger entry is still on its page and backed by its source', async () => {
+  const published = await corpus;
+  const files = await sourceFiles;
+  const known = await knownSources;
   const recorded = await facts;
   assert.ok(recorded.length > 0);
   const text = Object.fromEntries((await pages).map(({ slug, html }) => [slug, norm(plain(mainOf(html)))]));
   const seen = new Set();
   for (const fact of recorded) {
-    const where = `${fact.page}: "${fact.sentence}"`;
+    const where = `${fact.ledger} · ${fact.page}: "${fact.sentence}"`;
+    const ids = sourceList(fact);
     assert.ok(SLUGS.includes(fact.page), `${where}: page is one of the six`);
-    assert.ok(SOURCES.includes(fact.source), `${where}: source is one of ${SOURCES.join(', ')}`);
+    for (const id of ids) assert.ok(known.has(id), `${where}: source ${id} is declared in a ledger's "sources"`);
     assert.ok(['verbatim', 'reworded'].includes(fact.wording), `${where}: wording is verbatim or reworded`);
     assert.ok(!seen.has(`${fact.page}|${clean(fact.sentence)}`), `${where} is listed once`);
     seen.add(`${fact.page}|${clean(fact.sentence)}`);
     assert.ok(text[fact.page].includes(clean(fact.sentence)), `${where} no longer appears on its page: update or remove the entry`);
     const quotes = [].concat(fact.quote ?? []);
     assert.ok(quotes.length && quotes.every(quote => typeof quote === 'string' && quote.trim()), `${where} quotes its source`);
-    if (fact.source === RESUME) {
-      // Résumé-only facts wait for Cesar; he flips them to "approved".
-      assert.ok(['pending-cesar', 'approved'].includes(fact.status), `${where}: status`);
-    } else {
-      assert.equal(fact.status, 'approved', `${where}: facts already published on the site are approved`);
-      for (const quote of quotes) assert.ok(sources[fact.source].includes(clean(quote)), `${where}: quote "${quote}" is in the ${fact.source}`);
-      if (fact.wording === 'verbatim') assert.ok(sources[fact.source].includes(clean(fact.sentence)), `${where} is verbatim in the ${fact.source}`);
+    assert.ok(['pending-cesar', 'approved'].includes(fact.status), `${where}: status is approved or pending-cesar`);
+    if (fact.status === 'pending-cesar') assert.ok(ids.some(id => MAY_WAIT.includes(id)), `${where}: only résumé and opinion entries may wait for Cesar; anything else must be sourced and approved`);
+    if (ids.includes(OPINION)) assert.ok(ids.some(id => !MAY_WAIT.includes(id)), `${where}: an opinion also cites the direction it was written from`);
+    if (ids.includes(RESUME)) continue; // Résumé-only facts wait for Cesar; he flips them to "approved".
+    if (ids.includes(METHOD)) {
+      assert.equal(fact.status, 'approved', `${where}: method entries are approved`);
+      assert.ok(typeof fact.note === 'string' && fact.note.trim(), `${where}: method entries explain themselves in a note`);
+      continue;
+    }
+    // Everything else is checked against the text of its sources.
+    const haystacks = ids.filter(id => id !== OPINION).map(id => published[id] ?? files[id]);
+    assert.ok(haystacks.every(Boolean), `${where}: every source of this entry has text to check (${ids.join(', ')})`);
+    for (const quote of quotes) assert.ok(haystacks.some(source => source.includes(clean(quote))), `${where}: quote "${quote}" is in ${ids.join(' or ')}`);
+    if (fact.wording === 'verbatim') assert.ok(haystacks.some(source => source.includes(clean(fact.sentence))), `${where} is verbatim in ${ids.join(' or ')}`);
+    // Chart values: on the page, and their numbers in one of the quotes (or, with "counted",
+    // counted from the quoted items, e.g. prompts per emotion).
+    for (const value of valuesOf(fact)) {
+      assert.ok(digits(text[fact.page]).includes(digits(value)), `${where}: value ${value} is on the page`);
+      if (fact.counted) continue;
+      for (const number of digits(value).match(/\$?\d[\d.]*/g) ?? []) assert.ok(quotes.some(quote => digits(quote).includes(number)), `${where}: value ${number} is in a quote`);
     }
   }
 });
 
-test('résumé facts waiting for Cesar are listed here (informational, never fails)', async t => {
+test('facts waiting for Cesar are listed here (informational, never fails)', async t => {
   const pending = (await facts).filter(fact => fact.status === 'pending-cesar');
-  t.diagnostic(`${pending.length} pending-cesar fact(s) in docs/case-study-facts.json`);
-  for (const fact of pending) t.diagnostic(`pending-cesar · ${fact.page}: ${fact.sentence} (source: ${fact.source})`);
+  t.diagnostic(`${pending.length} pending-cesar fact(s) across the ledgers`);
+  for (const fact of pending) t.diagnostic(`pending-cesar · ${fact.page}: ${fact.sentence} (source: ${sourceList(fact).join(', ')})`);
+});
+
+test('the source excerpts exist, say where they came from, and every file source is used', async () => {
+  const dir = new URL('../docs/case-study-sources/', import.meta.url);
+  const names = (await readdir(dir)).filter(name => name.endsWith('.txt'));
+  assert.ok(names.length >= 8);
+  for (const name of names) assert.match(await read(new URL(name, dir)), /^(?:URL: https:\/\/\S+|Source: )/, `${name} starts with its URL or source`);
+  const files = await sourceFiles;
+  const used = new Set((await facts).flatMap(sourceList));
+  for (const id of Object.keys(files)) assert.ok(used.has(id), `source ${id} is quoted by at least one entry`);
 });
 
 test('each page leads with an "In 30 seconds" block before the cover', async () => {
@@ -220,15 +309,131 @@ test('each page leads with an "In 30 seconds" block before the cover', async () 
   assert.match(html['companion-chatbot'], /<dt class="mono">Proof<\/dt><dd><ul class="cs-proof">[\s\S]*?href="\.\.\/lab\/sentiment-eval\.html"/, 'chatbot proof links to the lab');
   // Decision and limit sections only where the facts support them (questions for the rest: docs/case-study-questions.md).
   const has = (slug, id) => html[slug].includes(`id="${id}-title"`);
-  assert.ok(has('agent-workflow', 'decision') && has('agent-workflow', 'limit'));
-  assert.ok(has('companion-chatbot', 'limit'));
-  for (const slug of ['thoughts-to-text', 'voicelab', 'work-helper', 'barking-village']) assert.ok(!has(slug, 'decision'), `${slug} has no unsupported decision section`);
+  for (const slug of ['agent-workflow', 'thoughts-to-text', 'companion-chatbot']) assert.ok(has(slug, 'decision') && has(slug, 'limit'), `${slug} has a decision and a limit`);
+  for (const slug of ['voicelab', 'work-helper', 'barking-village']) assert.ok(!has(slug, 'decision'), `${slug} has no unsupported decision section`);
 });
 
-test('the result pages carry the published metrics', async () => {
-  const byslug = Object.fromEntries((await pages).map(({ slug, html }) => [slug, plain(html)]));
-  for (const token of ['15%', 'NCUR', '$2,000']) assert.ok(byslug['thoughts-to-text'].includes(token), `BCI page shows ${token}`);
-  for (const token of ['95%', '20%', '1st Place', 'CDay 2024']) assert.ok(byslug['companion-chatbot'].includes(token), `chatbot page shows ${token}`);
+test('the result pages carry their sourced facts, and the removed claims stay removed', async () => {
+  const html = Object.fromEntries((await pages).map(({ slug, html }) => [slug, html]));
+  // +15%, 95% and 20% have no source (docs/case-study-answers.md, Q6 and Q11–Q15): not in the text, meta or JSON-LD of any page.
+  for (const [slug, page] of Object.entries(html)) {
+    assert.doesNotMatch(page, /\b(?:95|20|15)\s?%|\b(?:95|20|15) percent/i, `${slug}: no 95%, 20% or 15% claim`);
+    assert.doesNotMatch(page, /Research Peer Mentor/, `${slug}: the mentoring title is a separate role`);
+  }
+  const bci = html['thoughts-to-text'];
+  for (const token of ['NCUR', '$2,000', 'Md Abdullah Al Hafiz Khan', 'https://digitalcommons.kennesaw.edu/undergradsymposiumksu/Fall2022/presentations/136', 'https://digitalcommons.kennesaw.edu/undergradsymposiumksu/spring2022/presentations/255', 'https://digitalcommons.kennesaw.edu/undergradsymposiumksu/Fall2022/presentations/163']) assert.ok(bci.includes(token), `BCI page shows ${token}`);
+  const chat = html['companion-chatbot'];
+  assert.ok(chat.includes('I led the four-person capstone team, handling the planning and direction, and designed the backend LLM: the DistilGPT-2 server and the sentiment module. One teammate designed the React Native app, and two others helped with it briefly.'), 'chatbot role sentence, verbatim');
+  for (const token of ['First Place', 'C-Day', 'https://www.kennesaw.edu/ccse/events/computing-showcase/sp24-cday-winners.php', 'https://youtu.be/NBu8LE_WF8Q', 'https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf', 'https://virtualcompanionchatbot.wordpress.com/', 'https://github.com/NoahDClark/VirtualCompanionChatbot', 'https://digitalcommons.kennesaw.edu/cgi/viewcontent.cgi?article=1411&amp;context=cday']) assert.ok(chat.includes(token), `chatbot page shows ${token}`);
+  assert.equal((chat.match(/href="\.\.\/lab\/sentiment-eval\.html"/g) || []).length, 1, 'one link to the evaluation lab');
+  assert.doesNotMatch(chat, /<iframe|<video|<embed/, 'the video is a link, not an embed');
+  const agents = html['agent-workflow'];
+  // Nothing ties the workflow to an employer: no company, system, tool or host names.
+  assert.doesNotMatch(agents, /Jenkins|Bitbucket|\bADP\b|Jira|Confluence|Splunk|Artifactory|Harness|SPARK-|\.oneadp\.|\.adp\.com/, 'agent workflow names no employer systems');
+  assert.match(plain(agents), /Measured through November 11, 2026/);
+  assert.match(plain(agents), /The build trace is a recorded run of this same workflow/);
+  assert.doesNotMatch(agents, /github\.com\/KoT3sts\/personal-website/, 'the repository is not linked until it is pushed');
+});
+
+test('every chart is a figure with a caption and its data; illustrations say so', async () => {
+  let charts = 0;
+  for (const { slug, html } of await pages) {
+    const figures = [...html.matchAll(/<figure[^>]*data-chart="([\w-]+)"[^>]*>([\s\S]*?)<\/figure>/g)];
+    if (figures.length) {
+      assert.match(html, /<link rel="stylesheet" href="\.\/case-charts\.css">/, `${slug} loads the chart styles`);
+      assert.match(html, /<script type="module" src="\.\/case-charts\.js"><\/script>/, `${slug} loads the chart module`);
+    }
+    for (const [figure, type, inner] of figures) {
+      charts++;
+      const caption = inner.match(/<figcaption>([\s\S]*?)<\/figcaption>/)?.[1];
+      assert.ok(caption && plain(caption).length > 20, `${slug} ${type}: has a caption`);
+      if (type === 'counters') assert.match(inner, /<dl class="cc-stats">[\s\S]*class="cc-num"/, `${slug} counters: numbers in a <dl>`);
+      else assert.match(inner, /<div class="cc-canvas"><\/div>/, `${slug} ${type}: has a canvas`);
+      if (type === 'graph') assert.ok(/<div class="cc-data"[\s\S]*<ol class="cc-nodes"[\s\S]*<ul class="cc-edges"/.test(inner), `${slug} graph: nodes and edges as lists`);
+      if (['bars', 'columns', 'line', 'waffle', 'scatter'].includes(type)) assert.match(inner, /<div class="cc-data"[^>]*>\s*<table class="cc-table">\s*<caption>[^<]+<\/caption>\s*<thead>[\s\S]*<th scope="row"/, `${slug} ${type}: a data table with a caption and row headers`);
+      const illustration = /data-illustration/.test(figure) || type === 'scatter';
+      if (illustration) assert.match(plain(caption), /^Illustration\b/, `${slug} ${type}: the caption starts with "Illustration"`);
+    }
+  }
+  assert.ok(charts >= 12, `${charts} charts`);
+});
+
+test('case-charts.js: numbers count up to exactly what the page says, and illustrations are seeded', () => {
+  assert.deepEqual(parseNumber('$5,070.56'), { value: 5070.56, decimals: 2, grouped: true, before: '$', after: '' });
+  assert.deepEqual(parseNumber('38%'), { value: 38, decimals: 0, grouped: false, before: '', after: '%' });
+  assert.equal(parseNumber('about half'), null);
+  for (const written of ['514', '38%', '1,360', '$5,070.56', 'about 2,400']) {
+    const parsed = parseNumber(written);
+    assert.equal(countText(parsed, 1), written, `${written} ends as written`);
+    assert.equal(countText(parsed, 0).replace(/[^\d]/g, '').replace(/^0+/, ''), '', `${written} starts at zero`);
+  }
+  assert.equal(formatNumber(22000, { grouped: true }), '22,000');
+  const a = rng(11); const b = rng(11);
+  assert.deepEqual([a(), a(), a()], [b(), b(), b()]);
+  assert.deepEqual(wrap('Correct or take over', 10), ['Correct or', 'take over']);
+  const clusters = makeClusters([24, 24, 24, 24, 24], 11);
+  assert.equal(clusters.points.length, 120);
+  const strays = noise => placePoints(clusters, noise).filter(point => point.stray).length;
+  assert.equal(strays(0), 0, 'no mixing without noise');
+  assert.ok(strays(1) > strays(0.2), 'more noise, more mixing');
+});
+
+test('case-charts.css and .js: readable, reduced motion, print, no HTML from strings', async () => {
+  const css = await read(new URL('projects/case-charts.css', web));
+  for (const [, size] of css.matchAll(/font-size: ([\d.]+)px/g)) assert.ok(Number(size) >= 11, `font-size ${size}px`);
+  assert.match(css, /@media print \{[^]*\.cc-wait \.cc-anim \{ visibility: visible; \}/);
+  assert.match(css, /@media screen and \(prefers-reduced-motion: no-preference\)/);
+  assert.doesNotMatch(css, /url\(\s*["']?(?:https?:)?\/\//);
+  const js = await read(new URL('projects/case-charts.js', web));
+  assert.doesNotMatch(js, /innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(|new Function|fetch\(|XMLHttpRequest|localStorage|sessionStorage/);
+  assert.doesNotMatch(js, /setAttribute\(\s*['"]style['"]/, 'no style attributes (CSP)');
+  assert.match(js, /prefers-reduced-motion: reduce/);
+  const pkg = JSON.parse(await read(new URL('../package.json', import.meta.url)));
+  assert.match(pkg.scripts.check, /node --check web\/projects\/case-charts\.js/);
+});
+
+test('chart tables match the values recorded in the ledger, row by row', async () => {
+  const html = Object.fromEntries((await pages).map(({ slug, html }) => [slug, html]));
+  let checked = 0;
+  for (const fact of (await facts).filter(entry => entry.values && !Array.isArray(entry.values))) {
+    const where = `${fact.page}: "${fact.sentence}"`;
+    const rows = Object.entries(fact.values).map(([label, value]) => [norm(label), [].concat(value)]);
+    const table = chartTables(html[fact.page]).find(found => found.length === rows.length && rows.every(([label]) => found.some(row => row.label === label)));
+    assert.ok(table, `${where}: a chart table with exactly the rows ${rows.map(([label]) => label).join(', ')}`);
+    for (const [label, values] of rows) {
+      const row = table.find(found => found.label === label);
+      assert.deepEqual(row.cells.map(digits), values.map(digits), `${where}: row ${label}`);
+      checked++;
+    }
+  }
+  assert.ok(checked >= 30, `${checked} rows checked`);
+  // Totals the captions state.
+  const sum = (slug, first) => chartTables(html[slug]).find(table => table[0]?.label === first).reduce((total, row) => total + Number(digits(row.cells[0])), 0);
+  assert.equal(sum('agent-workflow', 'nov 7'), 55, 'commits per day add up to 55');
+  assert.match(plain(mainOf(html['agent-workflow'])), /55 commits over five days, through round 8/);
+  assert.match(html['agent-workflow'], /through round 8 \(commit 92a6746\)/, 'the site counts are pinned to a commit');
+  assert.equal(sum('companion-chatbot', 'joy'), 10, 'the test set has 10 prompts');
+  assert.ok(sum('agent-workflow', 'general purpose') <= 527, 'the top roles fit in 527 delegations');
+});
+
+test('no unsourced claim or employer system name anywhere on the site', async () => {
+  const walk = async dir => (await Promise.all((await readdir(dir, { withFileTypes: true })).map(entry => {
+    const url = new URL(entry.name + (entry.isDirectory() ? '/' : ''), dir);
+    return entry.isDirectory() ? walk(url) : [url];
+  }))).flat();
+  const files = (await walk(web)).filter(url => /\.(?:html|svg)$/.test(url.pathname));
+  assert.ok(files.length >= 20, `${files.length} pages and images`);
+  const SYSTEMS = /Bitbucket|Jira\b|Confluence|Splunk|Harness|SPARK-\d|oneadp|\.adp\.com|deployment-dashboard/i;
+  for (const url of files) {
+    const name = url.pathname.slice(web.pathname.length);
+    let body = await read(url);
+    assert.doesNotMatch(body, /\b(?:95|20|15)\s?%|\b(?:95|20|15) percent|\+15\b/i, `${name}: no 95%, 20% or +15% claim`);
+    // The homepage's career sections (What I can do, Experience) list the CI tools Cesar used
+    // at work (Jenkins, Artifactory); nothing else may name them, the workflow story included.
+    if (name === 'index.html') body = body.replace(/<section id="(?:capabilities|experience)"[\s\S]*?<\/section>\s*(?=<section id="(?:experience|work)")/g, '');
+    assert.doesNotMatch(body, SYSTEMS, `${name}: no employer system names`);
+    assert.doesNotMatch(body, /Jenkins|Artifactory/, `${name}: no employer CI tools outside Experience: ${body.slice(Math.max(0, body.search(/Jenkins|Artifactory/) - 160), body.search(/Jenkins|Artifactory/) + 20)}`);
+  }
 });
 
 test('sitemap.xml lists every project page', async () => {

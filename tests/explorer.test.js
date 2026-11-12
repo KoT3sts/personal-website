@@ -253,9 +253,9 @@ test('every project has facts in its story, in the explorer order', () => {
     assert.ok(facts.rows.length + (facts.tags.length ? 1 : 0) >= 2, `${id}: at least two facts`);
     facts.rows.forEach(([term, value]) => assert.ok(term.trim() && value.trim() && !/</.test(value), `${id}: ${term} is plain text`));
   });
-  assert.deepEqual(storyFacts('project-bci').rows, [['Role', 'Lead researcher, Sep 2021 – May 2023'], ['Result', '+15% classification accuracy']]);
-  assert.deepEqual(storyFacts('project-chatbot').rows, [['Award', '1st Place, KSU CDay 2024']]);
-  assert.deepEqual(storyFacts('project-chatbot').tags, ['LLM', 'Sentiment analysis']);
+  assert.deepEqual(storyFacts('project-bci').rows, [['Role', 'Lead researcher, Sep 2021 – May 2023'], ['Published', '2 KSU symposium presentations, 2022']]);
+  assert.deepEqual(storyFacts('project-chatbot').rows, [['Award', '1st Place, KSU C-Day 2024'], ['Role', 'Team lead, backend LLM']]);
+  assert.deepEqual(storyFacts('project-chatbot').tags, ['DistilGPT-2', 'Sentiment analysis', 'Python', 'React Native', 'Firebase']);
   // Only the chatbot's story has the evaluation lab link.
   assert.deepEqual(STORY_IDS.map(id => storyFacts(id).lab), [null, null, './lab/sentiment-eval.html', null, null, null]);
 });

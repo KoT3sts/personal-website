@@ -39,20 +39,20 @@ test('every existing fact is kept: titles, dates, place, bullets and tags', () =
   for (const fact of [
     'Machine Learning Engineer', 'AUG 2026 – PRESENT', 'Associate ML Engineer', 'JUL 2024 – JUL 2026', 'ROSELAND, NJ',
     'Lead Researcher, Thoughts-to-Text BCI', 'SEP 2021 – MAY 2023', 'KENNESAW STATE UNIVERSITY',
-    'AI agent platform & applied AI', 'Cloud infrastructure & release engineering', 'MLOps & GenAI', 'Brain-computer interface',
+    'AI agent platform & applied AI', 'Cloud infrastructure & release engineering', 'MLOps & GenAI', 'Brain-computer interface', 'Research Peer Mentor',
   ]) assert.ok(plain.includes(fact), fact);
   for (const datetime of ['2026-08', '2024-07', '2026-07', '2021-09', '2023-05']) assert.match(section, new RegExp(`<time datetime="${datetime}">`), datetime);
   const bullets = all(/<ul class="xp-points">([\s\S]*?)<\/ul>/g).flatMap(match => all(/<li>([\s\S]*?)<\/li>/g, match[1]).map(item => text(item[1])));
-  assert.equal(bullets.length, 13, 'four + three + three + three bullets');
+  assert.equal(bullets.length, 13, 'four + three + three + two + one bullets');
   for (const start of ['Co-delivered 18+ hands-on workshops to ~350 developers', 'Debugged production agent integrations', 'Set up LLM tracing and evaluation',
     'Hardened a developer-portal API', 'Built a serverless cross-account network-testing API', 'Built a network-diagnostics app', 'Ran 6+ weekly multi-region releases',
     'Supported Databricks Unity Catalog and MLflow model migrations', 'Root-caused SageMaker endpoint deployment failures in Jenkins.', 'Built GenAI playground features with Streamlit and LangChain.',
-    'Designed EEG preprocessing pipelines that raised classification accuracy by 15%.', 'Presented the work at NCUR and received a $2,000 Research Excellence stipend.', 'Mentored 50+ undergraduate researchers (2022–2023).']) {
+    'Researched decoding attempted handwriting from EEG, one character at a time, and mapped how characters separate with an autoencoder and t-SNE.', 'Presented the work at NCUR and received a $2,000 Research Excellence stipend.', 'Mentored 50+ undergraduate researchers (2022–2023).']) {
     assert.ok(bullets.some(bullet => bullet.startsWith(start)), start);
   }
   const tags = all(/<ul class="tag-list" aria-label="(?:Tools|Topics)">([\s\S]*?)<\/ul>/g).flatMap(match => all(/<li>([^<]+)<\/li>/g, match[1]).map(item => item[1]));
   assert.equal(tags.length, 29);
-  for (const tag of ['Strands Agents', 'AWS Bedrock AgentCore', 'OpenInference', 'SSM Run Command', 'Artifactory', 'Databricks Unity Catalog', 'LangChain', 'Signal preprocessing']) assert.ok(tags.includes(tag), tag);
+  for (const tag of ['Strands Agents', 'AWS Bedrock AgentCore', 'OpenInference', 'SSM Run Command', 'Artifactory', 'Databricks Unity Catalog', 'LangChain', 'Autoencoder', 't-SNE']) assert.ok(tags.includes(tag), tag);
 });
 
 test('controls ship hidden, are real buttons and keep 44px targets', () => {

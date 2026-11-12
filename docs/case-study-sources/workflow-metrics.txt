@@ -1,0 +1,30 @@
+Source: Cesar's own setup (session exports, the LLM Wiki knowledge base, this repository).
+Measured through November 11, 2026, by a script kept outside the repository. Aggregate,
+public-safe counts only: no internal names, systems, tools, hosts, tickets or projects.
+
+A. As recorded in docs/case-study-answers.md (Q3). One wording change from review: the answers
+   file says "specialist subagents"; the page and this file say "subagents", the plainer claim
+   (the role chart below shows general-purpose delegations too).
+- 514 delegation calls to subagents across 121 sessions (Oct 9–Nov 11, 2026); delegation used in 38% of sessions.
+- 93 quality-review calls and 57 verification calls.
+- 709 calls to the read-only CI and source-control tools.
+- A searchable 199-page knowledge base compiled from 130 of 131 session exports, with 188 retrieval calls.
+- Portfolio: 55 commits over five days, through round 8 (commit 92a6746), eight documented rounds; runnable node tests grew 39 → 163; the curated replay covers 52 steps and 16 commits, 8 errors, 6 recovered.
+- Not to publish: success/reliability/approval-compliance percentages, time or cost savings, "all 55 commits autonomous" (only the 16 in the trace are individually supported).
+
+B. Breakdowns from the same computation, given for the round-9 case-study build (November 11, 2026):
+- Delegations by role, Jul 22–Nov 11, 2026 (top roles, 527 delegations in total). A longer window
+  than the 514 above (Oct 9–Nov 11), so the two totals differ:
+  general 142; implementation 104; quality review 93; verification 57; UI/design 34; analysis 19; housekeeping 19; release helper 18.
+- Commits per day on this site's working branch, Nov 7–11, 2026: Nov 7: 2; Nov 8: 11; Nov 9: 7; Nov 10: 18; Nov 11: 17 (55 in total, through round 8, commit 92a6746).
+  Pinned to that commit so later commits don't change it. Checked on November 11, 2026 with:
+  git log --format='%ad' --date=format:'%Y-%m-%d' origin/feat/reference-portfolio..92a6746 | sort | uniq -c
+  which printed 2 (2026-11-07), 11 (2026-11-08), 7 (2026-11-09), 18 (2026-11-10), 17 (2026-11-11).
+- Runnable node tests at each documented checkpoint (from HANDOFF.md):
+  Nov 9 polish session: 39 ("`node --test` 39 pass")
+  Round 2: 65 ("65 node tests pass")
+  Round 3: 94 ("94 node tests pass")
+  Round 5: 102 ("`node --test` 102 pass")
+  Round 6: 139 ("`node --test` 139 pass")
+  Round 7: 160 ("`node --test` 160 pass")
+  Round 8: 163 ("163 node tests")

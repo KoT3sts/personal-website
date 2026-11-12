@@ -1,34 +1,17 @@
-# Case-study questions for Cesar (round 8)
+# Case-study questions for Cesar (round 8, updated in round 9)
 
-The six case studies (`web/projects/*.html`) now open with an "In 30 seconds" block. They only say what the homepage, the lab pages, the build trace or your November 2026 résumé support. Every new sentence and its source is in `docs/case-study-facts.json`. Where no source supports a diagram, a "One hard decision" section or a "One limit" section, the page leaves it out and the question is below. Answer any of them and the page can grow.
+The six case studies (`web/projects/*.html`) open with an "In 30 seconds" block and only say what a published source supports. Every new sentence, number and chart value, with its source, is in a ledger: `docs/case-study-facts.json` (the three main projects) and `docs/case-study-facts-side.json` (the side projects). Public records the pages quote are copied word for word into `docs/case-study-sources/`, and `tests/case-studies.test.js` checks every quote against them.
 
-Résumé facts waiting for your yes (status `pending-cesar` in the facts file):
+**Questions 1–15 are answered** (your answers: `docs/case-study-answers.md`, November 11, 2026). What changed in round 9:
 
-- Thoughts-to-Text BCI: "I also mentored 50+ undergraduate researchers as a Research Peer Mentor (2022–2023)." Only the title "Research Peer Mentor" is new. The homepage already says you mentored 50+ undergraduate researchers.
+- **Multi-Agent Workflow (Q1–Q5):** the page says plainly that the build trace is a recorded run of this workflow; the access story is corrected (agents have write access; CI and source-control context comes through read-only tools; production waits for your approval); the implement → review → verify loop and what happens on a failure are an animated diagram; aggregate metrics measured through November 11, 2026 are shown as counters and charts (no success or approval rates, no time saved); no tool, system or employer names. The repository is mentioned as going public with the next push, not linked yet.
+- **Thoughts-to-Text BCI (Q6–Q10):** the +15% and the "Research Peer Mentor" line are gone. The page leads with the three 2022 KSU DigitalCommons records (Fall 2022 talk 136, Spring 2022 poster 255, Fall 2022 talk 163), the published method (autoencoder, then t-SNE in 2D), the open-vocabulary decision and the noisy-EEG limit. The scatter chart is labelled as an illustration with synthetic points.
+- **Companionship Chatbot (Q11–Q15):** your role wording, First Place (Undergraduate Capstone, C-Day Spring 2024) with the KSU winners page, and the public report's facts (architecture, eight emotions, the 10-prompt test, 1,360 lines and 28 components, the two Azure deployment plans). The 95% and 20% are gone everywhere.
 
-## Multi-Agent Workflow
+Still for you to read (status `pending-cesar` in `docs/case-study-facts.json`):
 
-1. **Is the build trace a run of this workflow?** The page's Result row says "A recorded agent run built two rounds of this site: 52 steps and 16 commits, errors and retries included", and its limit section uses that run's errors and resumed tasks. The essay connects the two, but no source says the run used the workflow itself (the same subagents and MCP servers). If it did, can the page say so plainly? If it didn't, what should the Result row say instead?
-2. **Why read-only?** The decision section says the agents get read-only access to delivery tools, but no source gives the reason. Was it a rule you chose (what would write access have risked?), a platform constraint, or both?
-3. **Any measured result for the workflow itself?** For example, review findings caught before merge, time from task to verified change, or how many people or projects use it. The page currently has no outcome number of its own.
-4. **What does the verifier check, and in what order do the roles run?** The diagram draws implement, review, verify left to right, following the homepage wording. Is that the order, and does a failed review or verification loop back?
-5. **Can anything be public?** A sanitised config, a public repository, or a short screen recording. The site's own repository (`KoT3sts/personal-website`) is public, but GitHub was last pushed on Nov 9, before the rounds 4–5 commits the trace records, so the page does not link it yet.
-
-## Thoughts-to-Text BCI
-
-6. **Which preprocessing steps produced the +15%, and what was the baseline?** For example filtering (which bands), artifact removal (ICA, regression or rejection), re-referencing, and epoching or windowing. Is +15% in percentage points or relative to the baseline, and what was the accuracy before and after?
-7. **What was classified, and on what data?** The task (imagined words, letters or a small set of classes), the number of classes, participants and trials, and whether the data was recorded in the lab or a public dataset. Which classifier was used?
-8. **One hard decision.** Was there a choice you argued for, such as keeping fewer channels, a stricter artifact rule, or a different split between training and test sessions?
-9. **One limit.** For example, small number of participants, one session, offline only (not real time), or accuracy still far from usable thoughts-to-text.
-10. **Is there something public to open?** An NCUR abstract or proceedings entry, a poster or slides, or a KSU news item about the stipend. (Your GitHub fork `handwritingBCI` is someone else's published code, so the page does not link it.)
-
-## Companionship Chatbot
-
-11. **Was it a team project, and what was your part?** The My part row keeps the old page's claim, "I built an LLM companionship chatbot with sentiment analysis." If KSU CDay was a team entry, which parts were yours?
-12. **How were the 95% and the 20% measured?** For 95%: the classes (positive, neutral, negative?), the test set size and where the labels came from. For the 20% higher satisfaction: compared with what (the same bot without sentiment?), how many users, and what survey or scale.
-13. **How did the sentiment signal reach the LLM?** For example, a classifier label added to the prompt, a change of tone or response style, or escalation on negative sentiment. Which LLM and which sentiment model? With this the page can show a small diagram like the other two.
-14. **One hard decision.** For example, a separate classifier instead of asking the LLM itself, or how the bot handled strongly negative messages.
-15. **Can the original model, data or a write-up be shared?** The limit section says neither the original model nor its data is published on the site. If something can be shared (even a slide), the page can link it.
+- Multi-Agent Workflow, "Why I work this way": six sentences of opinion written in your voice from your Q2 direction (delegation and automation as where engineering is going, and the approval gate as what makes it safe), and the line "This site is where the workflow is easiest to see."
+- If the +15%, 95% or 20% ever turn up in a source, they can come back with that source.
 
 ## VoiceLab
 

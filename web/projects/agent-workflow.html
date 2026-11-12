@@ -7,12 +7,12 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#eeede8">
   <title>Multi-Agent Workflow — Cesar Tortolero</title>
-  <meta name="description" content="Multi-Agent Workflow, a project by Cesar Tortolero: specialist coding subagents that implement, review and verify, read-only MCP servers for Jenkins and Bitbucket context, and a searchable knowledge base compiled from work sessions.">
+  <meta name="description" content="Multi-Agent Workflow, a project by Cesar Tortolero: specialist coding agents that implement, review and verify, read-only tools for CI and source-control context, an approval gate for production, and a searchable knowledge base compiled from work sessions.">
   <meta name="author" content="Cesar Alejandro Tortolero Trujillo">
   <link rel="canonical" href="https://cesar-tortolero.cesartortolero.chatgpt.site/projects/agent-workflow.html">
   <meta property="og:type" content="article">
   <meta property="og:title" content="Multi-Agent Workflow — Cesar Tortolero">
-  <meta property="og:description" content="Multi-Agent Workflow, a project by Cesar Tortolero: specialist coding subagents that implement, review and verify, read-only MCP servers for Jenkins and Bitbucket context, and a searchable knowledge base compiled from work sessions.">
+  <meta property="og:description" content="Multi-Agent Workflow, a project by Cesar Tortolero: specialist coding agents that implement, review and verify, read-only tools for CI and source-control context, an approval gate for production, and a searchable knowledge base compiled from work sessions.">
   <meta property="og:url" content="https://cesar-tortolero.cesartortolero.chatgpt.site/projects/agent-workflow.html">
   <meta property="og:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-card.jpg">
   <meta property="og:image:type" content="image/jpeg">
@@ -21,24 +21,26 @@
   <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. Builds and ships ML and LLM systems on AWS.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Multi-Agent Workflow — Cesar Tortolero">
-  <meta name="twitter:description" content="Multi-Agent Workflow, a project by Cesar Tortolero: specialist coding subagents that implement, review and verify, read-only MCP servers for Jenkins and Bitbucket context, and a searchable knowledge base compiled from work sessions.">
+  <meta name="twitter:description" content="Multi-Agent Workflow, a project by Cesar Tortolero: specialist coding agents that implement, review and verify, read-only tools for CI and source-control context, an approval gate for production, and a searchable knowledge base compiled from work sessions.">
   <meta name="twitter:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-card.jpg">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
   <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./case-charts.css">
+  <script type="module" src="./case-charts.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
     "name": "Multi-Agent Workflow",
     "headline": "Multi-Agent Workflow",
-    "description": "Multi-Agent Workflow, a project by Cesar Tortolero: specialist coding subagents that implement, review and verify, read-only MCP servers for Jenkins and Bitbucket context, and a searchable knowledge base compiled from work sessions.",
+    "description": "Multi-Agent Workflow, a project by Cesar Tortolero: specialist coding agents that implement, review and verify, read-only tools for CI and source-control context, an approval gate for production, and a searchable knowledge base compiled from work sessions.",
     "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/projects/agent-workflow.html",
     "image": "https://cesar-tortolero.cesartortolero.chatgpt.site/assets/agent-workflow.svg",
     "genre": "Agent tooling",
     "inLanguage": "en",
-    "keywords": "MCP, Coding subagents, Jenkins, Bitbucket",
+    "keywords": "MCP, Coding subagents, Code review, Verification, Knowledge base",
     "author": {
       "@type": "Person",
       "name": "Cesar Tortolero",
@@ -76,35 +78,167 @@
         <h2 class="cs-rail mono cs-brief-title" id="brief-title">In 30 seconds</h2>
         <dl class="cs-main cs-brief-list">
           <div><dt class="mono">Problem</dt><dd>How do you give coding agents clear roles, and delivery context they can read but not change?</dd></div>
-          <div><dt class="mono">My part</dt><dd>I built the workflow: specialist coding subagents, read-only MCP servers for Jenkins and Bitbucket, and a searchable knowledge base compiled automatically from work sessions.</dd></div>
-          <div><dt class="mono">Result</dt><dd>A recorded agent run built two rounds of this site: <strong>52</strong> steps and <strong>16</strong> commits, errors and retries included.</dd></div>
+          <div><dt class="mono">My part</dt><dd>I built the workflow: specialist coding agents that implement, review and verify, read-only tools for CI and source-control context, and a searchable knowledge base compiled automatically from work sessions.</dd></div>
+          <div><dt class="mono">Result</dt><dd>The build trace is a recorded run of this same workflow: <strong>52</strong> steps and <strong>16</strong> commits across two rounds of this site, errors and retries included.</dd></div>
           <div><dt class="mono">Proof</dt><dd><ul class="cs-proof">
             <li><a class="cs-text-link" href="../lab/build-trace.html">The agent run behind this site <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
             <li><a class="cs-text-link" href="../lab/evaluating-agents.html">How I evaluate agents <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+            <li>The site’s repository goes public with the next push.</li>
           </ul></dd></div>
         </dl>
       </section>
       <figure class="cs-grid cs-cover">
-        <img class="cs-main" src="../assets/agent-workflow.svg" alt="Original illustration of a multi-agent workflow: implement, review and verify steps beside read-only Jenkins and Bitbucket context and a searchable knowledge base" width="900" height="620" fetchpriority="high">
+        <img class="cs-main" src="../assets/agent-workflow.svg" alt="Original illustration of a multi-agent workflow: implement, review and verify steps beside read-only delivery context and a searchable knowledge base" width="900" height="620" fetchpriority="high">
         <figcaption class="cs-rail">No internal code, data or systems are shown. The cover is an original illustration.</figcaption>
       </figure>
       <div class="cs-body">
-        <section class="cs-grid cs-section" aria-labelledby="flow-title">
-          <h2 class="cs-rail" id="flow-title">How it fits together</h2>
-          <figure class="cs-main cs-flow">
-            <ol class="cs-flow-steps" aria-label="The work, split by role">
-              <li><p class="mono cs-flow-label">Implements</p><p class="cs-flow-text">Coding subagent</p></li>
-              <li><p class="mono cs-flow-label">Reviews</p><p class="cs-flow-text">Coding subagent</p></li>
-              <li><p class="mono cs-flow-label">Verifies</p><p class="cs-flow-text">Coding subagent</p></li>
-            </ol>
-            <p class="mono cs-flow-group" id="flow-context">Context they can read, not change</p>
-            <ul class="cs-flow-context" aria-labelledby="flow-context">
-              <li><p class="mono cs-flow-label">Read-only MCP</p><p class="cs-flow-text">Jenkins</p></li>
-              <li><p class="mono cs-flow-label">Read-only MCP</p><p class="cs-flow-text">Bitbucket</p></li>
-              <li><p class="mono cs-flow-label">From work sessions</p><p class="cs-flow-text">Searchable knowledge base</p></li>
-            </ul>
-            <figcaption>Specialist coding subagents split the work: one implements, one reviews, one verifies. Read-only MCP servers give them Jenkins and Bitbucket context.</figcaption>
+        <section class="cc-band" aria-labelledby="numbers-title">
+          <h2 class="mono cc-band-title" id="numbers-title">The workflow in numbers</h2>
+          <figure class="cc-figure" data-chart="counters">
+            <dl class="cc-stats">
+              <div><dt class="mono">Delegations</dt><dd><span class="cc-num">514</span> delegations to subagents across 121 sessions, Oct 9–Nov 11, 2026.</dd></div>
+              <div><dt class="mono">Sessions</dt><dd><span class="cc-num">38%</span> of those sessions delegated work.</dd></div>
+              <div><dt class="mono">Reviews</dt><dd><span class="cc-num">93</span> review calls.</dd></div>
+              <div><dt class="mono">Verifications</dt><dd><span class="cc-num">57</span> verification calls.</dd></div>
+              <div><dt class="mono">Read-only lookups</dt><dd><span class="cc-num">709</span> lookups through the read-only CI and source-control tools.</dd></div>
+              <div><dt class="mono">Knowledge base</dt><dd><span class="cc-num">199</span> pages, compiled from 130 of 131 recorded sessions.</dd></div>
+              <div><dt class="mono">Searches</dt><dd><span class="cc-num">188</span> searches of the knowledge base.</dd></div>
+              <div><dt class="mono">This site</dt><dd><span class="cc-num">55</span> commits over five days, through round 8.</dd></div>
+            </dl>
+            <figcaption>Measured through November 11, 2026. Aggregate counts from my own setup: session logs, the knowledge base and this site’s repository. The site’s counts stop at round 8 (commit 92a6746).</figcaption>
           </figure>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="flow-title">
+          <h2 class="cs-rail" id="flow-title">How it works</h2>
+          <div class="cs-main">
+            <div class="cs-prose">
+              <p>The build trace is a recorded run of this same workflow. One agent implements, one reviews, one verifies, and an orchestrating agent plans, delegates, integrates and commits.</p>
+              <p>The agents do real work with write access: they edit files, run tests and commit. What they know about delivery, the CI runs and source control, they read through read-only tools, so an agent can’t start a deploy or a merge by mistake. Anything that touches production waits for my approval.</p>
+              <p>When a review or a check fails, the findings come back to me. Either I correct the agent so it learns to do it properly, or I take that step over myself and hand it back as a worked example. Then the loop runs again.</p>
+            </div>
+            <figure class="cc-figure" data-chart="graph" data-grid="5x2" data-grid-narrow="2x6" data-narrow-below="600" data-route="task impl review me impl review verify gate done">
+              <div class="cc-canvas"></div>
+              <div class="cc-data" data-toggle="Show the steps as a list">
+                <ol class="cc-nodes" aria-label="Who does each step">
+                  <li data-node="task" data-at="0,0" data-at-narrow="0,0" data-glyph="task"><span class="mono cc-node-label">Orchestrator</span> <span class="cc-node-text">Plans and delegates</span></li>
+                  <li data-node="impl" data-at="1,0" data-at-narrow="0,1" data-glyph="code"><span class="mono cc-node-label">Agent</span> <span class="cc-node-text">Implements</span></li>
+                  <li data-node="review" data-at="2,0" data-at-narrow="0,2" data-glyph="review"><span class="mono cc-node-label">Agent</span> <span class="cc-node-text">Reviews</span></li>
+                  <li data-node="verify" data-at="3,0" data-at-narrow="0,3" data-glyph="check"><span class="mono cc-node-label">Agent</span> <span class="cc-node-text">Verifies</span></li>
+                  <li data-node="me" data-at="2,1" data-at-narrow="1,2" data-glyph="person" data-tone="dark"><span class="mono cc-node-label">Me</span> <span class="cc-node-text">Correct or take over</span></li>
+                  <li data-node="gate" data-at="4,1" data-at-narrow="0,4" data-glyph="gate" data-tone="dark"><span class="mono cc-node-label">Me</span> <span class="cc-node-text">Approve production</span></li>
+                  <li data-node="done" data-at="4,0" data-at-narrow="0,5" data-glyph="check"><span class="mono cc-node-label">Result</span> <span class="cc-node-text">Verified change</span></li>
+                </ol>
+                <ul class="cc-edges" aria-label="How the work moves">
+                  <li data-from="task" data-to="impl">The orchestrator hands a task to an implementing agent.</li>
+                  <li data-from="impl" data-to="review">The change goes to a reviewing agent.</li>
+                  <li data-from="review" data-to="verify">If the review passes, a verifying agent runs the checks.</li>
+                  <li data-from="review" data-to="me" data-kind="fail">A failed review comes back to me.</li>
+                  <li data-from="verify" data-to="me" data-kind="fail" data-bend="vh" data-bend-narrow="hv">A failed check comes back to me.</li>
+                  <li data-from="me" data-to="impl" data-bend="hv" data-bend-narrow="vh">I correct the agent, or take the step over and hand it back as a worked example, and it runs again.</li>
+                  <li data-from="verify" data-to="done" data-bend-narrow="arc:-230">A verified change lands.</li>
+                  <li data-from="verify" data-to="gate" data-bend="vh">If it touches production, it waits for my approval.</li>
+                  <li data-from="gate" data-to="done">Once I approve, it goes ahead.</li>
+                </ul>
+              </div>
+              <ul class="cc-legend" aria-label="Key">
+                <li>Passes</li>
+                <li class="is-fail">Fails, back to me</li>
+                <li class="is-me">My steps</li>
+              </ul>
+              <figcaption>The loop: implement, review, verify. Failures come back to me, and anything that touches production waits for my approval.</figcaption>
+            </figure>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="roles-title">
+          <h2 class="cs-rail" id="roles-title">Where the work goes</h2>
+          <div class="cs-main">
+            <figure class="cc-figure" data-chart="bars">
+              <div class="cc-canvas"></div>
+              <div class="cc-data">
+                <table class="cc-table">
+                  <caption>Delegations by role, Jul 22–Nov 11, 2026</caption>
+                  <thead><tr><th scope="col">Role</th><th scope="col">Delegations</th></tr></thead>
+                  <tbody>
+                    <tr data-tone="soft"><th scope="row">General purpose</th><td>142</td></tr>
+                    <tr data-tone="accent"><th scope="row">Implementation <span class="cc-mark">(loop role)</span></th><td>104</td></tr>
+                    <tr data-tone="accent"><th scope="row">Quality review <span class="cc-mark">(loop role)</span></th><td>93</td></tr>
+                    <tr data-tone="accent"><th scope="row">Verification <span class="cc-mark">(loop role)</span></th><td>57</td></tr>
+                    <tr data-tone="soft"><th scope="row">UI and design</th><td>34</td></tr>
+                    <tr data-tone="soft"><th scope="row">Analysis</th><td>19</td></tr>
+                    <tr data-tone="soft"><th scope="row">Housekeeping</th><td>19</td></tr>
+                    <tr data-tone="soft"><th scope="row">Release helper</th><td>18</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <figcaption>Delegations by role from July 22 to November 11, 2026: the top roles, out of 527 delegations in total. The green bars, Implementation, Quality review and Verification, are the three agent roles of the loop.</figcaption>
+            </figure>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="site-title">
+          <h2 class="cs-rail" id="site-title">This site as a test</h2>
+          <div class="cs-main">
+            <div class="cs-prose">
+              <p>This site is where the workflow is easiest to see. Through round 8 it took 55 commits over five days, in eight documented rounds. The recorded replay covers 16 of those commits, in rounds 4 and 5.</p>
+            </div>
+            <figure class="cc-figure" data-chart="columns">
+              <div class="cc-canvas"></div>
+              <div class="cc-data">
+                <table class="cc-table">
+                  <caption>Commits per day, Nov 7–11, 2026</caption>
+                  <thead><tr><th scope="col">Day</th><th scope="col">Commits</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">Nov 7</th><td>2</td></tr>
+                    <tr><th scope="row">Nov 8</th><td>11</td></tr>
+                    <tr><th scope="row">Nov 9</th><td>7</td></tr>
+                    <tr data-tone="accent"><th scope="row">Nov 10 <span class="cc-mark">(in the replay)</span></th><td>18</td></tr>
+                    <tr data-tone="accent"><th scope="row">Nov 11 <span class="cc-mark">(in the replay)</span></th><td>17</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <figcaption>Commits to this site’s working branch per day, November 7 to 11, 2026: 55 in total, through round 8 (commit 92a6746). The green columns, Nov 10 and Nov 11, are the days the recorded replay covers.</figcaption>
+            </figure>
+            <figure class="cc-figure" data-chart="line">
+              <div class="cc-canvas"></div>
+              <div class="cc-data">
+                <table class="cc-table">
+                  <caption>Runnable node tests at each documented checkpoint</caption>
+                  <thead><tr><th scope="col">Checkpoint</th><th scope="col">Tests</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row" data-short="Nov 9">Nov 9 polish</th><td>39</td></tr>
+                    <tr><th scope="row" data-short="R2">Round 2</th><td>65</td></tr>
+                    <tr><th scope="row" data-short="R3">Round 3</th><td>94</td></tr>
+                    <tr><th scope="row" data-short="R5">Round 5</th><td>102</td></tr>
+                    <tr><th scope="row" data-short="R6">Round 6</th><td>139</td></tr>
+                    <tr><th scope="row" data-short="R7">Round 7</th><td>160</td></tr>
+                    <tr><th scope="row" data-short="R8">Round 8</th><td>163</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <figcaption>Runnable node tests at each documented checkpoint of this site, from 39 to 163.</figcaption>
+            </figure>
+            <figure class="cc-figure" data-chart="waffle">
+              <div class="cc-canvas"></div>
+              <div class="cc-data">
+                <table class="cc-table">
+                  <caption>The recorded replay of rounds 4 and 5</caption>
+                  <thead><tr><th scope="col">Steps</th><th scope="col">Count</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">Recorded steps</th><td>52</td></tr>
+                    <tr><th scope="row">Ended in an error</th><td>8</td></tr>
+                    <tr><th scope="row">Then retried or fixed</th><td>6</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <figcaption>The recorded replay, one square per step. Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix.</figcaption>
+            </figure>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="view-title">
+          <h2 class="cs-rail" id="view-title">Why I work this way</h2>
+          <div class="cs-main cs-prose">
+            <p>I think more of engineering will look like this: you split the work, delegate it to agents, and automate the checks around them. My time goes to the parts that need judgment: what to build, how to split it, and whether the result is right.</p>
+            <p>Delegation only works with a gate. Agents can be wrong, and they sound just as sure when they are. An edit, a test run or a commit is easy to read and undo; a production change isn’t. So the agents ask first, and I approve.</p>
+          </div>
         </section>
         <section class="cs-grid cs-section" aria-labelledby="decision-title">
           <h2 class="cs-rail" id="decision-title">One hard decision</h2>
@@ -117,13 +251,13 @@
           <h2 class="cs-rail" id="limit-title">One limit</h2>
           <div class="cs-main cs-prose">
             <p>In the recorded run, 8 of its 52 steps ended in an error, and 6 of those are followed by a recorded retry or fix. Both tasks that stopped midway and left partial edits behind were delegated worker tasks. One was interrupted and one lost its connection, and both were resumed.</p>
-            <p>There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything.</p>
+            <p>There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything. The counts above show how much I use the workflow, not how well it works, and I don’t publish success or approval rates.</p>
           </div>
         </section>
         <section class="cs-grid cs-section" aria-labelledby="stack-title">
           <h2 class="cs-rail" id="stack-title">Stack</h2>
           <div class="cs-main cs-prose">
-            <ul class="cs-tags" aria-label="Tools and topics"><li>MCP</li><li>Coding subagents</li><li>Jenkins</li><li>Bitbucket</li></ul>
+            <ul class="cs-tags" aria-label="Tools and topics"><li>MCP</li><li>Coding subagents</li><li>Knowledge base</li><li>Verification</li></ul>
           </div>
         </section>
       </div>

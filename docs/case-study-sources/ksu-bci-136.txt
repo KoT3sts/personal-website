@@ -1,0 +1,25 @@
+URL: https://digitalcommons.kennesaw.edu/undergradsymposiumksu/Fall2022/presentations/136
+Read: November 11, 2026 (record page; the downloadable PDF carries the same abstract)
+
+Fall 2022 Symposium of Student Scholars
+
+Brain-to-text communication through a non-invasive BCI
+
+Presenters
+Cesar Lucena Trujillo, Kennesaw State University
+Abm. Adnan Azmee, Kennesaw State University
+Hafiz Khan, Kennesaw State University
+Manohar Murikipudi, Kennesaw State University
+Christopher Dargan, Kennesaw State University
+
+Primary Investigator (PI) Name
+Md Abdullah Al Hafiz Khan
+
+Department
+Computer Science Department
+
+Abstract
+The purpose of the current study is to investigate the functionality of BCI’s to decode the attempted handwriting thoughts from neural activity in the motor cortex and translates it to text in real time. While there have been past studies regarding the efficacy of BCI’s the practical realization has been proven difficult due to limitations in accuracy and speed. Previous studies have approached this problem by using neural signals to choose from a limited set of possible words, this study seeks to have a more general model that can type any word in the vast English vocabulary. In this study, we create an end-to-end BCI that translates neural signals associated with visualization of the handwriting motion into text output. To assess the neural representation of attempted handwriting, participants attempted to handwrite each character one at a time, following the instructions given on a computer screen. The collected data from the EEG signals is challenging to process due to the noise and the similarities between different trials. To target the strategy for visualizing similarity relationships in high-dimensional data is to start by using an autoencoder to compress the data into a low-dimensional space, then use t-SNE for mapping the compressed data to a 2D plane. The TSNE technique that is applied serves to visualize the low-dimensional data. With this BCI, our study attempts to assist any individual that suffered any brain or physical damage that impedes the function of writing or that it affects the parietal lobes impeding the person of communicating.
+
+From the PDF cover page:
+This Oral Presentation (15-min time slots) is brought to you for free and open access by the Office of Undergraduate Research at DigitalCommons@Kennesaw State University.
