@@ -315,7 +315,7 @@ async function initEvaluators(fig) {
 // fewest to most calls, for keyboards and screen readers; "Show the numbers" lists them.
 const X_TITLE = 'Tool calls in the trace (log scale)';
 const byCalls = points => [...points].sort((a, b) => a.calls - b.calls || a.id.localeCompare(b.id));
-const pointText = p => `${p.id} (${p.where}) · ${int(p.calls)} calls, ${p.errors} failed (${p.rate.toFixed(1)}%) · ${int(p.perCall)} tokens per call · ${p.delegated ? 'delegated' : 'no delegation'}`;
+const pointText = p => `${p.id} (${p.where}) · ${int(p.calls)} ${p.calls === 1 ? 'call' : 'calls'}, ${p.errors} failed (${p.rate.toFixed(1)}%) · ${int(p.perCall)} tokens per call · ${p.delegated ? 'delegated' : 'no delegation'}`;
 async function initDelegation(fig) {
   const data = await traces();
   const { points, groups } = delegation(data);

@@ -120,7 +120,7 @@
               <h2 id="obs-traces-title">Traces</h2>
               <p class="obs-hint">One row per request I gave the agents, except <span data-compaction>#35</span>, an automatic context compaction. Sort by any column; open a trace to see its spans.</p>
             </div>
-            <div class="obs-scroll obs-scroll-tall" role="region" aria-labelledby="obs-traces-title" tabindex="0">
+            <div class="obs-scroll obs-scroll-tall" role="region" aria-label="Trace table, scrollable" tabindex="0">
               <table class="obs-table obs-trace-table">
                 <caption class="visually-hidden">Traces, one per request or compaction, with their size, errors, tokens, subagent runs and evaluator results</caption>
                 <thead>
@@ -237,7 +237,7 @@
 
               <section class="obs-chart obs-chart-tools" aria-labelledby="obs-tools-title">
                 <div class="obs-chart-head"><h3 id="obs-tools-title">Tools</h3></div>
-                <div class="obs-scroll obs-scroll-mid" role="region" aria-labelledby="obs-tools-title" tabindex="0">
+                <div class="obs-scroll obs-scroll-mid" role="region" aria-label="Tool table, scrollable" tabindex="0">
                   <table class="obs-table obs-tool-table">
                     <caption class="visually-hidden">Calls, latency and errors per tool</caption>
                     <thead>
@@ -277,7 +277,7 @@
                     <li><span class="obs-cell-key is-num" aria-hidden="true"></span>Tokens per call (brighter = more)</li>
                   </ul>
                 </div>
-                <div class="obs-scroll" role="region" aria-labelledby="obs-matrix-title" tabindex="0">
+                <div class="obs-scroll" role="region" aria-label="Evaluator matrix table, scrollable" tabindex="0">
                   <table class="obs-matrix" role="grid" data-obs="matrix" aria-labelledby="obs-matrix-title"></table>
                 </div>
                 <p class="obs-caption">One column per trace, one row per evaluator. Choose a cell to open that trace; arrow keys move between cells.</p>
