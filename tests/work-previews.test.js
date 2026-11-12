@@ -176,3 +176,62 @@ test('scrubbing cannot move the page: a fixed-height readout, contained previews
   assert.equal([...source.matchAll(/^ {4}slider\.setAttribute\('aria-valuetext'/gm)].length, 2, 'aria-valuetext follows the shown step in both strips');
   assert.match(source, /w\.addEventListener\('scroll', forget, \{ capture: true, passive: true \}\)/, 'a scroll drops the measured box');
 });
+
+// ---- status colours shared with the lab pages ---------------------------------------
+
+const lum = hex => {
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i + 1, i + 3), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+const hue = hex => {
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i + 1, i + 3), 16) / 255);
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (!d) return 0;
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h * 60 + 360) % 360;
+};
+const hueGap = (a, b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+const tokens = (text, where) => {
+  const block = text.match(new RegExp(`${where.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`))?.[1] || '';
+  return Object.fromEntries(['pass', 'fail', 'na'].map(key => [key, block.match(new RegExp(`--status-${key}: (#[0-9a-f]{6});`))?.[1]]));
+};
+
+test('status colours: one hue family per status on the homepage, the essay and the dashboard, each 3:1 on its own ground', () => {
+  const sets = {
+    homepage: { tokens: tokens(css, '.wp-obs, .wp-trace, .wp-loop'), grounds: ['#eeede8', '#f7f6f0', '#101114'] },
+    paper: { tokens: tokens(read('lab/lab.css'), ':root'), grounds: ['#eeede8'] },
+    dashboard: { tokens: tokens(read('lab/observability.css'), '.obs-console'), grounds: ['#101114', '#17191c'] },
+  };
+  for (const [name, { tokens: set, grounds }] of Object.entries(sets)) {
+    for (const key of ['pass', 'fail', 'na']) assert.ok(set[key], `${name} defines --status-${key}`);
+    assert.ok(hue(set.pass) >= 75 && hue(set.pass) <= 130, `${name} pass ${set.pass} is green`);
+    assert.ok(hue(set.fail) <= 15 || hue(set.fail) >= 345, `${name} fail ${set.fail} is red`);
+    for (const ground of grounds) {
+      for (const key of ['pass', 'fail', 'na']) assert.ok(ratio(set[key], ground) >= 3, `${name} --status-${key} ${set[key]} on ${ground}: ${ratio(set[key], ground).toFixed(2)}`);
+    }
+  }
+  // The homepage grid uses the tokens, pass cells included; no stray fail red is left.
+  assert.match(css, /\.wp-pass \{ fill: var\(--status-pass\); \}/);
+  assert.match(css, /\.wp-fail \{ fill: var\(--status-fail\); \}/);
+  assert.match(css, /\.wp-obs \.wp-chip-pass \{[^}]*background: var\(--status-pass\); \}/);
+  assert.match(css, /\.wp-obs \.wp-chip-fail \{ background: var\(--status-fail\); \}/);
+  assert.doesNotMatch(css, /#e0483f|--wp-fail/);
+  // Fail differs without colour: a fail cell is taller than a pass cell.
+  assert.match(source, /y: r \+ \(cell === 'fail' \? 0\.12 : 0\.3\), height: cell === 'fail' \? 0\.76 : 0\.4/);
+});
+
+test('roles never wear a status colour: the quality-reviewer is teal on the homepage and the build trace', () => {
+  const roles = Object.fromEntries([...css.matchAll(/--wp-([a-z-]+): (#[0-9a-f]{6})/g)].map(([, name, value]) => [name, value]));
+  const status = tokens(css, '.wp-obs, .wp-trace, .wp-loop');
+  const reviewer = roles['quality-reviewer'];
+  assert.equal(reviewer, '#16897f');
+  for (const [name, colour] of Object.entries(roles)) {
+    assert.ok(hueGap(hue(colour), hue(status.fail)) >= 40, `${name} ${colour} is not a fail red`);
+    assert.ok(hueGap(hue(colour), hue(status.pass)) >= 40, `${name} ${colour} is not a pass green`);
+    for (const ground of ['#eeede8', '#f7f6f0', '#101114']) assert.ok(ratio(colour, ground) >= 3, `${name} ${colour} on ${ground}`);
+  }
+  assert.ok(hueGap(hue(reviewer), hue(roles['implementation-worker'])) >= 30, 'reviewer and implementation worker differ');
+  assert.match(read('lab/build-trace.css'), new RegExp(`\\[data-role="quality-reviewer"\\] \\.bt-chip \\{ background: ${reviewer}; \\}`), 'the build trace chip matches');
+});

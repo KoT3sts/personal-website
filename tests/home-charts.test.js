@@ -117,3 +117,12 @@ test('only skill tags some card or role lists become buttons; the hint says whic
   assert.equal((js.match(/announce\(/g) || []).length, 3, 'defined once, called on press and on clear');
   assert.match(css, /\.skill-tag::after \{ content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var\(--green\); \}/);
 });
+
+test('capability charts: labels at 11px or more, one scale for both job rows, every block drawn from zero', () => {
+  const styles = read('web/styles.css');
+  assert.match(styles, /--text-label: clamp\(11px,/, 'the mono label size never drops under 11px');
+  assert.match(css, /\.cap-chart \.mono \{ font-size: var\(--text-label\);/);
+  for (const [, size] of css.matchAll(/font-size: ([\d.]+)px/g)) assert.ok(Number(size) >= 11, `${size}px`);
+  assert.match(js, /const widest = Math\.max\(\.\.\.runs\.map\(run => run\.total\)\);/, 'both regions share the widest total as the scale');
+  assert.match(js, /for \(let i = 0; i < run\.total; i\+\+\) svgEl\(document, 'rect', \{ x: i \* \(cell \+ gap\)/, 'one block per job, from x = 0');
+});

@@ -153,7 +153,7 @@ function buildObs(data) {
     item.append(key);
   }
   el('p', 'wp-sr', root, `Checks passed: ${rows.map(row => `${row.name} ${row.pass} of ${row.scored}`).join(', ')}.`);
-  el('p', 'wp-caption', root, `${n} traces from the agent sessions that built this site${dates ? `, ${dates}` : ''}, scored by ${Array.isArray(data?.evaluators) ? data.evaluators.length : rows.length} automated checks; the ${rows.length} pass/fail ones are shown here. Hover or drag across the grid to read one.`);
+  el('p', 'wp-caption', root, `${n} traces from the agents that built this site${dates ? `, ${dates}` : ''}, with ${rows.length} of the ${Array.isArray(data?.evaluators) ? data.evaluators.length : rows.length} automated checks shown. Hover or drag to read one.`);
 
   const select = k => {
     const trace = traces[k];

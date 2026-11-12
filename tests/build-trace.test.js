@@ -108,3 +108,11 @@ test('the page styles keep text at 11px or more and status colours at 4.5:1 on t
   assert.equal(colours.length, 4);
   for (const colour of colours) assert.ok(ratio(colour, 'eeede8') >= 4.5, colour);
 });
+
+test('role chips: the quality-reviewer is teal, never the error red of the status badges', () => {
+  const chip = css.match(/\[data-role="quality-reviewer"\] \.bt-chip \{ background: (#[0-9a-f]{6}); \}/)?.[1];
+  assert.equal(chip, '#16897f');
+  const error = css.match(/\[data-status="error"\] \.bt-state \{ color: (#[0-9a-f]{6}); \}/)[1];
+  assert.notEqual(chip, error);
+  assert.doesNotMatch(css, /#ff6767/, 'the old red chip is gone');
+});

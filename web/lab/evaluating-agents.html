@@ -302,9 +302,27 @@
                 <div class="ea-plot" data-ea-plot aria-hidden="true">
                   <p class="ea-tip" data-ea-tip hidden></p>
                 </div>
+                <div class="lab-threshold ea-picker">
+                  <button type="button" class="ea-button ea-step" data-ea-point-step="-1">Previous</button>
+                  <label class="visually-hidden" for="ea-point">Trace, from fewest to most tool calls</label>
+                  <input type="range" id="ea-point" min="0" max="0" step="1" value="0">
+                  <button type="button" class="ea-button ea-step" data-ea-point-step="1">Next</button>
+                </div>
+                <!-- Previous/Next leave focus on the button: this reads the chosen trace aloud. -->
+                <p class="visually-hidden" data-ea-point-status aria-live="polite"></p>
                 <div class="ea-pairs" data-ea-pairs></div>
+                <details class="ea-data ea-numbers">
+                  <summary>Show the numbers</summary>
+                  <div class="lab-table-wrap">
+                    <table class="lab-table ea-table ea-points-table">
+                      <caption>Each trace with tool calls, from fewest to most calls</caption>
+                      <thead><tr><th scope="col">Trace</th><th scope="col">Tool calls</th><th scope="col">Failed calls</th><th scope="col">Failed, %</th><th scope="col">Generated tokens per call</th><th scope="col">Delegated</th></tr></thead>
+                      <tbody data-ea-points></tbody>
+                    </table>
+                  </div>
+                </details>
               </div>
-              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 61 of the 69, placed by how many calls it made (log scale). Point at a dot to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and day all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out.</figcaption>
+              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 61 of the 69, placed by how many calls it made (log scale). Point at a dot, or use the slider, to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and day all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out.</figcaption>
               <details class="ea-data" open>
                 <summary>Data table</summary>
                 <div class="lab-table-wrap">

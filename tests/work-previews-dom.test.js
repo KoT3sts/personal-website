@@ -65,7 +65,7 @@ test('obs, trace and loop go live with the numbers from the shipped JSON', async
   range.value = String(obs.traces.length);
   range.dispatchEvent(new window.Event('input', { bubbles: true }));
   assert.match(box.querySelector('.wp-readout .wp-label').textContent, new RegExp(`^Trace ${obs.traces.length} of ${obs.traces.length} · `));
-  assert.match(box.querySelector('.wp-caption').textContent, new RegExp(`^${obs.traces.length} traces from the agent sessions that built this site, Nov 7–12, scored by 7 automated checks; the 6 pass/fail ones are shown here\\.`));
+  assert.match(box.querySelector('.wp-caption').textContent, new RegExp(`^${obs.traces.length} traces from the agents that built this site, Nov 7–12, with 6 of the 7 automated checks shown\\.`));
   assert.match(box.querySelector('.wp-sr').textContent, /^Checks passed: Tool error rate \d+ of \d+, /);
 
   // Trace: one bar per span, a mark per error/retried/fixed, the caption counts.

@@ -247,8 +247,9 @@ test('five figures, each with a caption, a data table or list, and its live part
   });
   assert.match(figures[1].html, /Illustration/, 'the loop is labelled an illustration');
   assert.match(figures[1].attrs + figures[1].html, /Figure 2 · Illustration/);
-  // Only the live regions that help: statuses, the verdict, the checklist state.
-  assert.equal((page.match(/aria-live="polite"/g) || []).length, 4);
+  // Only the live regions that help: statuses, the verdict, the checklist state, and
+  // figure 5's Previous/Next announcement.
+  assert.equal((page.match(/aria-live="polite"/g) || []).length, 5);
   assert.doesNotMatch(page, /aria-live="assertive"/);
 });
 
@@ -316,7 +317,7 @@ test('the figures script: same-origin JSON only, no HTML sinks, no storage, moti
   assert.match(script, /IntersectionObserver/, 'figures render when they near the viewport');
   // The dashboard link only carries an id that came from the data file, through encodeURIComponent.
   assert.match(script, /agent-observability\.html#\$\{encodeURIComponent\(id\)\}/);
-  assert.ok(Buffer.byteLength(code) <= 28000, `${Buffer.byteLength(code)} bytes of script`);
+  assert.ok(Buffer.byteLength(code) <= 30500, `${Buffer.byteLength(code)} bytes of script (the scatter's keyboard reading and table added about 1.8 KB)`);
 });
 
 test('the checklist ticks without saving, with a progress ring and a polite status', () => {
@@ -340,4 +341,107 @@ test('figure labels name the work in plain words, never the exporter\'s round la
   // The script prints the helper's label, never trace.round.
   assert.doesNotMatch(script.replace(/Math\.round/g, ''), /\.round\b|Round /);
   assert.match(script, /\$\{span\.where\}/);
+});
+
+// ---- Figure 5 run for real in a tiny fake DOM (no jsdom in the repo) -----------------
+
+class FakeNode {
+  constructor(tag) { Object.assign(this, { tagName: tag.toUpperCase(), children: [], dataset: {}, attrs: {}, on: {}, className: '', text: '', value: '', max: '', hidden: false, parent: null }); this.style = { setProperty() {} }; }
+  get classList() {
+    const list = () => this.className.split(/\s+/).filter(Boolean);
+    const add = c => { if (!list().includes(c)) this.className = [...list(), c].join(' '); };
+    const remove = c => { this.className = list().filter(x => x !== c).join(' '); };
+    return { add, remove, contains: c => list().includes(c), toggle: (c, on) => (on ? add(c) : remove(c)) };
+  }
+  append(...nodes) { for (const node of nodes) { node.parent = this; this.children.push(node); } }
+  prepend(node) { node.parent = this; this.children.unshift(node); }
+  remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); }
+  replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
+  set textContent(value) { this.text = String(value); this.children = []; }
+  get textContent() { return this.text + this.children.map(child => child.textContent).join(''); }
+  setAttribute(k, v) { this.attrs[k] = String(v); }
+  getAttribute(k) { return this.attrs[k] ?? null; }
+  addEventListener(type, fn) { (this.on[type] ||= []).push(fn); }
+  fire(type) { for (const fn of this.on[type] || []) fn({ target: this, clientX: 0, clientY: 0 }); }
+  querySelector(sel) { return sel === 'svg' ? this.children.find(child => child.tagName === 'SVG') || null : null; }
+  all(test) { return [this, ...this.children.flatMap(child => child.all(test))].filter(test); }
+}
+
+test('figure 5: the scatter says its x-axis is log, lists every dot under "Show the numbers", and a slider reads the dots by keyboard', async t => {
+  const block = figures[4].html;
+  assert.match(block, /<details class="ea-data ea-numbers">\s*<summary>Show the numbers<\/summary>/);
+  assert.match(block, /<label class="visually-hidden" for="ea-point">[^<]+<\/label>\s*<input type="range" id="ea-point" min="0" max="0" step="1" value="0">/);
+  assert.match(block, /data-ea-point-step="-1">Previous<\/button>[\s\S]*data-ea-point-step="1">Next<\/button>/);
+  // The buttons keep focus, so a polite live region (outside the hidden plot) says where they moved.
+  assert.match(block, /<\/div>\s*(?:<!--[\s\S]*?-->\s*)?<p class="visually-hidden" data-ea-point-status aria-live="polite"><\/p>/);
+  assert.ok(block.indexOf('data-ea-point-status') > block.indexOf('data-ea-point-step="1"'), 'after the picker, not inside the aria-hidden plot');
+  // The log axis spans at least one decade: log10(xmax) is never 0.
+  assert.match(script, /const xmax = Math\.max\(10, 10 \*\* Math\.ceil\(Math\.log10\(/);
+  assert.match(script, /const x = calls => pad\.l \+ \(Math\.log10\(calls\) \/ Math\.log10\(xmax\)\)/, 'the x-axis really is log10');
+  assert.match(script, /const y = v => h - pad\.b - \(v \/ ymax\)/, 'the y-axis starts at zero');
+  // The pointer path from the Phase 1 fix stays: one frame per burst, no rewrite on the same dot.
+  assert.match(script, /if \(first\) requestAnimationFrame\(nearest\);/);
+  assert.match(script, /if \(best === hot\) return;/);
+
+  const parts = Object.fromEntries(['plot', 'tip', 'pairs', 'range', 'rows', 'live', 'details', 'prev', 'next', 'status'].map(name => [name, new FakeNode(name)]));
+  Object.assign(parts.plot, { clientWidth: 640, getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 270 }) });
+  parts.tip.hidden = true;
+  parts.prev.dataset.eaPointStep = '-1';
+  parts.next.dataset.eaPointStep = '1';
+  const selectors = { '[data-ea-plot]': 'plot', '[data-ea-tip]': 'tip', '[data-ea-pairs]': 'pairs', '#ea-point': 'range', '[data-ea-points]': 'rows', '[data-ea-live]': 'live', 'details.ea-data': 'details', '[data-ea-point-status]': 'status' };
+  const fig = Object.assign(new FakeNode('figure'), { dataset: { eaFig: 'delegation' } });
+  fig.querySelector = sel => parts[selectors[sel]] || null;
+  fig.querySelectorAll = sel => (sel === '[data-ea-point-step]' ? [parts.prev, parts.next] : []);
+  const document = {
+    activeElement: null,
+    createElement: tag => new FakeNode(tag),
+    createElementNS: (ns, tag) => new FakeNode(tag),
+    querySelectorAll: sel => (sel === '[data-ea-fig]' ? [fig] : []),
+    querySelector: () => null,
+  };
+  const globals = { document, window: { addEventListener() {} }, requestAnimationFrame: fn => { fn(0); return 1; },
+    fetch: async url => ({ ok: true, json: async () => JSON.parse(read(new URL(url, new URL('lab/', web)).pathname.replace(/^.*\/web\//, ''))) }) };
+  const saved = Object.fromEntries(Object.keys(globals).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  t.after(() => { for (const [key, d] of Object.entries(saved)) { if (d) Object.defineProperty(globalThis, key, d); else delete globalThis[key]; } });
+  for (const [key, value] of Object.entries(globals)) Object.defineProperty(globalThis, key, { value, configurable: true, writable: true });
+  await import('../web/lab/evaluating-agents.js');
+  for (let i = 0; i < 100 && !parts.rows.children.length; i++) await new Promise(resolve => setTimeout(resolve, 10));
+
+  const points = delegation(telemetry).points;
+  const order = [...points].sort((a, b) => a.calls - b.calls || a.id.localeCompare(b.id));
+  assert.equal(parts.rows.children.length, T.withCalls, 'one row per dot');
+  assert.equal(points.length, T.withCalls);
+  assert.deepEqual(parts.rows.children.map(tr => tr.children[1].textContent.replace(/,/g, '')), order.map(p => String(p.calls)), 'fewest to most calls');
+  assert.deepEqual(parts.rows.children[0].children.map(cell => cell.textContent).slice(2), [String(order[0].errors), order[0].rate.toFixed(1), Math.round(order[0].perCall).toLocaleString('en-US'), order[0].delegated ? 'Yes' : 'No']);
+  const svg = parts.plot.children[0];
+  assert.ok(svg.all(node => node.tagName === 'TEXT' && node.textContent === 'Tool calls in the trace (log scale)').length === 1, 'x-axis title names the log scale');
+  assert.equal(parts.range.max, String(T.withCalls - 1));
+  // Keyboard: focus reads the first dot, input moves along, the buttons step, blur hides the tip.
+  document.activeElement = parts.range;
+  parts.range.value = '0';
+  parts.range.fire('focus');
+  assert.equal(parts.tip.hidden, false);
+  assert.ok(parts.tip.textContent.startsWith(`${order[0].id} (`));
+  assert.equal(parts.range.getAttribute('aria-valuetext'), parts.tip.textContent);
+  assert.equal(svg.all(node => node.classList.contains('is-hot')).length, 1, 'one dot lit');
+  parts.range.value = String(T.withCalls - 1);
+  parts.range.fire('input');
+  assert.ok(parts.tip.textContent.startsWith(`${order.at(-1).id} (`));
+  assert.equal(parts.status.textContent, '', 'the slider speaks for itself: no live announcement');
+  parts.next.fire('click');
+  assert.equal(parts.range.value, String(T.withCalls - 1), 'Next stops at the last dot');
+  assert.ok(parts.status.textContent.startsWith(`${order.at(-1).id} (`), 'Next announces the dot');
+  parts.prev.fire('click');
+  assert.ok(parts.tip.textContent.startsWith(`${order.at(-2).id} (`));
+  assert.equal(parts.status.textContent, parts.tip.textContent, 'Previous announces what the tip shows');
+  parts.range.fire('blur');
+  assert.equal(parts.tip.hidden, true);
+  assert.equal(svg.all(node => node.classList.contains('is-hot')).length, 0);
+});
+
+test('figure 4 and the badges use the shared status tokens from lab.css; fail is hatched, not hue alone', () => {
+  assert.match(css, /\.ea-cell\.is-pass \{ background: var\(--status-pass\); \}/);
+  assert.match(css, /\.ea-cell\.is-fail \{ background: repeating-linear-gradient\(135deg, var\(--status-fail\) 0 3px, #[0-9a-f]{6} 3px 5px\); \}/);
+  assert.match(css, /\.ea-cell\.is-none \{ background: none; box-shadow: inset 0 0 0 1px var\(--status-na\); \}/);
+  assert.doesNotMatch(css, /#b4692c|#dfae84/, 'no orange fail left');
 });

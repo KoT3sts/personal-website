@@ -204,8 +204,20 @@
                 </div>
                 <div class="obs-hist" data-obs="hist" aria-hidden="true"></div>
                 <div class="obs-hist-axis" data-obs="hist-axis" aria-hidden="true"></div>
+                <p class="obs-axis-titles" aria-hidden="true"><span data-obs="hist-y">Bar height: spans, from 0</span><span data-obs="hist-x">Duration (log scale)</span></p>
+                <input type="range" class="obs-hist-range" data-obs="hist-range" min="1" max="28" step="1" value="1" aria-label="Latency bars: choose one to read it">
                 <p class="obs-readout" data-obs="hist-readout" aria-hidden="true"></p>
                 <p class="obs-caption" data-obs="hist-caption"></p>
+                <details class="obs-numbers">
+                  <summary>Show the numbers</summary>
+                  <div class="obs-scroll obs-scroll-mid" role="region" aria-labelledby="obs-hist-table-caption" tabindex="0">
+                    <table class="obs-table obs-hist-table">
+                      <caption class="visually-hidden" id="obs-hist-table-caption" data-obs="hist-table-caption">LLM steps per bar, equal widths on a log scale</caption>
+                      <thead><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Spans</th></tr></thead>
+                      <tbody data-obs="hist-table"></tbody>
+                    </table>
+                  </div>
+                </details>
               </section>
 
               <section class="obs-chart" aria-labelledby="obs-tokens-title">

@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import * as D from '../web/lab/obs-data.js';
 import { SPAN_ROWS, spanFacts, quiet } from '../web/lab/observability.js';
+import { initCharts, histAxisTitle, histBarLabel, histBarFrom } from '../web/lab/obs-charts.js';
 
 const web = new URL('../web/', import.meta.url);
 const read = path => readFileSync(new URL(path, web), 'utf8');
@@ -160,7 +161,7 @@ test('scripts fetch only the same-origin JSON and never build HTML from strings'
 
 test('JavaScript stays inside the budget; the filter count and the loading status are the only live regions', () => {
   const bytes = Object.values(scripts).reduce((n, source) => n + Buffer.byteLength(source), 0);
-  assert.ok(bytes <= 46_000, `${bytes} bytes of JavaScript (target about 40 KB)`);
+  assert.ok(bytes <= 48_000, `${bytes} bytes of JavaScript (target about 40 KB; the histogram's keyboard and table added about 2 KB)`);
   assert.deepEqual([...page.matchAll(/<[^>]+aria-live="[^"]+"[^>]*>/g)].map(m => m[0]), ['<p class="obs-count" data-obs="count" aria-live="polite">']);
   assert.deepEqual([...page.matchAll(/<[^>]+role="(?:status|alert|log)"[^>]*>/g)].map(m => m[0]), ['<p class="obs-status" data-obs="status" role="status">']);
   assert.match(page, /<p class="obs-status" data-obs="status" role="status"><\/p>/, 'empty and in the page from the start, so changes are announced');
@@ -257,6 +258,17 @@ test('histogram: bins cover every value on linear and log axes, and positions ma
   assert.equal(lin.at(5), 0.5);
   for (let i = 1; i < lin.bins.length; i++) assert.equal(lin.bins[i].x0, lin.bins[i - 1].x1);
   assert.deepEqual(D.histogram([]).bins, []);
+  // A log axis from 1 ms also counts the values under 1 ms in its first bar: that bar says so.
+  const sub = D.histogram([0.2, 0.7, 50, 300], { bins: 3, log: true });
+  assert.equal(sub.lo, 0);
+  assert.equal(sub.bins[0].under, true);
+  assert.equal(sub.bins[0].count, 2, 'both sub-millisecond values');
+  assert.ok(sub.bins.slice(1).every(bin => !bin.under));
+  assert.equal(histBarLabel(sub.bins[0]), '2 spans from under 1 ms to 10 ms');
+  assert.equal(histBarFrom(sub.bins[1]), '10 ms');
+  // Starting above 1 ms (or linear), nothing was clamped into the first bar.
+  assert.ok(!D.histogram([20, 300, 4000], { bins: 3, log: true }).bins[0].under);
+  assert.ok(!D.histogram([0.2, 5, 300], { bins: 3, log: false }).bins[0].under);
 });
 
 test('filters: day, root agent, delegation, failed evaluator, tool search; reset state is unfiltered', () => {
@@ -427,4 +439,111 @@ test('cheap paint: no dead size transitions, no transitions on rows, outline (no
   assert.match(css, /\.obs-cell:hover:not\(:focus-visible\) \{ outline: 2px solid #eeede8;/);
   assert.doesNotMatch(css, /\.obs-cell:hover \{ box-shadow/);
   assert.match(scripts['lab/obs-charts.js'], /bars\.addEventListener\('pointerleave', \(\) => \{ readout\.textContent = ''; \}\);/);
+});
+
+// ---- charts, drawn into a tiny fake DOM (no jsdom in the repo) ----------------------
+
+// Just enough of the DOM for initCharts: elements with children, classes, attributes,
+// dataset, CSSOM custom properties and listeners; data-obs nodes found by name.
+class FakeNode {
+  constructor(tag) { Object.assign(this, { tagName: tag.toUpperCase(), children: [], dataset: {}, attrs: {}, on: {}, className: '', text: '', value: '', max: '', disabled: false, checked: false }); this.style = { props: {}, setProperty: (k, v) => { this.style.props[k] = v; } }; }
+  get classList() {
+    const list = () => this.className.split(/\s+/).filter(Boolean);
+    return { add: c => { if (!list().includes(c)) this.className = [...list(), c].join(' '); }, remove: c => { this.className = list().filter(x => x !== c).join(' '); }, contains: c => list().includes(c), toggle: (c, on) => (on ? this.classList.add(c) : this.classList.remove(c)) };
+  }
+  append(...nodes) { this.children.push(...nodes); }
+  replaceChildren(...nodes) { this.children = nodes; }
+  set textContent(value) { this.text = String(value); this.children = []; }
+  get textContent() { return this.text + this.children.map(child => child.textContent).join(''); }
+  setAttribute(k, v) { this.attrs[k] = String(v); }
+  getAttribute(k) { return this.attrs[k] ?? null; }
+  removeAttribute(k) { delete this.attrs[k]; }
+  addEventListener(type, fn) { (this.on[type] ||= []).push(fn); }
+  fire(type) { for (const fn of this.on[type] || []) fn({ target: this, preventDefault() {} }); }
+}
+function chartsPage(t) {
+  const named = new Map();
+  const ids = new Map([['obs-hist-log', Object.assign(new FakeNode('input'), { checked: true })], ['obs-cache', Object.assign(new FakeNode('input'), { checked: true })]]);
+  const document = {
+    activeElement: null,
+    createElement: tag => new FakeNode(tag),
+    querySelector: sel => { const name = /^\[data-obs="([\w-]+)"\]$/.exec(sel)?.[1]; if (!name) return null; if (!named.has(name)) named.set(name, new FakeNode('div')); return named.get(name); },
+    querySelectorAll: () => [],
+    getElementById: id => ids.get(id),
+  };
+  Object.assign(globalThis, { document, window: { addEventListener() {} } });
+  t.after(() => { delete globalThis.document; delete globalThis.window; });
+  const obs = name => document.querySelector(`[data-obs="${name}"]`);
+  const range = obs('hist-range');
+  Object.assign(range, { value: '1', max: '28' });
+  initCharts({ data, index, open() {}, setDay() {} });
+  return { document, ids, obs, range };
+}
+
+test('histogram: the x-axis says log scale only while it is one; bars start at zero', () => {
+  assert.equal(histAxisTitle(true), 'Duration (log scale)');
+  assert.equal(histAxisTitle(false), 'Duration');
+  assert.equal(histBarLabel({ count: 1, x0: 10, x1: 20 }), '1 span from 10 ms to 20 ms');
+  assert.match(page, /<input type="checkbox" id="obs-hist-log" checked>/, 'log is the default…');
+  assert.match(page, /<span data-obs="hist-x">Duration \(log scale\)<\/span>/, '…so the static title says so');
+  assert.match(scripts['lab/obs-charts.js'], /setVar\(bar, '--h', \(bin\.count \/ max\)\.toFixed\(4\)\)/, 'bar height is count / max: zero-based');
+  assert.match(css, /\.obs-hist-bars \{ display: flex; align-items: flex-end;/, 'bars stand on the axis');
+});
+
+test('histogram: "Show the numbers" lists one row per bar, and one range input reads the bars by keyboard', t => {
+  const { obs, range, ids, document } = chartsPage(t);
+  const values = D.durationsOf(data.traces, 'LLM');
+  const bins = D.histogram(values, { bins: 28, log: true }).bins;
+  const rows = obs('hist-table').children;
+  assert.equal(rows.length, 28, 'one table row per bar');
+  assert.equal(obs('hist').children[0].children.length, 28, '28 bars');
+  assert.deepEqual(rows.map(tr => tr.children.map(td => td.textContent)), bins.map(bin => [bin.under ? `Under ${D.formatMs(bin.x0)}` : D.formatMs(bin.x0), D.formatMs(bin.x1), D.formatInt(bin.count)]));
+  assert.equal(D.sum(rows.map(tr => Number(tr.children[2].textContent.replace(/,/g, '')))), values.length, 'the rows add up to every published LLM step');
+  assert.equal(obs('hist-x').textContent, 'Duration (log scale)');
+  assert.match(obs('hist-y').textContent, /^Bar height: spans, from 0 to [\d,]+$/);
+  assert.equal(range.max, '28');
+  // Keyboard: focus reads the chosen bar, arrows (input events) move it, blur clears it.
+  const bars = obs('hist').children[0].children;
+  range.value = '5';
+  document.activeElement = range;
+  range.fire('focus');
+  assert.equal(range.getAttribute('aria-valuetext'), histBarLabel(bins[4]));
+  assert.ok(bars[4].classList.contains('is-on'));
+  assert.equal(obs('hist-readout').textContent, histBarLabel(bins[4]));
+  range.value = '6';
+  range.fire('input');
+  assert.ok(!bars[4].classList.contains('is-on') && bars[5].classList.contains('is-on'));
+  assert.equal(range.getAttribute('aria-valuetext'), histBarLabel(bins[5]));
+  range.fire('blur');
+  document.activeElement = null;
+  assert.equal(obs('hist-readout').textContent, '');
+  assert.ok(!bars[5].classList.contains('is-on'));
+  // Linear: the title drops "log scale", the table follows.
+  ids.get('obs-hist-log').checked = false;
+  ids.get('obs-hist-log').fire('change');
+  assert.equal(obs('hist-x').textContent, 'Duration');
+  assert.equal(obs('hist-table').children.length, 28);
+  assert.match(obs('hist-table-caption').textContent, /^LLM steps per bar, equal widths$/);
+});
+
+test('histogram markup: the range is labelled and outside the hidden drawing; the table folds under "Show the numbers"', () => {
+  const block = page.match(/<section class="obs-chart obs-chart-hist"[\s\S]*?<\/section>/)[0];
+  assert.match(block, /<input type="range" class="obs-hist-range" data-obs="hist-range" min="1" max="28" step="1" value="1" aria-label="[^"]+">/);
+  assert.ok(block.indexOf('obs-hist-range') > block.indexOf('data-obs="hist-axis"'), 'not inside the aria-hidden bars');
+  assert.match(block, /<details class="obs-numbers">\s*<summary>Show the numbers<\/summary>/);
+  assert.match(block, /<table class="obs-table obs-hist-table">\s*<caption[^>]*>[^<]+<\/caption>\s*<thead><tr><th scope="col">From<\/th><th scope="col">To<\/th><th scope="col">Spans<\/th><\/tr><\/thead>/);
+  assert.match(css, /\.obs-chart-hist:has\(\.obs-hist-range:focus-visible\) \.obs-hist \{ outline: 2px solid var\(--focus\);/, 'focus rings the histogram');
+  assert.match(css, /\n\.obs-hist\.is-key-focus \{ outline: 2px solid var\(--focus\);/, 'and without :has(), in a rule of its own');
+  // "Show the numbers" is named by the table's caption, not the chart's heading.
+  assert.match(block, /<div class="obs-scroll obs-scroll-mid" role="region" aria-labelledby="obs-hist-table-caption" tabindex="0">\s*<table class="obs-table obs-hist-table">\s*<caption class="visually-hidden" id="obs-hist-table-caption"/);
+  assert.match(css, /\.obs-hist-bar\.is-on \{/);
+});
+
+test('status colours: the console retunes lab.css\'s tokens for the night, and every pass/fail mark uses them', () => {
+  assert.match(css, /\.obs-console \{ --status-pass: #9db86e; --status-fail: #ff8f7f; --status-na: #6b725f;/);
+  assert.doesNotMatch(css, /--c-pass|--c-err/, 'no second set of status colours');
+  assert.match(css, /\.obs-cell\.is-pass, \.obs-cell-key\.is-pass \{ background: var\(--status-pass\); \}/);
+  assert.match(css, /\.obs-cell\.is-fail, \.obs-cell-key\.is-fail \{ background: var\(--status-fail\); \}/);
+  assert.match(css, /\.obs-cell\.is-fail::before, \.obs-cell\.is-fail::after/, 'a fail also carries a cross');
+  assert.match(css, /@media print \{[\s\S]*--status-pass: #3f5a22; --status-fail: #c0362c;/, 'paper values when printed');
 });

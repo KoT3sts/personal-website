@@ -311,13 +311,29 @@ async function initEvaluators(fig) {
 }
 
 // Figure 5: each trace with tool calls, by size (log scale) against a per-call measure.
+// The pointer reads the nearest dot; the slider (and Previous / Next) reads the dots from
+// fewest to most calls, for keyboards and screen readers; "Show the numbers" lists them.
+const X_TITLE = 'Tool calls in the trace (log scale)';
+const byCalls = points => [...points].sort((a, b) => a.calls - b.calls || a.id.localeCompare(b.id));
+const pointText = p => `${p.id} (${p.where}) · ${int(p.calls)} calls, ${p.errors} failed (${p.rate.toFixed(1)}%) · ${int(p.perCall)} tokens per call · ${p.delegated ? 'delegated' : 'no delegation'}`;
 async function initDelegation(fig) {
   const data = await traces();
   const { points, groups } = delegation(data);
   const plot = fig.querySelector('[data-ea-plot]');
   const tip = fig.querySelector('[data-ea-tip]');
   const pairs = fig.querySelector('[data-ea-pairs]');
-  if (!plot || !tip || !pairs || !points.length) return;
+  const range = fig.querySelector('#ea-point');
+  const rows = fig.querySelector('[data-ea-points]');
+  if (!plot || !tip || !pairs || !range || !rows || !points.length) return;
+  const order = byCalls(points);
+  rows.replaceChildren(...order.map(p => {
+    const tr = el('tr');
+    const th = el('th', '', `${p.id} (${p.where})`);
+    th.scope = 'row';
+    tr.append(th, ...[int(p.calls), String(p.errors), p.rate.toFixed(1), int(p.perCall), p.delegated ? 'Yes' : 'No'].map(text => el('td', '', text)));
+    return tr;
+  }));
+  range.max = String(order.length - 1);
   const nice = v => { const p = 10 ** Math.floor(Math.log10(v || 1)); return [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].map(k => k * p).find(k => k >= v); };
   const text = {
     rate: { axis: 'Failed calls, %', pair: 'Share of calls that failed, whole group', group: g => Number(g.rate) },
@@ -331,7 +347,8 @@ async function initDelegation(fig) {
     if (!w) return;
     const h = w < 480 ? 230 : 270;
     const pad = { l: 48, r: 14, t: 26, b: 40 };
-    const xmax = 10 ** Math.ceil(Math.log10(Math.max(...points.map(p => p.calls))));
+    // At least one decade, so log10(xmax) is never 0 (a lone 1-call trace would divide by it).
+    const xmax = Math.max(10, 10 ** Math.ceil(Math.log10(Math.max(...points.map(p => p.calls)))));
     const ymax = nice(Math.max(...points.map(p => p[metric])));
     const x = calls => pad.l + (Math.log10(calls) / Math.log10(xmax)) * (w - pad.l - pad.r);
     const y = v => h - pad.b - (v / ymax) * (h - pad.t - pad.b);
@@ -342,7 +359,7 @@ async function initDelegation(fig) {
     }
     for (let c = 1; c <= xmax; c *= 10) axes.append(svg('text', { x: x(c), y: h - pad.b + 18, 'text-anchor': 'middle' }, int(c)));
     axes.append(svg('text', { x: pad.l, y: 12, class: 'ea-axis-title' }, text[metric].axis),
-      svg('text', { x: w - pad.r, y: h - 4, 'text-anchor': 'end', class: 'ea-axis-title' }, 'Tool calls in the trace'));
+      svg('text', { x: w - pad.r, y: h - 4, 'text-anchor': 'end', class: 'ea-axis-title' }, X_TITLE));
     root.append(axes);
     placed = [...points].sort((a, b) => a.delegated - b.delegated).map(point => {
       const dot = svg('circle', { cx: x(point.calls).toFixed(1), cy: y(point[metric]).toFixed(1), r: 5, class: point.delegated ? 'is-yes' : 'is-no' });
@@ -353,6 +370,7 @@ async function initDelegation(fig) {
     plot.prepend(root);
     tip.hidden = true;
     hot = null;
+    if (document.activeElement === range) fromRange();
   }
   // Pointer moves are read once a frame (one measure, then writes), and the tip is only
   // rewritten when the nearest point changes.
@@ -375,12 +393,14 @@ async function initDelegation(fig) {
       if (d < distance) { distance = d; best = item; }
     }
     if (best === hot) return;
+    light(best, box);
+  }
+  function light(best, box) {
     hot?.dot.classList.remove('is-hot');
     hot = best;
     if (!best) { tip.hidden = true; return; }
     best.dot.classList.add('is-hot');
-    const p = best.point;
-    tip.textContent = `${p.id} (${p.where}) · ${int(p.calls)} calls, ${p.errors} failed (${p.rate.toFixed(1)}%) · ${int(p.perCall)} tokens per call · ${p.delegated ? 'delegated' : 'no delegation'}`;
+    tip.textContent = pointText(best.point);
     tip.hidden = false;
     const half = Math.min(box.width / 2, 130);
     tip.style.setProperty('--x', `${Math.max(half, Math.min(box.width - half, best.px)).toFixed(0)}px`);
@@ -397,6 +417,26 @@ async function initDelegation(fig) {
       return row;
     }));
   }
+  function fromRange() {
+    const p = order[Math.min(order.length - 1, Math.max(0, Number(range.value) || 0))];
+    range.setAttribute('aria-valuetext', pointText(p));
+    const item = placed.find(entry => entry.point === p);
+    if (item && item !== hot) light(item, plot.getBoundingClientRect());
+  }
+  range.addEventListener('input', fromRange);
+  range.addEventListener('focus', fromRange);
+  range.addEventListener('blur', () => { hot?.dot.classList.remove('is-hot'); hot = null; tip.hidden = true; });
+  // The buttons keep focus, so the slider's valuetext and the tip (in the hidden plot)
+  // go unheard: a polite live region says the trace they moved to.
+  const status = fig.querySelector('[data-ea-point-status]');
+  for (const button of fig.querySelectorAll('[data-ea-point-step]')) {
+    button.addEventListener('click', () => {
+      range.value = String(Math.min(order.length - 1, Math.max(0, Number(range.value) + Number(button.dataset.eaPointStep))));
+      fromRange();
+      if (status) status.textContent = pointText(order[Number(range.value)]);
+    });
+  }
+  range.setAttribute('aria-valuetext', pointText(order[0]));
   plot.addEventListener('pointermove', point);
   plot.addEventListener('pointerdown', point);
   plot.addEventListener('pointerleave', () => { at = null; hot?.dot.classList.remove('is-hot'); hot = null; tip.hidden = true; });

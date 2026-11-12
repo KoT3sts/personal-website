@@ -9,12 +9,14 @@
 .bt-status { margin: 0 var(--gutter) 40px; color: var(--muted); font-size: 15px; line-height: 1.55; }
 .lab-strip-band .lab-strip-take dd { font-size: 16px; }
 
-/* Role chips: the cursor colours each recorded role stands for in the tour. */
+/* Role chips: the cursor colours each recorded role stands for in the tour. No role uses a
+   status hue (lab.css): the quality-reviewer is teal (#16897f, 3.6:1 on the paper), the
+   same as on the homepage preview, so it never reads as an error. */
 .bt-chip { display: inline-block; flex: none; width: 12px; height: 12px; box-sizing: border-box; border-radius: 3px; }
 [data-role="orchestrator"] .bt-chip { background: #1d1e1b; border: 1.5px solid #8b8c83; }
-[data-role="implementation-worker"] .bt-chip { background: linear-gradient(135deg, #6f9bff 0 20%, #3ccbb4 20% 40%, #ff6ea9 40% 60%, #ffa04a 60% 80%, #72d27c 80%); }
+[data-role="implementation-worker"] .bt-chip { background: linear-gradient(135deg, #6f9bff 0 20%, #e07bff 20% 40%, #ff6ea9 40% 60%, #ffa04a 60% 80%, #72d27c 80%); }
 [data-role="ui-design-director"] .bt-chip { background: linear-gradient(135deg, #a98cff 0 34%, #55c4f5 34% 67%, #f1cf3a 67%); }
-[data-role="quality-reviewer"] .bt-chip { background: #ff6767; }
+[data-role="quality-reviewer"] .bt-chip { background: #16897f; }
 
 .bt-roles { display: grid; gap: 0; margin: 0; }
 .bt-role-row { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 8px 24px; padding: 14px 0; border-bottom: 1px solid var(--line); }

@@ -4,6 +4,14 @@ import * as D from './obs-data.js';
 
 const { el, q, setVar } = D;
 
+// The histogram's words, pure so node tests can check them: the x-axis says when it is a
+// log scale, and each bar reads as one sentence (the readout, the slider and the table).
+export const histAxisTitle = log => (log ? 'Duration (log scale)' : 'Duration');
+// A log axis counts values under 1 ms in its first bar (obs-data.js histogram marks it
+// `under`), so that bar starts "under 1 ms", not at 1 ms.
+export const histBarFrom = bin => (bin.under ? `under ${D.formatMs(bin.x0)}` : D.formatMs(bin.x0));
+export const histBarLabel = bin => `${D.formatInt(bin.count)} ${bin.count === 1 ? 'span' : 'spans'} from ${histBarFrom(bin)} to ${D.formatMs(bin.x1)}`;
+
 export function initCharts({ data, index, open, setDay }) {
   const view = { shown: data.traces, filters: D.EMPTY_FILTERS, selected: null, kind: 'LLM', log: true, cache: true, tsort: { key: 'calls', dir: 'desc' }, ready: false };
   const block = q('charts');
@@ -15,23 +23,58 @@ export function initCharts({ data, index, open, setDay }) {
   const markTools = D.sortable([...document.querySelectorAll('[data-tsort]')], 'tsort', () => view.tsort,
     next => { view.tsort = next; tools(); }, key => (key === 'tool' ? 'asc' : 'desc'));
 
-  // latency histogram
+  // latency histogram. Bars start at zero; the pointer reads one into the readout, and a
+  // range input (one tab stop, arrow keys) reads the same bars to keyboard and screen
+  // reader users; "Show the numbers" lists every bar.
+  const range = q('hist-range');
+  let barNodes = [];
+  let labels = [];
+  let on = null;
+  const pick = () => {
+    const k = Math.min(labels.length, Math.max(1, Number(range.value) || 1)) - 1;
+    on?.classList.remove('is-on');
+    on = barNodes[k] || null;
+    on?.classList.add('is-on');
+    const label = labels[k] || 'No spans';
+    range.setAttribute('aria-valuetext', label);
+    if (q('hist-readout').textContent !== label) q('hist-readout').textContent = label;
+  };
+  // The focus ring on the bars: CSS draws it with :has(:focus-visible); this class is the
+  // same ring for browsers without :has() (observability.css .obs-hist.is-key-focus).
+  const keyboardFocus = () => { try { return range.matches(':focus-visible'); } catch { return true; } };
+  range.addEventListener('input', pick);
+  range.addEventListener('focus', () => { q('hist').classList.toggle('is-key-focus', keyboardFocus()); pick(); });
+  range.addEventListener('blur', () => { q('hist').classList.remove('is-key-focus'); on?.classList.remove('is-on'); on = null; q('hist-readout').textContent = ''; });
   function hist() {
     const box = q('hist');
     const axis = q('hist-axis');
     const readout = q('hist-readout');
+    const table = q('hist-table');
     box.replaceChildren();
     axis.replaceChildren();
+    table.replaceChildren();
     readout.textContent = '';
     const values = D.durationsOf(view.shown, view.kind);
     const h = D.histogram(values, { bins: 28, log: view.log });
     const max = Math.max(1, ...h.bins.map(b => b.count));
     const bars = el('div', 'obs-hist-bars', box);
-    for (const bin of h.bins) {
+    labels = h.bins.map(histBarLabel);
+    barNodes = h.bins.map((bin, i) => {
       const bar = el('span', 'obs-hist-bar', bars);
       setVar(bar, '--h', (bin.count / max).toFixed(4));
-      bar.dataset.label = `${D.formatInt(bin.count)} ${bin.count === 1 ? 'span' : 'spans'} from ${D.formatMs(bin.x0)} to ${D.formatMs(bin.x1)}`;
-    }
+      bar.dataset.label = labels[i];
+      const tr = el('tr', '', table);
+      el('td', '', tr, bin.under ? `Under ${D.formatMs(bin.x0)}` : D.formatMs(bin.x0));
+      el('td', '', tr, D.formatMs(bin.x1));
+      el('td', '', tr, D.formatInt(bin.count));
+      return bar;
+    });
+    on = null;
+    range.max = String(Math.max(1, labels.length));
+    range.disabled = !labels.length;
+    if (document.activeElement === range) pick();
+    q('hist-x').textContent = histAxisTitle(view.log);
+    q('hist-y').textContent = `Bar height: spans, from 0 to ${D.formatInt(max)}`;
     // The readout names the bar under the pointer and empties again when it leaves.
     bars.addEventListener('pointerover', event => { const label = event.target.dataset?.label; if (label && readout.textContent !== label) readout.textContent = label; });
     bars.addEventListener('pointerleave', () => { readout.textContent = ''; });
@@ -53,6 +96,7 @@ export function initCharts({ data, index, open, setDay }) {
     });
     const all = data.rollups.latencyByKind[view.kind];
     const word = { LLM: 'LLM steps', TOOL: 'tool calls', AGENT: 'agent runs' }[view.kind];
+    q('hist-table-caption').textContent = `${word[0].toUpperCase()}${word.slice(1)} per bar, ${view.log ? 'equal widths on a log scale' : 'equal widths'}`;
     q('hist-caption').textContent = values.length
       ? `${D.formatInt(values.length)} ${word} published one by one in these traces: p50 ${D.formatMs(p50)}, p90 ${D.formatMs(p90)}. Across all ${D.formatInt(all.n)} recorded ${word}: p50 ${D.formatMs(all.p50)}, p90 ${D.formatMs(all.p90)}. The published ones lean long, because the first, last, delegating and committing steps are the ones kept whole.${view.kind === 'LLM' ? ' LLM latency is estimated.' : ''}`
       : `No ${word} published in these traces.`;

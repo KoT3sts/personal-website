@@ -258,6 +258,8 @@ export function histogram(values, { bins = 24, log = true } = {}) {
     x1: log ? 10 ** (lo + (i + 1) * width) : lo + (i + 1) * width,
     count: 0,
   }));
+  // On a log axis starting at 1 ms the first bin also holds the values under 1 ms.
+  if (log && lo === 0) out[0].under = true;
   for (const v of list) out[Math.min(bins - 1, Math.max(0, Math.floor((f(v) - lo) / width)))].count++;
   const at = v => Math.min(1, Math.max(0, (f(log ? Math.max(1, v) : v) - lo) / (hi - lo)));
   return { log, lo, hi, bins: out, at };

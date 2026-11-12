@@ -3,10 +3,21 @@
    styled here; the card around each .work-preview belongs to the homepage. Text and
    lines use currentColor, so the previews read on a light or a dark card at the card's
    own text contrast. Role and dot hues are mid-tones with 3:1 or more against both the
-   paper (#eeede8) and the night (#101114). Text is 11px or larger, targets 44px. */
+   paper (#eeede8) and the night (#101114). Text is 11px or larger, targets 44px.
+
+   Status colours, shared with the lab pages (one hue family each, the value tuned to
+   the background for 3:1 or more; tests/work-previews.test.js checks all three sets):
+     --status-pass  green   here #4f8a3a (3.6:1 paper, 3.9:1 card #f7f6f0, 4.5:1 night)
+                            essay and build trace (paper, lab.css) #3f5a22, dashboard (night,
+                            observability.css) #9db86e
+     --status-fail  red     here #d23f36 (4.0:1 paper, 4.3:1 card, 4.1:1 night)
+                            paper #c0362c, night #ff8f7f
+     --status-na    grey    here and on paper #7d8173 (3.4:1 paper, 4.7:1 night), night #6b725f
+   Fail never relies on hue alone: tall cells here, a cross on the dashboard, hatching in
+   the essay. Roles never use a status hue: the quality-reviewer is teal (#16897f), not red. */
 
 .wp-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.wp-obs, .wp-trace, .wp-loop { --wp-line: currentColor; --wp-tint: transparent; position: relative; display: grid; gap: 14px; min-width: 0; margin: 0; font-size: 13px; line-height: 1.4; }
+.wp-obs, .wp-trace, .wp-loop { --status-pass: #4f8a3a; --status-fail: #d23f36; --status-na: #7d8173; --wp-line: currentColor; --wp-tint: transparent; position: relative; display: grid; gap: 14px; min-width: 0; margin: 0; font-size: 13px; line-height: 1.4; }
 @supports (color: color-mix(in srgb, red 50%, transparent)) {
   .wp-obs, .wp-trace, .wp-loop { --wp-line: color-mix(in srgb, currentColor 34%, transparent); --wp-tint: color-mix(in srgb, currentColor 10%, transparent); }
 }
@@ -15,8 +26,8 @@
 
 /* Observability: three KPIs, then an evaluator grid (one column per trace, one row per
    check) between its row names and pass tallies; the range input over it reads one trace.
-   Pass cells are short marks in the line colour, fails tall in red, so the two differ
-   without colour too. */
+   Pass cells are short green marks, fails tall red ones, so the two differ without
+   colour too. */
 .wp-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
 .wp-kpis > div { display: grid; grid-template-rows: 1fr auto; gap: 4px; min-width: 0; padding-top: 8px; border-top: 1px solid var(--wp-line); }
 .wp-kpis dd { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
@@ -28,14 +39,15 @@
 .wp-obs-svg { display: block; width: 100%; height: calc(var(--wp-row) * var(--wp-rows, 6)); overflow: visible; }
 .wp-obs-scrub .wp-trace-range { left: 0; width: 100%; }
 .wp-cell { fill: var(--wp-line); }
-.wp-fail { fill: var(--wp-fail, #e0483f); }
+.wp-pass { fill: var(--status-pass); }
+.wp-fail { fill: var(--status-fail); }
 .wp-obs .wp-cursor { stroke: none; }
 .wp-obs[data-cursor="true"] .wp-cursor { opacity: 1; }
-.wp-obs .wp-chip-pass { height: 5px; background: var(--wp-line); }
-.wp-obs .wp-chip-fail { background: var(--wp-fail, #e0483f); }
+.wp-obs .wp-chip-pass { height: 5px; background: var(--status-pass); }
+.wp-obs .wp-chip-fail { background: var(--status-fail); }
 
 /* Trace: one bar per recorded step, coloured by role, with a status mark below. */
-.wp-trace { --wp-orchestrator: currentColor; --wp-implementation-worker: #3c7be0; --wp-quality-reviewer: #e0483f; --wp-ui-design-director: #9b6bf0; }
+.wp-trace { --wp-orchestrator: currentColor; --wp-implementation-worker: #3c7be0; --wp-quality-reviewer: #16897f; --wp-ui-design-director: #9b6bf0; }
 .wp-trace [data-role="orchestrator"] { --wp-role: var(--wp-orchestrator); }
 .wp-trace [data-role="implementation-worker"] { --wp-role: var(--wp-implementation-worker); }
 .wp-trace [data-role="quality-reviewer"] { --wp-role: var(--wp-quality-reviewer); }

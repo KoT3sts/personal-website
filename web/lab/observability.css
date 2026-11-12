@@ -6,11 +6,14 @@
    chart marks 3:1 or more. Positions and sizes arrive as custom properties set by
    script (--x, --w, --h, --q, --depth); no style attributes. */
 
-.obs-page { --c-agent: #c7d2a8; --c-llm: #e3b765; --c-tool: #8fb8e6; --c-chain: #b4a7e0; --c-err: #ff8f7f; --c-cache: #6b725f; --c-pass: #9db86e; }
+.obs-page { --c-agent: #c7d2a8; --c-llm: #e3b765; --c-tool: #8fb8e6; --c-chain: #b4a7e0; --c-cache: #6b725f; }
 .obs-intro .lab-lead { max-width: 34ch; }
 
-/* The console: one dark instrument between the light intro and the notes. */
-.obs-console { --bg: var(--night); --raise: #17191c; --line: #2b2f27; --line-strong: #3d4337; --text: #eeede8; --dim: #b4b7ab; --label: #9ba08f; --focus: var(--green);
+/* The console: one dark instrument between the light intro and the notes. Status colours
+   are lab.css's --status-* tokens, retuned for the night: the same hue families as the
+   paper pages and the homepage. On #17191c: pass #9db86e 8.0:1, fail #ff8f7f 8.0:1,
+   n/a #6b725f 3.5:1 (a dashed outline). Fail cells also carry a cross. */
+.obs-console { --status-pass: #9db86e; --status-fail: #ff8f7f; --status-na: #6b725f; --bg: var(--night); --raise: #17191c; --line: #2b2f27; --line-strong: #3d4337; --text: #eeede8; --dim: #b4b7ab; --label: #9ba08f; --focus: var(--green);
   margin: 0 var(--gutter); padding: clamp(18px, 2.2vw, 30px); border-radius: 6px; background: var(--bg); color: var(--text); }
 .obs-console ::selection { background: #3d4a2a; color: #fff; }
 .obs-console :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -81,7 +84,7 @@
 [aria-sort] > .obs-sort { color: var(--text); }
 [aria-sort] > .obs-sort::after { opacity: 1; }
 [aria-sort="descending"] > .obs-sort::after { transform: rotate(180deg); }
-.obs-table td.is-err { color: var(--c-err); }
+.obs-table td.is-err { color: var(--status-fail); }
 .obs-table tbody tr:hover { background: #1c1f1a; }
 .obs-trace-table tbody tr { cursor: pointer; }
 .obs-trace-table tbody tr.is-selected { background: #232a1b; }
@@ -115,7 +118,7 @@
 .obs-key-llm { background: var(--c-llm); }
 .obs-key-tool { background: var(--c-tool); }
 .obs-key-chain { background: repeating-linear-gradient(135deg, var(--c-chain) 0 3px, #5f5880 3px 5px); }
-.obs-key-error { width: 10px; background: var(--c-err); transform: rotate(45deg) scale(.8); }
+.obs-key-error { width: 10px; background: var(--status-fail); transform: rotate(45deg) scale(.8); }
 .obs-key-in { background: var(--c-tool); }
 .obs-key-out { background: var(--c-llm); }
 .obs-key-reason { background: var(--c-chain); }
@@ -155,7 +158,7 @@
 .is-tool .obs-bar { background: var(--c-tool); }
 .is-chain .obs-bar { background: repeating-linear-gradient(135deg, var(--c-chain) 0 3px, #5f5880 3px 5px); }
 .is-merged .obs-bar { top: 3px; bottom: 3px; border: 1px dashed #6f6894; background: none; }
-.has-error .obs-bar::after { content: ""; position: absolute; top: 50%; right: -5px; width: 9px; height: 9px; background: var(--c-err); transform: translateY(-50%) rotate(45deg); }
+.has-error .obs-bar::after { content: ""; position: absolute; top: 50%; right: -5px; width: 9px; height: 9px; background: var(--status-fail); transform: translateY(-50%) rotate(45deg); }
 .obs-row-dur { color: var(--dim); font-family: var(--font-mono); font-size: 11px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .obs-wf-note { font-size: 12px; }
 
@@ -174,7 +177,7 @@
 .obs-teval { padding: 9px 0; border-bottom: 1px solid var(--line); }
 .obs-teval-head { display: flex; align-items: baseline; gap: 10px; }
 .obs-verdict { flex: none; min-width: 48px; padding: 1px 6px; border: 1px solid currentColor; border-radius: 3px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .03em; text-align: center; text-transform: uppercase; }
-.is-pass .obs-verdict { color: var(--c-pass); }
+.is-pass .obs-verdict { color: var(--status-pass); }
 .is-fail .obs-verdict { color: #ffb4a8; background: #3a1f1b; }
 .is-score .obs-verdict { color: var(--dim); }
 .obs-teval-name { font-size: 13px; font-weight: 700; }
@@ -207,6 +210,23 @@
 .obs-hist-axis .obs-tick { top: 2px; bottom: auto; }
 .obs-hist-axis .obs-tick:last-child { transform: translateX(-100%); }
 .obs-readout { min-height: 1.4em; color: var(--text); font-family: var(--font-mono); font-size: 12px; }
+/* Axis titles under the ticks: the y range on the left, the x unit and scale on the right. */
+.obs-axis-titles { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 16px; margin-top: -4px; color: var(--label); font-family: var(--font-mono); font-size: 11px; letter-spacing: .03em; }
+/* One tab stop for the bars: a range input kept off screen (like .visually-hidden) whose
+   focus rings the whole histogram and lights the bar it reads. */
+.obs-hist-range { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; opacity: 0; }
+.obs-chart-hist:has(.obs-hist-range:focus-visible) .obs-hist { outline: 2px solid var(--focus); outline-offset: 6px; border-radius: 2px; }
+/* The same ring without :has() (a separate rule, so an unknown :has() cannot drop it): obs-charts.js
+   sets the class while the range has keyboard focus. */
+.obs-hist.is-key-focus { outline: 2px solid var(--focus); outline-offset: 6px; border-radius: 2px; }
+.obs-hist-bar.is-on { background: #f7ffec !important; }
+/* "Show the numbers": the bars as a table, folded. */
+.obs-numbers summary { display: inline-flex; align-items: center; min-height: 36px; color: var(--label); font-family: var(--font-mono); font-size: 12px; letter-spacing: .035em; text-transform: uppercase; cursor: pointer; }
+.obs-numbers summary:hover { color: var(--text); }
+.obs-numbers[open] summary { margin-bottom: 8px; }
+.obs-hist-table thead th { padding: 8px 12px; color: var(--label); font-family: var(--font-mono); font-size: 11px; letter-spacing: .035em; text-transform: uppercase; }
+.obs-hist-table td:first-child { text-align: left; }
+.obs-hist-table th:first-child { text-align: left; }
 
 .obs-tool-table th.mono-cell { position: sticky; left: 0; z-index: 1; background: var(--raise); font-family: var(--font-mono); font-size: 12px; font-weight: 400; }
 .obs-tool-table thead th:first-child { left: 0; z-index: 2; }
@@ -246,11 +266,11 @@
 .obs-matrix td { padding: 0; }
 .obs-matrix td.is-current { box-shadow: 0 0 0 1px #eeede8; border-radius: 3px; }
 .obs-cell { position: relative; display: block; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 3px; cursor: pointer; }
-.obs-cell.is-pass, .obs-cell-key.is-pass { background: var(--c-pass); }
-.obs-cell.is-fail, .obs-cell-key.is-fail { background: var(--c-err); }
+.obs-cell.is-pass, .obs-cell-key.is-pass { background: var(--status-pass); }
+.obs-cell.is-fail, .obs-cell-key.is-fail { background: var(--status-fail); }
 .obs-cell.is-fail::before, .obs-cell.is-fail::after, .obs-cell-key.is-fail::before, .obs-cell-key.is-fail::after { content: ""; position: absolute; top: 50%; left: 22%; right: 22%; height: 2px; background: #3a1410; transform: rotate(45deg); }
 .obs-cell.is-fail::after, .obs-cell-key.is-fail::after { transform: rotate(-45deg); }
-.obs-cell.is-na, .obs-cell-key.is-na { border: 1px dashed #6b725f; background: none; }
+.obs-cell.is-na, .obs-cell-key.is-na { border: 1px dashed var(--status-na); background: none; }
 .obs-cell.is-num { background: color-mix(in srgb, var(--c-llm) calc(25% + var(--q, 0) * 75%), #23261f); }
 .obs-cell-key.is-num { background: linear-gradient(90deg, color-mix(in srgb, var(--c-llm) 25%, #23261f), var(--c-llm)); }
 .obs-cell-key { position: relative; display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
@@ -311,6 +331,7 @@
   .obs-caret { width: 44px; height: 44px; margin: -8px 0 -8px -8px; }
   .obs-caret::before { inset: 15px; }
   .obs-cell { width: 44px; height: 44px; }
+  .obs-numbers summary { min-height: 44px; }
   .obs-matrix .obs-col { min-width: 44px; }
   .obs-sort { min-height: 44px; }
 }
@@ -328,9 +349,10 @@
 @media (forced-colors: active) {
   .obs-bar, .obs-hist-bar, .obs-stack > span, .obs-day-shown, .obs-cell, .obs-key, .obs-cell-key, .obs-mini { forced-color-adjust: none; }
   .obs-sort::after, .obs-caret::before { background-color: CanvasText; forced-color-adjust: none; }
+  .obs-hist-bar.is-on { background: Highlight !important; }
 }
 @media print {
-  .obs-console { --bg: #fff; --raise: #fff; --line: #d1d0c8; --line-strong: #b9b9b1; --text: #171716; --dim: #4c4f45; --label: #646a5a; margin: 0; padding: 0; background: none; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .obs-console { --status-pass: #3f5a22; --status-fail: #c0362c; --status-na: #7d8173; --bg: #fff; --raise: #fff; --line: #d1d0c8; --line-strong: #b9b9b1; --text: #171716; --dim: #4c4f45; --label: #646a5a; margin: 0; padding: 0; background: none; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   /* The 69-column matrix cannot fit a page; the trace table carries the same failures. */
   .obs-filters, .obs-wf-tools, .obs-chart-controls, .obs-wf-note, .obs-readout, .obs-empty, .obs-chart-matrix { display: none !important; }
   .obs-scroll, .obs-tree { max-height: none; overflow: visible; border: 0; }
