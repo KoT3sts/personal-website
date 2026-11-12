@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-G8slze0J/lL2JyIAFipFdQe1FVn2ZNm4U1dTs9klNOc='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LPlC6JOsCNvlvxcLDI4qjZ2AFWltlvfHGk8cS8O43sg='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#eeede8">
   <meta name="description" content="Cesar Tortolero is a Machine Learning Engineer in Morristown, NJ (NYC area) who builds AI agents, MCP integrations and LLM evaluation on AWS Bedrock AgentCore, plus serverless Python and MLOps.">
@@ -16,7 +16,7 @@
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. Builds and ships ML and LLM systems on AWS.">
+  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. AI agents and LLM evaluation on AWS.">
   <meta property="profile:first_name" content="Cesar">
   <meta property="profile:last_name" content="Tortolero">
   <meta name="twitter:card" content="summary_large_image">
@@ -52,17 +52,27 @@
   // tour plays once (entrance.js marks the visit "seen" as it starts), never
   // under reduced motion, on a deep link or on back/forward.
   // app.js follows the decision recorded in data-tour.
+  // A reload or back/forward puts the old scroll position back before app.js
+  // has laid the page out (the explorer, charts and timeline change section
+  // heights), which read as a layout shift: the page stays hidden
+  // (html[data-restoring], styles.css) until app.js is done, 1.5 s at most.
   (() => {
     const root = document.documentElement;
     let play = false;
+    let restoring = false;
     try {
+      const nav = performance.getEntriesByType?.('navigation')?.[0];
+      restoring = nav?.type === 'reload' || nav?.type === 'back_forward';
       const key = 'cesar:portfolio:agentic-intro:v1';
       const seen = localStorage.getItem(key) === 'seen';
       localStorage.setItem(`${key}:probe`, '1'); localStorage.removeItem(`${key}:probe`);
-      const nav = performance.getEntriesByType?.('navigation')?.[0];
       play = !(seen || matchMedia('(prefers-reduced-motion: reduce)').matches || (location.hash && location.hash !== '#home') || nav?.type === 'back_forward');
     } catch { play = false; }
     root.dataset.tour = play ? 'play' : 'skip';
+    if (restoring && !play) {
+      root.dataset.restoring = '';
+      setTimeout(() => delete root.dataset.restoring, 1500);
+    }
     if (!play) return;
     root.classList.add('agentic-pending');
     const link = document.createElement('link'); link.rel = 'modulepreload'; link.href = './entrance.js'; document.head.append(link);

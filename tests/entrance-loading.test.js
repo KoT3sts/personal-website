@@ -47,9 +47,13 @@ function runHeadScript(source, { seen, reducedMotion, storageAvailable, hash, na
   const root = { dataset: {}, classList: { add: name => classes.add(name) } };
   const document = { documentElement: root, createElement: () => ({}), head: { append: node => appended.push(node) } };
   const performance = { getEntriesByType: () => (navigationType ? [{ type: navigationType }] : []) };
-  new Function('document', 'localStorage', 'matchMedia', 'location', 'performance', source)(
-    document, localStorage, () => ({ matches: reducedMotion }), { hash }, performance);
-  return { tour: root.dataset.tour, pending: classes.has('agentic-pending'), preload: appended.map(node => node.href), stored: [...store.keys()] };
+  const timers = [];
+  const setTimeout = (callback, ms) => timers.push({ callback, ms });
+  new Function('document', 'localStorage', 'matchMedia', 'location', 'performance', 'setTimeout', source)(
+    document, localStorage, () => ({ matches: reducedMotion }), { hash }, performance, setTimeout);
+  const restoring = 'restoring' in root.dataset;
+  timers.forEach(timer => timer.callback());
+  return { tour: root.dataset.tour, pending: classes.has('agentic-pending'), preload: appended.map(node => node.href), stored: [...store.keys()], restoring, cleared: !('restoring' in root.dataset), waits: timers.map(timer => timer.ms) };
 }
 
 test('the inline head script mirrors shouldPlayEntrance exactly, reading the same seen flag', async () => {
@@ -65,7 +69,16 @@ test('the inline head script mirrors shouldPlayEntrance exactly, reading the sam
     assert.deepEqual(result.preload, play ? ['./entrance.js'] : [], JSON.stringify(input));
     // The probe leaves nothing behind; the flag itself is entrance.js's to write.
     assert.deepEqual(result.stored, input.seen ? [KEY] : [], JSON.stringify(input));
+    // A reload or back/forward stays hidden until app.js has laid the page out (1.5 s at most).
+    const restores = !play && (input.navigationType === 'reload' || input.navigationType === 'back_forward');
+    assert.equal(result.restoring, restores, `${JSON.stringify(input)}: hidden only while a restored scroll position waits for app.js`);
+    assert.deepEqual(result.waits, restores ? [1500] : [], JSON.stringify(input));
+    assert.equal(result.cleared, true, `${JSON.stringify(input)}: never hidden for good`);
   }
+  const styles = await read('styles.css');
+  assert.match(styles, /html\[data-restoring\] body \{ visibility: hidden; \}/);
+  const appSource = await read('app.js');
+  assert.match(appSource, /bootEntrance\(document, window\);\n[^\n]*\n  delete document\.documentElement\.dataset\.restoring;/, 'app.js shows the page once it is laid out');
   // One key everywhere: entrance.js writes it, app.js and the head script read it.
   const entrance = await read('entrance.js');
   const app = await read('app.js');
@@ -194,7 +207,7 @@ test('app.js imports entrance.js only dynamically', async () => {
   assert.doesNotMatch(app, /everyVisit/);
 });
 
-// Deep links and reduced motion must not download the 177 KB tour script.
+// Repeat visits, deep links and reduced motion must not download the tour script (about 265 KB).
 test('the static module graph from app.js does not include entrance.js', async () => {
   const seen = new Set();
   const visit = async file => {

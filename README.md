@@ -39,7 +39,7 @@ Open the printed local URL. Source lives in `web/`; the build copies it into `di
 
 ### Build output and asset optimization
 
-`npm run build` copies `web/` to `dist/`, then minifies every CSS file in `dist/` with `scripts/minify-css.mjs` and prints per-file and total byte counts. The minifier is dependency-free and conservative: it removes comments and whitespace only, never touches strings, `url()` bodies, escapes, spaces around `+`/`-` or before `(`, and falls back to the original file if a token check fails. JavaScript and HTML are shipped exactly as authored.
+`npm run build` copies `web/` to `dist/`, then minifies every CSS file in `dist/` with `scripts/minify-css.mjs` and prints per-file and total byte counts. `scripts/bundle-css.mjs` then gives each page one stylesheet: its `<link rel="stylesheet">` files are joined in document order into a content-hashed file at the root of `dist/` (`home.<hash>.css` for the homepage; pages with the same stylesheets share one), `url()`s are rebased, one `@charset` is kept and `@import` is refused; the joined originals are removed from `dist/`. The sources in `web/` keep their separate files. The minifier is dependency-free and conservative: it removes comments and whitespace only, never touches strings, `url()` bodies, escapes, spaces around `+`/`-` or before `(`, and falls back to the original file if a token check fails. JavaScript and HTML are shipped exactly as authored.
 
 `web/assets/about-flow.svg` is already optimized in the source tree. To regenerate it from an authored original, run once:
 

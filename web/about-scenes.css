@@ -215,7 +215,8 @@
       /* It overlaps the top of #introduction, whose links and text must stay reachable. */
       pointer-events: none;
     }
-    :root[data-tour] #about .about-scene { position: sticky; top: 0; height: 100svh; }
+    /* A size container, so the window below can be sized and placed in the scene's own units (cqw, cqh). */
+    :root[data-tour] #about .about-scene { position: sticky; top: 0; height: 100svh; container-type: size; }
     /* The field is cut away inside the window (even-odd hole, a hair inside its rounded corners), so the window
        shows #introduction behind it as its own ground fades. */
     :root[data-tour] #about .about-field {
@@ -229,9 +230,14 @@
     :root[data-tour] #about .about-flow { animation: none; transition: none; transform: scale(calc(1.04 + var(--about-p) * .16)); }
     /* The meta and foot lines leave before the opening window reaches them. */
     :root[data-tour] #about .about-transition-meta, :root[data-tour] #about .about-transition-foot { opacity: calc(1 - var(--o) * 2.4); }
+    /* The window grows from the panel's box to the scene's. Its layout box stays at the scene's top-left and only
+       changes size; translate centres it. Moving its top-left by layout (inset) counted as a layout shift on every
+       frame of the opening, while scrolling or landing on a deep link (CLS ~0.37 at 1280 x 800). The size is written
+       as panel + share of the rest: Chrome resolved "100cqw - 2 * (100cqw - w0) * (1 - oe) / 2" to 0 when oe was 0. */
     :root[data-tour] #about .about-window {
-      display: block; position: absolute; z-index: 2;
-      inset: calc((100% - var(--h0)) * (1 - var(--oe)) / 2) calc((100% - var(--w0)) * (1 - var(--oe)) / 2);
+      display: block; position: absolute; z-index: 2; top: 0; left: 0;
+      width: calc(var(--w0) + (100cqw - var(--w0)) * var(--oe)); height: calc(var(--h0) + (100cqh - var(--h0)) * var(--oe));
+      translate: round(calc((100cqw - var(--w0)) * (1 - var(--oe)) / 2), 1px) round(calc((100cqh - var(--h0)) * (1 - var(--oe)) / 2), 1px);
       border: 1px solid rgb(255 255 255 / calc(.196 * (1 - var(--e))));
       border-radius: calc(var(--r0) * (1 - var(--oe)));
       box-shadow: 0 35px 70px rgb(0 0 0 / calc(.53 * (1 - var(--o))));

@@ -287,7 +287,7 @@ test('the proof figures count up over a hidden copy; the markup and screen reade
   assert.match(charts, /if \(!counters\.length \|\| !motionAllowed\(window\)\) return counters;/);
   const app = await read('../web/app.js');
   assert.match(app, /try \{ initHomeCharts\(document, window\); \} catch/);
-  assert.ok(app.indexOf('initHomeCharts(document, window)') < app.indexOf('bootEntrance(document, window);\n}'), 'drawn before the tour plans its targets');
+  assert.ok(app.indexOf('initHomeCharts(document, window)') < app.indexOf('  bootEntrance(document, window);\n'), 'drawn before the tour plans its targets');
 });
 
 // ---- November 12: availability line, intro, and the first-visit-only build tour ----

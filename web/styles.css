@@ -36,6 +36,8 @@
   /* Guard against sideways scrolling; clip (not hidden) keeps the sticky stages working. */
   html, body { overflow-x: clip; }
   html { scroll-behavior: smooth; scroll-padding-top: var(--header-clear); scrollbar-color: #9a9d90 var(--paper); }
+  /* A reload or back/forward is hidden until app.js has laid the page out (see the inline <head> script). */
+  html[data-restoring] body { visibility: hidden; }
   body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-weight: 400; font-stretch: 100%; font-kerning: normal; word-spacing: .035em; -webkit-font-smoothing: antialiased; overflow-wrap: break-word; }
   ::selection { background: var(--green); color: var(--ink); }
   .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

@@ -1,4 +1,4 @@
-// entrance.js (the build tour, ~177 KB) is loaded on demand: see bootEntrance().
+// entrance.js (the build tour, about 265 KB) is loaded on demand, only when the tour plays (a first visit) or is asked for (Replay, the hero pill): see bootEntrance().
 import { initMotion } from './motion.js';
 import { initHeader } from './header.js';
 import { initExperience } from './experience.js';
@@ -341,4 +341,6 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   try { initHomeCharts(document, window); } catch (error) { console.error(error); }
   previews = loadWorkPreviews(document, window);
   bootEntrance(document, window);
+  // The page is laid out: a reload or back/forward can be shown (inline <head> script).
+  delete document.documentElement.dataset.restoring;
 }

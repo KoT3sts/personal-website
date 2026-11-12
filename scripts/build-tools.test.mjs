@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cssSignature, minifyCss } from './minify-css.mjs';
 import { formatNumber, optimizePath, optimizeSvg, simplifyPolyline } from './optimize-svg.mjs';
+import { bundleCss, joinStylesheets, rebaseUrls, relativeUrls } from './bundle-css.mjs';
+import { access, cp, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import os from 'node:os';
+import path from 'node:path';
 
 test('minifyCss strips comments and collapsible whitespace only', () => {
   assert.equal(minifyCss('/* c */ a  >  b , c { color: red ; margin: 0 0 ; }\n'), 'a>b,c{color:red;margin:0 0}');
@@ -64,4 +69,77 @@ test('optimizeSvg removes editor noise and hoists repeated values without reorde
   assert.match(out, /<style>[^<]*\{stroke:#abcdef\}[^<]*<\/style>/);
   assert.equal((out.match(/<path d="M0 0l1 1" class="\w+ \w+"\/>/g) || []).length, 10);
   assert.match(out, /<circle cx="1" cy="2" r="\.7" fill="url\(#g\)"\/>/);
+});
+
+test('rebaseUrls moves relative url()s to the bundle folder and leaves data, remote, root and fragment urls alone', () => {
+  const css = '@font-face{src:url("./assets/a.woff2") format("woff2")}.x{background:url(../img/b.svg?v=1#k),url(\'c d.png\')}.y{mask:url("data:image/svg+xml,%3Csvg%3E")}.z{a:url(/abs.svg) url(#g) url(https://e.example/x.png)}';
+  const out = rebaseUrls(css, '/out/lab', '/out');
+  assert.equal(out, '@font-face{src:url("./lab/assets/a.woff2") format("woff2")}.x{background:url(./img/b.svg?v=1#k),url(\'./lab/c d.png\')}.y{mask:url("data:image/svg+xml,%3Csvg%3E")}.z{a:url(/abs.svg) url(#g) url(https://e.example/x.png)}');
+  assert.deepEqual(relativeUrls(out), ['./lab/assets/a.woff2', './img/b.svg?v=1#k', './lab/c d.png']);
+});
+
+test('joinStylesheets keeps document order, hoists one @charset and refuses @import', () => {
+  const joined = joinStylesheets([
+    { file: '/o/a.css', css: '@charset "UTF-8";@layer x,y;@layer y{a{b:c}}' },
+    { file: '/o/sub/b.css', css: '@charset "UTF-8";@layer x{d{e:url(./f.svg)}}' },
+  ], '/o');
+  assert.equal(joined, '@charset "UTF-8";@layer x,y;@layer y{a{b:c}}@layer x{d{e:url(./sub/f.svg)}}');
+  assert.throws(() => joinStylesheets([{ file: '/o/a.css', css: '@import "b.css";a{b:c}' }], '/o'), /@import/);
+});
+
+test('the build gives every page exactly one stylesheet, its bundle exists and every url() in it resolves', async () => {
+  const web = fileURLToPath(new URL('../web/', import.meta.url));
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'bundle-css-'));
+  try {
+    await cp(web, tmp, { recursive: true });
+    const result = await bundleCss(tmp);
+    const pages = (await readdir(tmp, { recursive: true })).filter((name) => name.endsWith('.html'));
+    assert.ok(pages.length >= 12, 'every page');
+    for (const page of pages) {
+      const html = await readFile(path.join(tmp, page), 'utf8');
+      const source = await readFile(path.join(web, page), 'utf8');
+      const links = [...html.matchAll(/<link\b[^>]*\srel="stylesheet"[^>]*>/g)].map((m) => m[0]);
+      assert.equal(links.length, 1, `${page}: one stylesheet link`);
+      const href = links[0].match(/\shref="([^"]+)"/)[1];
+      assert.match(href, /^(?:\.\.?\/|\/)[\w-]+\.[0-9a-f]{10}\.css$/, `${page}: hashed bundle at the root`);
+      const file = href.startsWith('/') ? path.join(tmp, href) : path.resolve(path.dirname(path.join(tmp, page)), href);
+      const css = await readFile(file, 'utf8');
+      // The bundle is the page's own stylesheets, minified, in document order.
+      const own = [...source.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
+      const expected = await Promise.all(own.map(async (h) => minifyCss(await readFile(h.startsWith('/') ? path.join(web, h) : path.resolve(path.dirname(path.join(web, page)), h), 'utf8'))));
+      const strip = (text) => text.replace(/^@charset "UTF-8";/, '').replace(/url\([^)]*\)/g, 'url()');
+      assert.equal(strip(css), expected.map(strip).join(''), `${page}: same rules, same order`);
+      assert.ok(!/@import\b/.test(css), `${page}: no @import`);
+      assert.equal((css.match(/@charset/g) || []).length, css.startsWith('@charset') ? 1 : 0, `${page}: @charset only first`);
+      for (const url of relativeUrls(css)) {
+        const target = path.resolve(path.dirname(file), url.replace(/[?#].*$/, ''));
+        await access(target).catch(() => assert.fail(`${page}: ${url} does not resolve`));
+      }
+      for (const url of [...css.matchAll(/url\("?(\/[^")]+)/g)].map((m) => m[1])) {
+        await access(path.join(tmp, url)).catch(() => assert.fail(`${page}: ${url} does not resolve`));
+      }
+      // The CSP keeps style-src 'self': the bundle is same-origin and no inline <style> appears.
+      assert.doesNotMatch(html, /<style\b/, `${page}: no inline style element`);
+    }
+    // The homepage's layer order is declared before any layer is used.
+    const home = result.bundles.find((bundle) => bundle.name.startsWith('home.'));
+    const homeCss = await readFile(home.file, 'utf8');
+    assert.ok(homeCss.indexOf('@layer reset,base,layout,components,motion,responsive;') < homeCss.indexOf('@layer reset{'));
+    assert.equal(home.sheets, 10);
+    // Shared sets share one file; the bundled originals are gone.
+    assert.equal(new Set(result.pages.map((page) => page.bundle)).size, result.bundles.length);
+    assert.equal((await readdir(tmp, { recursive: true })).filter((name) => name.endsWith('.css')).length, result.bundles.length);
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('no script loads a stylesheet at runtime, so the build may drop the bundled originals', async () => {
+  const web = fileURLToPath(new URL('../web/', import.meta.url));
+  const scripts = (await readdir(web, { recursive: true })).filter((name) => name.endsWith('.js'));
+  for (const name of scripts) {
+    // Code only: line comments and block comments are dropped before the check.
+    const code = (await readFile(path.join(web, name), 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"\\])\/\/.*$/gm, '$1');
+    assert.doesNotMatch(code, /\.css\b['"`?#]|['"`]stylesheet['"`]|insertRule|adoptedStyleSheets/, `${name}: runtime stylesheet`);
+  }
 });
