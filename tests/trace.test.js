@@ -56,8 +56,8 @@ test('the trace file has the expected shape', () => {
 test('every span survives validation, and the heading matches the run', () => {
   assert.ok(trace);
   assert.equal(trace.spans.length, data.spans.length);
-  assert.equal(traceHeading(trace), 'Recorded replay · rounds 4–5 · 16 commits · Nov 10–11, 2026');
-  assert.equal(trace.scope, 'rounds 4–5');
+  assert.equal(traceHeading(trace), 'Recorded replay · Nov 10–11 redesign · 16 commits');
+  assert.equal(trace.scope, 'Nov 10–11 redesign');
   assert.equal(traceDates('2026-11-10', '2026-11-10'), 'Nov 10, 2026');
   assert.equal(traceDates('2026-10-31', '2026-11-01'), 'Oct 31 – Nov 1, 2026');
   // Bad data never throws; it is dropped.

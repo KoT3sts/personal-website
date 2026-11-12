@@ -9,11 +9,12 @@ that serves it. The site covers the first three; the fourth is account hygiene (
 ## In place (November 11, 2026)
 
 - **Content-Security-Policy on every page** (`<meta http-equiv>` in `web/index.html`,
-  `web/404.html`, `web/projects/*.html`, `web/lab/*.html`: eleven pages, with the evaluation lab,
-  the build trace and the "How I evaluate agents" notes in `lab/`), set before any script:
+  `web/404.html`, `web/projects/*.html`, `web/lab/*.html`: twelve pages, with the agent
+  observability lab, the classifier evaluation lab, the build trace and the "How I evaluate
+  agents" notes in `lab/`), set before any script:
   `default-src 'self'`; `script-src 'self'` plus a SHA-256 hash for the homepage's one inline
   script (the early tour decision); `style-src`, `font-src`, `connect-src`, `manifest-src`
-  `'self'` (same-origin JSON only: the evaluation lab's `lab/data/sentiment-eval.json`, and `trace/build-trace.json`, which the homepage fetches only when the tour plays or the Trace panel opens, and `lab/build-trace.html` renders); `img-src 'self' data:` (CSS masks drawn from inline SVG: the light scene's feathers and every arrow icon); `object-src`, `frame-src`,
+  `'self'` (same-origin JSON only: `lab/data/agent-traces.json`, which the agent observability page renders and the homepage's "Open the work" preview fetches lazily (when the section comes near, or at once when the build tour starts); `trace/build-trace.json`, which the homepage fetches lazily (for the same preview, when the tour plays or when the Trace panel opens) and `lab/build-trace.html` renders; and the classifier lab's `lab/data/sentiment-eval.json`, which only that page fetches); `img-src 'self' data:` (CSS masks drawn from inline SVG: the light scene's feathers and every arrow icon); `object-src`, `frame-src`,
   `worker-src`, `media-src`, `base-uri`, `form-action` all `'none'`; `upgrade-insecure-requests`.
   An injected inline script or a remote image is refused (checked in Chrome: the probe script
   did not run, and `script-src-elem` and `img-src` violations fired). The full build tour runs

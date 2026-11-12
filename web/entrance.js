@@ -328,7 +328,7 @@ export const TOUR_STOPS = [
   // Open the work (#lab): three lab cards. Each card is placed with its name and
   // sentence; once it is down, its preview is wired (a live preview from
   // work-previews.js, or its static summary) and its link goes in. The
-  // recorded run (rounds 4–5) predates this section, so its cursors replay
+  // recorded run (Nov 10–11) predates this section, so its cursors replay
   // only the run-wide (All/Tour) steps.
   { sel: '#lab', name: 'Lab', weight: 0.4, pace: 0.8, span: 0.55, note: 'art → links · previews wired', jobs: [
     { sel: '.section-top > span', roles: ['layout', 'layout'], kind: 'wipe', multi: 2, act: 'setting header row' },
@@ -580,8 +580,9 @@ export function normalizeTrace(data) {
   const last = spans.reduce((a, b) => (b.end > a.end ? b : a));
   const from = day(run.started) || day(data.spans[first.index]?.start);
   const to = day(run.ended) || day(data.spans[last.index]?.end);
-  // What part of the build the recording covers, from its title ("rounds 4–5").
-  const scope = /\brounds? \d+(?:\s*[–-]\s*\d+)?/i.exec(typeof data.title === 'string' ? data.title : '')?.[0].toLowerCase() || '';
+  // What the recording covers, from its days: "Nov 10–11 redesign".
+  const days = traceDates(from, to).replace(/, \d{4}$/, '');
+  const scope = days ? `${days} redesign` : '';
   return { spans, byId: new Map(spans.map(span => [span.id, span])), commits, from, to, scope, cache: new Map() };
 }
 
@@ -598,7 +599,7 @@ export function traceDates(from, to) {
 
 export function traceHeading(trace) {
   const dates = traceDates(trace.from, trace.to);
-  return `Recorded replay${trace.scope ? ` · ${trace.scope}` : ''} · ${trace.commits} ${trace.commits === 1 ? 'commit' : 'commits'}${dates ? ` · ${dates}` : ''}`;
+  return `Recorded replay · ${trace.scope || dates || 'this site'} · ${trace.commits} ${trace.commits === 1 ? 'commit' : 'commits'}`;
 }
 
 // A recorded action shortened for a cursor label: lowercase first letter (as
@@ -1440,7 +1441,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     // (or without it) the wording stays neutral.
     if (stopIndex === 0) {
       announce(trace
-        ? `Build tour: a visual replay of the recorded agent run behind ${trace.scope || 'part'} of this page, starting with the ${stopInfo.name.toLowerCase()}. Skip tour is available.`
+        ? `Build tour: a visual replay of the recorded agent run behind ${trace.scope ? `the ${trace.scope}` : 'part'} of this page, starting with the ${stopInfo.name.toLowerCase()}. Skip tour is available.`
         : `Build tour: agents assemble the page, starting with the ${stopInfo.name.toLowerCase()}. Skip tour is available.`);
     } else {
       announce(trace

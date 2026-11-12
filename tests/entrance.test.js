@@ -483,7 +483,7 @@ test('the dock announces each section once, politely, and keeps decoration out o
   assert.match(messages[0], /^Build tour: agents assemble the page, starting with the hero\./);
   assert.ok(messages.slice(1, -1).every(text => /^Building .+, section \d+ of \d+\.$|^Handoff: the tour is ending\.$/.test(text)), messages.join(' | '));
   assert.ok(messages.every(text => !/replay|recorded|agents built/i.test(text)), messages.join(' | '));
-  // With it, the replay wording, scoped to the rounds it covers.
+  // With it, the replay wording, scoped to the days it covers.
   const replayed = setup(t, { width: 1280, frames: true, config: { trace: traceData } });
   const replayLive = dockOf(replayed.document).querySelector('.agentic-dock-live');
   const replayMessages = [replayLive.textContent];
@@ -491,7 +491,7 @@ test('the dock announces each section once, politely, and keeps decoration out o
     replayed.clock.step(32);
     if (replayLive.textContent !== replayMessages.at(-1)) replayMessages.push(replayLive.textContent);
   }
-  assert.match(replayMessages[0], /^Build tour: a visual replay of the recorded agent run behind rounds 4–5 of this page, starting with the hero\./);
+  assert.match(replayMessages[0], /^Build tour: a visual replay of the recorded agent run behind the Nov 10–11 redesign of this page, starting with the hero\./);
   assert.ok(replayMessages.slice(1, -1).every(text => /^Replaying recorded steps for .+, section \d+ of \d+\.$|^Replay ending/.test(text)), replayMessages.join(' | '));
   assert.ok(replayMessages.every(text => !/assembl|agents built|Building /.test(text)), replayMessages.join(' | '));
   // Decoration is hidden; real headings exist once.
@@ -622,7 +622,7 @@ test('the dock Trace panel lists the recorded steps, follows the tour, and Escap
   assert.equal(toggle.getAttribute('aria-expanded'), 'false');
   assert.equal(panel.hidden, true);
   assert.equal(panel.getAttribute('role'), 'region');
-  assert.equal(document.getElementById(panel.getAttribute('aria-labelledby')).textContent, 'Recorded replay · rounds 4–5 · 16 commits · Nov 10–11, 2026');
+  assert.equal(document.getElementById(panel.getAttribute('aria-labelledby')).textContent, 'Recorded replay · Nov 10–11 redesign · 16 commits');
   // The panel follows its toggle in the DOM, so Tab from the open toggle enters it.
   assert.ok(toggle.compareDocumentPosition(panel) & window.Node.DOCUMENT_POSITION_FOLLOWING);
   assert.match(panel.querySelector('.agentic-trace-honesty').textContent, /The number of cursors is a visualization too; the trace counts role types, not separate agents\.$/);
@@ -2130,7 +2130,7 @@ test('the Lab stop places the three cards, wires each preview once its card is d
     assert.ok(first.has(preview) && first.get(preview) >= first.get(card), `preview ${index + 1} wired after its card`);
     assert.ok(first.has(link) && first.get(link) >= first.get(card), `link ${index + 1} wired after its card`);
   });
-  assert.ok([...labels].some(text => /placing 'Evaluation lab'$/.test(text)), [...labels].join(' | '));
+  assert.ok([...labels].some(text => /placing 'Agent observability'$/.test(text)), [...labels].join(' | '));
   assert.ok([...labels].some(text => / · wiring preview$/.test(text)), [...labels].join(' | '));
 });
 

@@ -160,12 +160,12 @@ test('chart labels and the skill usage line keep 4.5:1 on the dark sections', ()
   assert.ok(contrast('101114', 'c7d2a8') >= 4.5);
 });
 
-test('Open the work reserves the live previews’ height (measured at 360-1728) so the swap never moves the page', () => {
+test('Open the work reserves the live previews’ height (measured at 360-2000) so the swap never moves the page', () => {
   assert.match(styles, /\.open-card \{ container-type: inline-size; \}/);
   assert.match(styles, /\.js-enabled \.open-work:not\(\.previews-off\) \.work-preview:not\(\[data-preview-state="fallback"\]\) \{ min-height: var\(--reserve, auto\); \}/);
-  // Live heights (Chrome, Nov 12): lab 413-428, trace 255-292, loop about .54 x its width + 50-70 px.
+  // Live heights (Chrome, Nov 12): obs 310-359 wide, 310-345 tablet, 343-376 phone; trace 255-292; loop about .54 x its width + 50-70 px.
   const reserve = kind => [...styles.matchAll(new RegExp(`\\.work-preview\\[data-preview="${kind}"\\] \\{ --reserve: ([^;]+);`, 'g'))].map(match => match[1]);
-  assert.deepEqual(reserve('lab'), ['432px', '420px']);
+  assert.deepEqual(reserve('obs'), ['360px', '346px', '378px']);
   assert.deepEqual(reserve('trace'), ['300px', '285px']);
   assert.deepEqual(reserve('loop'), ['calc(54.2cqi + 72px)', 'calc((100cqi - 32px) * .296 + 60px)']);
 });

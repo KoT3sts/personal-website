@@ -4,6 +4,7 @@
    number strip and the footer; this file only adds the step list, role chips and
    badges. Text stays at 11px or larger, all colours at 4.5:1 or more on the paper. */
 
+.bt-dated { max-width: 44ch; margin-top: 22px; color: var(--muted); font-size: clamp(17px, 1.5vw, 21px); line-height: 1.4; text-wrap: pretty; }
 .bt-sub { max-width: 58ch; margin-top: 16px; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .bt-status { margin: 0 var(--gutter) 40px; color: var(--muted); font-size: 15px; line-height: 1.55; }
 .lab-strip-band .lab-strip-take dd { font-size: 16px; }

@@ -33,9 +33,34 @@ Self-hosted in `web/assets/fonts/`, declared at the top of `web/styles.css` and 
 
 # Data
 
-## Evaluation lab: UCI Sentiment Labelled Sentences
+## Agent observability data: `web/lab/data/agent-traces.json`
 
-Used by `web/lab/sentiment-eval.html`, a public reproduction that shows how Cesar evaluates a sentiment classifier. It is not the Companionship Chatbot's model, data or reported result, and the page says so.
+Used by `web/lab/agent-observability.html` and the homepage's first "Open the work" card (three
+KPIs and an evaluator grid, `web/work-previews.js`; the card's no-JS numbers are written into
+`web/index.html` and `tests/work-previews.test.js` checks they match the file).
+
+- **What it is:** OpenInference-shaped traces of the agent sessions that built this site, one
+  trace per user turn, with AGENT, LLM, TOOL and CHAIN spans, seven deterministic code evaluators
+  (no LLM-as-judge) and rollups. Window: Nov 7–12, 2026 (69 traces in the November 12 export).
+- **Exporter:** `python3 scripts/telemetry/export_traces.py` (standard library) reads the local
+  OpenCode session store read-only, under a SQLite authorizer that refuses any column outside a
+  short allowlist. Which sessions and turns are included, and why, is written down in
+  `scripts/telemetry/README.md`. The same store and git history give a byte-identical file.
+- **Privacy rules** (the repository is public): structure and numbers only. No prompts,
+  responses, reasoning, tool inputs or outputs, file names, commands or titles; bash calls carry
+  only a category; tool and agent names come from allowlists (anything else is dropped and
+  counted); only the calendar day is kept, span times are offsets from each trace's start; every
+  key and string is scanned against a denylist (employer and internal tool names, ticket
+  prefixes, home paths, URLs, emails, session ids) before writing, and `tests/agent-traces.test.js`
+  repeats the scan.
+- **No cost:** the runs used a flat-rate subscription, so a list-price figure would mislead.
+- **Limits:** LLM latency is estimated from timestamps; long runs are compacted into CHAIN spans
+  for size (counts and tokens stay exact); round labels and session windows are judgement calls
+  (see the README).
+
+## Classifier evaluation lab: UCI Sentiment Labelled Sentences
+
+Used by `web/lab/sentiment-eval.html`, a public reproduction that shows how Cesar evaluates a sentiment classifier. Since November 12, 2026 it is framed as a classifier-evaluation demo tied to the Companionship Chatbot (whose sentiment module is the reason it exists): it is linked from the chatbot's homepage story, explorer facts and case study as "How I evaluate a classifier (public data)", and no longer from the homepage's "Open the work" list. It is not the chatbot's model, data or reported result, and the page says so.
 
 - **Dataset:** Sentiment Labelled Sentences, UCI Machine Learning Repository, dataset 331. Page: https://archive.ics.uci.edu/dataset/331/sentiment+labelled+sentences. DOI: https://doi.org/10.24432/C57604.
 - **Citation:** Kotzias, D., Denil, M., de Freitas, N., and Smyth, P. (2015). From Group to Individual Labels Using Deep Features. KDD 2015. UCI asks users to cite the paper.
@@ -49,7 +74,7 @@ Used by `web/lab/sentiment-eval.html`, a public reproduction that shows how Cesa
 ## Build trace: `web/trace/build-trace.json`
 
 Hand-curated on November 11, 2026 from the site's own records: git commit times and subjects
-(`3839873..7395a47`, exact) and the OpenCode session transcripts of rounds 4 and 5 (message times
+(`3839873..7395a47`, exact) and the OpenCode session transcripts of the Nov 10–11 redesign (rounds 4 and 5 in HANDOFF.md; message times
 to the minute; task intervals between them are marked `estimated`). There is no generator: each
 of the 52 spans is a short paraphrase of a real step, its real result (test counts, review
 findings, failures and retries) and the commit it ended in. Roles are role types, not separate
@@ -60,7 +85,11 @@ agent instances.
   only. `tests/trace.test.js` checks the schema, that every commit exists in git history, and the
   privacy patterns.
 - **Used by** the build tour (cursor labels, the Trace panel) and `web/lab/build-trace.html`.
-  Both say it is a recorded replay of rounds 4–5 and that cursor positions, typing and the
-  number of cursors are a visualization.
+  Both say it is a recorded replay of the Nov 10–11, 2026 redesign (the page and the trace
+  title no longer use round numbers, which meant nothing to visitors) and that cursor
+  positions, typing and the number of cursors are a visualization. The homepage's second
+  "Open the work" card previews it as "Replay the redesign".
 - **To extend it** to a later round, add spans the same way (real commits only, `timing` honest),
-  update `run`, `totals` and the title's round range, and re-run `node --test`.
+  update `run` and `totals`, and re-run `node --test`. The Trace panel heading takes its dates
+  from `run` ("Recorded replay · Nov 10–11 redesign · 16 commits"); if a later run is not a
+  redesign, change the word in `normalizeTrace` (`web/entrance.js`).

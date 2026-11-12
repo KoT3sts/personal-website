@@ -24,7 +24,7 @@ const EASE = 'cubic-bezier(.16, 1, .3, 1)';
 const INDEX_GAP = 32; // px kept between the ring and the index column (desktop)
 const FACT_ROWS = 3; // term/value rows shown per project
 const FACT_TAGS = 5; // stack tags shown before "+N"
-const LAB_LABEL = 'Evaluation lab';
+const LAB_LABEL = 'How I evaluate a classifier (public data)';
 
 const clean = value => (value || '').replace(/\s+/g, ' ').trim();
 function element(document, tag, className, text) {

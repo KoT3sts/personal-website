@@ -6,40 +6,33 @@
    paper (#eeede8) and the night (#101114). Text is 11px or larger, targets 44px. */
 
 .wp-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.wp-lab, .wp-trace, .wp-loop { --wp-line: currentColor; --wp-tint: transparent; position: relative; display: grid; gap: 14px; min-width: 0; margin: 0; font-size: 13px; line-height: 1.4; }
+.wp-obs, .wp-trace, .wp-loop { --wp-line: currentColor; --wp-tint: transparent; position: relative; display: grid; gap: 14px; min-width: 0; margin: 0; font-size: 13px; line-height: 1.4; }
 @supports (color: color-mix(in srgb, red 50%, transparent)) {
-  .wp-lab, .wp-trace, .wp-loop { --wp-line: color-mix(in srgb, currentColor 34%, transparent); --wp-tint: color-mix(in srgb, currentColor 10%, transparent); }
+  .wp-obs, .wp-trace, .wp-loop { --wp-line: color-mix(in srgb, currentColor 34%, transparent); --wp-tint: color-mix(in srgb, currentColor 10%, transparent); }
 }
 .wp-label { font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 11px; font-weight: 400; letter-spacing: .04em; text-transform: uppercase; }
 .wp-caption { font-size: 13px; line-height: 1.45; }
 
-/* Lab: threshold, model toggle, three scores and a 2 x 2 matrix. */
-.wp-lab-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.wp-lab-value { font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.wp-range { display: block; width: 100%; height: 44px; margin: 0; background: transparent; color: inherit; cursor: pointer; -webkit-appearance: none; appearance: none; }
-.wp-range:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-.wp-range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--wp-line); }
-.wp-range::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -9px; border: 0; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 5px var(--wp-tint); -webkit-appearance: none; appearance: none; }
-.wp-range::-moz-range-track { height: 4px; border-radius: 4px; background: var(--wp-line); }
-.wp-range::-moz-range-thumb { width: 22px; height: 22px; border: 0; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 5px var(--wp-tint); }
-.wp-seg { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
-.wp-seg input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
-.wp-seg label { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 1px solid var(--wp-line); border-radius: 50px; font-size: 13px; line-height: 1.2; cursor: pointer; user-select: none; }
-.wp-seg label:hover { border-color: currentColor; }
-.wp-seg input:checked + label { border-color: currentColor; background: var(--wp-tint); box-shadow: inset 0 0 0 1px currentColor; font-weight: 700; }
-.wp-seg input:focus-visible + label { outline: 2px solid currentColor; outline-offset: 2px; }
-.wp-scores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
-.wp-scores > div { display: grid; gap: 4px; min-width: 0; padding-top: 8px; border-top: 1px solid var(--wp-line); }
-.wp-scores dd { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.wp-matrix { width: 100%; border-collapse: separate; border-spacing: 4px; font-variant-numeric: tabular-nums; }
-.wp-matrix caption { padding: 0 4px 2px; text-align: left; }
-.wp-matrix th { padding: 2px 4px; text-align: center; }
-.wp-matrix th[scope="row"] { text-align: left; }
-.wp-matrix td { padding: 6px 4px; border: 1px solid transparent; border-radius: 4px; text-align: center; }
-.wp-hit { background: var(--wp-tint); }
-.wp-miss { border-color: var(--wp-line); border-style: dashed; }
-.wp-count { display: block; font-size: 18px; font-weight: 800; line-height: 1.1; }
-.wp-key { font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 11px; letter-spacing: .04em; }
+/* Observability: three KPIs, then an evaluator grid (one column per trace, one row per
+   check) between its row names and pass tallies; the range input over it reads one trace.
+   Pass cells are short marks in the line colour, fails tall in red, so the two differ
+   without colour too. */
+.wp-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.wp-kpis > div { display: grid; grid-template-rows: 1fr auto; gap: 4px; min-width: 0; padding-top: 8px; border-top: 1px solid var(--wp-line); }
+.wp-kpis dd { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.wp-obs-grid { --wp-row: 15px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 8px; align-items: start; }
+.wp-obs-names, .wp-obs-tally { display: grid; grid-auto-rows: var(--wp-row); align-items: center; margin: 0; padding: 0; list-style: none; line-height: 1; white-space: nowrap; }
+.wp-obs-tally { text-align: right; font-variant-numeric: tabular-nums; }
+.wp-obs-scrub { position: relative; min-width: 0; border-radius: 3px; }
+.wp-obs-scrub:focus-within { outline: 2px solid currentColor; outline-offset: 3px; }
+.wp-obs-svg { display: block; width: 100%; height: calc(var(--wp-row) * var(--wp-rows, 6)); overflow: visible; }
+.wp-obs-scrub .wp-trace-range { left: 0; width: 100%; }
+.wp-cell { fill: var(--wp-line); }
+.wp-fail { fill: var(--wp-fail, #e0483f); }
+.wp-obs .wp-cursor { stroke: none; }
+.wp-obs[data-cursor="true"] .wp-cursor { opacity: 1; }
+.wp-obs .wp-chip-pass { height: 5px; background: var(--wp-line); }
+.wp-obs .wp-chip-fail { background: var(--wp-fail, #e0483f); }
 
 /* Trace: one bar per recorded step, coloured by role, with a status mark below. */
 .wp-trace { --wp-orchestrator: currentColor; --wp-implementation-worker: #3c7be0; --wp-quality-reviewer: #e0483f; --wp-ui-design-director: #9b6bf0; }
@@ -76,12 +69,13 @@
 .wp-loop-text { fill: currentColor; font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: var(--wp-loop-text, 14px); letter-spacing: .03em; text-transform: uppercase; }
 
 @keyframes wp-rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes wp-fade { from { opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
   .wp-trace[data-play="wait"] .wp-mark { opacity: 0; }
   .wp-trace[data-play="on"] .wp-mark { animation: wp-rise .45s cubic-bezier(.2, .7, .2, 1) calc(var(--i, 0) * 42ms) both; }
-  .wp-seg label { transition: border-color .2s ease, background-color .2s ease; }
+  .wp-obs[data-play="wait"] .wp-col { opacity: 0; }
+  .wp-obs[data-play="on"] .wp-col { animation: wp-fade .3s ease-out calc(var(--i, 0) * 12ms) both; }
 }
 @media (max-width: 420px) {
-  .wp-scores dd { font-size: 20px; }
-  .wp-lab-value { font-size: 24px; }
+  .wp-kpis dd { font-size: 20px; }
 }

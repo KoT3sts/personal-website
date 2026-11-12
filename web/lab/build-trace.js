@@ -165,7 +165,6 @@ export function render(document, data) {
   const summary = summarize(data);
   if (!summary.spans.length) throw new Error('empty trace');
   const set = (selector, value) => { const node = document.querySelector(selector); if (node) node.textContent = value; return node; };
-  set('[data-bt="title"]', summary.title);
   set('[data-bt="commits"]', String(summary.commits));
   set('[data-bt="steps"]', String(summary.spans.length));
   set('[data-bt="roles-count"]', String(summary.roles.length));

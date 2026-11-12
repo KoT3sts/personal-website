@@ -67,7 +67,7 @@
       "sentence": "The agent run behind this site",
       "source": "lab",
       "quote": [
-        "The agent run behind this site (rounds 4–5)"
+        "The agent run behind this site"
       ],
       "wording": "verbatim",
       "status": "approved",
@@ -668,14 +668,14 @@
     {
       "page": "agent-workflow",
       "section": "This site as a test",
-      "sentence": "The recorded replay covers 16 of those commits, in rounds 4 and 5.",
+      "sentence": "The recorded replay covers 16 of those commits, from the Nov 10–11 redesign.",
       "source": [
         "metrics",
         "lab"
       ],
       "quote": [
         "the curated replay covers 52 steps and 16 commits",
-        "This recording covers rounds 4–5 only."
+        "This recording covers those two days only, commits 3839873 to 7395a47."
       ],
       "wording": "reworded",
       "status": "approved",

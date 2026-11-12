@@ -209,7 +209,7 @@
      the module failed (.previews-off) or where a preview kept its summary. */
   .open-card { container-type: inline-size; }
   .js-enabled .open-work:not(.previews-off) .work-preview:not([data-preview-state="fallback"]) { min-height: var(--reserve, auto); }
-  .js-enabled .open-work .work-preview[data-preview="lab"] { --reserve: 432px; }
+  .js-enabled .open-work .work-preview[data-preview="obs"] { --reserve: 360px; }
   .js-enabled .open-work .work-preview[data-preview="trace"] { --reserve: 300px; }
   .js-enabled .open-work .work-preview[data-preview="loop"] { --reserve: calc(54.2cqi + 72px); }
   .open-card-link { margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 22px; border-radius: 50px; background: var(--ink); color: var(--paper); font-size: 13px; box-shadow: 0 12px 24px -16px #17171699; }
@@ -286,7 +286,7 @@
     .open-card > :not(.work-preview) { grid-column: 1; }
     .open-card .work-preview { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
     /* The preview column is 1.2 / 2.2 of the card's content width less the 32 px gap. */
-    .js-enabled .open-work .work-preview[data-preview="lab"] { --reserve: 420px; }
+    .js-enabled .open-work .work-preview[data-preview="obs"] { --reserve: 346px; }
     .js-enabled .open-work .work-preview[data-preview="trace"] { --reserve: 285px; }
     .js-enabled .open-work .work-preview[data-preview="loop"] { --reserve: calc((100cqi - 32px) * .296 + 60px); }
     .open-card-link { margin-top: 24px; justify-self: start; align-self: end; }
@@ -308,6 +308,8 @@
     .education-layout h3 { padding-bottom: 0; border-bottom: 0 !important; }.education-list, .spoken-languages { grid-column: 1; border-top: 0 !important; padding-top: 16px !important; }.education-layout { padding-bottom: 64px; }
     .work-end { margin-top: 50px; }
     .open-work { padding-bottom: 64px; }.open-card { border-radius: 18px; }
+    /* The observability grid's caption and readout wrap to more lines on a phone (measured 343-376px at 360-430). */
+    .js-enabled .open-work .work-preview[data-preview="obs"] { --reserve: 378px; }
     .closing-note { min-height: 410px; padding-block: 75px; }.closing-note p { font-size: 17vw; }.note-orbit { right: -80px; top: 27%; }
     .contact-intro { padding-top: 65px; }.contact h2 { font-size: 10.1vw; margin-top: 24px; }.contact-button { margin-top: 35px; padding: 13px 20px; font-size: 13px; gap: 18px; }.contact-links { margin: 26px 0 70px; gap: 8px 26px; }.footer-bottom { flex-direction: column; gap: 10px; }.footer-bottom > :last-child { margin-left: 0; text-align: left; }.story-lead { font-size: 21px; }
   }

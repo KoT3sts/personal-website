@@ -1,39 +1,41 @@
 // The work previews rendered for real (jsdom): initWorkPreviews against the shipped
 // JSON and three containers like the homepage's. Checks the rendered numbers against
-// the lab's Python reference, the trace caption, the fallback and the tour gate.
+// agent-traces-summary.json, the trace caption, the fallback and the tour gate.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
-import { initWorkPreviews } from '../web/work-previews.js';
+import { initWorkPreviews, obsSummary } from '../web/work-previews.js';
 
 const web = new URL('../web/', import.meta.url);
-const lab = JSON.parse(readFileSync(new URL('lab/data/sentiment-eval.json', web), 'utf8'));
+const obs = JSON.parse(readFileSync(new URL('lab/data/agent-traces-summary.json', web), 'utf8'));
 const trace = JSON.parse(readFileSync(new URL('trace/build-trace.json', web), 'utf8'));
 const MARKUP = `<!doctype html><html><body><section id="lab"><ul>
-  <li class="open-card"><div class="work-preview" data-preview="lab"><p class="fallback">lab summary</p></div></li>
+  <li class="open-card"><div class="work-preview" data-preview="obs"><p class="fallback">obs summary</p></div></li>
   <li class="open-card"><div class="work-preview" data-preview="trace"><p class="fallback">trace summary</p></div></li>
   <li class="open-card"><div class="work-preview" data-preview="loop"><p class="fallback">loop summary</p></div></li>
 </ul></section></body></html>`;
 
 // jsdom has no fetch, layout or IntersectionObserver: the previews then load at once.
-function page({ missing = [] } = {}) {
+function page({ missing = [], edit = {} } = {}) {
   const { window } = new JSDOM(MARKUP, { url: 'https://portfolio.test/' });
   const requests = [];
   window.fetch = async (url, options) => {
     requests.push([String(url), options?.credentials]);
     const file = new URL(String(url));
     if (missing.some(name => file.pathname.endsWith(name))) return { ok: false, status: 404, json: async () => null };
-    return { ok: true, status: 200, json: async () => JSON.parse(readFileSync(file, 'utf8')) };
+    const body = JSON.parse(readFileSync(file, 'utf8'));
+    const change = Object.entries(edit).find(([name]) => file.pathname.endsWith(name));
+    return { ok: true, status: 200, json: async () => (change ? change[1](body) : body) };
   };
   return { window, document: window.document, requests, preview: kind => window.document.querySelector(`.work-preview[data-preview="${kind}"]`) };
 }
 
-test('lab, trace and loop go live with the numbers from the shipped JSON', async t => {
+test('obs, trace and loop go live with the numbers from the shipped JSON', async t => {
   const { window, document, requests, preview } = page();
   t.after(() => window.close());
   await (await initWorkPreviews(document, window)).settled;
-  for (const kind of ['lab', 'trace', 'loop']) {
+  for (const kind of ['obs', 'trace', 'loop']) {
     assert.equal(preview(kind).dataset.previewState, 'live', kind);
     assert.equal(preview(kind).querySelector('.fallback'), null, `${kind} fallback replaced`);
   }
@@ -42,25 +44,29 @@ test('lab, trace and loop go live with the numbers from the shipped JSON', async
     assert.equal(credentials, 'same-origin');
   }
 
-  // Lab: model B by default, threshold 0.50, every number equal to the reference.
-  const box = preview('lab');
-  const checked = box.querySelector('input[type="radio"]:checked');
-  assert.equal(checked.value, 'B');
-  assert.equal(box.querySelector(`label[for="${checked.id}"]`).textContent, 'B · Logistic');
-  const slider = box.querySelector('input[type="range"]');
-  assert.equal(slider.value, '0.5');
-  assert.equal(box.querySelector(`label[for="${slider.id}"]`).textContent, 'Decision threshold');
-  assert.equal(box.querySelector('output').textContent, '0.50');
-  const ref = lab.reference.B;
-  assert.deepEqual([...box.querySelectorAll('.wp-scores dd')].map(dd => dd.textContent), [ref.precision, ref.recall, ref.f1].map(value => value.toFixed(3)));
-  assert.deepEqual([...box.querySelectorAll('.wp-count')].map(cell => Number(cell.textContent)), [ref.tp, ref.fn, ref.fp, ref.tn]);
-  assert.equal(box.querySelector('caption').textContent, 'Model B confusion matrix at 0.50');
-  assert.equal(box.querySelector('.wp-caption').textContent, `Live: the lab’s ${lab.test.length} test sentences.`);
-  // Model A through the toggle.
-  const a = box.querySelector('input[value="A"]');
-  a.checked = true;
-  a.dispatchEvent(new window.Event('change', { bubbles: true }));
-  assert.deepEqual([...box.querySelectorAll('.wp-count')].map(cell => Number(cell.textContent)), ['tp', 'fn', 'fp', 'tn'].map(key => lab.reference.A[key]));
+  // Observability: three KPIs, a column per trace, a cell per evaluation, the readout.
+  const box = preview('obs');
+  const summary = obsSummary(obs);
+  assert.deepEqual([...box.querySelectorAll('.wp-kpis > div')].map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent]), summary.kpis);
+  assert.equal(box.querySelectorAll('.wp-col').length, obs.traces.length);
+  const scored = summary.rows.reduce((sum, row) => sum + row.scored, 0);
+  assert.equal(box.querySelectorAll('.wp-cell').length, scored);
+  assert.equal(box.querySelectorAll('.wp-fail').length, summary.rows.reduce((sum, row) => sum + row.scored - row.pass, 0));
+  assert.deepEqual([...box.querySelectorAll('.wp-obs-names li')].map(li => li.textContent), ['Tool errors', 'Recovered', 'Delegated', 'Reviewed', 'Tested', 'Latency']);
+  assert.deepEqual([...box.querySelectorAll('.wp-obs-tally li')].map(li => li.textContent), summary.rows.map(row => `${row.pass}/${row.scored}`));
+  const range = box.querySelector('.wp-trace-range');
+  assert.equal(range.getAttribute('aria-label'), 'Trace');
+  assert.equal(range.max, String(obs.traces.length));
+  const first = obs.traces[0];
+  const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(range.getAttribute('aria-valuetext'), new RegExp(`^Trace 1 of ${obs.traces.length} · Nov 7 · ${escape(first.topic)}\\. ${first.toolCalls} tool calls, ${first.toolErrors} failed\\. \\d of \\d checks passed`));
+  assert.doesNotMatch(range.getAttribute('aria-valuetext'), /Round \d|undefined/);
+  // Keyboard: the last trace.
+  range.value = String(obs.traces.length);
+  range.dispatchEvent(new window.Event('input', { bubbles: true }));
+  assert.match(box.querySelector('.wp-readout .wp-label').textContent, new RegExp(`^Trace ${obs.traces.length} of ${obs.traces.length} · `));
+  assert.match(box.querySelector('.wp-caption').textContent, new RegExp(`^${obs.traces.length} traces from the agent sessions that built this site, Nov 7–12, each scored by 6 pass/fail checks \\(7 evaluators\\)\\.`));
+  assert.match(box.querySelector('.wp-sr').textContent, /^Checks passed: Tool error rate \d+ of \d+, /);
 
   // Trace: one bar per span, a mark per error/retried/fixed, the caption counts.
   const strip = preview('trace');
@@ -72,20 +78,33 @@ test('lab, trace and loop go live with the numbers from the shipped JSON', async
   assert.match(strip.querySelector('.wp-trace-range').getAttribute('aria-valuetext'), new RegExp(`^Step 1 of ${trace.spans.length}, `));
   await new Promise(resolve => setTimeout(resolve, 10));
   assert.equal(strip.querySelector('.wp-trace').dataset.play, 'on', 'played once shown (no observer, no tour)');
+  assert.equal(box.querySelector('.wp-obs').dataset.play, 'on', 'the grid too');
 
   // Loop: four labelled stages.
   assert.deepEqual([...preview('loop').querySelectorAll('text')].map(node => node.textContent), ['Trace', 'Classify', 'Fixed test set', 'Gate']);
 });
 
 test('a missing file keeps that card\'s static summary', async t => {
-  const { window, document, preview } = page({ missing: ['build-trace.json', 'sentiment-eval.json'] });
+  const { window, document, preview } = page({ missing: ['build-trace.json', 'agent-traces-summary.json'] });
   t.after(() => window.close());
   await (await initWorkPreviews(document, window)).settled;
-  for (const kind of ['lab', 'trace']) {
+  for (const kind of ['obs', 'trace']) {
     assert.equal(preview(kind).dataset.previewState, 'fallback');
     assert.equal(preview(kind).querySelector('.fallback').textContent, `${kind} summary`);
   }
   assert.equal(preview('loop').dataset.previewState, 'live');
+});
+
+test('a trace without a topic or day reads by position, never "undefined"', async t => {
+  const strip = body => ({ ...body, traces: body.traces.map((trace, i) => (i ? trace : { id: trace.id, toolCalls: trace.toolCalls, toolErrors: trace.toolErrors })) });
+  const { window, document, preview } = page({ edit: { 'agent-traces-summary.json': strip } });
+  t.after(() => window.close());
+  await (await initWorkPreviews(document, window)).settled;
+  const box = preview('obs');
+  assert.equal(box.dataset.previewState, 'live');
+  const text = box.querySelector('.wp-trace-range').getAttribute('aria-valuetext');
+  assert.match(text, new RegExp(`^Trace 1 of ${obs.traces.length}\\. `));
+  assert.doesNotMatch(text + box.querySelector('.wp-readout').textContent, /undefined|null/);
 });
 
 test('during the build tour the trace waits until the tour shows its card', async t => {

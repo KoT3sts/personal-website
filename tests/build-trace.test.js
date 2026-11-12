@@ -14,14 +14,17 @@ const css = read('lab/build-trace.css');
 const data = JSON.parse(read('trace/build-trace.json'));
 
 test('the page: title, honesty sentence, no-JS link to the raw trace, own script and styles', () => {
-  // Scoped honestly: the recording covers rounds 4–5 only.
-  assert.match(page, /<title>The agent run behind this site \(rounds 4–5\) — Cesar Tortolero<\/title>/);
-  assert.match(page, /<h1 id="bt-title" class="lab-title">The agent run behind this site \(rounds 4–5\)<\/h1>/);
+  // Scoped honestly, in plain dates (no internal round numbers): the Nov 10–11 redesign only.
+  assert.match(page, /<title>The agent run behind this site — Cesar Tortolero<\/title>/);
+  assert.match(page, /<h1 id="bt-title" class="lab-title">The agent run behind this site<\/h1>\s*<p class="bt-dated">Recorded Nov 10–11, 2026: the redesign of this site, step by step\.<\/p>/);
   for (const name of ['description', 'og:description', 'twitter:description']) {
-    assert.match(page, new RegExp(`(?:name|property)="${name}" content="[^"]*rounds 4–5`), name);
+    assert.match(page, new RegExp(`(?:name|property)="${name}" content="The recorded agent run behind this portfolio’s redesign on Nov 10–11, 2026: 16 commits`), name);
   }
-  for (const name of ['og:title', 'twitter:title']) assert.match(page, new RegExp(`(?:name|property)="${name}" content="The agent run behind this site \\(rounds 4–5\\)`), name);
-  assert.match(page, /Earlier rounds, and the latest work \(the evaluation lab, this trace page and the Icarus hold\), are not in it\./);
+  for (const name of ['og:title', 'twitter:title']) assert.match(page, new RegExp(`(?:name|property)="${name}" content="The agent run behind this site — Cesar Tortolero"`), name);
+  assert.match(page, /This recording covers those two days only, commits 3839873 to 7395a47\. Earlier work and everything since, including this page, are not in it\./);
+  assert.deepEqual([data.run.from, data.run.to], ['3839873', '7395a47'], 'the commits the page names');
+  assert.equal(data.title, 'The agent run behind this site');
+  assert.doesNotMatch(page + data.title, /\brounds? \d/i, 'no internal round numbers');
   assert.equal(HONESTY, TRACE_HONESTY, 'the same sentence as the dock panel');
   assert.equal(CURSORS, TRACE_CURSORS);
   assert.ok(page.includes(`<p class="lab-disclaimer">${TRACE_HONESTY} ${TRACE_CURSORS}</p>`), 'the honesty sentences are in the markup itself');

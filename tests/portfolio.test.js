@@ -144,6 +144,7 @@ test('explorer keys open the ring and step through, the index selects and is ann
   assert.equal(document.querySelector('.explorer-caption-title').getAttribute('aria-hidden'), 'true', 'the repeated title is not');
   assert.deepEqual([...panels[1].querySelectorAll('.explorer-tags li')].map(tag => tag.textContent), ['EEG', 'Autoencoder', 't-SNE']);
   assert.equal(panels[2].querySelector('.explorer-facts-link').getAttribute('href'), './lab/sentiment-eval.html');
+  assert.equal(panels[2].querySelector('.explorer-facts-link').firstChild.textContent, 'How I evaluate a classifier (public data)', 'says how the lab ties to the chatbot');
   assert.equal(panels.filter(panel => panel.querySelector('.explorer-facts-link')).length, 1, 'the lab link only for the chatbot');
   // Focus on the lab link when the project changes goes to the new cover, not <body>.
   document.querySelector('[data-explorer-pick="2"]').click();
@@ -267,18 +268,25 @@ test('Open the work: three large cards between Work and Skills, each with a sent
   assert.equal(lab.querySelector('.open-heading > p').textContent, 'Three things you can try, not just read.');
   const cards = [...lab.querySelectorAll('.open-cards > .open-card')];
   assert.deepEqual(cards.map(card => [card.querySelector('h3').textContent, card.querySelector('.open-card-text').textContent, card.querySelector('.work-preview').dataset.preview, card.querySelector('a.open-card-link').getAttribute('href')]), [
-    ['Evaluation lab', 'Two sentiment models on 3,000 public review sentences. Drag the threshold.', 'lab', './lab/sentiment-eval.html'],
-    ['The agent run behind this site', '52 recorded steps, errors and recoveries included.', 'trace', './lab/build-trace.html'],
+    ['Agent observability', 'Real traces from the agents that built this site, with evaluators on top. Filter, sort and open any trace.', 'obs', './lab/agent-observability.html'],
+    ['Replay the redesign', 'Two days of redesign (Nov 10–11), step by step: 52 recorded steps, errors and recoveries included.', 'trace', './lab/build-trace.html'],
     ['How I evaluate agents', 'Trace, classify, test, gate.', 'loop', './lab/evaluating-agents.html'],
   ]);
   // The summaries say something without scripts, and only figures the lab pages state.
   const stats = card => [...card.querySelectorAll('.open-stats > div')].map(row => `${row.querySelector('dt').textContent} ${row.querySelector('dd').textContent}`);
-  assert.deepEqual(stats(cards[0]), ['F1, model B 0.803', 'F1, model A 0.795', 'Test sentences 596']);
+  // The observability summary is the same numbers work-previews.js computes from the JSON
+  // (tests/work-previews.test.js checks those against the file).
+  assert.deepEqual(stats(cards[0]), ['Traces 69', 'Tool calls 8,271', 'Tool error rate 1.6%']);
+  assert.equal(cards[0].querySelector('.open-note').textContent, 'NOV 7–12, 2026 · 6 PASS/FAIL CHECKS · 7 EVALUATORS, NO LLM JUDGE');
   assert.deepEqual(stats(cards[1]), ['Steps 52', 'Errors recovered 6 of 8', 'Commits 16']);
+  assert.match(cards[1].querySelector('.open-note').textContent, /^NOV 10–11, 2026 · /);
   assert.match(cards[1].querySelector('.open-note').textContent, /RECOVERED: A RETRY OR FIX IS RECORDED/, 'what recovered means, as the trace page says it');
   assert.deepEqual([...cards[2].querySelectorAll('.open-loop > li > .mono')].map(step => step.textContent), ['TRACE', 'CLASSIFY', 'FIXED TEST SET', 'GATE']);
-  const lab1 = await readFile(new URL('../web/lab/sentiment-eval.html', import.meta.url), 'utf8');
-  for (const figure of ['3,000 public review sentences', '596 test', '0.803', '0.795']) assert.ok(lab1.includes(figure), figure);
+  // The sentiment lab is not on the homepage list any more; it stays linked from the chatbot story.
+  assert.equal(document.querySelectorAll('a[href="./lab/sentiment-eval.html"]').length, 1);
+  assert.ok(document.querySelector('#project-chatbot a.story-lab-link[href="./lab/sentiment-eval.html"]'));
+  assert.equal(document.querySelector('.story-lab-link').firstChild.textContent, 'How I evaluate a classifier (public data)');
+  assert.doesNotMatch(html, /rounds? 4|EVALUATION LAB/i);
   const essay = await readFile(new URL('../web/lab/evaluating-agents.html', import.meta.url), 'utf8');
   assert.match(essay, /Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix/);
   for (const [, step] of [...cards[2].querySelectorAll('.open-loop > li')].map(li => [li, li.lastChild.textContent.trim()])) assert.ok(essay.includes(step), step);

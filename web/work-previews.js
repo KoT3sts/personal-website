@@ -1,22 +1,57 @@
 // Homepage "Open the work" previews. Each .work-preview keeps its fallback until the live
 // version is built; same-origin JSON loads a viewport early; text only via textContent.
-import { evaluate } from './lab/metrics.js';
 
-export const LAB_JSON = './lab/data/sentiment-eval.json';
+// The homepage reads the exporter's small summary, not the full trace file.
+export const OBS_JSON = './lab/data/agent-traces-summary.json';
 export const TRACE_JSON = './trace/build-trace.json';
 export const ROLES = ['orchestrator', 'implementation-worker', 'quality-reviewer', 'ui-design-director'];
+// The pass/fail evaluators shown in the observability strip, with short row names.
+export const CHECKS = {
+  tool_error_rate: 'Tool errors', recovered_after_error: 'Recovered', delegation_used: 'Delegated',
+  review_before_commit: 'Reviewed', tests_run_before_commit: 'Tested', latency_budget: 'Latency',
+};
 const MARKS = ['error', 'retried', 'fixed'];
 const HIDE = { 'aria-hidden': 'true' };
-const SCORES = { precision: 'Precision', recall: 'Recall', f1: 'F1' };
-const fix = (value, digits = 3) => value.toFixed(digits);
-const clamp = value => Math.min(0.95, Math.max(0.05, Number(value))) || 0.5;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 let doc;
 let win;
 let uid = 0;
 
 // Pure helpers, tested in node.
-export const validLab = data => Array.isArray(data?.test) && data.test.length > 0 && data.test.every(({ pA, pB, label }) => typeof pA === 'number' && typeof pB === 'number' && (label === 0 || label === 1));
-export const labMetrics = (items, model, threshold) => evaluate(items, model === 'A' ? 'A' : 'B', clamp(threshold), []);
+const count = value => value.toLocaleString('en-US');
+export const dayText = value => { const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(value || ''); return m && MONTHS[m[1] - 1] ? `${MONTHS[m[1] - 1]} ${Number(m[2])}` : ''; };
+// "Nov 7–12" (the month again only if it changes).
+export function daysText(from, to) {
+  const [a, b] = [dayText(from), dayText(to)];
+  if (!a || !b || a === b) return a || b;
+  return a.split(' ')[0] === b.split(' ')[0] ? `${a}–${b.split(' ')[1]}` : `${a} – ${b}`;
+}
+const nonNeg = value => Number.isInteger(value) && value >= 0;
+// Observability: tool calls and errors summed over every trace, and a pass / fail / null
+// (does not apply) cell per evaluator and trace, in file order.
+export function obsSummary(data) {
+  const list = key => (Array.isArray(data?.[key]) ? data[key] : []);
+  const traces = list('traces').filter(t => typeof t?.id === 'string' && nonNeg(t.toolCalls) && nonNeg(t.toolErrors) && t.toolErrors <= t.toolCalls);
+  const at = new Map(traces.map((t, i) => [t.id, i]));
+  const rows = list('evaluators').filter(e => Object.hasOwn(CHECKS, e?.id))
+    .map(e => ({ id: e.id, label: CHECKS[e.id], name: typeof e.name === 'string' ? e.name : CHECKS[e.id], cells: traces.map(() => null) }));
+  for (const e of list('evaluations')) {
+    const row = rows.find(r => r.id === e?.evaluator);
+    if (row && at.has(e.trace) && (e.label === 'pass' || e.label === 'fail')) row.cells[at.get(e.trace)] = e.label;
+  }
+  for (const row of rows) Object.assign(row, { pass: row.cells.filter(c => c === 'pass').length, scored: row.cells.filter(Boolean).length });
+  const sum = key => traces.reduce((total, t) => total + t[key], 0);
+  const [calls, errors] = [sum('toolCalls'), sum('toolErrors')];
+  return {
+    traces, rows,
+    kpis: [['Traces', count(traces.length)], ['Tool calls', count(calls)], ['Tool error rate', calls ? `${((100 * errors) / calls).toFixed(1)}%` : '–']],
+    dates: daysText(data?.meta?.window?.from, data?.meta?.window?.to),
+  };
+}
+// Readout head for one trace: position, day and the plain-words topic; a missing or odd
+// field is left out, never printed as "undefined".
+const plain = value => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, 60) : '');
+export const obsHead = (trace, k, n) => [`Trace ${k + 1} of ${n}`, dayText(trace?.day), plain(trace?.topic)].filter(Boolean).join(' · ');
 // Valid spans in the build-trace page's order.
 export function traceMarks(data) {
   const spans = (Array.isArray(data?.spans) ? data.spans : [])
@@ -74,63 +109,83 @@ const whenShown = node => new Promise(resolve => {
   observer.observe(root, { attributes: true, attributeFilter: ['class', 'data-build-state'], attributeOldValue: true, subtree: true });
 });
 
-// Lab: threshold, model toggle, three scores, 2 x 2 matrix.
-function buildLab(data) {
-  if (!validLab(data)) throw new Error('lab data');
-  const id = `wp${(uid += 1)}`;
-  const root = el('div', 'wp-lab');
-  const head = el('div', 'wp-lab-head', root);
-  el('label', 'wp-label', head, 'Decision threshold').htmlFor = `${id}-t`;
-  const output = attr(el('output', 'wp-lab-value', head), { for: `${id}-t`, 'aria-live': 'off' });
-  const slider = attr(el('input', 'wp-range', root), { type: 'range', id: `${id}-t`, min: 0.05, max: 0.95, step: 0.01, value: 0.5, 'aria-describedby': `${id}-c` });
-  const set = el('fieldset', 'wp-seg', root);
-  el('legend', 'wp-sr', set, 'Model');
-  for (const [value, text] of [['A', 'A · Naive Bayes'], ['B', 'B · Logistic']]) {
-    const radio = attr(el('input', '', set), { type: 'radio', name: `${id}-m`, id: `${id}-${value}`, value });
-    radio.checked = value === 'B';
-    el('label', '', set, text).htmlFor = radio.id;
+// Observability: three KPIs, then a column per trace and a row per code evaluator (pass
+// short, fail tall, blank where it does not apply); hover, drag or arrow keys read one.
+function buildObs(data) {
+  const { traces, rows, kpis, dates } = obsSummary(data);
+  const n = traces.length;
+  if (n < 2 || !rows.length) throw new Error('obs');
+  const root = el('div', 'wp-obs');
+  root.dataset.play = 'wait';
+  const list = el('dl', 'wp-kpis', root);
+  for (const [term, value] of kpis) {
+    const row = el('div', '', list);
+    el('dt', 'wp-label', row, term);
+    el('dd', '', row, value);
   }
-  const cells = {};
-  const scores = el('dl', 'wp-scores', root);
-  for (const [key, text] of Object.entries(SCORES)) {
-    const row = el('div', '', scores);
-    el('dt', 'wp-label', row, text);
-    cells[key] = el('dd', '', row);
+  const grid = el('div', 'wp-obs-grid', root);
+  grid.style.setProperty('--wp-rows', String(rows.length));
+  const names = attr(el('ul', 'wp-obs-names', grid), HIDE);
+  const scrub = el('div', 'wp-obs-scrub', grid);
+  const tally = attr(el('ul', 'wp-obs-tally', grid), HIDE);
+  const art = svg('svg', { class: 'wp-obs-svg', viewBox: `0 0 ${n} ${rows.length}`, preserveAspectRatio: 'none', ...HIDE }, scrub);
+  const cursor = svg('rect', { class: 'wp-cursor', y: 0, width: 1, height: rows.length }, art);
+  for (const row of rows) {
+    el('li', 'wp-label', names, row.label);
+    el('li', 'wp-label', tally, `${row.pass}/${row.scored}`);
   }
-  const table = el('table', 'wp-matrix', root);
-  const caption = el('caption', 'wp-label', table);
-  const rows = [['', 'Predicted pos.', 'Predicted neg.'], ['Actual pos.', 'tp', 'fn'], ['Actual neg.', 'fp', 'tn']];
-  rows.forEach(([label, ...keys], r) => {
-    const row = el('tr', '', el(r ? 'tbody' : 'thead', '', table));
-    if (!r) { el('td', '', row); keys.forEach(text => { el('th', 'wp-label', row, text).scope = 'col'; }); return; }
-    el('th', 'wp-label', row, label).scope = 'row';
-    for (const key of keys) {
-      const cell = el('td', key === 'tp' || key === 'tn' ? 'wp-hit' : 'wp-miss', row);
-      cells[key] = el('span', 'wp-count', cell);
-      el('span', 'wp-key', cell, key.toUpperCase());
-    }
+  traces.forEach((trace, i) => {
+    const column = svg('g', { class: 'wp-col' }, art);
+    column.style.setProperty('--i', String(i));
+    rows.forEach((row, r) => {
+      const cell = row.cells[i];
+      if (cell) svg('rect', { class: `wp-cell wp-${cell}`, x: i + 0.15, width: 0.7, y: r + (cell === 'fail' ? 0.12 : 0.3), height: cell === 'fail' ? 0.76 : 0.4 }, column);
+    });
   });
-  el('p', 'wp-caption', root, `Live: the lab’s ${data.test.length} test sentences.`).id = `${id}-c`;
-  const announce = attr(el('p', 'wp-sr', root), { 'aria-live': 'polite', 'aria-atomic': 'true' });
-  let timer = 0;
-  const render = speak => {
-    const model = set.querySelector(':checked')?.value || 'B';
-    const t = fix(clamp(slider.value), 2);
-    const r = labMetrics(data.test, model, t);
-    output.textContent = t;
-    slider.setAttribute('aria-valuetext', t);
-    caption.textContent = `Model ${model} confusion matrix at ${t}`;
-    for (const key in cells) cells[key].textContent = key in SCORES ? fix(r[key]) : String(r[key]);
-    if (!speak) return;
-    win.clearTimeout(timer);
-    timer = win.setTimeout(() => {
-      announce.textContent = `Threshold ${t}, model ${model}: precision ${fix(r.precision, 2)}, recall ${fix(r.recall, 2)}, F1 ${fix(r.f1, 2)}.`;
-    }, 450);
+  const slider = attr(el('input', 'wp-trace-range', scrub), { type: 'range', min: 1, max: n, step: 1, value: 1, 'aria-label': 'Trace' });
+  const readout = attr(el('p', 'wp-readout', root), HIDE);
+  const meta = el('span', 'wp-label', readout);
+  const detail = el('span', 'wp-action', readout);
+  const legend = attr(el('ul', 'wp-legend', root), { 'aria-label': 'Legend' });
+  for (const key of ['pass', 'fail', 'blank: does not apply']) {
+    const item = el('li', '', legend);
+    if (key.length < 5) attr(el('span', `wp-chip wp-chip-${key}`, item), HIDE);
+    item.append(key);
+  }
+  el('p', 'wp-sr', root, `Checks passed: ${rows.map(row => `${row.name} ${row.pass} of ${row.scored}`).join(', ')}.`);
+  el('p', 'wp-caption', root, `${n} traces from the agent sessions that built this site${dates ? `, ${dates}` : ''}, each scored by ${rows.length} pass/fail checks (${Array.isArray(data?.evaluators) ? data.evaluators.length : rows.length} evaluators). Hover or drag across the grid to read one.`);
+
+  const select = (i, move) => {
+    const k = Math.min(n - 1, Math.max(0, i));
+    const trace = traces[k];
+    const scored = rows.filter(row => row.cells[k]);
+    const failed = scored.filter(row => row.cells[k] === 'fail').map(row => row.name);
+    const head = obsHead(trace, k, n);
+    const body = `${count(trace.toolCalls)} tool calls, ${count(trace.toolErrors)} failed. ${scored.length - failed.length} of ${scored.length} checks passed${failed.length ? `; failed: ${failed.join(', ')}` : ''}.`;
+    cursor.setAttribute('x', String(k));
+    meta.textContent = head;
+    detail.textContent = body;
+    slider.setAttribute('aria-valuetext', `${head}. ${body}`);
+    if (move) slider.value = String(k + 1);
   };
-  listen(slider, { input: () => render(true) });
-  listen(set, { change: () => render(true) });
-  render(false);
-  return { root };
+  wireScrub(root, slider, n, select, f => Math.floor(f * n));
+  return { root, stage: scrub, play: () => { root.dataset.play = reduced() ? 'static' : 'on'; } };
+}
+
+// Hover, drag or arrow keys move the cursor of a strip; focus shows it.
+function wireScrub(root, slider, n, select, at = f => Math.round(f * (n - 1))) {
+  const cursorOn = on => { root.dataset.cursor = on; };
+  const current = () => select(Number(slider.value) - 1);
+  const fromPointer = event => {
+    const box = slider.getBoundingClientRect();
+    if (box.width > 0) select(at((event.clientX - box.left) / box.width), true);
+    cursorOn(true);
+  };
+  listen(slider, {
+    pointermove: fromPointer, pointerdown: fromPointer, input: current, blur: () => cursorOn(false),
+    focus: () => { current(); cursorOn(true); }, pointerleave: () => cursorOn(doc.activeElement === slider),
+  });
+  current();
 }
 
 // Trace: a bar per step; hover, drag or arrow keys read one.
@@ -176,18 +231,7 @@ function buildTrace(data) {
     slider.setAttribute('aria-valuetext', `Step ${k + 1} of ${n}, ${role}, ${status}: ${text}`);
     if (move) slider.value = String(k + 1);
   };
-  const cursorOn = on => { root.dataset.cursor = on; };
-  const current = () => select(Number(slider.value) - 1);
-  const fromPointer = event => {
-    const box = slider.getBoundingClientRect();
-    if (box.width > 0) select(Math.round(((event.clientX - box.left) / box.width) * (n - 1)), true);
-    cursorOn(true);
-  };
-  listen(slider, {
-    pointermove: fromPointer, pointerdown: fromPointer, input: current, blur: () => cursorOn(false),
-    focus: () => { current(); cursorOn(true); }, pointerleave: () => cursorOn(doc.activeElement === slider),
-  });
-  current();
+  wireScrub(root, slider, n, select);
   return { root, stage: scrub, play: () => { root.dataset.play = reduced() ? 'static' : 'on'; } };
 }
 
@@ -221,7 +265,7 @@ function buildLoop() {
   return { root, stage: art, play };
 }
 
-const BUILDERS = { lab: [LAB_JSON, buildLab], trace: [TRACE_JSON, buildTrace], loop: [null, buildLoop] };
+const BUILDERS = { obs: [OBS_JSON, buildObs], trace: [TRACE_JSON, buildTrace], loop: [null, buildLoop] };
 
 async function enhance(node, kind) {
   const [path, build] = BUILDERS[kind];
