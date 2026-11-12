@@ -42,19 +42,26 @@ KPIs and an evaluator grid, `web/work-previews.js`; the card's no-JS numbers are
 `web/index.html` and `tests/work-previews.test.js` checks they match the file).
 
 - **What it is:** OpenInference-shaped traces of the agent sessions that built this site, one
-  trace per user turn, with AGENT, LLM, TOOL and CHAIN spans, seven deterministic code evaluators
-  (no LLM-as-judge) and rollups. Window: Nov 7–12, 2026 (69 traces in the November 12 export).
+  trace per user turn, with AGENT, LLM, TOOL and CHAIN spans, thirteen deterministic code
+  evaluators (no LLM-as-judge; nine pass/fail with published thresholds and a numeric score,
+  three numbers, one error-class category) and rollups (including pseudonymous sessions S1–S6
+  and an agent graph). Window: Nov 7–12, 2026 (77 traces in the November 12 afternoon export).
+- **Companion files:** `agent-traces-summary.json` (about 14 KB, the homepage cut: per-trace
+  counts and topics, pass/fail labels by evaluator) and `agent-traces.openinference.jsonl` (one
+  OpenTelemetry-style line per published span with OpenInference attribute names; timestamps use
+  a synthetic clock that starts each trace at midnight UTC on its real calendar day).
 - **Exporter:** `python3 scripts/telemetry/export_traces.py` (standard library) reads the local
   OpenCode session store read-only, under a SQLite authorizer that refuses any column outside a
-  short allowlist. Which sessions and turns are included, and why, is written down in
+  short allowlist, and checks every JSON path it extracts against a second allowlist. Which sessions and turns are included, and why, is written down in
   `scripts/telemetry/README.md`. The same store and git history give a byte-identical file.
 - **Privacy rules** (the repository is public): structure and numbers only. No prompts,
-  responses, reasoning, tool inputs or outputs, file names, commands or titles; bash calls carry
-  only a category; tool and agent names come from allowlists (anything else is dropped and
-  counted); only the calendar day is kept, span times are offsets from each trace's start; every
-  key and string is scanned against a denylist (employer and internal tool names, ticket
-  prefixes, home paths, URLs, emails, session ids) before writing, and `tests/agent-traces.test.js`
-  repeats the scan.
+  responses, reasoning, tool inputs or outputs, error messages, file names, commands or titles;
+  bash calls carry only a category and failed calls only an error class (both assigned inside
+  the exporter, the text discarded); sessions appear only as S1–S6, never by slug; tool and agent
+  names come from allowlists (anything else is dropped and counted); only the calendar day is
+  kept, span times are offsets from each trace's start; every key and string in all three files
+  is scanned against a denylist (employer and internal tool names, ticket prefixes, home paths,
+  URLs, emails, session ids) before writing, and `tests/agent-traces.test.js` repeats the scan.
 - **No cost:** the runs used a flat-rate subscription, so a list-price figure would mislead.
 - **Limits:** LLM latency is estimated from timestamps; long runs are compacted into CHAIN spans
   for size (counts and tokens stay exact); round labels and session windows are judgement calls

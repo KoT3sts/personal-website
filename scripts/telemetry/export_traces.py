@@ -2,17 +2,20 @@
 """Export the agent runs that built this site as OpenInference-shaped traces.
 
 Reads the local OpenCode session store (SQLite, opened read-only) and writes
-web/lab/data/agent-traces.json for the agent observability lab.
+web/lab/data/agent-traces.json for the agent observability lab, a small summary
+for the homepage and the same spans as OpenInference-style JSON lines.
 
 The output is public, so the exporter publishes structure and numbers only:
 span kinds, generic agent names, model ids, allowlisted tool names, run-relative
-times, status, token counts and the results of deterministic code evaluators.
-It never reads prompts, responses, reasoning or tool output, and it reads tool
-input only for bash calls, to sort each command into a category inside this
+times, status, token counts, error classes and the results of deterministic code
+evaluators. It never reads prompts, responses, reasoning or tool output. It reads
+tool input only for bash calls, to sort each command into a category, and the
+error text only of failed calls, to sort it into an error class, both inside this
 process. See scripts/telemetry/README.md.
 
 Usage: python3 scripts/telemetry/export_traces.py [--db PATH] [--out PATH]
-                                                  [--summary-out PATH] [--roots PATH]
+                                                  [--summary-out PATH] [--jsonl-out PATH]
+                                                  [--roots PATH]
 Standard library only. The same database, root config and git history give the
 same files. The root sessions and their windows live in a git-ignored local
 config (scripts/telemetry/roots.local.json; format in roots.example.json).
@@ -21,6 +24,7 @@ config (scripts/telemetry/roots.local.json; format in roots.example.json).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -39,7 +43,7 @@ REPO = Path(__file__).resolve().parents[2]
 DEFAULT_DB = Path.home() / ".local/share/opencode/opencode.db"
 DEFAULT_OUT = REPO / "web/lab/data/agent-traces.json"
 DEFAULT_ROOTS = Path(__file__).resolve().parent / "roots.local.json"
-SIZE_BUDGET = 300_000  # bytes
+SIZE_BUDGET = 360_000  # bytes (agent-traces.json only)
 
 # Build rounds, each closed by a commit in this repository (see HANDOFF.md). The
 # times are a fallback for when git is unavailable; git wins when present.
@@ -57,7 +61,17 @@ ROUNDS = [
     ("Round 8", "92a6746", "2026-11-11T18:15:21-05:00"),
     ("Round 9", "a994e37", "2026-11-12T00:13:19-05:00"),
     ("Round 10", "6842a84", "2026-11-12T01:45:56-05:00"),
+    ("Round 11", "2007495", "2026-11-12T02:44:21-05:00"),
+    # round 12 (November 12) in its four commit groups
+    ("Hover lag", "bf27f72", "2026-11-12T10:32:04-05:00"),
+    ("First visit", "b925b1e", "2026-11-12T11:17:52-05:00"),
+    ("Layout shift", "028f38f", "2026-11-12T14:03:03-05:00"),
+    ("Follow up", "1fcb6eb", "2026-11-12T15:11:29-05:00"),
 ]
+# The round still open: its label applies to every trace that starts after the last
+# commit in ROUNDS (no end date, so it cannot go stale). When the round closes, add its
+# commit to ROUNDS and name the next open round here.
+OPEN_ROUND = {"label": "Evaluators"}
 
 # Plain words for each work label, for the homepage summary. Must match TOPICS in
 # web/lab/obs-data.js (tests/agent-traces.test.js checks every trace).
@@ -76,6 +90,14 @@ TOPICS = {
     "Round 7–8": "evidence-first case studies",
     "Round 9": "case studies and charts",
     "Round 10": "homepage work previews",
+    "Round 10–11": "observability lab",
+    "Round 11": "observability lab",
+    "Hover lag": "hover lag and copy",
+    "Hover lag – First visit": "hover lag, copy and tour",
+    "First visit": "first-visit tour and charts",
+    "Layout shift": "layout shift",
+    "Follow up": "résumé and table labels",
+    "Evaluators": "dashboard evaluators",
 }
 DEFAULT_TOPIC = "site work"
 
@@ -90,7 +112,8 @@ AGENTS = {"build", "plan", "orchestrator", "implementation-worker", "quality-rev
 BASH_RULES = [
     ("git-commit", re.compile(r"\bgit\b[^;&|\n]*\bcommit\b")),
     ("test", re.compile(r"node\s+--test\b|\bnpm\s+(?:run\s+)?(?:-s\s+)?test\b|\bpytest\b"
-                        r"|harness-run|tour-run|\bplaywright\b|\bvitest\b|\bjest\b")),
+                        r"|-m\s+unittest\b|harness-run|tour-run|\bplaywright\b|\bvitest\b|\bjest\b"
+                        r"|\bverify[\w-]*\.sh\b")),
     ("build", re.compile(r"\bnpm\s+run\s+(?:-s\s+)?(?:build|check)\b|scripts/build\.mjs"
                          r"|node\s+--check\b")),
     ("git-other", re.compile(r"\bgit\b")),
@@ -98,6 +121,42 @@ BASH_RULES = [
                           r"|curl\s[^\n]*(?:127\.0\.0\.1|localhost)")),
 ]
 BASH_CATEGORIES = [name for name, _ in BASH_RULES] + ["other"]
+# A bash call in one of these categories that completed with exit code 0 (or no
+# recorded exit code) counts as a check of the work: tests, `npm run check`, builds.
+VERIFY_CATEGORIES = {"test", "build"}
+EDIT_TOOLS = {"edit", "write"}
+
+# Failed tool calls are sorted into one class from their error text, which is read
+# for failed calls only, matched here and discarded. A JavaScript runtime error thrown
+# by a script the agent ran (JS_RUNTIME) is "other" before any rule is tried; then the
+# rules are tried in this order and the first match wins; nothing matched is "other".
+JS_RUNTIME = re.compile(r"\bis not (?:a function|defined)\b|cannot read propert(?:y|ies) of undefined", re.I)
+
+
+def _http(codes):
+    """An HTTP status code only next to "status", "HTTP" or "code" (e.g. "status code
+    (404", "HTTP 403", "HTTP/1.1 503"), never a bare number."""
+    return (r"(?:\bstatus(?:[ _-]?code)?|\bhttp(?:/[\d.]+)?|\bcode)\b[^\d\n]{0,12}\b(?:" + codes + r")\b")
+
+
+ERROR_RULES = [
+    ("timeout", re.compile(r"timed?[ -]?out\b|timeout|deadline exceeded|etimedout", re.I)),
+    ("permission", re.compile(r"permission|not allowed|forbidden|access denied|\bdenied\b|unauthori[sz]ed"
+                              r"|\beacces\b|\beperm\b|rule which prevents|securityerror|" + _http(r"40[13]"), re.I)),
+    ("not_found", re.compile(r"not found|no such file|\benoent\b|does not exist|no page found|" + _http(r"404")
+                             + r"|cannot read propert(?:y|ies) of null", re.I)),
+    ("bad_arguments", re.compile(r"invalid|schema ?error|missing key|oldstring|no changes to apply"
+                                 r"|failed to find expected lines|unknown (?:option|argument|flag)"
+                                 r"|unexpected argument|expected [^\n]{0,40}(?:got|received)|syntaxerror"
+                                 r"|illegal invocation", re.I)),
+    ("test_failure", re.compile(r"assertion ?error|tests? failed|\bnot ok\b|# fail\s+[1-9]|failing tests?", re.I)),
+    ("network", re.compile(r"econnrefused|econnreset|enotfound|eai_again|getaddrinfo|socket hang up|network"
+                           r"|fetch ?error|failed to fetch|fetch failed|connection (?:refused|reset|closed)"
+                           r"|err_connection|(?:cannot|could not) connect|transport error"
+                           r"|" + _http(r"429|50[0-4]"), re.I)),
+]
+ERROR_CLASSES = ["timeout", "not_found", "permission", "test_failure", "bad_arguments", "network", "other"]
+assert {name for name, _ in ERROR_RULES} | {"other"} == set(ERROR_CLASSES)
 
 # Strings that must never appear in the published file (case-insensitive).
 DENYLIST = [
@@ -127,7 +186,25 @@ ALLOWED_COLUMNS = {
 COMPACTION_LADDER = [(8, 2, 3), (6, 2, 2), (4, 1, 1), (3, 1, 1), (3, 0, 1), (2, 0, 1), (1, 0, 1),
                      (1, 0, 0), (0, 0, 0)]
 
-THRESHOLDS = {"tool_error_rate": 0.10, "latency_budget_ms": 30_000}
+# Every pass/fail evaluator has a numeric score and passes when the score meets its
+# threshold in the given direction (atMost: score <= threshold, below: score <
+# threshold, atLeast: score >= threshold). Labels are computed from the published
+# (rounded) score with these values, and both are published so a reader can re-score.
+THRESHOLDS = {
+    "tool_error_rate": {"threshold": 0.10, "direction": "atMost"},
+    "recovered_after_error": {"threshold": 1, "direction": "atLeast"},
+    "delegation_fit": {"threshold": 0.5, "direction": "atLeast"},
+    "review_before_commit": {"threshold": 1, "direction": "atLeast"},
+    "tests_run_before_commit": {"threshold": 1, "direction": "atLeast"},
+    "verified_after_last_edit": {"threshold": 1, "direction": "atLeast"},
+    "review_addressed": {"threshold": 1, "direction": "atLeast"},
+    "stuck_loop": {"threshold": 3, "direction": "below"},
+    "latency_budget": {"threshold": 30, "direction": "below"},
+}
+# delegation_fit scores only "large" traces: at least this many tool calls, or at
+# least this many edit/write calls, counted over the whole trace (subagents included).
+# Its score is the share of those tool calls that subagents made.
+LARGE_TRACE = {"minToolCalls": 40, "minEdits": 3}
 
 
 # ---------------------------------------------------------------- database
@@ -169,20 +246,27 @@ select id, message_id, json_extract(data, '$.type'), json_extract(data, '$.tool'
   json_extract(data, '$.state.time.start'), json_extract(data, '$.state.time.end'),
   json_extract(data, '$.state.metadata.sessionId'),
   case when json_extract(data, '$.type') = 'tool' and json_extract(data, '$.tool') = 'bash'
-       then json_extract(data, '$.state.input.command') end
+       then json_extract(data, '$.state.input.command') end,
+  case when json_extract(data, '$.type') = 'tool' and json_extract(data, '$.state.status') = 'error'
+       then json_extract(data, '$.state.error') end,
+  case when json_extract(data, '$.type') = 'tool' and json_extract(data, '$.tool') = 'bash'
+       then json_extract(data, '$.state.metadata.exit') end
 from part where session_id = ? and message_id in (
   select id from message where session_id = ? and ({ranges}))
 order by id
 """
 
 # Every JSON path the queries may extract. $.state.input.command is read for bash
-# calls only, classified in memory and discarded (see classify_bash).
+# calls only, classified in memory and discarded (see classify_bash). $.state.error
+# is read for failed tool calls only, sorted into a class and discarded (see
+# classify_error). $.state.metadata.exit is the exit code of a bash call (a number).
 ALLOWED_JSON_PATHS = {
     "message": {"$.role", "$.parentID", "$.agent", "$.modelID", "$.time.created",
                 "$.time.completed", "$.tokens.input", "$.tokens.output", "$.tokens.reasoning",
                 "$.tokens.cache.read", "$.tokens.cache.write", "$.error.name"},
     "part": {"$.type", "$.tool", "$.state.status", "$.state.time.start", "$.state.time.end",
-             "$.state.metadata.sessionId", "$.state.input.command"},
+             "$.state.metadata.sessionId", "$.state.input.command", "$.state.error",
+             "$.state.metadata.exit"},
 }
 QUERIES = {"message": [MESSAGE_SQL], "part": [PART_SQL]}
 JSON_PATH_RE = re.compile(r"json_extract\(\s*(?:\w+\.)?data\s*,\s*'([^']*)'\s*\)")
@@ -225,13 +309,16 @@ def load_session(conn, session_id, ranges):
             "error": error,
         })
     tools = defaultdict(list)
-    for pid, mid, kind, tool, status, start, end, child, command in conn.execute(
+    for pid, mid, kind, tool, status, start, end, child, command, error, exit_code in conn.execute(
             PART_SQL.format(ranges=where), (session_id, session_id, *bounds)):
         if kind != "tool":
             continue
+        # the command and the error text stop here: only their categories are kept
         tools[mid].append({"id": pid, "tool": tool, "status": status, "start": start,
                            "end": end, "child": child,
-                           "category": classify_bash(command) if tool == "bash" else None})
+                           "category": classify_bash(command) if tool == "bash" else None,
+                           "error_class": classify_error(error) if status == "error" else None,
+                           "exit": exit_code if isinstance(exit_code, int) else None})
     for calls in tools.values():
         calls.sort(key=lambda c: (c["start"] or 0, c["id"]))
     return messages, tools
@@ -253,7 +340,7 @@ def child_session(conn, session_id, parent_id):
 
 
 def resolve_root(conn, slug, created_day):
-    hits = [sid for sid, created in conn.execute(
+    hits = [(sid, created) for sid, created in conn.execute(
         "select id, time_created from session where slug = ? and parent_id is null "
         "order by time_created", (slug,)) if local_day(created) == created_day]
     if len(hits) != 1:
@@ -276,6 +363,16 @@ def classify_bash(command):
         return "other"
     for name, pattern in BASH_RULES:
         if pattern.search(command):
+            return name
+    return "other"
+
+
+def classify_error(text):
+    """The class of a failed tool call's error text (see ERROR_RULES)."""
+    if not isinstance(text, str) or not text or JS_RUNTIME.search(text):
+        return "other"
+    for name, pattern in ERROR_RULES:
+        if pattern.search(text):
             return name
     return "other"
 
@@ -365,7 +462,8 @@ class Run:
                 span = self.add(parent=parent["key"], kind="TOOL", name=name, agent=agent,
                                 start=call["start"], end=max(call["start"], call["end"] or call["start"]),
                                 status="ok" if call["status"] == "completed" else "error",
-                                category=call["category"], step=llm["key"], depth=depth)
+                                category=call["category"], error_class=call["error_class"],
+                                exit=call["exit"], step=llm["key"], depth=depth)
                 llm["step_tools"] += 1
                 end = max(end, span["end"])
                 child = child_session(self.conn, call["child"], session_id) if name == "task" and call["child"] else None
@@ -451,7 +549,7 @@ def build_traces(conn, roots):
     stats = Counter()
     traces = []
     for root in roots:
-        root_id = resolve_root(conn, root["slug"], root["created"])
+        root_id, root_created = resolve_root(conn, root["slug"], root["created"])
         ranges = root["ranges"]
         messages, tools = load_session(conn, root_id, ranges)
         users = [m for m in messages if m["role"] == "user"]
@@ -472,7 +570,8 @@ def build_traces(conn, roots):
             root_span = run.add(parent=None, kind="AGENT", name=agent, agent=agent,
                                 start=t, end=t, status="ok", depth=0)
             root_span["end"] = max(t, run.steps(root_id, answer, tools, root_span, agent, 0))
-            root_traces.append({"run": run, "root": root_span, "start": t, "root_id": root_id})
+            root_traces.append({"run": run, "root": root_span, "start": t, "root_id": root_id,
+                                "root_created": root_created})
         # subagent sessions not reached through a task call: attach by creation time
         used = set().union(*(tr["run"].used_children for tr in root_traces)) if root_traces else set()
         for info in children_of(conn, root_id, ranges):
@@ -538,6 +637,8 @@ def round_label(table, commits, start, end):
                     key=lambda label: [r[0] for r in table].index(label))
     if not inside:
         label = round_of_time(table, start)
+        if label is None and table and table[-1][1] < start:
+            label = OPEN_ROUND["label"]
         return label
     if len(inside) == 1:
         return inside[0]
@@ -549,33 +650,152 @@ def round_label(table, commits, start, end):
 
 # ---------------------------------------------------------------- evaluators
 
+def _pf(**extra):
+    return {"output": "pass/fail", **extra}
+
+
 EVALUATORS = [
-    {"id": "tool_error_rate", "name": "Tool error rate", "kind": "code",
-     "description": "Share of tool calls in the trace that returned an error. Fails above 10%.",
+    {"id": "tool_error_rate", "name": "Tool error rate", "kind": "code", **_pf(),
+     "description": "Share of tool calls in the trace that returned an error. Fails above 10%. Score: the share (0–1).",
      "question": "Did the agents mostly call their tools correctly?"},
-    {"id": "recovered_after_error", "name": "Recovered after error", "kind": "code",
-     "description": "For every failed tool call, a later call of the same tool in the same trace succeeded. Only scored on traces with an error.",
+    {"id": "recovered_after_error", "name": "Recovered after error", "kind": "code", **_pf(),
+     "description": "For every failed tool call, a later call of the same tool in the same trace succeeded. Score: the share of failed calls recovered (0–1). Only scored on traces with an error.",
      "question": "When a tool call failed, did the agent retry or fix it?"},
-    {"id": "delegation_used", "name": "Delegation used", "kind": "code",
-     "description": "The trace contains at least one subagent run (a task call or a subagent session).",
-     "question": "Did the orchestrator hand work to a specialist?"},
-    {"id": "review_before_commit", "name": "Review before commit", "kind": "code",
-     "description": "A quality-reviewer run finished after the previous commit in the session and before the trace's last commit. Only scored on traces that commit.",
+    {"id": "delegation_fit", "name": "Delegation on large tasks", "kind": "code", **_pf(scope=LARGE_TRACE),
+     "description": "On a large trace (at least 40 tool calls, or at least 3 edit/write calls, counted over the whole trace), subagents made at least half of the trace's tool calls. Score: the share of tool calls made by subagents (0–1). Small traces are not scored.",
+     "question": "On big jobs, did specialists do most of the hands-on work?"},
+    {"id": "review_before_commit", "name": "Review before commit", "kind": "code", **_pf(),
+     "description": "A quality-reviewer run finished after the previous commit in the session and before the trace's last commit. Score: 1 or 0. Only scored on traces that commit.",
      "question": "Was the change reviewed before it was saved?"},
-    {"id": "tests_run_before_commit", "name": "Tests before commit", "kind": "code",
-     "description": "A test command ran after the previous commit in the session and before the trace's last commit. Commands are classified inside the exporter; only the category is published. Only scored on traces that commit.",
+    {"id": "tests_run_before_commit", "name": "Tests before commit", "kind": "code", **_pf(),
+     "description": "A test command ran after the previous commit in the session and before the trace's last commit. Commands are classified inside the exporter; only the category is published. Score: 1 or 0. Only scored on traces that commit.",
      "question": "Were the tests run before the change was saved?"},
-    {"id": "latency_budget", "name": "Model latency budget", "kind": "code",
-     "description": "p90 of model step latency (step start to its last tool call) in the trace is under 30 s.",
+    {"id": "verified_after_last_edit", "name": "Checked after the last edit", "kind": "code", **_pf(),
+     "description": "After the trace's last successful edit or write (by any agent, subagents included), a test, check or build command finished with exit code 0, or with no exit code recorded, before the trace ended. Score: 1 or 0. Only scored on traces that edit.",
+     "question": "Was the final state of the change tested or built?"},
+    {"id": "stuck_loop", "name": "No stuck loop", "kind": "code", **_pf(),
+     "description": "No agent run called the same tool and failed 3 or more times in a row (its calls in time order). Score: the longest such streak. Scored on traces with tool calls.",
+     "question": "Did an agent keep repeating a failing call?"},
+    {"id": "review_addressed", "name": "Changes after review", "kind": "code", **_pf(),
+     "description": "Where a quality-reviewer run finished before a commit (the same interval as Review before commit), at least one edit or write followed a review and came before the next commit. A clean review with nothing to fix also fails, so read it as \u201cthe review changed something\u201d. Score: the most edits that followed one review. Only scored when a review preceded the commit.",
+     "question": "Did the review lead to changes before the commit?"},
+    {"id": "latency_budget", "name": "Model latency budget", "kind": "code", **_pf(),
+     "description": "p90 of model step latency (step start to its last tool call) in the trace is under 30 s. Score: the p90 in seconds.",
      "question": "Did the model respond quickly enough to keep the loop moving?"},
-    {"id": "tokens_per_tool_call", "name": "Generated tokens per tool call", "kind": "code",
+    {"id": "tokens_per_tool_call", "name": "Generated tokens per tool call", "kind": "code", "output": "number",
      "description": "Output plus reasoning tokens divided by tool calls in the trace (a number, not pass/fail). Lower means terser actions.",
      "question": "How much did the model write for each action it took?"},
+    {"id": "parallel_fanout", "name": "Parallel subagents", "kind": "code", "output": "number",
+     "description": "The most subagent runs open at the same moment in the trace (a number, not pass/fail). Only scored on traces with a subagent run.",
+     "question": "How much work ran in parallel?"},
+    {"id": "cache_reuse", "name": "Prompt cache reuse", "kind": "code", "output": "number",
+     "description": "Cache-read tokens divided by all prompt tokens (input, cache read and cache write) over the trace's model steps (a number from 0 to 1, not pass/fail).",
+     "question": "How much of each prompt came from the cache?"},
+    {"id": "error_class", "name": "Most common error", "kind": "code", "output": "category", "classes": ERROR_CLASSES,
+     "description": "Each failed tool call is sorted into one class (timeout, not found, permission, test failure, bad arguments, network, other) by rules applied to its error text inside the exporter; the text is not published. Label: the most common class; score: its count. Only scored on traces with a failed call.",
+     "question": "What kind of failure was most common?"},
 ]
+for _e in EVALUATORS:
+    if _e["output"] == "pass/fail":
+        _e.update(THRESHOLDS[_e["id"]])
+assert {e["id"] for e in EVALUATORS if e["output"] == "pass/fail"} == set(THRESHOLDS)
+PASS_FAIL = [e["id"] for e in EVALUATORS if e["output"] == "pass/fail"]
+
+
+def label_for(evaluator, score):
+    """pass/fail from a published score and the evaluator's threshold."""
+    rule = THRESHOLDS[evaluator]
+    t, direction = rule["threshold"], rule["direction"]
+    ok = score <= t if direction == "atMost" else score < t if direction == "below" else score >= t
+    return "pass" if ok else "fail"
+
+
+def _plural(n, word):
+    return f"{n} {word}{'' if n == 1 else 's'}"
+
+
+def is_edit(s):
+    return s["kind"] == "TOOL" and s["name"] in EDIT_TOOLS and s["status"] == "ok"
+
+
+def is_commit(s):
+    return s["kind"] == "TOOL" and s.get("category") == "git-commit" and s["status"] == "ok"
+
+
+def is_check(s):
+    return (s["kind"] == "TOOL" and s["name"] == "bash" and s.get("category") in VERIFY_CATEGORIES
+            and s["status"] == "ok" and s.get("exit") in (None, 0))
+
+
+def _order(s):
+    return (s["start"], s["key"] if isinstance(s["key"], int) else 0)
+
+
+def longest_failure_streak(spans):
+    """Longest run of consecutive failed calls of one tool inside one agent run."""
+    by_run = defaultdict(list)
+    for s in spans:
+        if s["kind"] == "TOOL":
+            by_run[s["parent"]].append(s)
+    best = 0
+    for calls in by_run.values():
+        streak, last = 0, None
+        for s in sorted(calls, key=_order):
+            if s["status"] == "error":
+                streak = streak + 1 if streak and s["name"] == last else 1
+                last = s["name"]
+                best = max(best, streak)
+            else:
+                streak, last = 0, None
+    return best
+
+
+def max_fanout(spans):
+    """The most subagent runs open at one moment (half-open intervals; a run of zero
+    length counts at its start)."""
+    runs = [s for s in spans if s["kind"] == "AGENT" and s["depth"] > 0]
+    best = 0
+    for a in runs:
+        best = max(best, sum(1 for b in runs if b is a or (b["start"] <= a["start"] < b["end"])))
+    return best
+
+
+def cache_share(llms):
+    tokens = [0] * 5
+    for s in llms:
+        add_tokens(tokens, s["tokens"])
+    prompt = tokens[0] + tokens[3] + tokens[4]
+    return None if prompt == 0 else round(tokens[3] / prompt, 4)
+
+
+def error_class_counts(spans):
+    counts = Counter(s.get("error_class") or "other" for s in spans if s["kind"] == "TOOL" and s["status"] == "error")
+    return {c: counts[c] for c in ERROR_CLASSES if counts[c]}
+
+
+def edits_after_reviews(pool, since, last):
+    """Reviews finished in (since, last]; for each, the edits after it and before the
+    next commit. Returns (reviews, most edits after one review) or None without a review."""
+    reviews = sorted((s for s in pool if s["kind"] == "AGENT" and s["agent"] == "quality-reviewer"
+                      and since < s["end"] <= last), key=lambda s: s["end"])
+    if not reviews:
+        return None
+    commits = sorted(s["start"] for s in pool if is_commit(s))
+    best = 0
+    for r in reviews:
+        nxt = next((c for c in commits if c >= r["end"]), last)
+        best = max(best, sum(1 for s in pool if is_edit(s) and s["start"] >= r["end"] and s["end"] <= nxt))
+    return len(reviews), best
 
 
 def evaluate(traces):
     results = []
+
+    def emit(tid, evaluator, score, explanation, label=None):
+        results.append({"trace": tid, "evaluator": evaluator,
+                        "label": label if label is not None else label_for(evaluator, score),
+                        "score": score, "explanation": explanation})
+
     # commit / review / test events per root session, in time order
     by_root = defaultdict(list)
     for tr in traces:
@@ -587,26 +807,25 @@ def evaluate(traces):
             tools = [s for s in spans if s["kind"] == "TOOL"]
             llms = [s for s in spans if s["kind"] == "LLM"]
             tid = tr["id"]
-            commits = sorted(s["start"] for s in tools if s.get("category") == "git-commit" and s["status"] == "ok")
+            commits = sorted(s["start"] for s in tools if is_commit(s))
+            edits = [s for s in tools if is_edit(s)]
+            delegated = sum(1 for s in spans if s["kind"] == "AGENT" and s["depth"] > 0)
+            by_subagents = sum(1 for s in tools if s["depth"] > 0)
             if tools:
                 errors = sum(s["status"] == "error" for s in tools)
-                rate = errors / len(tools)
-                results.append({"trace": tid, "evaluator": "tool_error_rate",
-                                "label": "fail" if rate > THRESHOLDS["tool_error_rate"] else "pass",
-                                "score": round(rate, 4),
-                                "explanation": f"{errors} of {len(tools)} tool calls failed."})
+                emit(tid, "tool_error_rate", round(errors / len(tools), 4),
+                     f"{errors} of {len(tools)} tool calls failed.")
                 failed = [s for s in tools if s["status"] == "error"]
                 if failed:
                     recovered = sum(any(o["name"] == f["name"] and o["status"] == "ok" and o["start"] > f["start"]
                                         for o in tools) for f in failed)
-                    results.append({"trace": tid, "evaluator": "recovered_after_error",
-                                    "label": "pass" if recovered == len(failed) else "fail",
-                                    "score": round(recovered / len(failed), 4),
-                                    "explanation": f"{recovered} of {len(failed)} failed calls later succeeded."})
-            delegated = sum(1 for s in spans if s["kind"] == "AGENT" and s["depth"] > 0)
-            results.append({"trace": tid, "evaluator": "delegation_used",
-                            "label": "pass" if delegated else "fail", "score": delegated,
-                            "explanation": f"{delegated} subagent run{'s' if delegated != 1 else ''}."})
+                    emit(tid, "recovered_after_error", round(recovered / len(failed), 4),
+                         f"{recovered} of {len(failed)} failed calls later succeeded.")
+            edit_calls = sum(1 for s in tools if s["name"] in EDIT_TOOLS)
+            if len(tools) >= LARGE_TRACE["minToolCalls"] or edit_calls >= LARGE_TRACE["minEdits"]:
+                emit(tid, "delegation_fit", round(by_subagents / len(tools), 4),
+                     f"{_plural(len(tools), 'tool call')}, {_plural(edit_calls, 'edit')}; "
+                     f"{by_subagents} made by subagents in {_plural(delegated, 'run')}.")
             if commits:
                 last = commits[-1]
                 since = previous_commit if previous_commit is not None else -1
@@ -616,25 +835,44 @@ def evaluate(traces):
                 tested = any(s["kind"] == "TOOL" and s.get("category") == "test" and s["status"] == "ok"
                              and since < s["end"] <= last for s in pool)
                 scope = "since the previous commit" if previous_commit is not None else "before the first commit"
-                results.append({"trace": tid, "evaluator": "review_before_commit",
-                                "label": "pass" if reviewed else "fail",
-                                "explanation": f"{'A' if reviewed else 'No'} review finished {scope}."})
-                results.append({"trace": tid, "evaluator": "tests_run_before_commit",
-                                "label": "pass" if tested else "fail",
-                                "explanation": f"{'Tests ran' if tested else 'No test run'} {scope}."})
-                previous_commit = max(s["end"] for s in tools if s.get("category") == "git-commit" and s["status"] == "ok")
+                emit(tid, "review_before_commit", int(reviewed),
+                     f"{'A' if reviewed else 'No'} review finished {scope}.")
+                emit(tid, "tests_run_before_commit", int(tested),
+                     f"{'Tests ran' if tested else 'No test run'} {scope}.")
+                addressed = edits_after_reviews(pool, since, last)
+                if addressed:
+                    n_reviews, best = addressed
+                    emit(tid, "review_addressed", best,
+                         f"{_plural(n_reviews, 'review')} {scope}; at most {_plural(best, 'edit')} followed one before the next commit.")
+                previous_commit = max(s["end"] for s in tools if is_commit(s))
+            if edits:
+                last_edit = max(s["end"] for s in edits)
+                checks = sum(1 for s in tools if is_check(s) and s["start"] >= last_edit)
+                emit(tid, "verified_after_last_edit", int(checks > 0),
+                     f"{_plural(checks, 'passing test or build run')} after the last of {_plural(len(edits), 'edit')}.")
+            if tools:
+                streak = longest_failure_streak(spans)
+                emit(tid, "stuck_loop", streak, f"Longest run of one tool failing in a row: {streak}.")
             if llms:
                 p90 = percentile([s["end"] - s["start"] for s in llms], 90)
-                results.append({"trace": tid, "evaluator": "latency_budget",
-                                "label": "pass" if p90 < THRESHOLDS["latency_budget_ms"] else "fail",
-                                "score": round(p90 / 1000, 2),
-                                "explanation": f"p90 {p90 / 1000:.1f} s over {len(llms)} steps."})
+                emit(tid, "latency_budget", round(p90 / 1000, 3), f"p90 {p90 / 1000:.1f} s over {len(llms)} steps.")
             if tools:
                 generated = sum(s["tokens"][1] + s["tokens"][2] for s in llms)
                 per_call = round(generated / len(tools), 1)
-                results.append({"trace": tid, "evaluator": "tokens_per_tool_call",
-                                "label": per_call, "score": per_call,
-                                "explanation": f"{generated} tokens / {len(tools)} calls."})
+                emit(tid, "tokens_per_tool_call", per_call, f"{generated} tokens / {len(tools)} calls.", label=per_call)
+            if delegated:
+                fan = max_fanout(spans)
+                emit(tid, "parallel_fanout", fan, f"{fan} of {_plural(delegated, 'subagent run')} open at once at most.",
+                     label=fan)
+            share = cache_share(llms)
+            if share is not None:
+                emit(tid, "cache_reuse", share, f"{round(share * 100, 1)}% of prompt tokens read from the cache.",
+                     label=share)
+            classes = error_class_counts(spans)
+            if classes:
+                top = max(classes, key=lambda c: (classes[c], -ERROR_CLASSES.index(c)))
+                emit(tid, "error_class", classes[top],
+                     ", ".join(f"{n} {c.replace('_', ' ')}" for c, n in classes.items()) + ".", label=top)
     order = {e["id"]: i for i, e in enumerate(EVALUATORS)}
     results.sort(key=lambda r: (r["trace"], order[r["evaluator"]]))
     return results
@@ -642,7 +880,59 @@ def evaluate(traces):
 
 # ---------------------------------------------------------------- rollups
 
-def rollups(traces):
+def agent_path(spans):
+    """Distinct agents in order of first appearance."""
+    path = []
+    for s in sorted((s for s in spans if s["kind"] == "AGENT"), key=lambda s: (s["start"], s["depth"], s["key"])):
+        if s["agent"] not in path:
+            path.append(s["agent"])
+    return path
+
+
+def agent_edges(spans):
+    """(from, to) -> subagent runs started by `from` (through a task call, or attached
+    to the turn's root agent when no task call points at the subagent session)."""
+    edges = Counter()
+    for s in spans:
+        if s["kind"] == "AGENT" and s["depth"] > 0:
+            edges[(spans[s["parent"]]["agent"], s["agent"])] += 1
+    return edges
+
+
+def edge_list(edges):
+    return [{"from": a, "to": b, "count": n} for (a, b), n in sorted(edges.items(), key=lambda kv: (-kv[1], kv[0]))]
+
+
+def session_rollups(traces, evaluations):
+    by_session = {}
+    labels = defaultdict(lambda: defaultdict(Counter))
+    for e in evaluations:
+        if e["label"] in ("pass", "fail"):
+            labels[e["trace"]][e["evaluator"]][e["label"]] += 1
+    for tr in traces:
+        summary = trace_summary(tr)
+        row = by_session.setdefault(tr["session"], {"traces": 0, "days": [], "toolCalls": 0, "toolErrors": 0,
+                                                    "subagentRuns": 0, "checks": defaultdict(Counter)})
+        row["traces"] += 1
+        if tr["day"] not in row["days"]:
+            row["days"].append(tr["day"])
+        for key in ("toolCalls", "toolErrors", "subagentRuns"):
+            row[key] += summary[key]
+        for evaluator, counts in labels[tr["id"]].items():
+            row["checks"][evaluator].update(counts)
+    out = {}
+    for sid, row in by_session.items():
+        checks = {}
+        for evaluator in PASS_FAIL:
+            c = row["checks"].get(evaluator)
+            if c:
+                scored = c["pass"] + c["fail"]
+                checks[evaluator] = {"pass": c["pass"], "scored": scored, "rate": round(c["pass"] / scored, 4)}
+        out[sid] = {**{k: v for k, v in row.items() if k != "checks"}, "checks": checks}
+    return out
+
+
+def rollups(traces, evaluations=()):
     by_day = defaultdict(lambda: Counter())
     by_agent = defaultdict(lambda: {"runs": 0, "llmSteps": 0, "toolCalls": 0, "toolErrors": 0,
                                     "tokens": [0] * 5})
@@ -650,6 +940,9 @@ def rollups(traces):
     kind_latency = defaultdict(list)
     tool_latency = defaultdict(list)
     tool_errors = Counter()
+    error_classes = Counter()
+    graph_nodes = defaultdict(Counter)
+    graph_edges = Counter()
     delegations = Counter()
     bash = Counter()
     rounds = {}
@@ -659,8 +952,17 @@ def rollups(traces):
         by_day[day]["traces"] += 1
         label = tr["round"] or "unassigned"
         rounds[label] = rounds.get(label, 0) + 1
+        graph_edges.update(agent_edges(tr["run"].spans))
         for s in tr["run"].spans:
             kind_latency[s["kind"]].append(s["end"] - s["start"])
+            node = graph_nodes[s["agent"]]
+            node["spans"] += 1
+            node["runs"] += s["kind"] == "AGENT"
+            if s["kind"] == "TOOL":
+                node["toolCalls"] += 1
+                node["toolErrors"] += s["status"] == "error"
+                if s["status"] == "error":
+                    error_classes[s.get("error_class") or "other"] += 1
             agent = by_agent[s["agent"]]
             if s["kind"] == "AGENT":
                 agent["runs"] += 1
@@ -687,6 +989,10 @@ def rollups(traces):
                 if s["name"] == "bash":
                     bash[s["category"]] += 1
     hist = Counter(min(n, 6) for n in per_step)
+    totals = {e["id"]: Counter() for e in EVALUATORS if e["output"] == "pass/fail"}
+    for e in evaluations:
+        if e["evaluator"] in totals:
+            totals[e["evaluator"]][e["label"]] += 1
     day_keys = ["traces", "subagentRuns", "llmSteps", "toolCalls", "toolErrors", "tokens"]
     return {
         "byDay": {d: {k: by_day[d][k] for k in day_keys} for d in sorted(by_day)},
@@ -704,6 +1010,16 @@ def rollups(traces):
             "p50": percentile(per_step, 50), "p90": percentile(per_step, 90),
             "max": max(per_step) if per_step else 0,
             "histogram": {("6+" if n == 6 else str(n)): hist[n] for n in range(7) if hist[n]},
+        },
+        "errorClasses": {c: error_classes[c] for c in ERROR_CLASSES},
+        "checks": {k: {"pass": c["pass"], "fail": c["fail"], "notScored": len(traces) - c["pass"] - c["fail"]}
+                   for k, c in totals.items()},
+        "sessions": session_rollups(traces, evaluations) if traces and "session" in traces[0] else {},
+        "agentGraph": {
+            "nodes": [{"agent": a, "runs": n["runs"], "spans": n["spans"], "toolCalls": n["toolCalls"],
+                       "toolErrors": n["toolErrors"]}
+                      for a, n in sorted(graph_nodes.items(), key=lambda kv: (-kv[1]["spans"], kv[0]))],
+            "edges": edge_list(graph_edges),
         },
     }
 
@@ -763,6 +1079,7 @@ def publish_trace(tr, root_edge, sub_edge, max_errors):
                          "status": "ok", "tokens": tokens, "steps": len(run),
                          "tools": dict(sorted(Counter(c["name"] for c in calls).items())),
                          "errors": dict(sorted(Counter(c["name"] for c in calls if c["status"] == "error").items())),
+                         "error_classes": error_class_counts(calls),
                          "key": ("chain", run[0]["key"])}
                 chains.append(chain)
                 hidden.update(st["key"] for st in run)
@@ -800,6 +1117,8 @@ def publish_trace(tr, root_edge, sub_edge, max_errors):
         span["status"] = s["status"]
         if s["kind"] == "TOOL" and s.get("category"):
             span["category"] = s["category"]
+        if s["kind"] == "TOOL" and s["status"] == "error":
+            span["errorClass"] = s.get("error_class") or "other"
         if s["kind"] in ("LLM", "CHAIN"):
             span["tokens"] = token_dict(s["tokens"])
         if s["kind"] == "LLM":
@@ -809,6 +1128,7 @@ def publish_trace(tr, root_edge, sub_edge, max_errors):
             span["tools"] = s["tools"]
             if s["errors"]:
                 span["errors"] = s["errors"]
+                span["errorClasses"] = s["error_classes"]
         out.append(span)
     return out, len(hidden)
 
@@ -862,15 +1182,20 @@ def serialize(doc):
 
 def build_summary(meta, published, evaluations):
     """What the homepage preview needs: per-trace counts, a plain-words topic, the
-    pass/fail evaluations, the window and the evaluator names."""
+    pass/fail labels (grouped by evaluator, then by trace), the window and the
+    evaluator names."""
+    grouped = {e: {} for e in PASS_FAIL}
+    for e in evaluations:
+        if e["evaluator"] in grouped:
+            grouped[e["evaluator"]][e["trace"]] = e["label"]
     return {
         "meta": {"source": "Summary of agent-traces.json, exported by scripts/telemetry/export_traces.py",
                  "window": meta["window"], "traces": meta["traces"]},
-        "evaluators": [{"id": e["id"], "name": e["name"], "kind": e["kind"]} for e in EVALUATORS],
-        "traces": [{"id": t["id"], "day": t["day"], "topic": TOPICS.get(t.get("round"), DEFAULT_TOPIC),
+        "evaluators": [{"id": e["id"], "name": e["name"], "kind": e["kind"], "output": e["output"]}
+                       for e in EVALUATORS],
+        "traces": [{"id": t["id"], "day": t["day"], "topic": t["topic"],
                     "toolCalls": t["toolCalls"], "toolErrors": t["toolErrors"]} for t in published],
-        "evaluations": [{"trace": e["trace"], "evaluator": e["evaluator"], "label": e["label"]}
-                        for e in evaluations if e["label"] in ("pass", "fail")],
+        "evaluations": grouped,
     }
 
 
@@ -881,9 +1206,77 @@ def serialize_summary(doc):
         f'"meta":{dump(doc["meta"])},',
         f'"evaluators":{dump(doc["evaluators"])},',
         '"traces":[\n' + ",\n".join(dump(t) for t in doc["traces"]) + "\n],",
-        '"evaluations":[\n' + ",\n".join(dump(e) for e in doc["evaluations"]) + "\n]",
+        '"evaluations":{\n' + ",\n".join(f"{dump(k)}:{dump(v)}" for k, v in doc["evaluations"].items()) + "\n}",
         "}",
     ]) + "\n"
+
+
+# OpenInference export: one line per published span. Times are ISO strings on a
+# synthetic clock: each trace starts at 00:00:00.000Z on its real (local) calendar
+# day and every span keeps its offset from the trace start, so the date is real and
+# the time of day is not.
+def _iso(day, offset_ms):
+    base = datetime.fromisoformat(day + "T00:00:00+00:00").timestamp() * 1000
+    when = datetime.fromtimestamp((base + offset_ms) / 1000, ZoneInfo("UTC"))
+    return when.strftime("%Y-%m-%dT%H:%M:%S.") + f"{when.microsecond // 1000:03d}Z"
+
+
+def openinference_rows(published):
+    rows = []
+    for t in published:
+        for s in t["spans"]:
+            attrs = {"openinference.span.kind": s["kind"], "session.id": t["session"], "agent.name": s["agent"]}
+            if s["kind"] == "TOOL":
+                attrs["tool.name"] = s["name"]
+            if s.get("model"):
+                attrs["llm.model_name"] = s["model"]
+            if "tokens" in s:
+                k = s["tokens"]
+                prompt = k["input"] + k["cacheRead"] + k["cacheWrite"]
+                completion = k["output"] + k["reasoning"]
+                attrs.update({
+                    "llm.token_count.prompt": prompt,
+                    "llm.token_count.completion": completion,
+                    "llm.token_count.total": prompt + completion,
+                    "llm.token_count.prompt_details.cache_read": k["cacheRead"],
+                    "llm.token_count.prompt_details.cache_write": k["cacheWrite"],
+                    "llm.token_count.completion_details.reasoning": k["reasoning"],
+                })
+            if "errorClass" in s:
+                attrs["error.class"] = s["errorClass"]
+            # A CHAIN holds merged tool calls: its failed calls are counted, in total and
+            # per class, and the row is ERROR when any failed (the JSON keeps status "ok"
+            # and the counts in errors / errorClasses).
+            failed = sum(s.get("errors", {}).values()) if s["kind"] == "CHAIN" else 0
+            if failed:
+                attrs["error.count"] = failed
+                for c, n in s["errorClasses"].items():
+                    attrs[f"error.class.{c}"] = n
+            rows.append({
+                "trace_id": t["id"], "span_id": f"{t['id']}.{s['id']}",
+                "parent_id": f"{t['id']}.{s['parent']}" if s["parent"] else None,
+                "name": s["name"], "span_kind": s["kind"],
+                "start_time": _iso(t["day"], s["start"]), "end_time": _iso(t["day"], s["end"]),
+                "status_code": "ERROR" if s["status"] == "error" or failed else "OK",
+                "attributes": attrs,
+            })
+    return rows
+
+
+def serialize_jsonl(rows):
+    return "".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) + "\n" for r in rows)
+
+
+def dataset_id(traces):
+    """A short, stable name for this export's set of traces: a hash of each trace's id,
+    day, session, duration and tool-call count. Human labels are keyed by trace id, so a
+    label file is only valid for the dataset it was made on (a new or re-cut trace
+    shifts the ids and changes this value)."""
+    digest = hashlib.sha256()
+    for tr in traces:
+        digest.update(f"{tr['id']}|{tr['day']}|{tr['session']}|{tr['end'] - tr['start']}|"
+                      f"{trace_summary(tr)['toolCalls']}\n".encode())
+    return digest.hexdigest()[:12]
 
 
 NUMBER_WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
@@ -895,10 +1288,13 @@ def main(argv=None):
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output JSON path")
     parser.add_argument("--summary-out", type=Path, default=None,
                         help="homepage summary JSON path (default: <out stem>-summary.json next to --out)")
+    parser.add_argument("--jsonl-out", type=Path, default=None,
+                        help="OpenInference span lines (default: <out stem>.openinference.jsonl next to --out)")
     parser.add_argument("--roots", type=Path, default=DEFAULT_ROOTS,
                         help="root-session config (default: scripts/telemetry/roots.local.json)")
     args = parser.parse_args(argv)
     summary_out = args.summary_out or args.out.with_name(args.out.stem + "-summary.json")
+    jsonl_out = args.jsonl_out or args.out.with_name(args.out.stem + ".openinference.jsonl")
     roots = load_roots(args.roots)
     if not args.db.exists():
         raise SystemExit(f"database not found: {args.db}")
@@ -913,13 +1309,17 @@ def main(argv=None):
 
     commits = git_commits() or [(sha, parse_ms(when)) for _, sha, when in ROUNDS]
     table = round_table(commits)
+    # pseudonymous session ids in order of the root sessions' creation
+    session_order = sorted({(tr["root_created"], tr["root_id"]) for tr in traces})
+    session_ids = {root_id: f"S{i}" for i, (_, root_id) in enumerate(session_order, 1)}
     for i, tr in enumerate(traces, 1):
         tr["id"] = f"t{i:02d}"
         tr["day"] = local_day(tr["start"])
         tr["round"] = round_label(table, commits, tr["start"], tr["end"])
+        tr["session"] = session_ids[tr["root_id"]]
 
     evaluations = evaluate(traces)
-    roll = rollups(traces)
+    roll = rollups(traces, evaluations)
     total_spans = sum(len(tr["run"].spans) for tr in traces)
     subagent_sessions = len(set().union(*(tr["run"].used_children for tr in traces)))
 
@@ -929,11 +1329,14 @@ def main(argv=None):
         for tr in traces:
             spans, hidden = publish_trace(tr, root_edge, sub_edge, max_errors)
             merged += hidden
-            head = {"id": tr["id"], "day": tr["day"]}
+            head = {"id": tr["id"], "day": tr["day"], "session": tr["session"]}
             if tr["round"]:
                 head["round"] = tr["round"]
+            head["topic"] = TOPICS.get(tr["round"], DEFAULT_TOPIC)
+            raw = tr["run"].spans
             head.update({"rootAgent": tr["root"]["agent"], "start": 0, "end": tr["end"] - tr["start"],
-                         **trace_summary(tr), "spans": spans})
+                         **trace_summary(tr), "agentPath": agent_path(raw),
+                         "agentEdges": edge_list(agent_edges(raw)), "spans": spans})
             published.append(head)
         published_spans = sum(len(t["spans"]) for t in published)
         first, last = traces[0]["start"], max(tr["end"] for tr in traces)
@@ -941,6 +1344,7 @@ def main(argv=None):
             "title": "Agent runs that built this site",
             "source": "OpenCode session store (local), exported by scripts/telemetry/export_traces.py",
             "generated": local_day(last),
+            "dataset": dataset_id(traces),
             "window": {"from": local_day(first), "to": local_day(last)},
             "sessions": root_count,
             "subagentSessions": subagent_sessions,
@@ -952,18 +1356,24 @@ def main(argv=None):
             "incompleteSpans": stats["incomplete"],
             "compaction": {"orchestratorEdgeSteps": root_edge, "subagentEdgeSteps": sub_edge,
                            "errorStepsPerRun": max_errors},
+            "thresholds": {k: dict(v) for k, v in THRESHOLDS.items()},
+            "largeTrace": dict(LARGE_TRACE),
+            "errorClasses": ERROR_CLASSES,
+            "files": {"openinference": jsonl_out.name, "summary": summary_out.name},
             "notes": [
-                f"One trace per user turn in the {NUMBER_WORDS[root_count] if root_count < len(NUMBER_WORDS) else root_count} root session{'s' if root_count != 1 else ''} of the website work; subagent runs nest under the task call that started them.",
+                f"One trace per user turn in the {NUMBER_WORDS[root_count] if root_count < len(NUMBER_WORDS) else root_count} root session{'s' if root_count != 1 else ''} of the website work; subagent runs nest under the task call that started them. Sessions are numbered S1, S2, … in the order they were created.",
                 "Times are milliseconds from the start of each trace. Only the calendar day is kept.",
                 "An LLM span is one model step, from its start to the start of its last tool call (an estimate of generation time). TOOL spans are the tool executions.",
-                "Published fields are structural only: span kind, generic agent name, model id, allowlisted tool name, times, status and token counts. Prompts, responses, reasoning, tool inputs and outputs, file names, commands and titles are not included.",
-                "Bash calls carry only a category (test, build, git-commit, git-other, server, other) assigned inside the exporter.",
+                "Published fields are structural only: span kind, generic agent name, model id, allowlisted tool name, times, status and token counts. Prompts, responses, reasoning, tool inputs and outputs, error messages, file names, commands and titles are not included.",
+                "Bash calls carry only a category (test, build, git-commit, git-other, server, other) assigned inside the exporter. Failed tool calls carry only an error class (timeout, not_found, permission, test_failure, bad_arguments, network, other) assigned inside the exporter from the error text, which is not kept.",
                 f"Tools outside the allowlist were dropped entirely ({stats['dropped']} spans). Unfinished calls ({stats['incomplete']}) were dropped too.",
                 "Cost is omitted: the runs used a flat-rate subscription, so a list-price cost would mislead.",
-                "Evaluators are deterministic code checks. There is no LLM-as-judge: the exporter has no model access.",
-                f"Long runs are compacted for size. Kept as single spans: the first and last {root_edge} steps of each orchestrator run and {sub_edge} of each subagent run, every step that delegates or commits, and {f'the first {max_errors} step(s)' if max_errors else 'no step'} with an error in each run beyond those. The steps between are merged into CHAIN spans that keep their step, tool-call and token totals. Rollups, trace totals and evaluations use every span before compaction.",
+                "Evaluators are deterministic code checks. There is no LLM-as-judge: the exporter has no model access. Every pass/fail evaluation has a numeric score; its label follows from the evaluator's threshold and direction (meta.thresholds).",
+                f"Long runs are compacted for size. Kept as single spans: the first and last {root_edge} steps of each orchestrator run and {sub_edge} of each subagent run, every step that delegates or commits, and {f'the first {max_errors} step(s)' if max_errors else 'no step'} with an error in each run beyond those. The steps between are merged into CHAIN spans that keep their step, tool-call, error and token totals. Rollups, trace totals and evaluations use every span before compaction.",
                 "Round labels come from commit times in this repository's git history.",
+                "meta.dataset is a hash of every trace's id, day, session, duration and tool-call count. Human labels (data/human-labels.json, or a reviewer's download) carry it, and labels made on another dataset are set aside, because trace ids can shift between exports.",
                 "Percentiles use the nearest-rank method.",
+                "The OpenInference file has one line per published span; its timestamps put each trace's start at midnight UTC on the trace's real calendar day, so only the offsets are real. A merged (CHAIN) row with failed calls carries error.count and error.class.<class> counts and status ERROR, so the file's failed calls add up to the trace totals.",
             ],
         }
         doc = {"meta": meta, "traces": published, "evaluators": EVALUATORS,
@@ -975,17 +1385,21 @@ def main(argv=None):
         raise SystemExit(f"output is {len(text.encode())} bytes, over the {SIZE_BUDGET} byte budget")
 
     summary_text = serialize_summary(build_summary(meta, published, evaluations))
+    jsonl_text = serialize_jsonl(openinference_rows(published))
     hits = deny_hits(json.loads(text)) + deny_hits(json.loads(summary_text), "summary")
+    for i, line in enumerate(jsonl_text.splitlines(), 1):
+        hits += deny_hits(json.loads(line), f"jsonl:{i}")
     if hits:
         raise SystemExit("denylist match, nothing written:\n  " + "\n  ".join(hits[:20]))
 
-    for path, body in ((args.out, text), (summary_out, summary_text)):
+    for path, body in ((args.out, text), (summary_out, summary_text), (jsonl_out, jsonl_text)):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
     print(f"wrote {args.out} ({len(text.encode())} bytes): {len(published)} traces, "
           f"{total_spans} spans ({published_spans} published, {merged} merged), "
           f"{stats['dropped']} dropped, {subagent_sessions} subagent sessions; "
-          f"{summary_out.name} ({len(summary_text.encode())} bytes)", file=sys.stderr)
+          f"{summary_out.name} ({len(summary_text.encode())} bytes); "
+          f"{jsonl_out.name} ({len(jsonl_text.encode())} bytes)", file=sys.stderr)
     return 0
 
 
