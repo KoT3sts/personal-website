@@ -202,6 +202,8 @@ test('contact paths cover email, LinkedIn, GitHub, and the résumé without publ
   const heroActions = [...document.querySelectorAll('.hero-actions a')].map(link => link.getAttribute('href'));
   assert.ok(heroActions.includes('./assets/Cesar_Tortolero_Resume.pdf'));
   assert.ok(heroActions.includes('https://www.linkedin.com/in/cesar-tortolero'));
+  // The tour link works without scripts: it opens the recorded run.
+  assert.ok(heroActions.includes('./lab/build-trace.html'));
   for (const link of document.querySelectorAll('a[target="_blank"]')) assert.match(link.getAttribute('rel'), /noopener/);
   assert.doesNotMatch(html, /\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/);
   assert.doesNotMatch(html, /tel:/i);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2rMXlhLr/F1NVQQnMDr2PeCGmxIKvVVAQbkVl5EYZqA='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-G8slze0J/lL2JyIAFipFdQe1FVn2ZNm4U1dTs9klNOc='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#eeede8">
   <meta name="description" content="Cesar Tortolero is a Machine Learning Engineer in Morristown, NJ (NYC area) who builds AI agents, MCP integrations and LLM evaluation on AWS Bedrock AgentCore, plus serverless Python and MLOps.">
@@ -48,16 +48,19 @@
   <script>
   // Decide synchronously whether the build tour will play, so the page starts
   // behind a dark veil and entrance.js downloads early. Mirrors
-  // entranceWillPlay() in app.js and shouldPlayEntrance() in entrance.js.
+  // entranceWillPlay() in app.js and shouldPlayEntrance() in entrance.js: the
+  // tour plays once (entrance.js marks the visit "seen" as it starts), never
+  // under reduced motion, on a deep link or on back/forward.
   // app.js follows the decision recorded in data-tour.
   (() => {
     const root = document.documentElement;
     let play = false;
     try {
-      const key = 'cesar:portfolio:agentic-intro:v1:probe';
-      localStorage.setItem(key, '1'); localStorage.removeItem(key);
+      const key = 'cesar:portfolio:agentic-intro:v1';
+      const seen = localStorage.getItem(key) === 'seen';
+      localStorage.setItem(`${key}:probe`, '1'); localStorage.removeItem(`${key}:probe`);
       const nav = performance.getEntriesByType?.('navigation')?.[0];
-      play = !(matchMedia('(prefers-reduced-motion: reduce)').matches || (location.hash && location.hash !== '#home') || nav?.type === 'back_forward');
+      play = !(seen || matchMedia('(prefers-reduced-motion: reduce)').matches || (location.hash && location.hash !== '#home') || nav?.type === 'back_forward');
     } catch { play = false; }
     root.dataset.tour = play ? 'play' : 'skip';
     if (!play) return;
@@ -103,7 +106,7 @@
 
   <main id="main">
     <section id="home" class="hero" aria-labelledby="hero-title">
-      <div class="hero-kicker mono"><span class="status-dot" aria-hidden="true"></span> MORRISTOWN, NJ — NYC AREA</div>
+      <div class="hero-kicker mono"><span class="status-dot" aria-hidden="true"></span> <span class="kicker-text">OPEN TO AI/ML ENGINEER ROLES<span class="kicker-sep"> · </span><span class="kicker-where">NYC AREA, HYBRID OR REMOTE</span></span></div>
       <h1 id="hero-title"><span class="visually-hidden">Cesar Tortolero, </span><span class="hero-line"><span>Machine</span> <span>Learning</span></span> <span class="hero-fade">Engineer</span></h1>
       <div class="hero-art">
         <!-- The orbital "C" stays as a small accent behind the shoulder (and is
@@ -147,8 +150,8 @@
       <div class="hero-bottom">
         <div class="hero-intro">
           <span class="mono small-label">HELLO, I’M CESAR TORTOLERO</span>
-          <p>I build and ship ML and LLM systems on AWS.</p>
-          <p class="hero-scope">AI agents and MCP integrations, LLM tracing and evaluation, serverless APIs, MLOps.</p>
+          <p>At ADP I build AI agents and LLM evaluation on AWS.</p>
+          <p class="hero-scope">Also MCP integrations, LLM tracing, serverless APIs and MLOps.</p>
         </div>
         <!-- Proof strip: three facts stated further down, each linking to where it is backed up. -->
         <ul class="hero-proof" aria-label="Highlights">
@@ -157,12 +160,18 @@
           <li><a href="#approach"><span class="proof-figure">Day <span class="icon icon-arrow-e" aria-hidden="true"></span><span class="visually-hidden">to </span>minutes</span> <span class="proof-label mono">Firewall checks across 24 AWS accounts <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
         </ul>
         <a class="scroll-cue" href="#about" aria-label="Skip to the about section"><span class="icon icon-arrow-se" aria-hidden="true"></span></a>
+        <!-- One column, the same order on screen and in the tab order at every width:
+             résumé, LinkedIn and Email, then the tour pill. -->
         <div class="hero-actions hero-note">
           <a class="pill-button" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Download résumé <span class="pill-meta">PDF</span> <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
           <div class="hero-links mono">
             <a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
             <a href="mailto:Lucenatrujillo.cesar@gmail.com">EMAIL <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
           </div>
+          <!-- When app.js can replay the build tour (scripts on, motion allowed) it sets data-tour-mode="replay":
+               the pill then shows its length and a play icon (styles.css). Otherwise it opens the recorded run.
+               Hidden while a tour runs. -->
+          <a class="pill-button pill-ghost hero-tour" href="./lab/build-trace.html" data-tour-replay aria-label="Watch it get built: the recorded agent run behind this page">Watch it get built <span class="pill-meta" aria-hidden="true">55 S</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
         </div>
       </div>
       <div class="hero-rule mono"><span>AGENTS, EVALS AND MLOPS AT ADP.</span><span>SCROLL TO EXPLORE <span class="icon icon-arrow-s" aria-hidden="true"></span></span></div>

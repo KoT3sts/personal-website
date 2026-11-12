@@ -115,16 +115,19 @@ export function loadWorkPreviews(document, window, load = () => import(PREVIEWS_
 let previews = null;
 
 // ---- build tour bootstrap -----------------------------------------------------
-// The tour plays on every normal load (everyVisit). Deep links, back/forward and
-// reduced motion skip it, so entrance.js is only fetched when it will play or when
-// the visitor asks for a Replay.
+// The tour plays once, on a visitor's first normal home load: entrance.js marks
+// the visit "seen" as the tour starts, so a reload mid-tour does not restart it.
+// After that the hero's "Watch it get built" button and the footer Replay start it
+// on request. Deep links, back/forward and reduced motion skip it, so entrance.js
+// is only fetched when it will play or when the visitor asks for a replay.
 // `stopGates`: the Lab stop waits briefly (entrance.js caps it) for the live
 // previews, so they are not swapped in under the agents building the cards.
 // Asking for the gate also starts the previews' import: entrance.js asks once
 // as the tour starts.
-const ENTRANCE_OPTIONS = { everyVisit: true, stopGates: { '#lab': () => { previews?.start(); return previews?.settled; } } };
-// Same key prefix as entrance.js's storage probe.
-const ENTRANCE_PROBE_KEY = 'cesar:portfolio:agentic-intro:v1:probe';
+const ENTRANCE_OPTIONS = { stopGates: { '#lab': () => { previews?.start(); return previews?.settled; } } };
+// entrance.js's visit flag ('seen' once the tour has played) and its storage probe.
+const ENTRANCE_SEEN_KEY = 'cesar:portfolio:agentic-intro:v1';
+const ENTRANCE_PROBE_KEY = `${ENTRANCE_SEEN_KEY}:probe`;
 // If the tour script takes longer than this to arrive, the page shows as is and the
 // tour is not started; Replay still loads it.
 const ENTRANCE_WAIT_MS = 4000;
@@ -135,24 +138,54 @@ const IDLE_ENTRANCE = Object.freeze({
   stats: Object.freeze({ agents: 0, cursors: 0, targets: 0, done: 0, working: 0, visible: 0 }),
 });
 
-// Mirrors shouldPlayEntrance() in entrance.js with everyVisit (the "seen" flag is ignored).
-export function entranceWillPlay({ reducedMotion, storageAvailable, hash, navigationType }) {
-  return !reducedMotion && storageAvailable && (!hash || hash === '#home') && navigationType !== 'back_forward';
+// Mirrors shouldPlayEntrance() in entrance.js (and the inline <head> script).
+export function entranceWillPlay({ seen, reducedMotion, storageAvailable, hash, navigationType }) {
+  return !seen && !reducedMotion && storageAvailable && (!hash || hash === '#home') && navigationType !== 'back_forward';
 }
 
 function tourConditions(window) {
   let storageAvailable = false;
+  let seen = false;
   try {
+    seen = window.localStorage.getItem(ENTRANCE_SEEN_KEY) === 'seen';
     window.localStorage.setItem(ENTRANCE_PROBE_KEY, '1');
     window.localStorage.removeItem(ENTRANCE_PROBE_KEY);
     storageAvailable = true;
   } catch { storageAvailable = false; }
   return {
+    seen,
     reducedMotion: Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches),
     storageAvailable,
     hash: window.location?.hash || '',
     navigationType: window.performance?.getEntriesByType?.('navigation')?.[0]?.type,
   };
+}
+
+// The hero's "Watch it get built" link (index.html). Without scripts or under
+// reduced motion it simply opens the recorded run (lab/build-trace.html); with
+// motion allowed a plain click replays the build tour instead. While the tour
+// runs the link is hidden (styles.css), and a click then does nothing extra.
+export const TOUR_BUTTON_LABELS = Object.freeze({
+  replay: 'Watch it get built: a 55-second replay of the agents building this page',
+  link: 'Watch it get built: the recorded agent run behind this page',
+});
+// `fallback` runs when the tour script cannot be loaded (replay resolves to false).
+export function bindTourButton(button, { media, replay, touring, fallback }) {
+  if (!button) return;
+  const sync = () => {
+    const mode = media?.matches ? 'link' : 'replay';
+    button.dataset.tourMode = mode;
+    button.setAttribute('aria-label', TOUR_BUTTON_LABELS[mode]);
+  };
+  sync();
+  media?.addEventListener?.('change', sync);
+  button.addEventListener('click', event => {
+    // New tab/window, download and reduced motion: the link does what links do.
+    if (media?.matches || event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (touring()) return;
+    Promise.resolve(replay()).then(ok => { if (ok === false) fallback?.(); });
+  });
 }
 
 let entranceModule = null;
@@ -167,13 +200,17 @@ function loadEntrance() {
 }
 
 // A handle with the entrance's API that forwards to the real one once it is loaded.
-function lazyEntrance(document, window) {
+// `load` is injectable for tests. start() is idempotent: on a first visit the boot
+// and a hero-link replay can both be waiting on the same import, and only one may
+// create the entrance (one set of listeners, one dock, one tour).
+export function lazyEntrance(document, window, load = loadEntrance) {
   let real = null;
   let stub = null;
   let replaying = null;
   const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 
   function start(module) {
+    if (real) return real;
     real = module.initAgenticEntrance(document, window, ENTRANCE_OPTIONS);
     return real;
   }
@@ -182,16 +219,17 @@ function lazyEntrance(document, window) {
     if (real) { real.replay(); return Promise.resolve(); }
     if (replaying) return replaying;
     stub?.setAttribute('aria-busy', 'true');
-    replaying = loadEntrance().then(module => {
+    replaying = load().then(module => {
       const hadFocus = Boolean(stub && document.activeElement === stub);
       start(module);
-      // A late init may already be touring (the URL lost its hash); otherwise replay.
+      // The boot may have started the first-visit tour from the same import, or a
+      // late init may already be touring (the URL lost its hash); otherwise replay.
       if (!real.touring) real.replay();
       // The real footer Replay is in place now (hidden while the tour runs).
       stub?.remove();
       stub = null;
       if (hadFocus && !real.touring) document.querySelector('[data-agentic-replay]')?.focus({ preventScroll: true });
-    }).catch(() => { stub?.removeAttribute('aria-busy'); })
+    }).catch(() => { stub?.removeAttribute('aria-busy'); return false; })
       .finally(() => { replaying = null; });
     return replaying;
   }
@@ -241,6 +279,13 @@ function placeholderVeil(document) {
 
 function bootEntrance(document, window) {
   const lazy = lazyEntrance(document, window);
+  const tourButton = document.querySelector('[data-tour-replay]');
+  bindTourButton(tourButton, {
+    media: window.matchMedia?.('(prefers-reduced-motion: reduce)'),
+    replay: () => lazy.handle.replay(),
+    touring: () => Boolean(lazy.handle.touring),
+    fallback: () => window.location.assign(tourButton.getAttribute('href')),
+  });
   const startMotion = () => {
     try { initMotion(document, window, { entrance: lazy.handle }); }
     catch { document.querySelectorAll('[data-reveal]').forEach(element => element.removeAttribute('data-reveal')); }

@@ -289,3 +289,75 @@ test('the proof figures count up over a hidden copy; the markup and screen reade
   assert.match(app, /try \{ initHomeCharts\(document, window\); \} catch/);
   assert.ok(app.indexOf('initHomeCharts(document, window)') < app.indexOf('bootEntrance(document, window);\n}'), 'drawn before the tour plans its targets');
 });
+
+// ---- November 12: availability line, intro, and the first-visit-only build tour ----
+
+test('the kicker is the availability line: open to AI/ML roles, where and how, with its status dot', async () => {
+  const kicker = hero.match(/<div class="hero-kicker mono">([\s\S]*?)<\/div>/)?.[1] ?? '';
+  assert.match(kicker, /^<span class="status-dot" aria-hidden="true"><\/span> /, 'the dot stays, hidden from screen readers');
+  assert.equal(plainText(kicker), 'OPEN TO AI/ML ENGINEER ROLES · NYC AREA, HYBRID OR REMOTE');
+  assert.doesNotMatch(kicker, /MORRISTOWN/);
+  // Phones: two lines, the separator kept for screen readers only, the dot beside the first line.
+  const styles = await read('../web/styles.css');
+  const phone = styles.match(/@media \(max-width: 480px\) \{([^@]*?)\}\n/)?.[1] ?? '';
+  assert.match(phone, /\.kicker-sep \{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect\(0 0 0 0\);/);
+  assert.match(phone, /\.kicker-where \{ display: block; \}/);
+  assert.match(phone, /\.hero-kicker \{ align-items: flex-start;/);
+  // The tour types it as before (one job), under an honest label.
+  const entrance = await read('../web/entrance.js');
+  assert.match(entrance, /\{ sel: '\.hero-kicker', role: 'copy', kind: 'type', wave: \d+, charMs: \d+, act: 'writing availability' \}/);
+});
+
+test('the intro says where the work happens; the scope line adds to it without repeating it', () => {
+  const intro = hero.match(/<div class="hero-intro">([\s\S]*?)<\/div>/)?.[1] ?? '';
+  const [lead, scope] = [...intro.matchAll(/<p[^>]*>([^<]+)<\/p>/g)].map(match => match[1]);
+  assert.equal(lead, 'At ADP I build AI agents and LLM evaluation on AWS.');
+  assert.ok(scope && !/AI agents|evaluation|developers|250\+|minutes/i.test(scope), `scope repeats the lead or the proof strip: ${scope}`);
+});
+
+test('"Watch it get built": an outline pill after the résumé and the links, in one order on screen and for Tab', async () => {
+  const actions = hero.match(/<div class="hero-actions[^"]*">([\s\S]*?)\n {8}<\/div>/)?.[1] ?? '';
+  assert.doesNotMatch(actions, /hero-buttons/, 'no wrapper: the pills are direct children');
+  // DOM order = visual order at every width: résumé, LinkedIn, Email, tour pill.
+  const links = [...actions.matchAll(/<a [^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
+  assert.equal(links.length, 4, 'résumé, LinkedIn, Email, tour');
+  assert.match(links[0], /^<a class="pill-button" href="\.\/assets\/Cesar_Tortolero_Resume\.pdf" download/, 'the résumé comes first');
+  assert.match(links[1], /linkedin\.com/);
+  assert.match(links[2], /^<a href="mailto:/);
+  assert.ok(actions.indexOf('class="hero-links') > actions.indexOf('Cesar_Tortolero_Resume.pdf') && actions.indexOf('class="hero-links') < actions.indexOf('data-tour-replay'), 'the links sit between the pills');
+  const tour = links[3];
+  assert.match(tour, /^<a class="pill-button pill-ghost hero-tour" href="\.\/lab\/build-trace\.html" data-tour-replay /, 'a real link: works without scripts');
+  assert.equal(attr(tour, 'aria-label'), 'Watch it get built: the recorded agent run behind this page');
+  // No "~" the accessible name would not say; the length itself is decoration (the label says it in words).
+  assert.equal(plainText(tour), 'Watch it get built 55 S');
+  assert.match(tour, /<span class="pill-meta" aria-hidden="true">55 S<\/span> <span class="icon icon-arrow-e" aria-hidden="true"><\/span><\/a>$/);
+  assert.doesNotMatch(tour, /target=|download/);
+  const styles = await read('../web/styles.css');
+  // Same height as the résumé pill: 1px border in place of 1px of padding; both stretch to the column.
+  assert.match(styles, /\.pill-button \{ display: inline-flex; align-items: center; gap: 12px; padding: 14px 22px;/);
+  assert.match(styles, /\.pill-ghost \{ padding: 13px 21px; border: 1px solid #[0-9a-f]{6}; background: transparent; color: var\(--ink\); box-shadow: none; \}/);
+  assert.match(styles, /\.hero-actions \{ justify-self: end; display: grid; justify-items: end; gap: \d+px; \}/, 'one column in DOM order');
+  assert.match(styles, /\.hero-actions > \.pill-button \{ justify-self: stretch; min-height: 44px; \}/, 'both pills one width, at least 44px');
+  // Nothing reorders the column or flattens it anywhere (visual order = tab order).
+  assert.doesNotMatch(styles, /\.hero-buttons|\.hero-tour \{ order|\.hero-actions[^{]*\{[^}]*\border:/);
+  // The replay look follows the same check as the click (bindTourButton's data-tour-mode), not :root[data-tour];
+  // in link mode the length keeps its space unseen, so the pill's box never changes.
+  assert.match(styles, /\.hero-tour:not\(\[data-tour-mode="replay"\]\) \.pill-meta \{ visibility: hidden; \}/);
+  assert.match(styles, /\.hero-tour\[data-tour-mode="replay"\] \.icon \{ --icon: url\(/);
+  assert.doesNotMatch(styles, /:root\[data-tour\] \.hero-tour/);
+  // Hidden while any tour runs: no second start, and nothing for the tour to build.
+  assert.match(styles, /:root\.agentic-touring \.hero-tour \{ visibility: hidden; \}/);
+  const entrance = await read('../web/entrance.js');
+  assert.match(entrance, /\{ sel: '\.hero-actions \.pill-button:not\(\[data-tour-replay\]\)', role: 'links', kind: 'reveal', wave: \d+, act: 'wiring résumé' \}/);
+  assert.match(entrance, /\{ sel: '\.hero-links a', role: 'links', kind: 'reveal', wave: \d+, each: true, group: '\.hero-links', act: 'wiring links' \}/);
+  assert.match(entrance, /const POOL_SKIP = '[^']*\[data-tour-replay\]'/);
+  // A replay that throws mid-start settles the page (the hero link comes back).
+  assert.match(entrance, /replay: \(\) => \{\s*try \{ startTour\(true\); \}\s*catch \{ try \{ stop\(false\); \}/);
+  // app.js wires it to the same replay as the footer link, and sets the mode the CSS reads.
+  const app = await read('../web/app.js');
+  assert.match(app, /bindTourButton\(tourButton, \{[\s\S]*?replay: \(\) => lazy\.handle\.replay\(\),/);
+  assert.match(app, /button\.dataset\.tourMode = mode;/);
+  // The visible length and the spoken one agree (measured tours: 54.6 s at 1280, 51.9 s at 390).
+  const seconds = tour.match(/>(\d+) S</)[1];
+  assert.match(app, new RegExp(`a ${seconds}-second replay`));
+});

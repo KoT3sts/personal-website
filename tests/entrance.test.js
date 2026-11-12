@@ -307,6 +307,52 @@ test('Replay restarts the whole tour from the top, only on an explicit click', t
   back.controller.skip();
 });
 
+test('the first visit is marked seen as the tour starts, so a reload mid-tour does not play it again', t => {
+  const first = setup(t, { width: 1280, frames: true });
+  assert.equal(first.controller.touring, true);
+  assert.equal(first.window.localStorage.getItem(storageKey), 'seen', 'written at the start, not at the end');
+  stepTo(first.controller, first.clock, 0, 1500);
+  // Leaving mid-tour (reload, closed tab) keeps the flag.
+  first.window.dispatchEvent(new first.window.PageTransitionEvent('pagehide', { persisted: false }));
+  assert.equal(first.window.localStorage.getItem(storageKey), 'seen');
+  const reload = setup(t, { seen: true, navigationType: 'reload' });
+  assert.equal(reload.controller.touring, false, 'the reload shows the page at once');
+  assertNoResidue(reload.document, { dock: 'none' });
+  // A replay neither needs nor clears the flag.
+  reload.controller.replay();
+  assert.equal(reload.controller.touring, true);
+  reload.controller.skip();
+  assert.equal(reload.window.localStorage.getItem(storageKey), 'seen');
+});
+
+test('the hero tour link: never built by the tour, keyboard replays move focus to Skip, and its clicks never stop a tour', t => {
+  const { document, window, controller, clock } = setup(t, { seen: true, width: 1280, frames: true });
+  const link = document.querySelector('.hero-actions [data-tour-replay]');
+  assert.equal(link.getAttribute('href'), './lab/build-trace.html');
+  const root = document.documentElement;
+  assert.equal(root.classList.contains('agentic-touring'), false, 'shown on a returning visit');
+  link.focus();
+  controller.replay();
+  assert.equal(controller.touring, true);
+  assert.ok(root.classList.contains('agentic-touring'), 'styles.css hides the link while touring');
+  assert.equal(document.activeElement, document.querySelector('[data-agentic-skip]'), 'focus leaves the hidden link for Skip');
+  // Through the hero stop the link is never a job target (it stays hidden, not half built).
+  while (controller.touring && controller.tour.index === 0) {
+    clock.step(16);
+    assert.equal(link.dataset.buildState, undefined);
+    assert.equal(link.hasAttribute('data-agentic-job'), false);
+    assert.equal(link.classList.contains('agentic-target'), false);
+  }
+  controller.skip();
+  assert.equal(root.classList.contains('agentic-touring'), false, 'back once the tour ends');
+  // While sections may still be traced, a click on the link is a replay request, not navigation away.
+  const click = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+  controller.replay();
+  link.dispatchEvent(click);
+  assert.equal(controller.touring, true, 'a click on the (hidden) link does not end the tour');
+  controller.skip();
+});
+
 test('returning visits, deep links, back/forward, reduced motion and blocked storage get no tour and no dock', t => {
   for (const options of [{ seen: true }, { hash: '#work' }, { navigationType: 'back_forward' }, { reduced: true }, { storageBlocked: true }]) {
     const { document, controller } = setup(t, options);
@@ -834,7 +880,7 @@ test('2x speed finishes the tour faster without cancelling it, and is remembered
   assert.equal(button.textContent, '2×');
   assert.equal(button.getAttribute('aria-pressed'), 'true');
   assert.equal(window.localStorage.getItem(speedKey), '2');
-  assert.equal(window.localStorage.getItem(storageKey), null, 'separate from the visit flag');
+  assert.equal(window.localStorage.getItem(storageKey), 'seen', 'separate from the visit flag (marked as the tour started)');
   let y = window.scrollY;
   let jump = 0;
   while (controller.touring && clock.now() < 90000) {

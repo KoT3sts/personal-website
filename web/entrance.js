@@ -97,14 +97,14 @@ export const GATE_CAP_MS = 1200;
 export const ROLES = {
   orchestrator: { label: 'orchestrator', color: '#1d1e1b' },
   layout: { label: 'layout', color: '#6f9bff' },
-  nav: { label: 'nav', color: '#3ccbb4' },
+  nav: { label: 'nav', color: '#e07bff' },
   type: { label: 'type', color: '#ff6ea9' },
   copy: { label: 'copy', color: '#ffa04a' },
   art: { label: 'art', color: '#a98cff' },
   motion: { label: 'motion', color: '#55c4f5' },
   links: { label: 'links', color: '#72d27c' },
   a11y: { label: 'a11y', color: '#f1cf3a' },
-  qa: { label: 'qa', color: '#ff6767' },
+  qa: { label: 'qa', color: '#2fb8a6' },
 };
 
 // Subagents per viewport class (the orchestrator is one extra cursor). The
@@ -143,7 +143,7 @@ const HERO_PLAN = [
   // One agent links the whole nav (no stack of identical labels).
   { sel: '.main-nav a', role: 'nav', kind: 'reveal', wave: 470, each: true, group: '.main-nav', grouped: true, act: 'linking nav' },
   { sel: '.header-contact', role: 'nav', kind: 'reveal', wave: 470, act: 'placing résumé link' },
-  { sel: '.hero-kicker', role: 'copy', kind: 'type', wave: 600, charMs: 24, act: 'writing location' },
+  { sel: '.hero-kicker', role: 'copy', kind: 'type', wave: 600, charMs: 24, act: 'writing availability' },
   // The portrait develops from the hair down as ENGINEER is being set
   // (portrait.css styles the reveal); the small orbit accent follows.
   { sel: '.hero-portrait', role: 'art', kind: 'reveal', wave: 760, work: 1100, art: true, act: 'placing portrait' },
@@ -155,7 +155,9 @@ const HERO_PLAN = [
   { sel: '.hero-scope', role: 'copy', kind: 'wipe', wave: 1050, act: 'writing scope' },
   { sel: '.hero-rule > span', role: 'copy', kind: 'wipe', wave: 1180, each: true, group: '.hero-rule', act: 'writing footer rule' },
   { sel: '.scroll-cue', role: 'links', kind: 'reveal', wave: 1180, act: 'wiring scroll cue' },
-  { sel: '.hero-actions .pill-button', role: 'links', kind: 'reveal', wave: 1180, act: 'wiring résumé' },
+  // The hero's "Watch it get built" link stays hidden while any tour runs
+  // (styles.css), so no job builds it.
+  { sel: '.hero-actions .pill-button:not([data-tour-replay])', role: 'links', kind: 'reveal', wave: 1180, act: 'wiring résumé' },
   { sel: '.hero-links a', role: 'links', kind: 'reveal', wave: 1180, each: true, group: '.hero-links', act: 'wiring links' },
   // The proof strip under the intro: one type agent (free once its headline
   // word is set) places the three facts in turn.
@@ -1513,7 +1515,8 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (!rect.height) return false;
     const base = parseFloat(window.getComputedStyle?.(dock.root).bottom) || 14;
     // Horizontal extent at rest (the lift only moves it up).
-    const boxes = [...document.querySelectorAll(PROTECTED)].map(element => element.getBoundingClientRect())
+    // Hidden controls (the hero's tour link while a tour runs) need no room.
+    const boxes = [...document.querySelectorAll(PROTECTED)].filter(element => element.checkVisibility?.({ visibilityProperty: true }) !== false).map(element => element.getBoundingClientRect())
       .filter(r => r.height > 0 && r.top < vh && r.bottom > 0 && r.right > rect.left - 8 && r.left < rect.right + 8);
     let lift = 0;
     for (let pass = 0; pass < 6; pass++) {
@@ -3818,7 +3821,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   // nearest idle agent flies in from the margin and types or places it, then
   // drifts back to its spot. Agents are taken only while they idle and have
   // nothing planned until well after the rescue (`spare`).
-  const POOL_SKIP = '[hidden], .project-stories, dialog, .agentic-stage, .agentic-dock, [data-agentic-replay]';
+  const POOL_SKIP = '[hidden], .project-stories, dialog, .agentic-stage, .agentic-dock, [data-agentic-replay], [data-tour-replay]';
   const ownText = element => [...element.childNodes].some(node => node.nodeType === 3 && node.nodeValue.trim());
   // How long an on-screen item may wait for a rescuer before it is shown.
   const giveUpAfter = current => RESCUE.cap - RESCUE.travel[0] * 0.6 * current.anim;
@@ -4455,6 +4458,9 @@ export function initAgenticEntrance(document, window, config = {}) {
     // A first visit that already sits mid-page (restored position) is not
     // pulled back to the top.
     if (!replay && readScrollY() > 80) { stop(false, false); return; }
+    // The visit counts as seen as soon as the tour starts, so a reload (or a
+    // closed tab) mid-tour never plays it again on its own.
+    if (!replay) persist();
     observer?.disconnect();
     clearVisuals();
     const stops = TOUR_STOPS.map(stopInfo => ({ ...stopInfo, section: document.querySelector(stopInfo.sel) })).filter(stopInfo => stopInfo.section);
@@ -4470,7 +4476,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     replayButton.hidden = true;
     builtCount = crewSize(width());
     // A keyboard Replay hides the focused control: keep focus in the dock.
-    const focusOnReplay = Boolean(document.activeElement?.closest?.('[data-agentic-replay], [data-agentic-dock-replay]'));
+    const focusOnReplay = Boolean(document.activeElement?.closest?.('[data-agentic-replay], [data-agentic-dock-replay], [data-tour-replay]'));
     if (replay) scrollToY(0);
     tourY = readScrollY();
     tourScroll.y = tourY;
@@ -4919,7 +4925,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   const onNavigate = event => {
     // The tour's own press on a control (kind `pick`) is not the visitor.
     if (pressing) return;
-    if (event.target.closest?.('[data-agentic-skip], [data-agentic-replay], .agentic-dock')) return;
+    if (event.target.closest?.('[data-agentic-skip], [data-agentic-replay], [data-tour-replay], .agentic-dock')) return;
     if ((tour || phase !== 'ready' || sectionsEligible) && event.target.closest?.('a, button, summary, input, select, textarea')) stop();
   };
   const onScroll = () => {
@@ -4983,6 +4989,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   // only fetched when the tour plays or the Trace panel is opened.
   if (config.trace && typeof config.trace === 'object') loadTrace();
   // `everyVisit`: play on every load (reloads included), not only the first.
+  // The site plays it on the first visit only (app.js passes no everyVisit).
   const everyVisit = Boolean(config.everyVisit);
   const eligible = shouldPlayEntrance({ seen: everyVisit ? false : seen, reducedMotion: Boolean(media?.matches), storageAvailable: Boolean(storage), hash: window.location.hash, navigationType });
   if (eligible && everyVisit) {
@@ -5009,6 +5016,11 @@ export function initAgenticEntrance(document, window, config = {}) {
     get crewSize() { return crewSize(width()); },
     whenTourEnds(callback) { if (tour) tourEndCallbacks.push(callback); else callback(); },
     skip: () => stop(),
-    replay: () => startTour(true),
+    // A throw after the tour began (agentic-touring set, hero link hidden) must not
+    // leave the page mid-tour: settle it the way a failed first start does.
+    replay: () => {
+      try { startTour(true); }
+      catch { try { stop(false); } catch { root.classList.remove('agentic-touring'); } }
+    },
   };
 }

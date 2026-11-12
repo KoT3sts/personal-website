@@ -204,9 +204,9 @@ html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
 .agentic-span-chip { align-self: start; width: 10px; height: 10px; margin-top: 3px; box-sizing: border-box; border-radius: 3px; }
 /* Each role's chip shows the cursor colours that stand for it. */
 .agentic-span[data-role="orchestrator"] .agentic-span-chip { background: #1d1e1b; border: 1.5px solid #eef2e6; }
-.agentic-span[data-role="implementation-worker"] .agentic-span-chip { background: linear-gradient(135deg, #6f9bff 0 20%, #3ccbb4 20% 40%, #ff6ea9 40% 60%, #ffa04a 60% 80%, #72d27c 80%); }
+.agentic-span[data-role="implementation-worker"] .agentic-span-chip { background: linear-gradient(135deg, #6f9bff 0 20%, #e07bff 20% 40%, #ff6ea9 40% 60%, #ffa04a 60% 80%, #72d27c 80%); }
 .agentic-span[data-role="ui-design-director"] .agentic-span-chip { background: linear-gradient(135deg, #a98cff 0 34%, #55c4f5 34% 67%, #f1cf3a 67%); }
-.agentic-span[data-role="quality-reviewer"] .agentic-span-chip { background: #ff6767; }
+.agentic-span[data-role="quality-reviewer"] .agentic-span-chip { background: #2fb8a6; }
 .agentic-span-body { display: grid; gap: 1px; min-width: 0; }
 .agentic-span-action { color: #f6f9ef; font-size: 12px; font-weight: 700; line-height: 1.25; }
 .agentic-span-result { color: #c8d2bb; font-size: 11px; line-height: 1.3; }
