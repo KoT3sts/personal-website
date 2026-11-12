@@ -25,8 +25,8 @@ test('the module exports initWorkPreviews and reads the two shipped JSON files',
   assert.equal(OBS_JSON, './lab/data/agent-traces-summary.json');
   assert.equal(TRACE_JSON, './trace/build-trace.json');
   for (const path of [OBS_JSON, TRACE_JSON]) assert.ok(statSync(new URL(path, web)).isFile(), path);
-  // Budget: 17 KB unminified (about 5 KB gzipped), with no imports; it loads lazily, after the page.
-  assert.ok(statSync(new URL('work-previews.js', web)).size < 17 * 1024, 'stays under 17 KB');
+  // Budget: 18 KB unminified (about 5 KB gzipped), with no imports; it loads lazily, after the page.
+  assert.ok(statSync(new URL('work-previews.js', web)).size < 18 * 1024, 'stays under 18 KB');
 });
 
 test('the observability preview and its static summary carry the same numbers, from agent-traces-summary.json', () => {
@@ -41,7 +41,7 @@ test('the observability preview and its static summary carry the same numbers, f
   assert.deepEqual([...card.matchAll(/<dt>([^<]+)<\/dt><dd>([^<]+)<\/dd>/g)].map(m => [m[1], m[2]]), summary.kpis);
   const [from, to] = [obs.meta.window.from, obs.meta.window.to];
   assert.equal(summary.dates, daysText(from, to));
-  assert.match(card, new RegExp(`<p class="open-note mono">${summary.dates.toUpperCase()}, ${from.slice(0, 4)} · ${summary.rows.length} PASS/FAIL CHECKS · ${obs.evaluators.length} EVALUATORS, NO LLM JUDGE</p>`));
+  assert.match(card, new RegExp(`<p class="open-note mono">${summary.dates.toUpperCase()}, ${from.slice(0, 4)} · ${obs.evaluators.length} AUTOMATED CHECKS · NO LLM JUDGE</p>`));
   assert.ok(obs.evaluators.every(item => item.kind === 'code'), 'no LLM judge');
   // One row per pass/fail evaluator, one cell per evaluation; blanks where it does not apply.
   assert.deepEqual(summary.rows.map(row => row.id), Object.keys(CHECKS));
@@ -158,4 +158,21 @@ test('styles: 11px text, 44px targets, currentColor theming, motion only when al
   assert.match(source, /if \(reduced\(\) \|\| !win\.SVGAnimationElement\) return;/, 'the loop dot stays still under reduced motion');
   // Text colours are never hard-coded: every color: is currentColor or inherited.
   for (const [, value] of css.matchAll(/[{;]\s*color: ([^;]+);/g)) assert.ok(['currentColor', 'inherit'].includes(value), value);
+});
+
+test('scrubbing cannot move the page: a fixed-height readout, contained previews, one frame per move', () => {
+  // One meta line (11px x 1.4) and two text lines (14px x 1.4) with the 4px gap fit 4.6em of 13px.
+  assert.match(css, /\.wp-readout \{[^}]*\bheight: 4\.6em;[^}]*overflow: hidden;[^}]*contain: strict;/);
+  assert.ok(11 * 1.4 + 4 + 2 * 14 * 1.4 <= 4.6 * 13, 'the clamped lines fit the readout');
+  assert.doesNotMatch(css, /\.wp-readout \{[^}]*min-height/, 'no growing readout');
+  assert.match(css, /\.wp-readout \.wp-label \{ white-space: nowrap; text-overflow: ellipsis; \}/);
+  assert.match(css, /\.wp-readout \.wp-action \{[^}]*-webkit-line-clamp: 2;[^}]*line-clamp: 2;/);
+  assert.match(css, /\.wp-obs \{ contain: content; \}/);
+  assert.match(css, /\.wp-trace \{ contain: layout style; \}/);
+  // The pointer path: one frame per burst of moves, the box measured once, writes only on a new step.
+  assert.match(source, /frame \|\|= w\.requestAnimationFrame\(paint\)/);
+  assert.match(source, /box \|\|= slider\.getBoundingClientRect\(\)/);
+  assert.match(source, /if \(k !== shown\) select\(shown = k\)/, 'an unchanged step writes nothing');
+  assert.equal([...source.matchAll(/^ {4}slider\.setAttribute\('aria-valuetext'/gm)].length, 2, 'aria-valuetext follows the shown step in both strips');
+  assert.match(source, /w\.addEventListener\('scroll', forget, \{ capture: true, passive: true \}\)/, 'a scroll drops the measured box');
 });

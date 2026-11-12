@@ -171,6 +171,7 @@ export function initExplorer(document, window) {
     frame: 0,
     last: 0,
     onScreen: false,
+    inView: false,
     hover: false,
     hidden: document.visibilityState === 'hidden',
     width: -1,
@@ -247,7 +248,7 @@ export function initExplorer(document, window) {
 
   // ---- One rAF loop, alive only while something moves. ----
   function spinning() {
-    return state.geometry.ring && state.mode === 'ring' && !state.modeTween && state.onScreen && !state.hover
+    return state.geometry.ring && state.mode === 'ring' && !state.modeTween && state.inView && !state.hover
       && !state.hidden && !reduced() && !touring() && !gesture?.dragging;
   }
   function schedule() {
@@ -565,17 +566,21 @@ export function initExplorer(document, window) {
   motion?.addEventListener?.('change', () => { if (reduced()) finishMotion(); else wake(); });
 
   // Offscreen: motion finishes at once, and the explorer is a ring again for
-  // the next visit (the selection is kept).
+  // the next visit (the selection is kept). The idle spin runs only while at
+  // least half of the stage, or of the window when the stage is taller, is in view
+  // (inView), not while a sliver of it shows above or below the section being read.
   if (typeof window.IntersectionObserver === 'function') {
     new window.IntersectionObserver(entries => {
       const entry = entries?.[entries.length - 1];
       if (!entry) return;
       state.onScreen = entry.isIntersecting;
+      const room = Math.min(entry.boundingClientRect.height, entry.rootBounds?.height || window.innerHeight || Infinity);
+      state.inView = entry.isIntersecting && entry.intersectionRect.height >= 0.5 * room;
       if (state.onScreen) { wake(); return; }
       finishMotion();
       if (state.geometry.ring) setMode('ring', { instant: true });
-    }).observe(stage);
-  } else state.onScreen = true;
+    }, { threshold: [0, 0.25, 0.5, 0.75, 1] }).observe(stage);
+  } else state.onScreen = state.inView = true;
   if (typeof window.ResizeObserver === 'function') new window.ResizeObserver(measure).observe(list);
   // The tier follows the viewport, which can cross a breakpoint without the deck resizing.
   window.addEventListener('resize', measure);

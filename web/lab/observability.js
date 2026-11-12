@@ -17,6 +17,36 @@ export function spanName(row) {
   return s.name;
 }
 
+// Span details: the same rows, in the same order, for every kind of span ('–' where one
+// does not apply), so hovering the tree never changes the side column's height.
+export const SPAN_ROWS = ['Kind', 'Name', 'Category', 'Agent', 'Model', 'Status', 'Starts at', 'Duration', 'Tool calls', 'Steps', 'Failed', 'Input', 'Output', 'Reasoning', 'Cache read', 'Cache write'];
+export function spanFacts(row) {
+  const s = row?.span;
+  if (!s) return SPAN_ROWS.map(() => '–');
+  const m = row.merged;
+  const n = D.formatInt; // '–' for a missing number
+  const failed = m ? m.errors : s.kind === 'CHAIN' ? D.sum(Object.values(s.errors || {})) : undefined;
+  const calls = m ? m.count : s.kind === 'LLM' ? s.toolCalls : s.kind === 'CHAIN' ? D.sum(Object.values(s.tools || {})) : undefined;
+  const ms = D.formatMs(D.duration(s));
+  return [
+    m ? 'Merged tool calls' : KIND_WORD[s.kind] || s.kind,
+    m ? m.tool : s.kind === 'LLM' ? 'Model step' : s.kind === 'CHAIN' ? 'Steps merged for size' : s.name,
+    (!m && s.category) || '–', s.agent || '–', (!m && s.model) || '–',
+    m ? '–' : s.status === 'error' ? 'Error' : 'OK',
+    m ? '–' : `+${D.formatMs(s.start)}`,
+    m ? 'Not published' : s.kind === 'LLM' ? `${ms} (est.)` : ms,
+    n(calls), n(m ? undefined : s.steps), n(failed),
+    ...D.TOKEN_KEYS.map(key => n(m ? undefined : s.tokens?.[key])),
+  ].map(value => (value === undefined || value === null || value === '' ? '–' : String(value)));
+}
+
+// Calls fn once the input has been quiet for ms; now() runs it at once instead.
+export function quiet(fn, ms) {
+  let timer = 0;
+  const now = () => { clearTimeout(timer); timer = 0; fn(); };
+  return { later: () => { clearTimeout(timer); timer = setTimeout(now, ms); }, now };
+}
+
 // KPI count-up, once
 function countUp(root) {
   const nodes = [...root.querySelectorAll('[data-count]')];
@@ -63,10 +93,13 @@ export function start(data) {
     const input = form.querySelector(`input[name="day"][value="${state.filters.day === day ? 'all' : day}"]`);
     if (input) { input.checked = true; readForm(); update(); }
   }
-  form.addEventListener('submit', event => event.preventDefault());
-  form.addEventListener('change', () => { readForm(); update(); });
-  form.addEventListener('input', event => { if (event.target.name === 'tool') { readForm(); update(); } });
-  form.addEventListener('reset', () => setTimeout(() => { readForm(); update(); }));
+  // Typing in the tool search redraws once it pauses (150 ms), not per key; Enter, an
+  // emptied box, a change and a reset apply at once.
+  const apply = quiet(() => { readForm(); update(); }, 150);
+  form.addEventListener('submit', event => { event.preventDefault(); apply.now(); });
+  form.addEventListener('change', apply.now);
+  form.addEventListener('input', event => { if (event.target.name === 'tool') (event.target.value ? apply.later : apply.now)(); });
+  form.addEventListener('reset', () => setTimeout(apply.now));
   q('reset-empty').addEventListener('click', () => form.reset());
 
   // trace list
@@ -255,46 +288,29 @@ export function start(data) {
     };
     if (keys[event.key]) { event.preventDefault(); keys[event.key](); }
   });
+  // Hover shows a span, leaving shows the focused one again: at most once a frame.
+  let hovering = 0;
+  const hoverLater = () => {
+    hovering ||= requestAnimationFrame(() => { hovering = 0; inspect(state.rows.find(r => r.id === (state.hover ?? state.focus))); });
+  };
   tree.addEventListener('pointerover', event => {
     const li = event.target.closest('[role="treeitem"]');
-    if (li && li.dataset.id !== state.hover) { state.hover = li.dataset.id; inspect(state.rows.find(r => r.id === li.dataset.id)); }
+    if (li && li.dataset.id !== state.hover) { state.hover = li.dataset.id; hoverLater(); }
   });
-  tree.addEventListener('pointerleave', () => { state.hover = null; inspect(state.rows.find(r => r.id === state.focus)); });
+  tree.addEventListener('pointerleave', () => { state.hover = null; hoverLater(); });
 
+  // The rows are built once and only rewritten where a value changes.
+  const dl = q('span');
+  const facts = SPAN_ROWS.map(label => {
+    const div = el('div', '', dl);
+    el('dt', 'mono', div, label);
+    return el('dd', '', div, '–');
+  });
   function inspect(row) {
-    const dl = q('span');
-    dl.replaceChildren();
-    if (!row) return;
-    const s = row.span;
-    const item = (label, value) => { if (value === undefined || value === null || value === '') return; const div = el('div', '', dl); el('dt', 'mono', div, label); el('dd', '', div, value); };
-    if (row.merged) {
-      item('Kind', 'Tool calls inside merged steps');
-      item('Tool', row.merged.tool);
-      item('Agent', s.agent);
-      item('Calls', D.formatInt(row.merged.count));
-      item('Failed', D.formatInt(row.merged.errors));
-      item('Timing', 'Not published for merged calls');
-      return;
-    }
-    item('Kind', KIND_WORD[s.kind]);
-    item(s.kind === 'TOOL' ? 'Tool' : 'Name', s.kind === 'LLM' ? 'Model step' : s.kind === 'CHAIN' ? 'Steps merged for size' : s.name);
-    if (s.category) item('Category', s.category);
-    item('Agent', s.agent);
-    item('Model', s.model);
-    item('Status', s.status === 'error' ? 'Error' : 'OK');
-    item('Starts at', `+${D.formatMs(s.start)}`);
-    item(s.kind === 'LLM' ? 'Latency (est.)' : 'Duration', D.formatMs(D.duration(s)));
-    if (s.kind === 'LLM') item('Tool calls', D.formatInt(s.toolCalls));
-    if (s.kind === 'CHAIN') {
-      item('Steps', D.formatInt(s.steps));
-      item('Tool calls', D.formatInt(D.sum(Object.values(s.tools || {}))));
-      const errors = D.sum(Object.values(s.errors || {}));
-      if (errors) item('Failed', D.formatInt(errors));
-    }
-    const words = { input: 'Input', output: 'Output', reasoning: 'Reasoning', cacheRead: 'Cache read', cacheWrite: 'Cache write' };
-    if (s.tokens) D.TOKEN_KEYS.forEach(key => item(words[key], D.formatInt(s.tokens[key])));
+    spanFacts(row).forEach((value, i) => {
+      if (facts[i].textContent !== value) { facts[i].textContent = value; facts[i].title = value; }
+    });
   }
-
   function renderTraceEvals(trace) {
     const ul = q('trace-evals');
     ul.replaceChildren();

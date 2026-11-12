@@ -354,16 +354,27 @@ async function initDelegation(fig) {
     tip.hidden = true;
     hot = null;
   }
+  // Pointer moves are read once a frame (one measure, then writes), and the tip is only
+  // rewritten when the nearest point changes.
+  let at = null;
   function point(event) {
+    const first = !at;
+    at = [event.clientX, event.clientY];
+    if (first) requestAnimationFrame(nearest);
+  }
+  function nearest() {
+    if (!at) return;
     const box = plot.getBoundingClientRect();
-    const px = event.clientX - box.left;
-    const py = event.clientY - box.top;
+    const px = at[0] - box.left;
+    const py = at[1] - box.top;
+    at = null;
     let best = null;
     let distance = 24;
     for (const item of placed) {
       const d = Math.hypot(item.px - px, item.py - py);
       if (d < distance) { distance = d; best = item; }
     }
+    if (best === hot) return;
     hot?.dot.classList.remove('is-hot');
     hot = best;
     if (!best) { tip.hidden = true; return; }
@@ -388,7 +399,7 @@ async function initDelegation(fig) {
   }
   plot.addEventListener('pointermove', point);
   plot.addEventListener('pointerdown', point);
-  plot.addEventListener('pointerleave', () => { hot?.dot.classList.remove('is-hot'); hot = null; tip.hidden = true; });
+  plot.addEventListener('pointerleave', () => { at = null; hot?.dot.classList.remove('is-hot'); hot = null; tip.hidden = true; });
   for (const radio of fig.querySelectorAll('input[name="ea-metric"]')) {
     radio.addEventListener('change', () => { metric = radioValue(fig, 'ea-metric') === 'perCall' ? 'perCall' : 'rate'; draw(); drawPairs(); });
   }

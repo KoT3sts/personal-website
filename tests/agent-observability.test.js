@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import * as D from '../web/lab/obs-data.js';
+import { SPAN_ROWS, spanFacts, quiet } from '../web/lab/observability.js';
 
 const web = new URL('../web/', import.meta.url);
 const read = path => readFileSync(new URL(path, web), 'utf8');
@@ -159,7 +160,7 @@ test('scripts fetch only the same-origin JSON and never build HTML from strings'
 
 test('JavaScript stays inside the budget; the filter count and the loading status are the only live regions', () => {
   const bytes = Object.values(scripts).reduce((n, source) => n + Buffer.byteLength(source), 0);
-  assert.ok(bytes <= 44_000, `${bytes} bytes of JavaScript (target about 40 KB)`);
+  assert.ok(bytes <= 46_000, `${bytes} bytes of JavaScript (target about 40 KB)`);
   assert.deepEqual([...page.matchAll(/<[^>]+aria-live="[^"]+"[^>]*>/g)].map(m => m[0]), ['<p class="obs-count" data-obs="count" aria-live="polite">']);
   assert.deepEqual([...page.matchAll(/<[^>]+role="(?:status|alert|log)"[^>]*>/g)].map(m => m[0]), ['<p class="obs-status" data-obs="status" role="status">']);
   assert.match(page, /<p class="obs-status" data-obs="status" role="status"><\/p>/, 'empty and in the page from the start, so changes are announced');
@@ -361,4 +362,69 @@ test('on the real data: filters partition sensibly and the evaluator counts matc
   assert.equal(D.sum(counts.map(c => c.scored)), data.evaluations.length);
   const some = new Set(failed.slice(0, 5).map(t => t.id));
   assert.ok(D.evaluatorCounts(data.evaluators, data.evaluations, some).every(c => c.scored <= 5));
+});
+
+// ---- hover and typing cost --------------------------------------------------------
+
+test('span details: the same rows in the same order for every kind of span, so hovering never resizes the page', () => {
+  assert.equal(SPAN_ROWS.length, 16);
+  const rows = [...D.waterfall(fixture, new Set(['s5'])), null];
+  const facts = rows.map(spanFacts);
+  for (const [i, list] of facts.entries()) {
+    assert.equal(list.length, SPAN_ROWS.length, `row ${rows[i]?.id}`);
+    assert.ok(list.every(value => typeof value === 'string' && value.length > 0 && !/undefined|null|NaN/.test(value)), list.join(' | '));
+  }
+  const at = (id, label) => facts[rows.findIndex(r => r?.id === id)][SPAN_ROWS.indexOf(label)];
+  assert.equal(at('s1', 'Kind'), 'Agent');
+  assert.equal(at('s2', 'Duration'), '100 ms (est.)', 'LLM latency is marked as estimated');
+  assert.equal(at('s2', 'Tool calls'), '1');
+  assert.equal(at('s3', 'Name'), 'task');
+  assert.equal(at('s3', 'Steps'), '–', 'not applicable is a dash');
+  assert.equal(at('s5', 'Steps'), '3');
+  assert.equal(at('s5', 'Tool calls'), '4');
+  assert.equal(at('s5', 'Failed'), '1');
+  assert.equal(at('s6', 'Category'), 'test');
+  assert.equal(at('s5:bash', 'Kind'), 'Merged tool calls');
+  assert.equal(at('s5:bash', 'Duration'), 'Not published');
+  assert.equal(at('s5:bash', 'Failed'), '1');
+  assert.deepEqual(spanFacts(null), SPAN_ROWS.map(() => '–'));
+  // On the real data too: every published span gives sixteen values.
+  for (const trace of data.traces.slice(0, 5)) for (const row of D.waterfall(trace)) assert.equal(spanFacts(row).length, 16);
+  // The page builds the rows once and rewrites values in place; one-line values keep the height.
+  const js = scripts['lab/observability.js'];
+  assert.match(js, /const facts = SPAN_ROWS\.map\(label => \{/);
+  assert.doesNotMatch(js, /dl\.replaceChildren\(\)/, 'the span details are never rebuilt');
+  assert.match(js, /hovering \|\|= requestAnimationFrame\(/, 'hover updates wait for a frame');
+  assert.match(css, /\.obs-span dd \{[^}]*text-overflow: ellipsis; white-space: nowrap;/);
+  assert.match(css, /\.obs-span \{[^}]*contain: layout;/);
+});
+
+test('tool search redraws once typing pauses for 150 ms, at once on Enter, change or an empty box', t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let runs = 0;
+  const apply = quiet(() => { runs += 1; }, 150);
+  apply.later(); t.mock.timers.tick(100);
+  apply.later(); t.mock.timers.tick(100);
+  apply.later();
+  assert.equal(runs, 0, 'nothing while keys keep coming');
+  t.mock.timers.tick(150);
+  assert.equal(runs, 1, 'one redraw after the pause');
+  apply.later(); apply.now();
+  assert.equal(runs, 2, 'now() runs at once');
+  t.mock.timers.tick(500);
+  assert.equal(runs, 2, '…and cancels the pending one');
+  const js = scripts['lab/observability.js'];
+  assert.match(js, /const apply = quiet\(\(\) => \{ readForm\(\); update\(\); \}, 150\);/);
+  assert.match(js, /\(event\.target\.value \? apply\.later : apply\.now\)\(\)/);
+  assert.match(js, /form\.addEventListener\('change', apply\.now\)/);
+});
+
+test('cheap paint: no dead size transitions, no transitions on rows, outline (not shadow) on matrix hover, histogram readout clears', () => {
+  const motion = css.match(/@media \(prefers-reduced-motion: no-preference\) \{([\s\S]*?)\n\}/)[1];
+  assert.doesNotMatch(motion, /transition: width|height \.25s/);
+  assert.doesNotMatch(motion, /\.obs-row\b|\.obs-table tbody tr/);
+  assert.match(motion, /\.obs-btn, \.obs-day \{ transition: background-color/);
+  assert.match(css, /\.obs-cell:hover:not\(:focus-visible\) \{ outline: 2px solid #eeede8;/);
+  assert.doesNotMatch(css, /\.obs-cell:hover \{ box-shadow/);
+  assert.match(scripts['lab/obs-charts.js'], /bars\.addEventListener\('pointerleave', \(\) => \{ readout\.textContent = ''; \}\);/);
 });

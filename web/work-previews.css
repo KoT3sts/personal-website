@@ -52,7 +52,17 @@
 .wp-glyph-error { stroke-width: 2.2px; }
 .wp-cursor { fill: var(--wp-tint); stroke: currentColor; stroke-width: 1; opacity: 0; }
 .wp-trace[data-cursor="true"] .wp-cursor { opacity: 1; }
-.wp-readout { display: grid; align-content: start; gap: 4px; min-height: 4.6em; }
+/* The readout is one line of meta and two of text, always 4.6em tall (15.4 + 4 + 39.2px
+   fit in 59.8px), so scrubbing never changes the card's height or moves the page below;
+   longer text ends in an ellipsis (the slider's aria-valuetext keeps all of it). Strict
+   containment keeps each rewrite inside the readout. The grid preview contains its own
+   layout and paint; the trace strip only its layout, as its focus ring reaches above it. */
+.wp-obs { contain: content; }
+.wp-trace { contain: layout style; }
+.wp-readout { display: grid; align-content: start; gap: 4px; height: 4.6em; overflow: hidden; contain: strict; }
+.wp-readout > * { min-width: 0; overflow: hidden; }
+.wp-readout .wp-label { white-space: nowrap; text-overflow: ellipsis; }
+.wp-readout .wp-action { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 .wp-action { font-size: 14px; line-height: 1.4; }
 .wp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 11px; letter-spacing: .02em; }
 .wp-legend li { display: inline-flex; align-items: center; gap: 6px; }

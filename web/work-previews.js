@@ -153,38 +153,58 @@ function buildObs(data) {
     item.append(key);
   }
   el('p', 'wp-sr', root, `Checks passed: ${rows.map(row => `${row.name} ${row.pass} of ${row.scored}`).join(', ')}.`);
-  el('p', 'wp-caption', root, `${n} traces from the agent sessions that built this site${dates ? `, ${dates}` : ''}, each scored by ${rows.length} pass/fail checks (${Array.isArray(data?.evaluators) ? data.evaluators.length : rows.length} evaluators). Hover or drag across the grid to read one.`);
+  el('p', 'wp-caption', root, `${n} traces from the agent sessions that built this site${dates ? `, ${dates}` : ''}, scored by ${Array.isArray(data?.evaluators) ? data.evaluators.length : rows.length} automated checks; the ${rows.length} pass/fail ones are shown here. Hover or drag across the grid to read one.`);
 
-  const select = (i, move) => {
-    const k = Math.min(n - 1, Math.max(0, i));
+  const select = k => {
     const trace = traces[k];
     const scored = rows.filter(row => row.cells[k]);
-    const failed = scored.filter(row => row.cells[k] === 'fail').map(row => row.name);
+    const failed = scored.filter(row => row.cells[k] === 'fail');
     const head = obsHead(trace, k, n);
-    const body = `${count(trace.toolCalls)} tool calls, ${count(trace.toolErrors)} failed. ${scored.length - failed.length} of ${scored.length} checks passed${failed.length ? `; failed: ${failed.join(', ')}` : ''}.`;
+    // The readout is clamped to two lines, so it names failed checks by their short row
+    // labels; the accessible text keeps the full evaluator names.
+    const body = names => `${count(trace.toolCalls)} tool calls, ${count(trace.toolErrors)} failed. ${scored.length - failed.length} of ${scored.length} checks passed${failed.length ? `; failed: ${failed.map(names).join(', ')}` : ''}.`;
     cursor.setAttribute('x', String(k));
     meta.textContent = head;
-    detail.textContent = body;
-    slider.setAttribute('aria-valuetext', `${head}. ${body}`);
-    if (move) slider.value = String(k + 1);
+    detail.textContent = body(row => row.label);
+    slider.setAttribute('aria-valuetext', `${head}. ${body(row => row.name)}`);
   };
   wireScrub(root, slider, n, select, f => Math.floor(f * n));
   return { root, stage: scrub, play: () => { root.dataset.play = reduced() ? 'static' : 'on'; } };
 }
 
-// Hover, drag or arrow keys move the cursor of a strip; focus shows it.
+// Hover, drag or arrow keys move the cursor of a strip; focus shows it. Pointer moves
+// are coalesced into one frame, which measures the strip only after an enter, scroll or
+// resize and writes only when the step changes, the accessible text included, so a screen
+// reader never hears a step the strip no longer shows.
 function wireScrub(root, slider, n, select, at = f => Math.round(f * (n - 1))) {
-  const cursorOn = on => { root.dataset.cursor = on; };
-  const current = () => select(Number(slider.value) - 1);
-  const fromPointer = event => {
-    const box = slider.getBoundingClientRect();
-    if (box.width > 0) select(at((event.clientX - box.left) / box.width), true);
+  const [d, w] = [doc, win];
+  let [shown, on, frame, x, box] = [-1, '', 0, 0, null];
+  const cursorOn = value => { if (on !== String(value)) root.dataset.cursor = on = String(value); };
+  const show = i => {
+    const k = Math.min(n - 1, Math.max(0, i));
+    if (k !== shown) select(shown = k);
+    return k;
+  };
+  const current = () => show(Number(slider.value) - 1);
+  const paint = () => {
+    frame = 0;
+    box ||= slider.getBoundingClientRect();
+    if (box.width > 0) slider.value = String(show(at((x - box.left) / box.width)) + 1);
     cursorOn(true);
   };
+  const forget = () => { box = null; };
+  const fromPointer = event => {
+    x = event.clientX;
+    if (!w.requestAnimationFrame) paint();
+    else frame ||= w.requestAnimationFrame(paint);
+  };
   listen(slider, {
-    pointermove: fromPointer, pointerdown: fromPointer, input: current, blur: () => cursorOn(false),
-    focus: () => { current(); cursorOn(true); }, pointerleave: () => cursorOn(doc.activeElement === slider),
+    pointerenter: forget, pointermove: fromPointer, pointerdown: fromPointer, input: current, blur: () => cursorOn(false),
+    focus: () => { current(); cursorOn(true); },
+    pointerleave: () => { if (frame) w.cancelAnimationFrame?.(frame); frame = 0; cursorOn(d.activeElement === slider); },
   });
+  w.addEventListener('scroll', forget, { capture: true, passive: true });
+  w.addEventListener('resize', forget);
   current();
 }
 
@@ -222,14 +242,12 @@ function buildTrace(data) {
   }
   el('p', 'wp-caption', root, `${n} recorded steps, ${errors} ended in an error. Hover or drag across the strip to read each step.`);
 
-  const select = (i, move) => {
-    const k = Math.min(n - 1, Math.max(0, i));
+  const select = k => {
     const { role, status, action: text } = spans[k];
     cursor.setAttribute('x', (5 + (k - 0.5) * step).toFixed(2));
     meta.textContent = `Step ${k + 1} of ${n} · ${role} · ${status}`;
     action.textContent = text;
     slider.setAttribute('aria-valuetext', `Step ${k + 1} of ${n}, ${role}, ${status}: ${text}`);
-    if (move) slider.value = String(k + 1);
   };
   wireScrub(root, slider, n, select);
   return { root, stage: scrub, play: () => { root.dataset.play = reduced() ? 'static' : 'on'; } };

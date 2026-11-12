@@ -161,10 +161,15 @@
 
 .obs-side { display: grid; align-content: start; gap: 24px; min-width: 0; padding-left: 24px; border-left: 1px solid var(--line); }
 .obs-side h3 { margin-bottom: 10px; font-size: 11px; font-weight: 400; }
-.obs-span { display: grid; gap: 0; }
+/* Span details: the same sixteen one-line rows for every span (observability.js), so the
+   side column, the detail grid's row and the page below keep their height while the
+   tree is hovered; a long value ends in an ellipsis and shows whole in its tooltip. */
+.obs-span { display: grid; gap: 0; contain: layout; }
 .obs-span > div { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
-.obs-span dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: .035em; text-transform: uppercase; }
-.obs-span dd { margin: 0; overflow-wrap: anywhere; font-size: 13px; font-variant-numeric: tabular-nums; }
+.obs-span dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: .035em; text-transform: uppercase; white-space: nowrap; }
+.obs-span dd { margin: 0; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Touch screens have no title tooltip and no hover to keep steady, so long values wrap there. */
+@media (hover: none) { .obs-span dd { overflow: visible; white-space: normal; overflow-wrap: anywhere; } }
 .obs-tevals { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
 .obs-teval { padding: 9px 0; border-bottom: 1px solid var(--line); }
 .obs-teval-head { display: flex; align-items: baseline; gap: 10px; }
@@ -249,7 +254,8 @@
 .obs-cell.is-num { background: color-mix(in srgb, var(--c-llm) calc(25% + var(--q, 0) * 75%), #23261f); }
 .obs-cell-key.is-num { background: linear-gradient(90deg, color-mix(in srgb, var(--c-llm) 25%, #23261f), var(--c-llm)); }
 .obs-cell-key { position: relative; display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
-.obs-cell:hover { box-shadow: 0 0 0 2px #eeede8; }
+/* An outline, not a shadow: cheaper to paint over a 400-plus-cell matrix. */
+.obs-cell:hover:not(:focus-visible) { outline: 2px solid #eeede8; outline-offset: 0; }
 .obs-cell:focus-visible { outline-offset: 1px; }
 
 /* Evaluator notes, on paper. */
@@ -265,8 +271,9 @@
 .obs-eval-note { color: var(--muted); font-size: 14px !important; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .obs-pills label, .obs-seg label, .obs-check label, .obs-btn, .obs-row, .obs-day, .obs-table tbody tr { transition: background-color .18s ease, border-color .18s ease, color .18s ease; }
-  .obs-bar, .obs-stack > span, .obs-day-shown { transition: width .25s cubic-bezier(.16, 1, .3, 1), height .25s cubic-bezier(.16, 1, .3, 1); }
+  /* Controls only: tree and table rows change at once (hundreds of them), and the bars are
+     rebuilt on every change, so a size transition on them would never run. */
+  .obs-pills label, .obs-seg label, .obs-check label, .obs-btn, .obs-day { transition: background-color .18s ease, border-color .18s ease, color .18s ease; }
   .obs-caret::before { transition: transform .18s ease; }
 }
 

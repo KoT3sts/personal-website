@@ -65,7 +65,7 @@ test('obs, trace and loop go live with the numbers from the shipped JSON', async
   range.value = String(obs.traces.length);
   range.dispatchEvent(new window.Event('input', { bubbles: true }));
   assert.match(box.querySelector('.wp-readout .wp-label').textContent, new RegExp(`^Trace ${obs.traces.length} of ${obs.traces.length} · `));
-  assert.match(box.querySelector('.wp-caption').textContent, new RegExp(`^${obs.traces.length} traces from the agent sessions that built this site, Nov 7–12, each scored by 6 pass/fail checks \\(7 evaluators\\)\\.`));
+  assert.match(box.querySelector('.wp-caption').textContent, new RegExp(`^${obs.traces.length} traces from the agent sessions that built this site, Nov 7–12, scored by 7 automated checks; the 6 pass/fail ones are shown here\\.`));
   assert.match(box.querySelector('.wp-sr').textContent, /^Checks passed: Tool error rate \d+ of \d+, /);
 
   // Trace: one bar per span, a mark per error/retried/fixed, the caption counts.
@@ -134,4 +134,64 @@ test('during the build tour the trace waits until the tour shows its card', asyn
   other.document.documentElement.classList.remove('agentic-touring');
   await tick();
   assert.equal(other.preview('trace').querySelector('.wp-trace').dataset.play, 'on');
+});
+
+test('pointer moves are coalesced into one frame and an unchanged step writes nothing', async t => {
+  const { window, document, preview } = page();
+  t.after(() => window.close());
+  const frames = [];
+  window.requestAnimationFrame = fn => frames.push(fn);
+  window.cancelAnimationFrame = id => { frames[id - 1] = () => {}; };
+  const flush = () => frames.splice(0).forEach(fn => fn(0));
+  await (await initWorkPreviews(document, window)).settled;
+  await new Promise(resolve => setTimeout(resolve, 10)); // the grid's one-time play has run
+  const box = preview('obs');
+  const live = box.querySelector('.wp-obs');
+  const range = box.querySelector('.wp-trace-range');
+  const n = obs.traces.length;
+  let reads = 0;
+  range.getBoundingClientRect = () => { reads += 1; return { left: 0, top: 0, width: n * 10, height: 90 }; };
+  const spoken = range.getAttribute('aria-valuetext');
+  const move = clientX => range.dispatchEvent(new window.MouseEvent('pointermove', { clientX, bubbles: true }));
+  range.dispatchEvent(new window.MouseEvent('pointerenter'));
+
+  // Three moves before a frame: one frame, one measure, the last position wins.
+  move(5); move(15); move(25);
+  assert.equal(frames.length, 1, 'one frame for the burst');
+  assert.equal(reads, 0, 'nothing measured outside the frame');
+  flush();
+  assert.equal(reads, 1);
+  assert.equal(range.value, '3');
+  assert.match(box.querySelector('.wp-readout .wp-label').textContent, new RegExp(`^Trace 3 of ${n} · `));
+  assert.equal(live.dataset.cursor, 'true');
+  assert.notEqual(range.getAttribute('aria-valuetext'), spoken);
+  assert.match(range.getAttribute('aria-valuetext'), new RegExp(`^Trace 3 of ${n} · `), 'the accessible text follows the shown step');
+
+  // The same trace again: no writes at all, and the box is not measured again.
+  const records = [];
+  const observer = new window.MutationObserver(list => records.push(...list));
+  observer.observe(live, { subtree: true, childList: true, characterData: true, attributes: true });
+  move(21); move(29);
+  flush();
+  await new Promise(resolve => setTimeout(resolve));
+  assert.equal(reads, 1, 'measured once per enter');
+  assert.deepEqual(records.map(r => r.type), [], 'an unchanged step writes nothing');
+
+  // A scroll drops the measured box; a leave cancels a pending frame and hides the cursor.
+  window.dispatchEvent(new window.Event('scroll'));
+  move(55);
+  flush();
+  assert.equal(reads, 2, 'measured again after a scroll');
+  assert.equal(range.value, '6');
+  move(95);
+  range.dispatchEvent(new window.MouseEvent('pointerleave'));
+  flush();
+  assert.equal(range.value, '6', 'the cancelled frame did not move the cursor');
+  assert.equal(live.dataset.cursor, 'false');
+
+  // The keyboard moves it too: input rewrites aria-valuetext.
+  range.value = '9';
+  range.dispatchEvent(new window.Event('input', { bubbles: true }));
+  assert.match(range.getAttribute('aria-valuetext'), new RegExp(`^Trace 9 of ${n} · `));
+  observer.disconnect();
 });

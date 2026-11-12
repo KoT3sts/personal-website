@@ -32,7 +32,9 @@ export function initCharts({ data, index, open, setDay }) {
       setVar(bar, '--h', (bin.count / max).toFixed(4));
       bar.dataset.label = `${D.formatInt(bin.count)} ${bin.count === 1 ? 'span' : 'spans'} from ${D.formatMs(bin.x0)} to ${D.formatMs(bin.x1)}`;
     }
-    bars.addEventListener('pointerover', event => { const label = event.target.dataset?.label; if (label) readout.textContent = label; });
+    // The readout names the bar under the pointer and empties again when it leaves.
+    bars.addEventListener('pointerover', event => { const label = event.target.dataset?.label; if (label && readout.textContent !== label) readout.textContent = label; });
+    bars.addEventListener('pointerleave', () => { readout.textContent = ''; });
     const p50 = D.percentile(values, 50);
     const p90 = D.percentile(values, 90);
     for (const [name, v] of [['p50', p50], ['p90', p90]]) {

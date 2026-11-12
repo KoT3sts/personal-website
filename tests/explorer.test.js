@@ -253,8 +253,8 @@ test('every project has facts in its story, in the explorer order', () => {
     assert.ok(facts.rows.length + (facts.tags.length ? 1 : 0) >= 2, `${id}: at least two facts`);
     facts.rows.forEach(([term, value]) => assert.ok(term.trim() && value.trim() && !/</.test(value), `${id}: ${term} is plain text`));
   });
-  assert.deepEqual(storyFacts('project-bci').rows, [['Role', 'Lead researcher, Sep 2021 – May 2023'], ['Published', '2 KSU symposium presentations, 2022']]);
-  assert.deepEqual(storyFacts('project-chatbot').rows, [['Award', '1st Place, KSU C-Day 2024'], ['Role', 'Team lead, backend LLM']]);
+  assert.deepEqual(storyFacts('project-bci').rows, [['Role', 'Lead researcher, Sep 2021 – May 2023'], ['Presented', '2 KSU symposium presentations, 2022']]);
+  assert.deepEqual(storyFacts('project-chatbot').rows, [['Award', 'First Place, KSU C-Day, Spring 2024'], ['Role', 'Team lead, backend LLM']]);
   assert.deepEqual(storyFacts('project-chatbot').tags, ['DistilGPT-2', 'Sentiment analysis', 'Python', 'React Native', 'Firebase']);
   // Only the chatbot's story has the evaluation lab link.
   assert.deepEqual(STORY_IDS.map(id => storyFacts(id).lab), [null, null, './lab/sentiment-eval.html', null, null, null]);
@@ -330,4 +330,20 @@ test('the facts block keeps its height, crossfades, and reads at 11px+ with 4.5:
   for (const [fg, bg] of [[quiet, '101114'], [value, '101114'], [tag[2], tag[1]], [quiet, tag[1]], ['c7d2a8', '101114']]) {
     assert.ok(ratio(fg, bg) >= 4.5, `#${fg} on #${bg}: ${ratio(fg, bg).toFixed(2)}`);
   }
+});
+
+test('the idle spin runs only while at least half of the stage is in view', async () => {
+  const js = await readFile(new URL('../web/explorer.js', import.meta.url), 'utf8');
+  // One observer: any overlap keeps the explorer "on screen" (travel, mode tweens, the
+  // ring reset when it leaves); the spin itself waits for half of the window-tall stage.
+  assert.match(js, /\}, \{ threshold: \[0, 0\.25, 0\.5, 0\.75, 1\] \}\)\.observe\(stage\);/);
+  // Half of the stage, or of the window when the stage is taller (short landscape phones).
+  assert.match(js, /const room = Math\.min\(entry\.boundingClientRect\.height, entry\.rootBounds\?\.height/);
+  assert.match(js, /state\.inView = entry\.isIntersecting && entry\.intersectionRect\.height >= 0\.5 \* room;/);
+  const spinning = js.match(/function spinning\(\) \{([\s\S]*?)\n {2}\}/)[1];
+  assert.match(spinning, /state\.inView/);
+  assert.doesNotMatch(spinning, /state\.onScreen/);
+  assert.match(spinning, /!reduced\(\) && !touring\(\)/, 'reduced motion and the tour still stop it');
+  assert.match(js, /const animated = \(\) => Boolean\(raf\) && !reduced\(\) && state\.onScreen;/);
+  assert.match(js, /else state\.onScreen = state\.inView = true;/, 'without an observer it spins as before');
 });
