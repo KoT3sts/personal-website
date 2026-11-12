@@ -397,3 +397,44 @@ test('the essay and the homepage keep their imports from obs-data.js', () => {
   assert.equal(D.topic(data.traces[0]), data.traces[0].topic);
   assert.equal(D.topic({}), 'site work');
 });
+
+test('the "What my labels showed" note matches Cesar’s labels and the data', () => {
+  const labels = JSON.parse(read('lab/data/human-labels.json')).labels;
+  const note = page.match(/<div class="obs-finding"[\s\S]*?<\/div>/)[0].replace(/<[^>]+>/g, '');
+  const traces = data.traces;
+  const good = traces.filter(t => labels[t.id] === 'good');
+  assert.equal(Object.keys(labels).length, traces.length);
+  assert.match(note, new RegExp(`all ${traces.length} runs myself: ${good.length} good, ${traces.length - good.length} bad`));
+  const scoring = E.rescore(data.evaluators, data.evaluations, E.gateDefaults(data.evaluators));
+  const rows = E.agreementRows(data.evaluators, scoring, labels);
+  const k = id => rows.find(r => r.id === id).kappa.toFixed(2);
+  assert.match(note, new RegExp(`reaches a kappa of ${k('all')}`));
+  assert.ok(rows.find(r => r.id === 'review_before_commit').kappa < 0 && rows.find(r => r.id === 'review_addressed').kappa < 0, 'both review checks point the other way');
+  const small = E.agreement(E.confusion(traces.map(t => [labels[t.id] === 'good', t.toolCalls < 40])));
+  assert.match(note, new RegExp(`${Math.round(small.agree * 100)}% of the time \\(kappa ${small.kappa.toFixed(2)}\\)`));
+  assert.ok(rows.filter(r => r.kappa !== null).every(r => r.kappa < small.kappa), 'size beats every check');
+  const large = traces.filter(t => t.toolCalls >= 40);
+  const bad = list => list.filter(t => labels[t.id] === 'bad').length;
+  assert.match(note, new RegExp(`Of the ${large.length} runs with 40 calls or more I marked ${bad(large)} bad; of the ${traces.length - large.length} smaller ones, ${bad(traces.filter(t => t.toolCalls < 40))}`));
+  const median = v => { const a = [...v].sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+  const of = lab => large.filter(t => labels[t.id] === lab);
+  const mins = lab => Math.round(median(of(lab).map(t => (t.end - t.start) / 60000)));
+  const calls = lab => median(of(lab).map(t => t.toolCalls));
+  const rate = lab => (100 * median(of(lab).map(t => t.toolErrors / t.toolCalls))).toFixed(1);
+  assert.match(note, new RegExp(`median of ${mins('bad')} minutes and ${calls('bad')} tool calls, the good ones ${mins('good')} minutes and ${calls('good')}`));
+  assert.match(note, new RegExp(`a median of ${rate('bad')}% against ${rate('good')}%`));
+  const largeLabels = Object.fromEntries(large.map(t => [t.id, labels[t.id]]));
+  const rec = E.agreementRows(data.evaluators, scoring, largeLabels).find(r => r.id === 'recovered_after_error');
+  assert.equal(rec.m.gf, 0, 'every long run that failed recovery is labelled bad');
+  assert.match(note, new RegExp(`all ${rec.m.bf} runs that failed “Recovered after error” are runs I marked bad \\(kappa ${rec.kappa.toFixed(2)}\\)`));
+  const longRows = E.agreementRows(data.evaluators, scoring, largeLabels).filter(r => r.id !== 'recovered_after_error' && r.kappa !== null);
+  const others = Math.max(...longRows.map(r => r.kappa));
+  assert.ok(rec.kappa > 0.3 && others <= 0.075, 'only recovery agrees meaningfully on the long runs');
+  assert.match(note, new RegExp(`every other check stays at ${others.toFixed(2)} or below`));
+  // The 40-call line is the exporter's large-trace rule, fixed before the labels existed.
+  assert.equal(data.meta.largeTrace.minToolCalls, 40);
+  const errorRate = data.evaluators.find(e => e.id === 'tool_error_rate');
+  assert.match(note, new RegExp(`the ${Math.round(errorRate.threshold * 100)}% threshold never fires on a long run`));
+  const ids = new Set(large.map(t => t.id));
+  assert.ok(data.evaluations.filter(e => e.evaluator === 'tool_error_rate' && ids.has(e.trace)).every(e => e.label === 'pass'), 'the recorded error-rate label passes on every long run');
+});

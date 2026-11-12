@@ -279,6 +279,13 @@
             </div>
             <p class="obs-hint" data-obs="agree-cesar">Cesar’s labels: not labelled yet.</p>
             <div class="obs-confusion" data-obs="confusion"></div>
+            <div class="obs-finding" data-obs="label-finding">
+              <h3 id="obs-finding-title">What my labels showed</h3>
+              <p>I labelled all 77 runs myself: 56 good, 21 bad. At the published thresholds the checks barely agree with me. “All required checks pass” reaches a kappa of 0.16, and the two review checks point the other way.</p>
+              <p>Run size explains my labels better than any check. Calling every run under 40 tool calls Good agrees with me 77% of the time (kappa 0.50). The 40-call line is the size rule the delegation check already used before I labelled anything, not one picked to fit the labels. Of the 33 runs with 40 calls or more I marked 18 bad; of the 44 smaller ones, 3. The bad long runs took a median of 77 minutes and 355 tool calls, the good ones 32 minutes and 150.</p>
+              <p>On the long runs alone, only one check agrees with me in a meaningful way: all 8 runs that failed “Recovered after error” are runs I marked bad (kappa 0.35); every other check stays at 0.07 or below. Their error rates differ too, a median of 1.9% against 0.5%, but the 10% threshold never fires on a long run.</p>
+              <p>Next: a run-length budget and a lower error threshold, tested on runs I label after this export rather than on these 77, so the checks are not fitted to the labels they are scored against. A Good or Bad click also doesn’t record why, so new labels will carry a reason.</p>
+            </div>
             <details class="obs-numbers obs-formula">
               <summary>How agreement and kappa work</summary>
               <p>A human Good is compared with a check’s pass, Bad with fail, on the traces that are both labelled and scored by that check; “All required checks pass” compares Good with “no required check failed at the gate’s thresholds”.</p>

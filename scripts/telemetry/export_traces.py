@@ -67,11 +67,13 @@ ROUNDS = [
     ("First visit", "b925b1e", "2026-11-12T11:17:52-05:00"),
     ("Layout shift", "028f38f", "2026-11-12T14:03:03-05:00"),
     ("Follow up", "1fcb6eb", "2026-11-12T15:11:29-05:00"),
+    # round 13 (November 12): evaluators and the Arize-style dashboard
+    ("Evaluators", "5b2cd4a", "2026-11-12T16:56:20-05:00"),
 ]
 # The round still open: its label applies to every trace that starts after the last
 # commit in ROUNDS (no end date, so it cannot go stale). When the round closes, add its
 # commit to ROUNDS and name the next open round here.
-OPEN_ROUND = {"label": "Evaluators"}
+OPEN_ROUND = {"label": "Next round"}
 
 # Plain words for each work label, for the homepage summary. Must match TOPICS in
 # web/lab/obs-data.js (tests/agent-traces.test.js checks every trace).
@@ -98,6 +100,7 @@ TOPICS = {
     "Layout shift": "layout shift",
     "Follow up": "résumé and table labels",
     "Evaluators": "dashboard evaluators",
+    "Next round": "latest changes",
 }
 DEFAULT_TOPIC = "site work"
 

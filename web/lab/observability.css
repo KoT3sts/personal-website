@@ -562,3 +562,8 @@
   .obs-chart, .obs-row, .obs-evals li { break-inside: avoid; }
   .obs-matrix .obs-corner, .obs-matrix .obs-row-head { position: static; }
 }
+
+/* Human review: what Cesar’s own labels showed (static, checked against the data by tests/obs-eval.test.js). */
+.obs-finding { display: grid; gap: 10px; max-width: 72ch; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.obs-finding h3 { font-size: 18px; letter-spacing: -.01em; }
+.obs-finding p { color: var(--text); font-size: 14.5px; line-height: 1.55; }

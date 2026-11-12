@@ -29,7 +29,7 @@ export const TOPICS = {
   'First visit': 'first-visit tour and charts',
   'Layout shift': 'layout shift',
   'Follow up': 'résumé and table labels',
-  Evaluators: 'dashboard evaluators',
+  Evaluators: 'dashboard evaluators', 'Next round': 'latest changes',
 };
 export const topic = trace => (typeof trace?.topic === 'string' && trace.topic) || TOPICS[trace?.round] || 'site work';
 
