@@ -1,11 +1,12 @@
-// Agent observability helpers. All but the DOM helpers are pure, so node tests check every
-// number the page shows. Percentiles are nearest-rank, like the exporter.
+// Agent observability helpers; all but the DOM helpers are pure (node-tested). Percentiles
+// are nearest-rank, like the exporter.
 
 export const DATA_URL = './data/agent-traces.json';
+export const LABELS_URL = './data/human-labels.json';
 export const TOKEN_KEYS = ['input', 'output', 'reasoning', 'cacheRead', 'cacheWrite'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// The exporter's work labels, said in plain words for the page.
+// The exporter's TOPICS, for records without `trace.topic` (tests check they agree).
 export const TOPICS = {
   'Recruiter content': 'recruiter content',
   'Build tour': 'entrance and build tour',
@@ -21,14 +22,46 @@ export const TOPICS = {
   'Round 7–8': 'evidence-first case studies',
   'Round 9': 'case studies and charts',
   'Round 10': 'homepage work previews',
+  'Round 10–11': 'observability lab',
+  'Round 11': 'observability lab',
+  'Hover lag': 'hover lag and copy',
+  'Hover lag – First visit': 'hover lag, copy and tour',
+  'First visit': 'first-visit tour and charts',
+  'Layout shift': 'layout shift',
+  'Follow up': 'résumé and table labels',
+  Evaluators: 'dashboard evaluators',
 };
-export const topic = trace => TOPICS[trace?.round] || 'site work';
+export const topic = trace => (typeof trace?.topic === 'string' && trace.topic) || TOPICS[trace?.round] || 'site work';
 
 // Short words for a failed check, used on chips.
 export const FAIL_WORDS = {
-  tool_error_rate: 'tool errors', recovered_after_error: 'unrecovered', delegation_used: 'no delegation',
-  review_before_commit: 'no review', tests_run_before_commit: 'no tests', latency_budget: 'slow model',
+  tool_error_rate: 'tool errors', recovered_after_error: 'unrecovered', delegation_fit: 'no delegation',
+  review_before_commit: 'no review', tests_run_before_commit: 'no tests', verified_after_last_edit: 'not checked',
+  stuck_loop: 'stuck loop', review_addressed: 'no change after review', latency_budget: 'slow model',
 };
+
+// The exporter's error classes, in plain words (its ERROR_RULES, first match wins).
+export const ERROR_CLASS_WORDS = {
+  timeout: 'The call ran out of time.',
+  not_found: 'A file, page, element or command was not there.',
+  permission: 'Blocked: a permission, a rule or an HTTP 401/403.',
+  test_failure: 'A failed assertion or test run reported as a failed call.',
+  bad_arguments: 'Invalid input: a schema error, an edit whose old text did not match, a syntax error.',
+  network: 'A refused or reset connection, a fetch error, HTTP 429 or 5xx.',
+  other: 'Anything else: a JavaScript error in a script the agent ran, an aborted call, an oversized response.',
+};
+
+// Failed calls per error class in a trace (TOOL spans and CHAIN counts).
+export function errorClassesOf(trace) {
+  const out = {};
+  for (const span of trace.spans) {
+    if (span.kind === 'TOOL' && span.status === 'error' && span.errorClass) out[span.errorClass] = (out[span.errorClass] || 0) + 1;
+    if (span.kind === 'CHAIN') for (const [c, n] of Object.entries(span.errorClasses || {})) out[c] = (out[c] || 0) + n;
+  }
+  return out;
+}
+// Failed calls of class `c` in a span (TOOL: 0 or 1; CHAIN: its count).
+export const spanClassCount = (span, c) => (span.kind === 'TOOL' ? Number(span.status === 'error' && span.errorClass === c) : span.errorClasses?.[c] || 0);
 
 // DOM helpers (touch document only when called)
 export function el(tag, className, parent, text) {
@@ -40,7 +73,29 @@ export function el(tag, className, parent, text) {
 }
 export const q = name => document.querySelector(`[data-obs="${name}"]`);
 export const setVar = (node, name, value) => node.style.setProperty(name, String(value));
-// Sortable headers: the sorted column flips, another starts at first(key); returns the aria-sort marker.
+const SVG_NS = 'http://www.w3.org/2000/svg';
+export function svg(tag, attrs, parent) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, String(v));
+  parent?.append(node);
+  return node;
+}
+// Runs build() once, within 400px of the viewport or before printing; returns a function
+// that builds now. buildAll() builds every pending one (idle, a jump link).
+const pending = new Set();
+export const buildAll = () => [...pending].forEach(go => go());
+export function whenNear(node, build) {
+  let done = false;
+  const go = () => { if (!done) { done = true; pending.delete(go); build(); } };
+  pending.add(go);
+  if (typeof window.IntersectionObserver === 'function') {
+    const io = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) { io.disconnect(); go(); } }, { rootMargin: '400px 0px' });
+    io.observe(node);
+  } else go();
+  window.addEventListener('beforeprint', go);
+  return go;
+}
+// Sortable headers: the sorted column flips, another starts at first(key).
 export function sortable(buttons, attr, get, set, first) {
   buttons.forEach(b => b.addEventListener('click', () => {
     const key = b.dataset[attr];
@@ -142,15 +197,22 @@ export function kpis(data) {
   };
 }
 
+// Sessions in order (S1, S2, … S10), from the data: pills and compare groups use it.
+export const sessionsOf = traces => [...new Set(traces.map(t => t.session))].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)) || a.localeCompare(b));
+
 // filters
-export const EMPTY_FILTERS = Object.freeze({ day: 'all', agent: 'all', delegation: false, failed: false, tool: '' });
-export const isFiltered = f => f.day !== 'all' || f.agent !== 'all' || f.delegation || f.failed || Boolean(f.tool.trim());
+// `delegation`: traces with a subagent run.
+export const EMPTY_FILTERS = Object.freeze({ day: 'all', agent: 'all', session: 'all', errorClass: 'all', delegation: false, failed: false, tool: '' });
+export const isFiltered = f => f.day !== 'all' || f.agent !== 'all' || (f.session || 'all') !== 'all' || (f.errorClass || 'all') !== 'all'
+  || f.delegation || f.failed || Boolean((f.tool || '').trim());
 
 export function filterTraces(traces, index, filters = EMPTY_FILTERS) {
   const query = (filters.tool || '').trim().toLowerCase();
   return traces.filter(trace => {
     if (filters.day !== 'all' && trace.day !== filters.day) return false;
     if (filters.agent !== 'all' && trace.rootAgent !== filters.agent) return false;
+    if ((filters.session || 'all') !== 'all' && trace.session !== filters.session) return false;
+    if ((filters.errorClass || 'all') !== 'all' && !errorClassesOf(trace)[filters.errorClass]) return false;
     if (filters.delegation && !(trace.subagentRuns > 0)) return false;
     if (filters.failed && ![...(index.get(trace.id)?.values() || [])].some(ev => ev.label === 'fail')) return false;
     if (query && ![...toolsOf(trace)].some(name => name.toLowerCase().includes(query))) return false;
@@ -164,7 +226,7 @@ export function traceRow(trace, index) {
   const checks = evals.filter(ev => ev.label === 'pass' || ev.label === 'fail');
   const fails = checks.filter(ev => ev.label === 'fail');
   return {
-    id: trace.id, n: Number(trace.id.slice(1)), day: trace.day, topic: topic(trace), agent: trace.rootAgent,
+    id: trace.id, n: Number(trace.id.slice(1)), day: trace.day, topic: topic(trace), agent: trace.rootAgent, session: trace.session,
     duration: trace.end - trace.start, spans: trace.spans.length, llmSteps: trace.llmSteps, toolCalls: trace.toolCalls,
     errors: trace.toolErrors, tokens: tokenTotal(trace.tokens), subagents: trace.subagentRuns, commits: trace.commits,
     checks: checks.length, passed: checks.length - fails.length, fails: fails.map(ev => ev.evaluator),
@@ -183,8 +245,8 @@ export function sortRows(rows, key, dir = 'asc') {
 }
 
 // trace detail
-// Rows in tree order, x and w as fractions of the trace. Runs start open, CHAINs closed;
-// `toggled` holds flipped ids. An open CHAIN lists its merged tools as untimed rows.
+// Rows in tree order, x and w as fractions of the trace. Runs start open, CHAINs closed
+// (`toggled` flips); an open CHAIN lists its tools as untimed rows.
 export const openByDefault = span => span.kind !== 'CHAIN';
 export function waterfall(trace, toggled = new Set()) {
   const end = Math.max(1, trace.end - trace.start);
@@ -221,7 +283,7 @@ export function waterfall(trace, toggled = new Set()) {
   return rows;
 }
 
-// The trace id in a link such as #t12, if that trace exists; anything else is ignored.
+// The trace id in a link such as #t12, if that trace exists.
 export const hashTrace = (hash, ids) => {
   const id = /^#(t\d{2,3})$/.exec(typeof hash === 'string' ? hash : '')?.[1];
   return id && ids.has(id) ? id : null;
@@ -242,7 +304,7 @@ export function ticks(end, count = 4) {
 // Durations of the published single spans of a kind (CHAINs carry no per-step time).
 export const durationsOf = (traces, kind) => traces.flatMap(t => t.spans.filter(s => s.kind === kind).map(duration));
 
-// Equal-width bins on a linear or log10 axis. Values under 1 ms count as 1 ms on the log axis.
+// Equal-width bins, linear or log10 (under 1 ms counts as 1 ms on log).
 export function histogram(values, { bins = 24, log = true } = {}) {
   const list = values.filter(Number.isFinite).map(v => (log ? Math.max(1, v) : Math.max(0, v)));
   if (!list.length) return { log, lo: 0, hi: 1, bins: [], at: () => 0 };
@@ -265,8 +327,7 @@ export function histogram(values, { bins = 24, log = true } = {}) {
   return { log, lo, hi, bins: out, at };
 }
 
-// Calls and errors per tool are exact (CHAIN counts included); p50/p90 come from the timed
-// single spans, or from the rollup when it covers every call.
+// Exact calls and errors per tool; p50/p90 from timed spans, or the rollup when given.
 export function toolStats(traces, rollup = null) {
   const stats = new Map();
   const get = name => {
@@ -327,15 +388,26 @@ export function perDay(all, shown) {
   return days.map(day => ({ day, total: all.filter(t => t.day === day).length, shown: shown.filter(t => t.day === day).length }));
 }
 
-// Pass/fail counts per evaluator over a set of traces.
+// Per evaluator over some traces: pass/fail counts, score range, category label counts.
 export function evaluatorCounts(evaluators, evaluations, traceIds = null) {
   return evaluators.map(e => {
     const rows = evaluations.filter(ev => ev.evaluator === e.id && (!traceIds || traceIds.has(ev.trace)));
     const scores = rows.map(ev => ev.score).filter(Number.isFinite);
+    const labels = {};
+    if (e.output === 'category') for (const ev of rows) labels[ev.label] = (labels[ev.label] || 0) + 1;
     return {
-      id: e.id, scored: rows.length,
+      id: e.id, output: e.output, scored: rows.length, labels,
       pass: rows.filter(ev => ev.label === 'pass').length, fail: rows.filter(ev => ev.label === 'fail').length,
       median: percentile(scores, 50), min: scores.length ? Math.min(...scores) : null, max: scores.length ? Math.max(...scores) : null,
     };
   });
+}
+
+// A score in the evaluator's own unit: shares as %, latency in s, counts as integers.
+const PCT_SCORES = new Set(['tool_error_rate', 'recovered_after_error', 'cache_reuse']);
+export function formatScore(id, score) {
+  if (!Number.isFinite(score)) return '–';
+  if (PCT_SCORES.has(id)) return formatPct(score, score === 0 || score === 1 ? 0 : 1);
+  if (id === 'latency_budget') return `${score.toFixed(1)} s`;
+  return formatInt(score);
 }

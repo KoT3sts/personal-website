@@ -5,10 +5,10 @@
 export const OBS_JSON = './lab/data/agent-traces-summary.json';
 export const TRACE_JSON = './trace/build-trace.json';
 export const ROLES = ['orchestrator', 'implementation-worker', 'quality-reviewer', 'ui-design-director'];
-// The pass/fail evaluators shown in the observability strip, with short row names.
+// Six pass/fail evaluators for the strip, with short row names (six rows fit the reserve).
 export const CHECKS = {
-  tool_error_rate: 'Tool errors', recovered_after_error: 'Recovered', delegation_used: 'Delegated',
-  review_before_commit: 'Reviewed', tests_run_before_commit: 'Tested', latency_budget: 'Latency',
+  tool_error_rate: 'Tool errors', recovered_after_error: 'Recovered', delegation_fit: 'Delegated',
+  review_before_commit: 'Reviewed', verified_after_last_edit: 'Verified', latency_budget: 'Latency',
 };
 const MARKS = ['error', 'retried', 'fixed'];
 const HIDE = { 'aria-hidden': 'true' };
@@ -28,16 +28,19 @@ export function daysText(from, to) {
 }
 const nonNeg = value => Number.isInteger(value) && value >= 0;
 // Observability: tool calls and errors summed over every trace, and a pass / fail / null
-// (does not apply) cell per evaluator and trace, in file order.
+// (does not apply) cell per evaluator and trace, in file order. Reads the summary's
+// {evaluator: {trace: label}} or the full file's [{trace, evaluator, label}].
+const own = (o, key) => Boolean(o) && typeof o === 'object' && Object.hasOwn(o, key);
 export function obsSummary(data) {
   const list = key => (Array.isArray(data?.[key]) ? data[key] : []);
   const traces = list('traces').filter(t => typeof t?.id === 'string' && nonNeg(t.toolCalls) && nonNeg(t.toolErrors) && t.toolErrors <= t.toolCalls);
-  const at = new Map(traces.map((t, i) => [t.id, i]));
   const rows = list('evaluators').filter(e => Object.hasOwn(CHECKS, e?.id))
     .map(e => ({ id: e.id, label: CHECKS[e.id], name: typeof e.name === 'string' ? e.name : CHECKS[e.id], cells: traces.map(() => null) }));
-  for (const e of list('evaluations')) {
-    const row = rows.find(r => r.id === e?.evaluator);
-    if (row && at.has(e.trace) && (e.label === 'pass' || e.label === 'fail')) row.cells[at.get(e.trace)] = e.label;
+  const evals = data?.evaluations;
+  const listed = Array.isArray(evals) ? new Map(evals.map(e => [`${e?.evaluator}|${e?.trace}`, e?.label])) : null;
+  const label = (id, trace) => (listed ? listed.get(`${id}|${trace}`) : own(evals, id) && own(evals[id], trace) ? evals[id][trace] : null);
+  for (const row of rows) {
+    traces.forEach((t, i) => { const value = label(row.id, t.id); if (value === 'pass' || value === 'fail') row.cells[i] = value; });
   }
   for (const row of rows) Object.assign(row, { pass: row.cells.filter(c => c === 'pass').length, scored: row.cells.filter(Boolean).length });
   const sum = key => traces.reduce((total, t) => total + t[key], 0);

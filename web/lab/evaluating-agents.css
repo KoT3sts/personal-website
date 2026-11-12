@@ -106,6 +106,7 @@
 .ea-cell.is-q2 { background: #9fb0bd; }
 .ea-cell.is-q3 { background: #6d8597; }
 .ea-cell.is-q4 { background: #3f5668; }
+.ea-cell.is-category { background: #857a62; }
 .ea-cell.is-on { position: relative; z-index: 1; outline: 2px solid var(--ink); outline-offset: 1px; }
 .ea-key, .ea-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 13px; }
 .ea-key li, .ea-legend li { display: inline-flex; align-items: center; gap: 6px; }
@@ -123,6 +124,7 @@
 .ea-badge.is-fail { background: #f3dcd8; color: #842619; }
 .ea-badge.is-none { background: #e2e1d9; color: #575b4f; }
 .ea-badge.is-number { background: #dde3e8; color: #2c3e4c; }
+.ea-badge.is-category { background: #e6e0d2; color: #4a4231; }
 
 /* Figure 5: the scatter and the paired group bars. */
 .ea-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }

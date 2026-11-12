@@ -4,8 +4,8 @@ import * as D from './obs-data.js';
 
 const { el, q, setVar } = D;
 
-// The histogram's words, pure so node tests can check them: the x-axis says when it is a
-// log scale, and each bar reads as one sentence (the readout, the slider and the table).
+// The histogram's words (pure, tested): the axis says "log scale" when it is one; each bar
+// reads as one sentence.
 export const histAxisTitle = log => (log ? 'Duration (log scale)' : 'Duration');
 // A log axis counts values under 1 ms in its first bar (obs-data.js histogram marks it
 // `under`), so that bar starts "under 1 ms", not at 1 ms.
@@ -23,9 +23,8 @@ export function initCharts({ data, index, open, setDay }) {
   const markTools = D.sortable([...document.querySelectorAll('[data-tsort]')], 'tsort', () => view.tsort,
     next => { view.tsort = next; tools(); }, key => (key === 'tool' ? 'asc' : 'desc'));
 
-  // latency histogram. Bars start at zero; the pointer reads one into the readout, and a
-  // range input (one tab stop, arrow keys) reads the same bars to keyboard and screen
-  // reader users; "Show the numbers" lists every bar.
+  // latency histogram: bars from zero, read by pointer or by one range input (arrow keys);
+  // "Show the numbers" lists every bar.
   const range = q('hist-range');
   let barNodes = [];
   let labels = [];
@@ -39,8 +38,7 @@ export function initCharts({ data, index, open, setDay }) {
     range.setAttribute('aria-valuetext', label);
     if (q('hist-readout').textContent !== label) q('hist-readout').textContent = label;
   };
-  // The focus ring on the bars: CSS draws it with :has(:focus-visible); this class is the
-  // same ring for browsers without :has() (observability.css .obs-hist.is-key-focus).
+  // The bars' focus ring for browsers without :has() (.obs-hist.is-key-focus).
   const keyboardFocus = () => { try { return range.matches(':focus-visible'); } catch { return true; } };
   range.addEventListener('input', pick);
   range.addEventListener('focus', () => { q('hist').classList.toggle('is-key-focus', keyboardFocus()); pick(); });
@@ -209,23 +207,25 @@ export function initCharts({ data, index, open, setDay }) {
       th.title = `Trace #${Number(t.id.slice(1))}, ${D.dayLabel(t.day)}`;
     }
     const tbody = el('tbody', '', table);
-    const nums = data.evaluations.filter(ev => ev.evaluator === 'tokens_per_tool_call').map(ev => ev.score).sort((a, b) => a - b);
+    // Number rows shade each cell by its rank within the row; category rows mark the class.
+    const ranks = new Map(data.evaluators.filter(e => e.output === 'number').map(e => [e.id, data.evaluations.filter(ev => ev.evaluator === e.id).map(ev => ev.score).sort((a, b) => a - b)]));
     data.evaluators.forEach((e, r) => {
       const tr = el('tr', '', tbody);
       const th = el('th', 'obs-row-head', tr, e.name);
       th.scope = 'row';
       const row = [];
+      const nums = ranks.get(e.id) || [];
       view.shown.forEach((t, c) => {
         const ev = index.get(t.id)?.get(e.id);
         const td = el('td', '', tr);
         td.dataset.trace = t.id;
-        const kind = !ev ? 'na' : ev.label === 'pass' ? 'pass' : ev.label === 'fail' ? 'fail' : 'num';
+        const kind = !ev ? 'na' : ev.label === 'pass' ? 'pass' : ev.label === 'fail' ? 'fail' : e.output === 'category' ? 'cat' : 'num';
         const button = el('button', `obs-cell is-${kind}`, td);
         button.type = 'button';
         button.tabIndex = r === 0 && c === 0 ? 0 : -1;
         button.dataset.trace = t.id;
         if (kind === 'num') setVar(button, '--q', (nums.findIndex(v => v >= ev.score) / Math.max(1, nums.length - 1)).toFixed(3));
-        const verdict = kind === 'na' ? 'not scored' : kind === 'num' ? `${D.formatInt(ev.score)} tokens per call` : kind;
+        const verdict = kind === 'na' ? 'not scored' : kind === 'num' ? D.formatScore(e.id, ev.score) : kind === 'cat' ? `${String(ev.label).replace('_', ' ')} (${ev.score})` : kind;
         button.setAttribute('aria-label', `Trace #${Number(t.id.slice(1))}, ${D.dayLabel(t.day)}, ${e.name}: ${verdict}. Open trace`);
         row.push(button);
       });
@@ -265,12 +265,7 @@ export function initCharts({ data, index, open, setDay }) {
     q('charts-scope').textContent = D.isFiltered(view.filters) ? `For the ${n} ${n === 1 ? 'trace' : 'traces'} that match the filters.` : `For all ${n} traces.`;
     hist(); tools(); tokens(); delegations(); days(); matrix();
   }
-  const reveal = () => { if (!view.ready) { view.ready = true; draw(); } };
-  if (typeof window.IntersectionObserver === 'function') {
-    const io = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) { io.disconnect(); reveal(); } }, { rootMargin: '400px 0px' });
-    io.observe(block);
-  } else reveal();
-  window.addEventListener('beforeprint', reveal);
+  D.whenNear(block, () => { view.ready = true; draw(); });
 
   return {
     update(shown, filters, selected) { view.shown = shown; view.filters = filters; view.selected = selected; draw(); },

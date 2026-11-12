@@ -278,8 +278,8 @@ test('Open the work: three large cards between Work and Skills, each with a sent
   const stats = card => [...card.querySelectorAll('.open-stats > div')].map(row => `${row.querySelector('dt').textContent} ${row.querySelector('dd').textContent}`);
   // The observability summary is the same numbers work-previews.js computes from the JSON
   // (tests/work-previews.test.js checks those against the file).
-  assert.deepEqual(stats(cards[0]), ['Traces 69', 'Tool calls 8,271', 'Tool error rate 1.6%']);
-  assert.equal(cards[0].querySelector('.open-note').textContent, 'NOV 7–12, 2026 · 7 AUTOMATED CHECKS · NO LLM JUDGE');
+  assert.deepEqual(stats(cards[0]), ['Traces 77', 'Tool calls 9,712', 'Tool error rate 1.7%']);
+  assert.equal(cards[0].querySelector('.open-note').textContent, 'NOV 7–12, 2026 · 13 AUTOMATED CHECKS · NO LLM JUDGE');
   assert.deepEqual(stats(cards[1]), ['Steps 52', 'Errors retried or fixed 6 of 8', 'Commits 16']);
   assert.equal(cards[1].querySelector('.open-note').textContent, 'NOV 10–11, 2026');
   assert.deepEqual([...cards[2].querySelectorAll('.open-loop > li > .mono')].map(step => step.textContent), ['TRACE', 'CLASSIFY', 'FIXED TEST SET', 'GATE']);

@@ -99,8 +99,8 @@
               <ul class="ea-tiles">
                 <li class="ea-tile ea-tile-missing"><span class="mono ea-tile-label">Task success</span><span class="ea-tile-value">Not measured</span><span class="ea-tile-note">Needs an expected outcome for each task. The telemetry has no task labels.</span></li>
                 <li class="ea-tile ea-tile-missing"><span class="mono ea-tile-label">Groundedness</span><span class="ea-tile-value">Not measured</span><span class="ea-tile-note">Needs each claim checked against its sources. The telemetry keeps no text.</span></li>
-                <li class="ea-tile"><span class="mono ea-tile-label">Tool-call errors</span><span class="ea-tile-value"><span data-ea-m="rate">1.6</span>%</span><span class="ea-tile-note"><span data-ea-m="errors">136</span> of <span data-ea-m="calls">8,271</span> tool calls failed.</span></li>
-                <li class="ea-tile"><span class="mono ea-tile-label">Latency and cost</span><span class="ea-tile-value"><span data-ea-m="p50">5.5</span> s</span><span class="ea-tile-note">Median model step; p90 <span data-ea-m="p90">22.0</span> s over <span data-ea-m="steps">6,290</span> steps. <span data-ea-m="perCall">801</span> generated tokens per tool call, all traces pooled. Per successful task needs the success labels.</span></li>
+                <li class="ea-tile"><span class="mono ea-tile-label">Tool-call errors</span><span class="ea-tile-value"><span data-ea-m="rate">1.7</span>%</span><span class="ea-tile-note"><span data-ea-m="errors">162</span> of <span data-ea-m="calls">9,712</span> tool calls failed.</span></li>
+                <li class="ea-tile"><span class="mono ea-tile-label">Latency and cost</span><span class="ea-tile-value"><span data-ea-m="p50">5.4</span> s</span><span class="ea-tile-note">Median model step; p90 <span data-ea-m="p90">21.5</span> s over <span data-ea-m="steps">7,515</span> steps. <span data-ea-m="perCall">797</span> generated tokens per tool call, all traces pooled. Per successful task needs the success labels.</span></li>
               </ul>
               <div class="ea-split" data-ea-live hidden>
                 <div class="ea-split-head">
@@ -134,9 +134,9 @@
                     <tbody>
                       <tr><th scope="row">Task success</th><td>Not measured, no task labels</td></tr>
                       <tr><th scope="row">Groundedness</th><td>Not measured, no text kept</td></tr>
-                      <tr><th scope="row">Tool-call errors</th><td>136 of 8,271 calls failed, 1.6%</td></tr>
-                      <tr><th scope="row">Model step latency</th><td>median 5.5 s, p90 22.0 s, 6,290 steps</td></tr>
-                      <tr><th scope="row">Generated tokens per tool call, all traces pooled</th><td>801, from 6,623,374 output and reasoning tokens</td></tr>
+                      <tr><th scope="row">Tool-call errors</th><td>162 of 9,712 calls failed, 1.7%</td></tr>
+                      <tr><th scope="row">Model step latency</th><td>median 5.4 s, p90 21.5 s, 7,515 steps</td></tr>
+                      <tr><th scope="row">Generated tokens per tool call, all traces pooled</th><td>797, from 7,739,418 output and reasoning tokens</td></tr>
                       <tr><th scope="row">Lab F1 at threshold 0.50</th><td>A 0.795, B 0.803</td></tr>
                       <tr><th scope="row">Lab IMDb accuracy at 0.50</th><td>A 0.775, B 0.750</td></tr>
                     </tbody>
@@ -144,7 +144,7 @@
                 </div>
               </details>
             </figure>
-            <p>A threshold is a decision, not a default. Raising it trades recall for precision, and the right point depends on what a false positive costs. The lab lets you move the slider on the test set to see the trade, but a threshold you deploy should come from validation data. For an agent, the same choice decides when it acts on its own and when it stops and asks.</p>
+            <p>A threshold is a decision, not a default. Raising it trades recall for precision, and the right point depends on what a false positive costs. The lab’s slider shows the trade on the test set, but a threshold you deploy should come from validation data. For an agent, the same choice decides when it acts on its own and when it stops and asks.</p>
             <p>And a small gap is often noise. In the lab, B leads A by 0.008 F1 on 596 test sentences. Across 1,000 bootstrap resamples of the test set, the interval for that gap runs from −0.021 to +0.038, and B comes out ahead in 70% of them. The interval crosses zero, so a 0.008 F1 gap is not a win, and I would not switch models on it. A hand-built agent test set with fewer cases gives a wider interval, so it needs one even more.</p>
           </div>
         </section>
@@ -158,14 +158,14 @@
             <figure class="ea-flow ea-fig" id="fig-loop" data-ea-fig="loop" aria-labelledby="fig-loop-cap">
               <p class="mono ea-fig-kicker">Figure 2 · Illustration</p>
               <ol class="ea-flow-steps">
-                <li><span class="mono ea-flow-label">Trace</span><span class="ea-flow-text">Every run, every span</span><span class="ea-flow-data">Here: <span data-ea-m="traces">69</span> traces, <span data-ea-m="spans">14,718</span> spans</span></li>
-                <li><span class="mono ea-flow-label">Classify</span><span class="ea-flow-text">One bucket per failure</span><span class="ea-flow-data">Here: <span data-ea-m="errors">136</span> failed tool calls, Figure 3</span></li>
+                <li><span class="mono ea-flow-label">Trace</span><span class="ea-flow-text">Every run, every span</span><span class="ea-flow-data">Here: <span data-ea-m="traces">77</span> traces, <span data-ea-m="spans">17,412</span> spans</span></li>
+                <li><span class="mono ea-flow-label">Classify</span><span class="ea-flow-text">One bucket per failure</span><span class="ea-flow-data">Here: <span data-ea-m="errors">162</span> failed tool calls, Figure 3</span></li>
                 <li><span class="mono ea-flow-label">Fixed test set</span><span class="ea-flow-text">Real failures, expected outcomes</span><span class="ea-flow-data">Not in the telemetry yet</span></li>
-                <li><span class="mono ea-flow-label">Gate</span><span class="ea-flow-text">Block a release while it fails</span><span class="ea-flow-data">Here: <span data-ea-m="evaluators">7</span> code evaluators per trace, Figure 4</span></li>
+                <li><span class="mono ea-flow-label">Gate</span><span class="ea-flow-text">Block a release while it fails</span><span class="ea-flow-data">Here: <span data-ea-m="evaluators">13</span> code evaluators per trace, Figure 4</span></li>
               </ol>
               <figcaption id="fig-loop-cap">The loop I would set up: a failure found in a trace becomes a test case, and the test set decides whether a change ships. Illustration: the moving highlight is a diagram; the counts under the steps come from the telemetry, which has no fixed test set and no release gate yet.</figcaption>
             </figure>
-            <p>Traces come first. I set up LLM tracing and evaluation with Arize AX and OpenTelemetry/OpenInference. In OpenTelemetry terms a run is a trace and each step inside it is a span; OpenInference adds conventions for LLM steps such as model calls, retrievals and tool calls. When spans record inputs, outputs, timing and errors, a failed run shows which step went wrong instead of leaving you to guess from the final answer.</p>
+            <p>Traces come first. I set up LLM tracing and evaluation with Arize AX and OpenTelemetry/OpenInference. In OpenTelemetry terms a run is a trace and each step inside it is a span; OpenInference adds conventions for LLM steps such as model calls, retrievals and tool calls. When spans record inputs, outputs, timing and errors, a failed run shows which step went wrong instead of leaving you guessing from the final answer.</p>
             <p>Then put each failure in one bucket:</p>
             <ul class="cs-points ea-points">
               <li><strong>Wrong tool.</strong> The agent called a tool that cannot answer the question, or answered without the tool it needed.</li>
@@ -173,6 +173,7 @@
               <li><strong>Missing evidence.</strong> The answer states something that no span supports.</li>
               <li><strong>Timeouts and infrastructure.</strong> The call never had a fair chance. Some agent integration failures I have debugged were of this kind and had nothing to do with the model: MCP IAM request signing, OAuth credentials, missing deployment secrets and network rules.</li>
             </ul>
+            <p>The exporter behind these figures does a rough version of this step from the error text alone: the 162 failed calls split into not found 48, permission 44, timeout 30, other 20, network 16 and bad arguments 4. It cannot see a wrong tool or missing evidence. The <a class="lab-link" href="./agent-observability.html#obs-fail-title">dashboard’s failure analysis</a> splits the classes by tool.</p>
             <figure class="ea-fig" id="fig-failures" data-ea-fig="failures" aria-labelledby="fig-failures-cap">
               <p class="mono ea-fig-kicker">Figure 3 · Failed tool calls in the telemetry</p>
               <div class="ea-live" data-ea-live hidden>
@@ -190,42 +191,44 @@
                   <button type="button" class="ea-button" data-ea-more hidden>Show all</button>
                 </div>
               </div>
-              <figcaption id="fig-failures-cap">Of 8,271 tool calls, 136 failed. <em>Tool</em> counts every failure. <em>Duration bucket</em> uses the 66 failures published as single spans (the rest sit inside merged steps, whose durations are not published) and sorts them only by how long they ran: with no tool inputs in the export, it cannot tell a wrong tool from bad arguments. Choose a bar to list its spans; each opens in the <a class="lab-link" href="./agent-observability.html">agent observability dashboard</a>.</figcaption>
+              <figcaption id="fig-failures-cap">Of 9,712 tool calls, 162 failed. <em>Tool</em> counts every failure. <em>Duration bucket</em> uses the 8 failures published as single spans (the rest sit inside merged steps, whose durations are not published) and sorts them only by how long they ran: with no tool inputs in the export, it cannot tell a wrong tool from bad arguments. Choose a bar to list its spans; each opens in the <a class="lab-link" href="./agent-observability.html">agent observability dashboard</a>.</figcaption>
               <details class="ea-data" open>
                 <summary>Data tables</summary>
                 <div class="lab-table-wrap">
                   <table class="lab-table ea-table" data-ea-table="tools">
-                    <caption>Failed calls by tool, all 136</caption>
+                    <caption>Failed calls by tool, all 162</caption>
                     <thead><tr><th scope="col">Tool</th><th scope="col">Failed</th><th scope="col">Calls</th><th scope="col">Failed share</th></tr></thead>
                     <tbody>
-                      <tr><th scope="row">browser.evaluate_script</th><td>34</td><td>983</td><td>3.5%</td></tr>
-                      <tr><th scope="row">bash</th><td>29</td><td>3,809</td><td>0.8%</td></tr>
-                      <tr><th scope="row">read</th><td>22</td><td>1,185</td><td>1.9%</td></tr>
-                      <tr><th scope="row">browser.list_pages</th><td>11</td><td>46</td><td>23.9%</td></tr>
-                      <tr><th scope="row">browser.navigate_page</th><td>8</td><td>402</td><td>2.0%</td></tr>
-                      <tr><th scope="row">webfetch</th><td>8</td><td>49</td><td>16.3%</td></tr>
-                      <tr><th scope="row">browser.take_screenshot</th><td>6</td><td>538</td><td>1.1%</td></tr>
-                      <tr><th scope="row">task</th><td>6</td><td>89</td><td>6.7%</td></tr>
-                      <tr><th scope="row">browser.emulate</th><td>3</td><td>223</td><td>1.3%</td></tr>
-                      <tr><th scope="row">browser.click</th><td>2</td><td>23</td><td>8.7%</td></tr>
-                      <tr><th scope="row">write</th><td>2</td><td>144</td><td>1.4%</td></tr>
+                      <tr><th scope="row">bash</th><td>39</td><td>4,761</td><td>0.8%</td></tr>
+                      <tr><th scope="row">browser.evaluate_script</th><td>35</td><td>1,085</td><td>3.2%</td></tr>
+                      <tr><th scope="row">read</th><td>25</td><td>1,323</td><td>1.9%</td></tr>
+                      <tr><th scope="row">webfetch</th><td>15</td><td>81</td><td>18.5%</td></tr>
+                      <tr><th scope="row">browser.list_pages</th><td>11</td><td>47</td><td>23.4%</td></tr>
+                      <tr><th scope="row">browser.navigate_page</th><td>9</td><td>448</td><td>2.0%</td></tr>
+                      <tr><th scope="row">task</th><td>7</td><td>109</td><td>6.4%</td></tr>
+                      <tr><th scope="row">browser.take_screenshot</th><td>6</td><td>563</td><td>1.1%</td></tr>
+                      <tr><th scope="row">browser.emulate</th><td>4</td><td>257</td><td>1.6%</td></tr>
+                      <tr><th scope="row">browser.click</th><td>2</td><td>24</td><td>8.3%</td></tr>
+                      <tr><th scope="row">write</th><td>2</td><td>164</td><td>1.2%</td></tr>
                       <tr><th scope="row">browser.lighthouse_audit</th><td>1</td><td>12</td><td>8.3%</td></tr>
-                      <tr><th scope="row">browser.new_page</th><td>1</td><td>66</td><td>1.5%</td></tr>
-                      <tr><th scope="row">browser.performance_start_trace</th><td>1</td><td>5</td><td>20.0%</td></tr>
+                      <tr><th scope="row">browser.new_page</th><td>1</td><td>74</td><td>1.4%</td></tr>
+                      <tr><th scope="row">browser.performance_start_trace</th><td>1</td><td>8</td><td>12.5%</td></tr>
+                      <tr><th scope="row">browser.select_page</th><td>1</td><td>47</td><td>2.1%</td></tr>
                       <tr><th scope="row">browser.wait_for</th><td>1</td><td>2</td><td>50.0%</td></tr>
-                      <tr><th scope="row">edit</th><td>1</td><td>338</td><td>0.3%</td></tr>
+                      <tr><th scope="row">edit</th><td>1</td><td>353</td><td>0.3%</td></tr>
+                      <tr><th scope="row">grep</th><td>1</td><td>18</td><td>5.6%</td></tr>
                     </tbody>
                   </table>
                 </div>
                 <div class="lab-table-wrap">
                   <table class="lab-table ea-table" data-ea-table="buckets">
-                    <caption>Published failed spans by duration, 66</caption>
+                    <caption>Published failed spans by duration, 8</caption>
                     <thead><tr><th scope="col">Bucket</th><th scope="col">Spans</th></tr></thead>
                     <tbody>
-                      <tr><th scope="row">Fast failure (under a second)</th><td>49</td></tr>
+                      <tr><th scope="row">Fast failure (under a second)</th><td>1</td></tr>
                       <tr><th scope="row">Slow failure (a second to a minute)</th><td>1</td></tr>
-                      <tr><th scope="row">Timeout-like (a minute or more)</th><td>11</td></tr>
-                      <tr><th scope="row">Delegated run stopped (a task call that failed after a minute or more)</th><td>5</td></tr>
+                      <tr><th scope="row">Timeout-like (a minute or more)</th><td>0</td></tr>
+                      <tr><th scope="row">Delegated run stopped (a task call that failed after a minute or more)</th><td>6</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -241,7 +244,8 @@
                   <li><span class="ea-cell is-pass"></span>Pass</li>
                   <li><span class="ea-cell is-fail"></span>Fail</li>
                   <li><span class="ea-cell is-none"></span>Not scored</li>
-                  <li><span class="ea-cell is-q1"></span><span class="ea-cell is-q4"></span>Fewer to more tokens</li>
+                  <li><span class="ea-cell is-q1"></span><span class="ea-cell is-q4"></span>Number, low to high</li>
+                  <li><span class="ea-cell is-category"></span>Error class</li>
                 </ul>
                 <div class="lab-threshold ea-picker">
                   <button type="button" class="ea-button ea-step" data-ea-step="-1">Previous</button>
@@ -252,21 +256,27 @@
                 <p class="ea-status" data-ea-status aria-live="polite"></p>
                 <dl class="ea-results" data-ea-results></dl>
               </div>
-              <figcaption id="fig-evaluators-cap">Each column is a trace (one user turn), each row a deterministic check the exporter runs; there is no model acting as judge. Pick a trace, or point at a column, to read every result and its reason. One caveat: <em>Review before commit</em> only counts a quality-reviewer run recorded since the previous commit in the same session. A review by another agent type, or by a person, does not count, so its 18 fails mean no recorded reviewer run, not an unreviewed change.</figcaption>
+              <figcaption id="fig-evaluators-cap">Each column is a trace (one user turn), each row a deterministic check the exporter runs; there is no model acting as judge. Pick a trace, or point at a column, to read every result and its reason. One caveat: <em>Review before commit</em> only counts a quality-reviewer run recorded since the previous commit in the same session. A review by another agent type, or by a person, does not count, so its 20 fails mean no recorded reviewer run, not an unreviewed change. Rows that hold a number are shaded from low to high, and <em>Most common error</em> names the error class a trace hit most.</figcaption>
               <details class="ea-data" open>
                 <summary>Data table</summary>
                 <div class="lab-table-wrap">
                   <table class="lab-table ea-table" data-ea-table="evaluators">
-                    <caption>Results across 69 traces</caption>
+                    <caption>Results across 77 traces</caption>
                     <thead><tr><th scope="col">Evaluator</th><th scope="col">Pass</th><th scope="col">Fail</th><th scope="col">Not scored</th></tr></thead>
                     <tbody>
-                      <tr><th scope="row">Tool error rate</th><td>58</td><td>3</td><td>8</td></tr>
-                      <tr><th scope="row">Recovered after error</th><td>23</td><td>6</td><td>40</td></tr>
-                      <tr><th scope="row">Delegation used</th><td>28</td><td>41</td><td>0</td></tr>
-                      <tr><th scope="row">Review before commit</th><td>10</td><td>18</td><td>41</td></tr>
-                      <tr><th scope="row">Tests before commit</th><td>27</td><td>1</td><td>41</td></tr>
-                      <tr><th scope="row">Model latency budget</th><td>62</td><td>7</td><td>0</td></tr>
-                      <tr><th scope="row">Generated tokens per tool call</th><td colspan="2">median 749.3, range 164.9 to 2,951</td><td>8</td></tr>
+                      <tr><th scope="row">Tool error rate</th><td>65</td><td>3</td><td>9</td></tr>
+                      <tr><th scope="row">Recovered after error</th><td>24</td><td>9</td><td>44</td></tr>
+                      <tr><th scope="row">Delegation on large tasks</th><td>28</td><td>5</td><td>44</td></tr>
+                      <tr><th scope="row">Review before commit</th><td>12</td><td>20</td><td>45</td></tr>
+                      <tr><th scope="row">Tests before commit</th><td>31</td><td>1</td><td>45</td></tr>
+                      <tr><th scope="row">Checked after the last edit</th><td>21</td><td>4</td><td>52</td></tr>
+                      <tr><th scope="row">No stuck loop</th><td>68</td><td>0</td><td>9</td></tr>
+                      <tr><th scope="row">Changes after review</th><td>3</td><td>9</td><td>65</td></tr>
+                      <tr><th scope="row">Model latency budget</th><td>68</td><td>9</td><td>0</td></tr>
+                      <tr><th scope="row">Generated tokens per tool call</th><td colspan="2">median 747.3, range 164.9 to 2,951</td><td>9</td></tr>
+                      <tr><th scope="row">Parallel subagents</th><td colspan="2">median 2, range 1 to 4</td><td>45</td></tr>
+                      <tr><th scope="row">Prompt cache reuse</th><td colspan="2">median 0.9336, range 0 to 0.9993</td><td>0</td></tr>
+                      <tr><th scope="row">Most common error</th><td colspan="2">most often not found, in 11 of 33 traces</td><td>44</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -282,7 +292,7 @@
           </div>
           <div class="cs-main ea-prose">
             <p>Each handoff between agents costs something. The receiving agent gets a summary instead of the full context, and a task that dies midway has to be handed off again. So start with one agent, and add a specialist only when it does a job the first one does badly and has a clear input and output.</p>
-            <p>Here is what the build trace shows. One orchestrator, my primary agent working under my direction, recorded 37 of the 52 steps and made all 16 commits. The implementation-worker recorded 9, the quality-reviewer 4 and the ui-design-director 2. Both tasks that stopped midway and left partial edits behind were delegated worker tasks.</p>
+            <p>In the build trace, one orchestrator, my primary agent working under my direction, recorded 37 of the 52 steps and made all 16 commits. The implementation-worker recorded 9, the quality-reviewer 4 and the ui-design-director 2. Both tasks that stopped midway and left partial edits behind were delegated worker tasks.</p>
             <p>The specialist reviewers added value at review points. The quality-reviewer’s first pass found frozen review notes, blank waits and copy hidden on short screens. A later pass on the integrated changes found no high-severity issues and six smaller findings. A second pass on the security changes reported five low-priority findings, all fixed before saving. The ui-design-director’s review found tiny text, crowded labels and uneven tour pacing. A reviewer with fresh context reads the change, not the conversation that produced it.</p>
             <p>There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything. It counts role types, not separate agent instances. Most times are estimates, so it says nothing about latency or cost per role. And it covers one project, the Nov 10–11 redesign only.</p>
             <figure class="ea-fig" id="fig-delegation" data-ea-fig="delegation" aria-labelledby="fig-delegation-cap">
@@ -322,7 +332,7 @@
                   </div>
                 </details>
               </div>
-              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 61 of the 69, placed by how many calls it made (log scale). Point at a dot, or use the slider, to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and day all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out.</figcaption>
+              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 68 of the 77, placed by how many calls it made (log scale). A trace counts as delegated when it has at least one subagent run. The <em>Delegation on large tasks</em> check in Figure 4 is narrower: it scores only the 33 large traces, and passes the 28 where subagents made at least half of the tool calls. Point at a dot, or use the slider, to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and day all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out.</figcaption>
               <details class="ea-data" open>
                 <summary>Data table</summary>
                 <div class="lab-table-wrap">
@@ -330,12 +340,12 @@
                     <caption>Traces with and without a subagent run</caption>
                     <thead><tr><th scope="col">Measure</th><th scope="col">Delegated</th><th scope="col">No delegation</th></tr></thead>
                     <tbody>
-                      <tr><th scope="row">Traces</th><td>28</td><td>41</td></tr>
-                      <tr><th scope="row">Traces with tool calls</th><td>28</td><td>33</td></tr>
-                      <tr><th scope="row">Tool calls</th><td>7,964</td><td>307</td></tr>
-                      <tr><th scope="row">Failed calls</th><td>119</td><td>17</td></tr>
-                      <tr><th scope="row">Share of calls that failed</th><td>1.5%</td><td>5.5%</td></tr>
-                      <tr><th scope="row">Median generated tokens per call</th><td>765</td><td>714</td></tr>
+                      <tr><th scope="row">Traces</th><td>32</td><td>45</td></tr>
+                      <tr><th scope="row">Traces with tool calls</th><td>32</td><td>36</td></tr>
+                      <tr><th scope="row">Tool calls</th><td>9,391</td><td>321</td></tr>
+                      <tr><th scope="row">Failed calls</th><td>145</td><td>17</td></tr>
+                      <tr><th scope="row">Share of calls that failed</th><td>1.5%</td><td>5.3%</td></tr>
+                      <tr><th scope="row">Median generated tokens per call</th><td>749</td><td>714</td></tr>
                       <tr><th scope="row">Median tool calls per trace</th><td>247</td><td>3</td></tr>
                     </tbody>
                   </table>

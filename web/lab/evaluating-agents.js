@@ -4,7 +4,7 @@
 // through textContent. Without JavaScript, or if a fetch fails, the static data tables
 // written into the page stay open and the interactive parts stay hidden.
 import { evaluate } from './metrics.js';
-import { TRACES_JSON, LAB_JSON, BUCKETS, measures, failures, delegation, matrix, int } from './evaluating-agents-data.js';
+import { TRACES_JSON, LAB_JSON, BUCKETS, measures, failures, delegation, matrix, int, words } from './evaluating-agents-data.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const moving = () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -260,11 +260,11 @@ async function initEvaluators(fig) {
     const wrap = el('div', 'ea-mrow');
     const head = el('p', 'ea-mrow-head');
     head.append(el('span', 'ea-mrow-name', row.name),
-      el('span', 'mono ea-mrow-count', row.numeric ? `median ${row.median}` : `${row.pass} pass · ${row.fail} fail`));
+      el('span', 'mono ea-mrow-count', row.numeric ? `median ${row.median}` : row.category ? `most often ${words(row.top?.label ?? '–')}` : `${row.pass} pass · ${row.fail} fail`));
     const cells = el('div', 'ea-mcells');
     m.traces.forEach((trace, i) => {
       const result = m.cell(trace.id, row.id);
-      const kind = !result ? 'none' : row.numeric ? `q${quartile(result.score)}` : result.label === 'pass' ? 'pass' : 'fail';
+      const kind = !result ? 'none' : row.numeric ? `q${quartile(result.score)}` : row.category ? 'category' : result.label === 'pass' ? 'pass' : 'fail';
       const cell = el('span', `ea-cell is-${kind}`);
       cell.dataset.i = String(i);
       columns[i].push(cell);
@@ -286,11 +286,11 @@ async function initEvaluators(fig) {
     let pass = 0, failed = 0, none = 0;
     results.replaceChildren(...m.rows.map(row => {
       const result = m.cell(trace.id, row.id);
-      const kind = !result ? 'none' : row.numeric ? 'number' : result.label;
+      const kind = !result ? 'none' : row.numeric ? 'number' : row.category ? 'category' : result.label === 'pass' ? 'pass' : 'fail';
       if (kind === 'pass') pass += 1; else if (kind === 'fail') failed += 1; else if (kind === 'none') none += 1;
       const item = el('div', 'ea-result');
       const dd = el('dd');
-      const badge = el('span', `mono ea-badge is-${kind}`, kind === 'number' ? String(result.score) : kind === 'none' ? 'not scored' : kind);
+      const badge = el('span', `mono ea-badge is-${kind}`, kind === 'number' ? String(result.score) : kind === 'category' ? words(result.label) : kind === 'none' ? 'not scored' : kind);
       dd.append(badge, el('span', 'ea-result-why', result ? ` ${result.explanation}` : ' The check does not apply to this trace.'),
         el('span', 'ea-result-what', row.description));
       item.append(el('dt', '', row.name), dd);

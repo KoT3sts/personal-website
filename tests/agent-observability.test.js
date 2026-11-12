@@ -13,7 +13,7 @@ const read = path => readFileSync(new URL(path, web), 'utf8');
 const page = read('lab/agent-observability.html');
 const lab = read('lab/sentiment-eval.html');
 const css = read('lab/observability.css');
-const JS = ['lab/observability.js', 'lab/obs-data.js', 'lab/obs-charts.js'];
+const JS = ['lab/observability.js', 'lab/obs-data.js', 'lab/obs-charts.js', 'lab/obs-eval.js', 'lab/obs-review.js', 'lab/obs-views.js'];
 const scripts = Object.fromEntries(JS.map(file => [file, read(file)]));
 const data = JSON.parse(read('lab/data/agent-traces.json'));
 const index = D.evalIndex(data.evaluations);
@@ -53,7 +53,7 @@ test('title, one h1, the point of the page, and the honest scope', () => {
 
 test('links: back to Work, both agent pages, the raw data; every relative link resolves', () => {
   assert.match(page, /<a class="cs-back" href="\.\.\/#work">/);
-  for (const href of ['../#work', './evaluating-agents.html', './build-trace.html', './data/agent-traces.json']) assert.ok(page.includes(`href="${href}"`), href);
+  for (const href of ['../#work', './evaluating-agents.html', './build-trace.html', './data/agent-traces.json', './data/agent-traces.openinference.jsonl']) assert.ok(page.includes(`href="${href}"`), href);
   assert.match(page, /<nav class="cs-pager"[\s\S]*How I evaluate agents[\s\S]*The agent run behind this site[\s\S]*<\/nav>/);
   assert.match(page, /<a href="\.\.\/#work">Back to Work<\/a>/);
   for (const [, ref] of page.matchAll(/\s(?:href|src)="(\.{1,2}\/[^"#]*)/g)) {
@@ -102,17 +102,27 @@ test('filters list every day and root agent in the data; the notes repeat the ex
   assert.ok(text.includes(`${D.formatInt(data.meta.publishedSpans)} of ${D.formatInt(data.meta.spans)} spans are published`));
   const requests = data.traces.filter(t => t.rootAgent !== 'compaction');
   const compactions = data.traces.filter(t => t.rootAgent === 'compaction');
-  assert.ok(text.includes(`${requests.length} requests and one automatic context compaction in five sessions, with ${data.meta.subagentSessions} subagent sessions`));
+  const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  assert.ok(text.includes(`${requests.length} requests and one automatic context compaction in ${words[data.meta.sessions]} sessions, with ${data.meta.subagentSessions} subagent sessions`));
+  assert.ok(text.includes(`so the dashboard counts ${D.kpis(data).subagentRuns} subagent runs`));
+  // sessions and error classes: one pill per session, one option per class, in the data's order
+  // The session pills are built from the data (D.sessionsOf), after a static "All".
+  assert.match(page, /<div class="obs-pill-row" data-obs="session-pills">\s*<input type="radio" name="session" id="obs-session-all" value="all" checked><label for="obs-session-all">All<\/label>\s*<\/div>/);
+  assert.match(scripts['lab/observability.js'], /for \(const s of D\.sessionsOf\(data\.traces\)\) \{/);
+  assert.deepEqual(D.sessionsOf(data.traces), Object.keys(data.rollups.sessions));
+  const select = page.match(/<select id="obs-errclass" name="errorClass">([\s\S]*?)<\/select>/)[1];
+  assert.deepEqual([...select.matchAll(/<option value="([a-z_]+)">/g)].map(m => m[1]), ['all', ...data.meta.errorClasses]);
+  assert.match(page, /<label for="obs-delegation">Ran a subagent<\/label>/, 'the delegation filter says what it keeps');
   assert.equal(compactions.length, 1);
   assert.ok(text.includes(`One row per request I gave the agents, except #${Number(compactions[0].id.slice(1))}, an automatic context compaction.`));
   assert.ok(text.includes(`Calls to tools outside an allowlist are dropped: ${data.meta.droppedSpans} of them.`));
   assert.doesNotMatch(text, new RegExp(`\\b${data.traces.length} requests`), 'the compaction is not counted as a request');
-  assert.equal(data.meta.sessions, 5);
+  assert.equal(data.meta.sessions, Object.keys(data.rollups.sessions).length);
   assert.equal(data.meta.window.from, '2026-11-07');
   assert.equal(data.meta.window.to, '2026-11-12');
 });
 
-test('the evaluator notes carry the exported pass/fail counts, in the exporter’s order', () => {
+test('the evaluator notes carry the exported counts, in the exporter’s order', () => {
   const counts = D.evaluatorCounts(data.evaluators, data.evaluations);
   const items = [...page.matchAll(/<li data-eval="([a-z_]+)">([\s\S]*?)<\/li>/g)];
   assert.deepEqual(items.map(m => m[1]), data.evaluators.map(e => e.id));
@@ -123,18 +133,33 @@ test('the evaluator notes carry the exported pass/fail counts, in the exporter�
     assert.ok(body.includes(e.question), `${id} question`);
     const num = key => body.match(new RegExp(`<span data-${key}>([^<]+)</span>`))?.[1];
     assert.equal(num('scored'), String(c.scored), `${id} scored`);
-    if (id === 'tokens_per_tool_call') {
-      assert.equal(num('median'), D.formatInt(c.median));
-      assert.equal(num('min'), D.formatInt(c.min));
-      assert.equal(num('max'), D.formatInt(c.max));
+    if (e.output === 'number') {
+      assert.equal(num('median'), D.formatScore(id, c.median), `${id} median`);
+      assert.equal(num('min'), D.formatScore(id, c.min), `${id} min`);
+      assert.equal(num('max'), D.formatScore(id, c.max), `${id} max`);
+    } else if (e.output === 'category') {
+      const [top, n] = Object.entries(c.labels).sort((a, b) => b[1] - a[1])[0];
+      assert.equal(num('top'), top.replace('_', ' '));
+      assert.equal(num('top-n'), String(n));
     } else {
       assert.equal(num('pass'), String(c.pass), `${id} pass`);
       assert.equal(num('fail'), String(c.fail), `${id} fail`);
+      assert.match(body, /<strong>Rule\.<\/strong>/, `${id} rule`);
     }
   }
   const tools = data.traces.filter(t => t.toolCalls > 0).length;
   assert.match(plain(page), new RegExp(`${['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'][data.traces.length - tools]} traces made no tool call`));
   assert.match(plain(page), /looks back only to the previous commit in the same session/, 'review_before_commit carries its caveat');
+  const item = id => items.find(m => m[1] === id)[2];
+  assert.match(item('delegation_fit'), new RegExp(`<span data-large-calls>${data.meta.largeTrace.minToolCalls}</span> or more tool calls, or <span data-large-edits>${data.meta.largeTrace.minEdits}</span> or more edits`));
+  assert.equal(item('stuck_loop').match(/<span data-max>(\d+)<\/span>/)[1], String(counts.find(x => x.id === 'stuck_loop').max), 'the longest streak');
+  const zero = data.evaluations.filter(ev => ev.evaluator === 'cache_reuse' && ev.score === 0).map(ev => data.traces.find(t => t.id === ev.trace).rootAgent);
+  assert.ok(zero.includes('compaction'), 'the compaction reads nothing from the cache, as the note says');
+  assert.equal(item('cache_reuse').match(/<span data-zero>(\d+)<\/span>/)[1], String(zero.length));
+  // honest framing: rule-based proxies, not judgments of quality
+  assert.match(plain(page), /Thirteen deterministic checks/);
+  assert.match(plain(page), /rule-based operational proxies: they say whether tests ran, a review happened or calls failed, not whether the result was good/);
+  assert.equal(data.evaluators.length, 13);
 });
 
 test('no round labels in the visible page; every exported label has a plain-words topic', () => {
@@ -148,21 +173,48 @@ test('no round labels in the visible page; every exported label has a plain-word
 // ---- the scripts --------------------------------------------------------------------
 
 test('scripts fetch only the same-origin JSON and never build HTML from strings', () => {
-  const all = Object.values(scripts).join('\n');
+  const all = Object.values(scripts).join('\n').replace("'http://www.w3.org/2000/svg'", "'svg-namespace'");
   assert.equal(D.DATA_URL, './data/agent-traces.json');
-  assert.equal((all.match(/\bfetch\(/g) || []).length, 1, 'one fetch');
+  assert.equal(D.LABELS_URL, './data/human-labels.json');
+  assert.equal((all.match(/\bfetch\(/g) || []).length, 2, 'two fetches: the traces and the human labels');
   assert.match(scripts['lab/observability.js'], /window\.fetch\(D\.DATA_URL, \{ credentials: 'same-origin' \}\)/);
-  assert.doesNotMatch(all, /https?:|\/\/[a-z0-9.-]+\.[a-z]{2,}|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(/i);
+  assert.match(scripts['lab/observability.js'], /window\.fetch\(D\.LABELS_URL, \{ credentials: 'same-origin' \}\)/);
+  // The only dynamic imports are the dashboard's own two lazy modules, by relative path.
+  assert.deepEqual([...all.matchAll(/import\(([^)]*)\)/g)].map(m => m[1]), ["'./obs-review.js'", "'./obs-views.js'"]);
+  assert.doesNotMatch(all.replace(/import\('\.\/obs-(?:review|views)\.js'\)/g, ''), /https?:|\/\/[a-z0-9.-]+\.[a-z]{2,}|XMLHttpRequest|WebSocket|EventSource|sendBeacon|import\(/i);
   assert.doesNotMatch(all, /innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|setAttribute\('style'|DOMParser/);
   for (const [file, source] of Object.entries(scripts)) {
     for (const [, spec] of source.matchAll(/^import .* from '([^']+)';$/gm)) assert.match(spec, /^\.\/obs-[a-z]+\.js$/, `${file} imports ${spec}`);
   }
+  // The SVG namespace is a name, not a request: it is the one URL-shaped string allowed.
+  assert.equal((Object.values(scripts).join('\n').match(/'http:\/\/www\.w3\.org\/2000\/svg'/g) || []).length, 1, 'one SVG namespace constant');
 });
 
 test('JavaScript stays inside the budget; the filter count and the loading status are the only live regions', () => {
   const bytes = Object.values(scripts).reduce((n, source) => n + Buffer.byteLength(source), 0);
-  assert.ok(bytes <= 48_000, `${bytes} bytes of JavaScript (target about 40 KB; the histogram's keyboard and table added about 2 KB)`);
-  assert.deepEqual([...page.matchAll(/<[^>]+aria-live="[^"]+"[^>]*>/g)].map(m => m[0]), ['<p class="obs-count" data-obs="count" aria-live="polite">']);
+  assert.ok(bytes <= 104_000, `${bytes} bytes of JavaScript (about 48 KB before the gate, review, graph, failure, monitor, session and compare views)`);
+  // Loaded at first: the explorer and what it imports statically. The gate and review
+  // (obs-review.js) and the analysis views (obs-views.js, with obs-eval.js) come by import().
+  const eager = new Set();
+  const walk = file => {
+    if (eager.has(file)) return;
+    eager.add(file);
+    for (const [, spec] of scripts[file].matchAll(/^import .* from '\.\/([^']+)';$/gm)) walk(`lab/${spec}`);
+  };
+  walk('lab/observability.js');
+  assert.deepEqual([...eager].sort(), ['lab/obs-charts.js', 'lab/obs-data.js', 'lab/observability.js']);
+  const eagerBytes = [...eager].reduce((n, file) => n + Buffer.byteLength(scripts[file]), 0);
+  assert.ok(eagerBytes <= 60_000, `${eagerBytes} bytes of JavaScript at first load (was about 100 KB before the lazy imports)`);
+  const js = scripts['lab/observability.js'];
+  assert.match(js, /import\('\.\/obs-review\.js'\)/);
+  assert.match(js, /import\('\.\/obs-views\.js'\)/);
+  assert.match(js, /D\.whenNear\(q\('gate-block'\), loadReview\);\s*D\.whenNear\(q\('graph-block'\), loadViews\);/, 'each loads when its first section comes near');
+  assert.match(js, /event\.preventDefault\(\);\s*loadAll\(\)\.then\(\(\) => \{ D\.buildAll\(\); jump\(/, 'a jump link loads and builds everything before it moves');
+  assert.deepEqual([...page.matchAll(/<[^>]+aria-live="[^"]+"[^>]*>/g)].map(m => m[0]), [
+    '<p class="obs-count" data-obs="count" aria-live="polite">',
+    '<p class="mono obs-annotate-progress" data-obs="annotate-progress" aria-live="polite">',
+    '<p class="visually-hidden" data-obs="gate-summary" aria-live="polite">',
+  ]);
   assert.deepEqual([...page.matchAll(/<[^>]+role="(?:status|alert|log)"[^>]*>/g)].map(m => m[0]), ['<p class="obs-status" data-obs="status" role="status">']);
   assert.match(page, /<p class="obs-status" data-obs="status" role="status"><\/p>/, 'empty and in the page from the start, so changes are announced');
   for (const source of Object.values(scripts)) assert.doesNotMatch(source, /aria-live|setAttribute\('role', '(?:status|alert|log)'/);
@@ -274,7 +326,7 @@ test('histogram: bins cover every value on linear and log axes, and positions ma
 test('filters: day, root agent, delegation, failed evaluator, tool search; reset state is unfiltered', () => {
   const a = { ...fixture, id: 't01', day: '2026-11-08' };
   const b = { ...fixture, id: 't02', day: '2026-11-09', rootAgent: 'plan', subagentRuns: 0, spans: [fixture.spans[0], fixture.spans[1], { ...fixture.spans[5], name: 'webfetch', category: undefined }] };
-  const idx = D.evalIndex([{ trace: 't02', evaluator: 'delegation_used', label: 'fail' }, { trace: 't01', evaluator: 'delegation_used', label: 'pass' }]);
+  const idx = D.evalIndex([{ trace: 't02', evaluator: 'delegation_fit', label: 'fail' }, { trace: 't01', evaluator: 'delegation_fit', label: 'pass' }]);
   const ids = f => D.filterTraces([a, b], idx, { ...D.EMPTY_FILTERS, ...f }).map(t => t.id);
   assert.deepEqual(ids({}), ['t01', 't02']);
   assert.deepEqual(ids({ day: '2026-11-09' }), ['t02']);
@@ -284,6 +336,17 @@ test('filters: day, root agent, delegation, failed evaluator, tool search; reset
   assert.deepEqual(ids({ tool: '  READ ' }), ['t01'], 'tools merged into CHAIN spans count');
   assert.deepEqual(ids({ tool: 'fetch' }), ['t02']);
   assert.deepEqual(ids({ tool: 'nothing' }), []);
+  const s1 = { ...a, session: 'S1' };
+  const s2 = { ...b, session: 'S2', spans: [...b.spans, { ...fixture.spans[5], id: 's9', status: 'error', errorClass: 'timeout', category: 'test' }] };
+  const two = f => D.filterTraces([s1, s2], idx, { ...D.EMPTY_FILTERS, ...f }).map(t => t.id);
+  assert.deepEqual(two({ session: 'S2' }), ['t02']);
+  assert.deepEqual(two({ errorClass: 'timeout' }), ['t02'], 'a failed TOOL span with the class');
+  assert.deepEqual(two({ errorClass: 'not_found' }), []);
+  const chain = { ...fixture, spans: [...fixture.spans.slice(0, 4), { ...fixture.spans[4], errorClasses: { not_found: 1 } }] };
+  assert.deepEqual(D.filterTraces([chain], idx, { ...D.EMPTY_FILTERS, errorClass: 'not_found' }).length, 1, 'a class merged into a CHAIN span counts');
+  assert.deepEqual(D.errorClassesOf(s2), { timeout: 1 });
+  assert.equal(D.isFiltered({ ...D.EMPTY_FILTERS, session: 'S1' }), true);
+  assert.equal(D.isFiltered({ ...D.EMPTY_FILTERS, errorClass: 'other' }), true);
   assert.equal(D.isFiltered(D.EMPTY_FILTERS), false);
   assert.equal(D.isFiltered({ ...D.EMPTY_FILTERS, tool: ' ' }), false);
   assert.equal(D.isFiltered({ ...D.EMPTY_FILTERS, failed: true }), true);
@@ -365,7 +428,14 @@ test('on the real data: filters partition sensibly and the evaluator counts matc
   const byDay = D.sum([...new Set(data.traces.map(t => t.day))].map(day => D.filterTraces(data.traces, index, { ...D.EMPTY_FILTERS, day }).length));
   assert.equal(byDay, data.traces.length);
   const delegated = D.filterTraces(data.traces, index, { ...D.EMPTY_FILTERS, delegation: true });
-  assert.equal(delegated.length, data.evaluations.filter(e => e.evaluator === 'delegation_used' && e.label === 'pass').length);
+  assert.equal(delegated.length, data.traces.filter(t => t.subagentRuns > 0).length);
+  assert.equal(delegated.length, data.evaluations.filter(e => e.evaluator === 'parallel_fanout').length, 'the same traces parallel_fanout scores');
+  const bySession = D.sum(Object.keys(data.rollups.sessions).map(session => D.filterTraces(data.traces, index, { ...D.EMPTY_FILTERS, session }).length));
+  assert.equal(bySession, data.traces.length, 'sessions partition the traces');
+  for (const c of data.meta.errorClasses) {
+    const hit = D.filterTraces(data.traces, index, { ...D.EMPTY_FILTERS, errorClass: c });
+    assert.equal(D.sum(hit.map(t => D.errorClassesOf(t)[c])), data.rollups.errorClasses[c], `${c}: the filtered traces hold every failed call of the class`);
+  }
   const failed = D.filterTraces(data.traces, index, { ...D.EMPTY_FILTERS, failed: true });
   assert.equal(failed.length, new Set(data.evaluations.filter(e => e.label === 'fail').map(e => e.trace)).size);
   const browser = D.filterTraces(data.traces, index, { ...D.EMPTY_FILTERS, tool: 'browser' });
@@ -379,7 +449,7 @@ test('on the real data: filters partition sensibly and the evaluator counts matc
 // ---- hover and typing cost --------------------------------------------------------
 
 test('span details: the same rows in the same order for every kind of span, so hovering never resizes the page', () => {
-  assert.equal(SPAN_ROWS.length, 16);
+  assert.equal(SPAN_ROWS.length, 17);
   const rows = [...D.waterfall(fixture, new Set(['s5'])), null];
   const facts = rows.map(spanFacts);
   for (const [i, list] of facts.entries()) {
@@ -401,7 +471,9 @@ test('span details: the same rows in the same order for every kind of span, so h
   assert.equal(at('s5:bash', 'Failed'), '1');
   assert.deepEqual(spanFacts(null), SPAN_ROWS.map(() => '–'));
   // On the real data too: every published span gives sixteen values.
-  for (const trace of data.traces.slice(0, 5)) for (const row of D.waterfall(trace)) assert.equal(spanFacts(row).length, 16);
+  for (const trace of data.traces.slice(0, 5)) for (const row of D.waterfall(trace)) assert.equal(spanFacts(row).length, 17);
+  const failed = data.traces.flatMap(t => t.spans).find(s => s.kind === 'TOOL' && s.status === 'error');
+  assert.equal(spanFacts({ span: failed })[SPAN_ROWS.indexOf('Error class')], failed.errorClass);
   // The page builds the rows once and rewrites values in place; one-line values keep the height.
   const js = scripts['lab/observability.js'];
   assert.match(js, /const facts = SPAN_ROWS\.map\(label => \{/);

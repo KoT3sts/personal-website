@@ -45,12 +45,23 @@ test('the observability preview and its static summary carry the same numbers, f
   assert.ok(obs.evaluators.every(item => item.kind === 'code'), 'no LLM judge');
   // One row per pass/fail evaluator, one cell per evaluation; blanks where it does not apply.
   assert.deepEqual(summary.rows.map(row => row.id), Object.keys(CHECKS));
+  // The summary groups the labels by evaluator: {evaluator: {trace: "pass" | "fail"}}.
+  assert.deepEqual(Object.keys(CHECKS), ['tool_error_rate', 'recovered_after_error', 'delegation_fit', 'review_before_commit', 'verified_after_last_edit', 'latency_budget']);
+  assert.ok(Object.values(CHECKS).every(label => label.length <= 11), 'short row labels ("Tool errors" is the longest) keep the readout and the grid narrow');
   for (const row of summary.rows) {
-    const rows = obs.evaluations.filter(item => item.evaluator === row.id);
-    assert.equal(row.scored, rows.length, row.id);
-    assert.equal(row.pass, rows.filter(item => item.label === 'pass').length, row.id);
+    const labels = Object.entries(obs.evaluations[row.id]);
+    assert.equal(row.scored, labels.length, row.id);
+    assert.equal(row.pass, labels.filter(([, label]) => label === 'pass').length, row.id);
     assert.equal(row.cells.length, obs.traces.length);
+    for (const [id, label] of labels) assert.equal(row.cells[summary.traces.findIndex(t => t.id === id)], label, `${row.id} ${id}`);
   }
+  assert.ok(obs.evaluators.filter(e => e.output === 'pass/fail').length >= summary.rows.length, 'every row is a pass/fail check');
+  for (const id of Object.keys(CHECKS)) assert.equal(obs.evaluators.find(e => e.id === id)?.output, 'pass/fail', id);
+  // Only own keys count: an inherited name ("toString") or an odd label is a blank cell.
+  const odd = { traces: [{ id: 't1', toolCalls: 1, toolErrors: 0 }, { id: 'toString', toolCalls: 1, toolErrors: 0 }, { id: 't3', toolCalls: 1, toolErrors: 0 }],
+    evaluators: [{ id: 'tool_error_rate' }], evaluations: { tool_error_rate: { t1: 'pass', t2: 'fail', t3: 0.5 } } };
+  assert.deepEqual(obsSummary(odd).rows[0].cells, ['pass', null, null]);
+  assert.deepEqual(obsSummary({ ...odd, evaluations: 'x' }).rows[0].cells, [null, null, null]);
   assert.equal(daysText('2026-11-07', '2026-11-12'), 'Nov 7–12');
   assert.equal(daysText('2026-10-31', '2026-11-02'), 'Oct 31 – Nov 2');
   assert.equal(daysText('2026-11-07', '2026-11-07'), 'Nov 7');
@@ -71,7 +82,7 @@ test('the summary file gives the preview exactly what the full trace file would,
   assert.ok(small.traces.every(t => typeof t.topic === 'string' && t.topic && !/round/i.test(t.topic)));
   assert.deepEqual(obs.meta.window, full.meta.window);
   assert.deepEqual(obs.evaluators.map(e => e.id), full.evaluators.map(e => e.id));
-  assert.ok(statSync(new URL(OBS_JSON, web)).size < 40 * 1024, 'the homepage loads under 40 KB of trace data');
+  assert.ok(statSync(new URL(OBS_JSON, web)).size < 30 * 1024, 'the homepage loads under 30 KB of trace data');
 });
 
 test('the readout names the day and the topic, never a round label or "undefined"', () => {

@@ -52,7 +52,7 @@ test('obs, trace and loop go live with the numbers from the shipped JSON', async
   const scored = summary.rows.reduce((sum, row) => sum + row.scored, 0);
   assert.equal(box.querySelectorAll('.wp-cell').length, scored);
   assert.equal(box.querySelectorAll('.wp-fail').length, summary.rows.reduce((sum, row) => sum + row.scored - row.pass, 0));
-  assert.deepEqual([...box.querySelectorAll('.wp-obs-names li')].map(li => li.textContent), ['Tool errors', 'Recovered', 'Delegated', 'Reviewed', 'Tested', 'Latency']);
+  assert.deepEqual([...box.querySelectorAll('.wp-obs-names li')].map(li => li.textContent), ['Tool errors', 'Recovered', 'Delegated', 'Reviewed', 'Verified', 'Latency']);
   assert.deepEqual([...box.querySelectorAll('.wp-obs-tally li')].map(li => li.textContent), summary.rows.map(row => `${row.pass}/${row.scored}`));
   const range = box.querySelector('.wp-trace-range');
   assert.equal(range.getAttribute('aria-label'), 'Trace');
@@ -65,7 +65,7 @@ test('obs, trace and loop go live with the numbers from the shipped JSON', async
   range.value = String(obs.traces.length);
   range.dispatchEvent(new window.Event('input', { bubbles: true }));
   assert.match(box.querySelector('.wp-readout .wp-label').textContent, new RegExp(`^Trace ${obs.traces.length} of ${obs.traces.length} · `));
-  assert.match(box.querySelector('.wp-caption').textContent, new RegExp(`^${obs.traces.length} traces from the agents that built this site, Nov 7–12, with 6 of the 7 automated checks shown\\.`));
+  assert.match(box.querySelector('.wp-caption').textContent, new RegExp(`^${obs.traces.length} traces from the agents that built this site, Nov 7–12, with 6 of the ${obs.evaluators.length} automated checks shown\\.`));
   assert.match(box.querySelector('.wp-sr').textContent, /^Checks passed: Tool error rate \d+ of \d+, /);
 
   // Trace: one bar per span, a mark per error/retried/fixed, the caption counts.

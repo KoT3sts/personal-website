@@ -74,14 +74,23 @@ export function delegation(data) {
   return { points, groups };
 }
 
-// Traces x evaluators, with pass / fail / not-scored counts per evaluator.
+// An error class in plain words: "not_found" -> "not found".
+export const words = label => String(label).replace(/_/g, ' ');
+
+// Traces x evaluators: pass / fail / not-scored counts, the median and range of a number,
+// or a category's most common label (ties: the class listed first).
 export function matrix(data) {
   const cells = new Map(data.evaluations.map(row => [`${row.trace}|${row.evaluator}`, row]));
   const rows = data.evaluators.map(evaluator => {
     const scored = data.evaluations.filter(row => row.evaluator === evaluator.id);
-    const numeric = scored.length > 0 && scored.every(row => typeof row.label === 'number');
+    const numeric = evaluator.output ? evaluator.output === 'number' : scored.length > 0 && scored.every(row => typeof row.label === 'number');
+    const category = evaluator.output === 'category';
     const values = scored.map(row => row.score);
-    return { ...evaluator, numeric, scored: scored.length,
+    const order = [...(evaluator.classes || []), ...scored.map(row => row.label)];
+    const counts = category ? order.filter((label, i) => order.indexOf(label) === i)
+      .map(label => ({ label, count: scored.filter(row => row.label === label).length })) : [];
+    const top = counts.reduce((best, item) => (item.count > (best?.count || 0) ? item : best), null);
+    return { ...evaluator, numeric, category, top, scored: scored.length,
       pass: scored.filter(row => row.label === 'pass').length, fail: scored.filter(row => row.label === 'fail').length,
       none: data.traces.length - scored.length,
       median: numeric ? rank(values, 0.5) : null, min: numeric ? Math.min(...values) : null, max: numeric ? Math.max(...values) : null };

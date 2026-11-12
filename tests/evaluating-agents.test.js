@@ -133,22 +133,26 @@ const T = (() => {
     return { traces: all.length, used: used.length, calls: c, errors: e, rate: share(e, c),
       perCall: Math.round(nearest(used.map(trace => gen(trace.tokens) / trace.toolCalls), 0.5)), medianCalls: nearest(used.map(trace => trace.toolCalls), 0.5) };
   });
+  // Each evaluator states its output: pass/fail, number or category.
   const evals = evaluators.map(evaluator => {
     const rows = evaluations.filter(row => row.evaluator === evaluator.id);
     const scores = rows.map(row => row.score);
-    return { name: evaluator.name, numeric: rows.every(row => typeof row.label === 'number'), pass: rows.filter(row => row.label === 'pass').length,
-      fail: rows.filter(row => row.label === 'fail').length, none: traces.length - rows.length,
+    const counts = (evaluator.classes || []).map(label => [label, rows.filter(row => row.label === label).length]);
+    const top = counts.reduce((best, item) => (item[1] > best[1] ? item : best), ['', 0]);
+    return { id: evaluator.id, name: evaluator.name, output: evaluator.output, pass: rows.filter(row => row.label === 'pass').length,
+      fail: rows.filter(row => row.label === 'fail').length, none: traces.length - rows.length, scored: rows.length, top,
       median: nearest(scores, 0.5), min: Math.min(...scores), max: Math.max(...scores) };
   });
   const ref = sentiment.reference;
-  return { traces, calls, errors, tokens, llm, tools, failed, buckets, groups, evals, ref, info,
+  return { traces, calls, errors, tokens, llm, tools, failed, buckets, groups, evals, ref, info, classes: rollups.errorClasses,
     rate: share(errors, calls), p50: (llm.p50 / 1000).toFixed(1), p90: (llm.p90 / 1000).toFixed(1), perCall: Math.round(tokens / calls),
     withCalls: traces.filter(trace => trace.toolCalls > 0).length, evaluators: evaluators.length };
 })();
 const telemetryNumbers = [T.calls, T.errors, T.rate, T.p50, T.p90, T.llm.n, T.perCall, T.tokens, T.failed.length, T.withCalls, T.traces.length,
   T.info.spans, T.evaluators, figures.length, ...figures.map((_, i) => i + 1),
   ...T.tools.flatMap(([, tool]) => [tool.errors, tool.n, share(tool.errors, tool.n)]), ...Object.values(T.buckets),
-  ...T.groups.flatMap(group => Object.values(group)), ...T.evals.flatMap(row => [row.pass, row.fail, row.none, row.median, row.min, row.max])].join(' ');
+  ...T.groups.flatMap(group => Object.values(group)), ...Object.values(T.classes),
+  ...T.evals.flatMap(row => [row.pass, row.fail, row.none, row.scored, row.top[1], row.median, row.min, row.max])].join(' ');
 
 test('every number on the page is already published on the homepage, the evaluation lab, the build trace or the telemetry', () => {
   const summary = summarize(traceData);
@@ -276,9 +280,15 @@ test('the static fallbacks match the telemetry and the lab JSON', () => {
     ['Share of calls that failed', `${yes.rate}%`, `${no.rate}%`], ['Median generated tokens per call', String(yes.perCall), String(no.perCall)],
     ['Median tool calls per trace', String(yes.medianCalls), String(no.medianCalls)],
   ]);
-  assert.deepEqual(tableRows('evaluators'), T.evals.map(row => (row.numeric
-    ? [row.name, `median ${row.median}, range ${row.min} to ${comma(row.max)}`, String(row.none)]
-    : [row.name, String(row.pass), String(row.fail), String(row.none)])));
+  // 13 rows: pass/fail counts, a number's median and range, a category's most common label.
+  const value = v => (v >= 1000 ? comma(v) : String(v));
+  assert.equal(T.evals.length, 13);
+  assert.deepEqual(tableRows('evaluators'), T.evals.map(row => (row.output === 'number'
+    ? [row.name, `median ${value(row.median)}, range ${value(row.min)} to ${value(row.max)}`, String(row.none)]
+    : row.output === 'category' ? [row.name, `most often ${row.top[0].replace(/_/g, ' ')}, in ${row.top[1]} of ${row.scored} traces`, String(row.none)]
+      : [row.name, String(row.pass), String(row.fail), String(row.none)])));
+  assert.deepEqual(T.evals.map(row => row.output).filter(output => output !== 'pass/fail'), ['number', 'number', 'number', 'category']);
+  assert.doesNotMatch(page, /delegation_used|Delegation used/, 'the retired evaluator is gone');
   // The numbers written into the tiles and the loop, which the script refreshes from the JSON.
   const written = Object.fromEntries([...main.matchAll(/<span data-ea-m="(\w+)">([^<]*)<\/span>/g)].map(match => [match[1], match[2]]));
   assert.deepEqual(written, { rate: T.rate, errors: String(T.errors), calls: comma(T.calls), p50: T.p50, p90: T.p90, steps: comma(T.llm.n),
@@ -288,6 +298,17 @@ test('the static fallbacks match the telemetry and the lab JSON', () => {
   assert.match(mainText, new RegExp(`uses the ${T.failed.length} failures published as single spans`));
   assert.match(mainText, new RegExp(`its ${T.evals.find(row => row.name === 'Review before commit').fail} fails mean no recorded reviewer run`));
   assert.match(mainText, new RegExp(`${T.withCalls} of the ${T.traces.length}, placed by how many calls`));
+  // Figure 5 splits on subagent runs and says so; Delegation on large tasks is the narrower check.
+  const fit = T.evals.find(row => row.id === 'delegation_fit');
+  assert.match(mainText, /A trace counts as delegated when it has at least one subagent run\./);
+  assert.match(mainText, new RegExp(`scores only the ${fit.scored} large traces, and passes the ${fit.pass} where subagents made at least half of the tool calls\\.`));
+  assert.deepEqual([telemetry.meta.thresholds.delegation_fit.threshold, telemetry.meta.thresholds.delegation_fit.direction], [0.5, 'atLeast'], 'the caption states the threshold');
+  // The classify step in the exporter: the published error classes, in the prose, linked to the dashboard.
+  const order = Object.entries(T.classes).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]);
+  const said = order.map(([label, n]) => `${label.replace(/_/g, ' ')} ${n}`);
+  assert.match(mainText, new RegExp(`the ${T.errors} failed calls split into ${said.slice(0, -1).join(', ')} and ${said.at(-1)}\\.`));
+  assert.equal(total(Object.values(T.classes)), T.errors, 'every failed call has one class');
+  assert.match(main, /<a class="lab-link" href="\.\/agent-observability\.html#obs-fail-title">dashboard’s failure analysis<\/a>/);
   assert.match(mainText, new RegExp(`a median of ${yes.medianCalls} tool calls against ${no.medianCalls}\\.`));
   assert.match(mainText, new RegExp(`Results across ${T.traces.length} traces`));
   // The page's helper agrees with this independent count.
@@ -299,6 +320,8 @@ test('the static fallbacks match the telemetry and the lab JSON', () => {
   assert.deepEqual(delegation(telemetry).groups.map(group => [group.traces, group.scored, group.calls, group.errors, group.rate, group.perCall, group.medianCalls]),
     T.groups.map(group => [group.traces, group.used, group.calls, group.errors, group.rate, group.perCall, group.medianCalls]));
   assert.deepEqual(matrix(telemetry).rows.map(row => [row.pass, row.fail, row.none]), T.evals.map(row => [row.pass, row.fail, row.none]));
+  assert.deepEqual(matrix(telemetry).rows.map(row => [row.numeric, row.category, row.top && [row.top.label, row.top.count]]),
+    T.evals.map(row => [row.output === 'number', row.output === 'category', row.output === 'category' ? row.top : null]));
 });
 
 test('the figures script: same-origin JSON only, no HTML sinks, no storage, motion respects the reader', () => {
@@ -317,7 +340,7 @@ test('the figures script: same-origin JSON only, no HTML sinks, no storage, moti
   assert.match(script, /IntersectionObserver/, 'figures render when they near the viewport');
   // The dashboard link only carries an id that came from the data file, through encodeURIComponent.
   assert.match(script, /agent-observability\.html#\$\{encodeURIComponent\(id\)\}/);
-  assert.ok(Buffer.byteLength(code) <= 30500, `${Buffer.byteLength(code)} bytes of script (the scatter's keyboard reading and table added about 1.8 KB)`);
+  assert.ok(Buffer.byteLength(code) <= 31000, `${Buffer.byteLength(code)} bytes of script (the scatter's keyboard reading and table added about 1.8 KB, number and category rows in figure 4 about 0.9 KB)`);
 });
 
 test('the checklist ticks without saving, with a progress ring and a polite status', () => {

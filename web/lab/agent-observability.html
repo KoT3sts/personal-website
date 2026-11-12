@@ -7,7 +7,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#eeede8">
   <title>Agent observability — Cesar Tortolero</title>
-  <meta name="description" content="Real traces from the AI agents that built this portfolio: 68 requests and one automatic context compaction, every model call, allowlisted tool call and handoff, with seven code evaluators on top. An interactive trace explorer, span waterfall and evaluator matrix over OpenCode session data from November 7–12, 2026.">
+  <meta name="description" content="Real traces from the AI agents that built this portfolio: 76 requests and one automatic context compaction, every model call, allowlisted tool call and handoff, with 13 code evaluators, a release gate you can re-score, human review with agreement and kappa, an agent graph and failure analysis. OpenCode session data from November 7–12, 2026.">
   <meta name="author" content="Cesar Alejandro Tortolero Trujillo">
   <link rel="canonical" href="https://cesar-tortolero.cesartortolero.chatgpt.site/lab/agent-observability.html">
   <meta property="og:type" content="article">
@@ -45,12 +45,12 @@
         <div class="cs-grid cs-summary">
           <div class="cs-main">
             <p class="cs-lead lab-lead obs-lead">Real traces from the AI agents that built this site: every model call, allowlisted tool call and handoff, with code evaluators on top.</p>
-            <p class="lab-disclaimer">The data comes from OpenCode’s local session store on my machine, November 7–12, 2026, exported by a script that keeps structure and numbers only. Prompts, responses, file contents and commands are never published, and calls to tools outside an allowlist are dropped (<span data-kpi="dropped">24</span> of them). Model latency is estimated from message timings. The evaluators are code checks; there is no LLM judge. To keep the file small, most spans are merged into summary spans; the totals, percentiles and evaluator results use every span.</p>
+            <p class="lab-disclaimer">The data comes from OpenCode’s local session store on my machine, November 7–12, 2026, exported by a script that keeps structure and numbers only. Prompts, responses, file contents and commands are never published, and calls to tools outside an allowlist are dropped (<span data-kpi="dropped">25</span> of them). Model latency is estimated from message timings. The evaluators are code checks; there is no LLM judge, and they measure how the work ran, not whether the result was good. To keep the file small, most spans are merged into summary spans; the totals, percentiles and evaluator results use every span.</p>
           </div>
           <dl class="cs-rail cs-meta">
             <div><dt class="mono">Data</dt><dd class="mono"><a class="lab-link" href="./data/agent-traces.json">agent-traces.json</a></dd></div>
             <div><dt class="mono">Window</dt><dd class="mono">Nov 7–12, 2026</dd></div>
-            <div><dt class="mono">Checks</dt><dd class="mono">7 code evaluators</dd></div>
+            <div><dt class="mono">Checks</dt><dd class="mono">13 code evaluators</dd></div>
             <div><dt class="mono">Related</dt><dd class="mono"><a class="lab-link" href="./evaluating-agents.html">How I evaluate agents <span class="icon icon-arrow-e" aria-hidden="true"></span></a></dd></div>
           </dl>
         </div>
@@ -59,22 +59,37 @@
       <section class="obs-console" aria-labelledby="obs-console-title">
         <h2 class="visually-hidden" id="obs-console-title">Dashboard</h2>
         <div class="obs-kpi-band">
-          <p class="mono obs-scope">All 69 traces · every span</p>
+          <p class="mono obs-scope">All 77 traces · every span</p>
           <dl class="obs-kpis">
-            <div><dt class="mono">Traces</dt><dd><span class="obs-kpi-num" data-kpi="traces" data-count="69">69</span><span class="obs-unit"><span data-kpi="requests">68</span> requests, <span data-kpi="compactions">1</span> compaction</span></dd></div>
-            <div><dt class="mono">Spans</dt><dd><span class="obs-kpi-num" data-kpi="published" data-count="1050">1,050</span><span class="obs-unit">published · <span data-kpi="spans">14,718</span> recorded</span></dd></div>
-            <div><dt class="mono">LLM steps</dt><dd><span class="obs-kpi-num" data-kpi="llmSteps" data-count="6290">6,290</span><span class="obs-unit">model calls</span></dd></div>
-            <div><dt class="mono">Tool calls</dt><dd><span class="obs-kpi-num" data-kpi="toolCalls" data-count="8271">8,271</span><span class="obs-unit">bash, browser, edits, reads</span></dd></div>
-            <div><dt class="mono">Subagent runs</dt><dd><span class="obs-kpi-num" data-kpi="subagentRuns" data-count="88">88</span><span class="obs-unit">handoffs to specialists</span></dd></div>
-            <div><dt class="mono">Tool error rate</dt><dd><span class="obs-kpi-num" data-kpi="errorRate" data-count="1.6" data-digits="1" data-suffix="%">1.6%</span><span class="obs-unit"><span data-kpi="toolErrors">136</span> failed calls</span></dd></div>
-            <div><dt class="mono">LLM latency p50 / p90</dt><dd><span class="obs-kpi-num"><span data-kpi="llmP50" data-count="5.5" data-digits="1">5.5</span> / <span data-kpi="llmP90" data-count="22.0" data-digits="1">22.0</span> s</span><span class="obs-unit">estimated, all steps</span></dd></div>
-            <div><dt class="mono">Tokens</dt><dd><span class="obs-kpi-num" data-kpi="tokens" data-count="1.65" data-digits="2" data-suffix=" B">1.65 B</span><span class="obs-unit"><span data-kpi="cacheRead">1.57 B</span> of them cache reads</span></dd></div>
+            <div><dt class="mono">Traces</dt><dd><span class="obs-kpi-num" data-kpi="traces" data-count="77">77</span><span class="obs-unit"><span data-kpi="requests">76</span> requests, <span data-kpi="compactions">1</span> compaction</span></dd></div>
+            <div><dt class="mono">Spans</dt><dd><span class="obs-kpi-num" data-kpi="published" data-count="1015">1,015</span><span class="obs-unit">published · <span data-kpi="spans">17,412</span> recorded</span></dd></div>
+            <div><dt class="mono">LLM steps</dt><dd><span class="obs-kpi-num" data-kpi="llmSteps" data-count="7515">7,515</span><span class="obs-unit">model calls</span></dd></div>
+            <div><dt class="mono">Tool calls</dt><dd><span class="obs-kpi-num" data-kpi="toolCalls" data-count="9712">9,712</span><span class="obs-unit">bash, browser, edits, reads</span></dd></div>
+            <div><dt class="mono">Subagent runs</dt><dd><span class="obs-kpi-num" data-kpi="subagentRuns" data-count="108">108</span><span class="obs-unit">handoffs to specialists</span></dd></div>
+            <div><dt class="mono">Tool error rate</dt><dd><span class="obs-kpi-num" data-kpi="errorRate" data-count="1.7" data-digits="1" data-suffix="%">1.7%</span><span class="obs-unit"><span data-kpi="toolErrors">162</span> failed calls</span></dd></div>
+            <div><dt class="mono">LLM latency p50 / p90</dt><dd><span class="obs-kpi-num"><span data-kpi="llmP50" data-count="5.4" data-digits="1">5.4</span> / <span data-kpi="llmP90" data-count="21.5" data-digits="1">21.5</span> s</span><span class="obs-unit">estimated, all steps</span></dd></div>
+            <div><dt class="mono">Tokens</dt><dd><span class="obs-kpi-num" data-kpi="tokens" data-count="1.91" data-digits="2" data-suffix=" B">1.91 B</span><span class="obs-unit"><span data-kpi="cacheRead">1.82 B</span> of them cache reads</span></dd></div>
           </dl>
         </div>
         <p class="obs-status" data-obs="status" role="status"></p>
         <noscript><p class="obs-status">The trace explorer, waterfall and charts need JavaScript. The numbers above and the evaluator results below are written into the page; the raw data is here: <a class="lab-link" href="./data/agent-traces.json">agent-traces.json</a>.</p></noscript>
 
         <div class="obs-live" data-obs-live hidden>
+          <nav class="obs-toc" aria-label="On this page">
+            <ul>
+              <li><a href="#obs-traces-title">Traces</a></li>
+              <li><a href="#obs-gate-title">Release gate</a></li>
+              <li><a href="#obs-review-title">Human review</a></li>
+              <li><a href="#obs-graph-title">Agent graph</a></li>
+              <li><a href="#obs-fail-title">Failures</a></li>
+              <li><a href="#obs-monitor-title">Pass rate by day</a></li>
+              <li><a href="#obs-sessions-title">Sessions</a></li>
+              <li><a href="#obs-compare-title">Compare</a></li>
+              <li><a href="#obs-charts-title">Charts</a></li>
+              <li><a href="#obs-evals-title">Evaluators</a></li>
+              <li><a href="#obs-download-title">Download</a></li>
+            </ul>
+          </nav>
           <form class="obs-filters" data-obs="filters" aria-label="Filter traces">
             <fieldset class="obs-pills">
               <legend class="mono">Day</legend>
@@ -98,9 +113,15 @@
               </div>
             </fieldset>
             <fieldset class="obs-pills">
+              <legend class="mono">Session</legend>
+              <div class="obs-pill-row" data-obs="session-pills">
+                <input type="radio" name="session" id="obs-session-all" value="all" checked><label for="obs-session-all">All</label>
+              </div>
+            </fieldset>
+            <fieldset class="obs-pills">
               <legend class="mono">Only traces that</legend>
               <div class="obs-pill-row">
-                <input type="checkbox" name="delegation" id="obs-delegation"><label for="obs-delegation">Delegated</label>
+                <input type="checkbox" name="delegation" id="obs-delegation"><label for="obs-delegation">Ran a subagent</label>
                 <input type="checkbox" name="failed" id="obs-failed"><label for="obs-failed">Failed a check</label>
               </div>
             </fieldset>
@@ -109,8 +130,21 @@
               <input type="search" id="obs-tool" name="tool" list="obs-tool-list" placeholder="e.g. task, browser" autocomplete="off" spellcheck="false">
               <datalist id="obs-tool-list" data-obs="tool-list"></datalist>
             </div>
+            <div class="obs-search">
+              <label class="mono" for="obs-errclass">Error class</label>
+              <select id="obs-errclass" name="errorClass">
+                <option value="all">Any</option>
+                <option value="timeout">timeout</option>
+                <option value="not_found">not found</option>
+                <option value="permission">permission</option>
+                <option value="test_failure">test failure</option>
+                <option value="bad_arguments">bad arguments</option>
+                <option value="network">network</option>
+                <option value="other">other</option>
+              </select>
+            </div>
             <div class="obs-filter-end">
-              <p class="obs-count" data-obs="count" aria-live="polite">69 of 69 traces</p>
+              <p class="obs-count" data-obs="count" aria-live="polite">77 of 77 traces</p>
               <button type="reset" class="obs-btn" data-obs="reset" disabled>Reset filters</button>
             </div>
           </form>
@@ -150,6 +184,17 @@
               <h2 id="obs-detail-title" tabindex="-1" data-obs="detail-title">Trace</h2>
               <p class="obs-hint" data-obs="detail-sub"></p>
             </div>
+            <div class="obs-annotate">
+              <button type="button" class="obs-btn obs-btn-small obs-annotate-toggle" data-obs="annotate-toggle" aria-pressed="false" aria-controls="obs-annotate-bar">Annotate</button>
+              <div class="obs-annotate-bar" id="obs-annotate-bar" data-obs="annotate-bar" role="group" aria-label="Your label for this trace" hidden>
+                <span class="obs-annotate-current" data-obs="annotate-current"></span>
+                <button type="button" class="obs-btn obs-btn-small obs-label" data-label="good" aria-keyshortcuts="G" aria-pressed="false">Good <kbd>G</kbd></button>
+                <button type="button" class="obs-btn obs-btn-small obs-label" data-label="bad" aria-keyshortcuts="B" aria-pressed="false">Bad <kbd>B</kbd></button>
+                <button type="button" class="obs-btn obs-btn-small" data-label="">Clear</button>
+                <button type="button" class="obs-btn obs-btn-small" data-obs="annotate-next" aria-keyshortcuts="N">Next unlabelled <kbd>N</kbd></button>
+                <p class="mono obs-annotate-progress" data-obs="annotate-progress" aria-live="polite"></p>
+              </div>
+            </div>
             <dl class="obs-facts" data-obs="facts"></dl>
             <div class="obs-detail-grid">
               <div class="obs-wf">
@@ -160,12 +205,14 @@
                     <li><span class="obs-key obs-key-tool" aria-hidden="true"></span>Tool call</li>
                     <li><span class="obs-key obs-key-chain" aria-hidden="true"></span>Merged steps</li>
                     <li><span class="obs-key obs-key-error" aria-hidden="true"></span>Error</li>
+                    <li><span class="obs-key obs-key-match" aria-hidden="true"></span>Matches the error-class filter</li>
                   </ul>
                   <div class="obs-wf-tools">
                     <button type="button" class="obs-btn obs-btn-small" data-obs="expand-all">Expand all</button>
                     <button type="button" class="obs-btn obs-btn-small" data-obs="collapse-all">Collapse all</button>
                   </div>
                 </div>
+                <p class="obs-hint obs-wf-match" data-obs="wf-match"></p>
                 <div class="obs-wf-axis" data-obs="axis" aria-hidden="true"></div>
                 <ul class="obs-tree" role="tree" aria-label="Spans of this trace, in time order" data-obs="tree"></ul>
                 <p class="obs-hint obs-wf-note">Arrow keys move through the spans; Right and Left open and close a run. Merged steps open into their tool counts; their per-step timing is not published.</p>
@@ -183,10 +230,155 @@
             </div>
           </section>
 
+          <section class="obs-block obs-gate" aria-labelledby="obs-gate-title" data-obs="gate-block">
+            <div class="obs-block-head">
+              <h2 id="obs-gate-title">Release gate: would these runs ship?</h2>
+              <p class="obs-hint">Every recorded run is re-scored in your browser from its published score. Move a threshold or drop a check and see what a gate would block.</p>
+            </div>
+            <div class="obs-gate-grid">
+              <p class="mono obs-gate-float" data-obs="gate-float" aria-hidden="true">40 of 77 blocked · most by Review before commit</p>
+              <div class="obs-gate-controls" data-obs="gate-controls" role="group" aria-label="Checks and their thresholds"></div>
+              <div class="obs-gate-result">
+                <p class="obs-gate-big" aria-hidden="true"><span class="obs-gate-n" data-obs="gate-n">40</span><span class="obs-gate-of">of <span data-obs="gate-of">77</span> scored runs blocked</span></p>
+                <p class="visually-hidden" data-obs="gate-summary" aria-live="polite">40 of 77 scored runs would be blocked. Review before commit blocks the most: 20 runs.</p>
+                <p class="obs-gate-top" data-obs="gate-top">Review before commit blocks the most: 20 runs.</p>
+                <p class="obs-hint" data-obs="gate-delta">The published thresholds, with every check required, block 40: the same runs the “Failed a check” filter finds.</p>
+                <h3 class="mono obs-gate-ids-title" id="obs-gate-ids-title">Blocked runs · open one</h3>
+                <ul class="obs-gate-ids" data-obs="gate-ids" aria-labelledby="obs-gate-ids-title"></ul>
+                <button type="button" class="obs-btn" data-obs="gate-reset" disabled>Reset to the published thresholds</button>
+              </div>
+            </div>
+            <p class="obs-caption">An offline re-scoring of recorded runs: the scores are fixed and only the thresholds move. Arize runs the live version on new traffic and calls it online evals. The checks are rule-based proxies for how the work ran (did tests run, did a review happen, did calls fail), not judgments of whether the result was good; the human review below tests them against a person.</p>
+          </section>
+
+          <section class="obs-block obs-review" aria-labelledby="obs-review-title" data-obs="review-block">
+            <div class="obs-block-head">
+              <h2 id="obs-review-title">Human review: do the checks agree with a person?</h2>
+              <p class="obs-hint">Label runs Good or Bad, then see how often each check says the same. Change the gate above and the agreement follows its thresholds.</p>
+            </div>
+            <div class="obs-review-bar">
+              <button type="button" class="obs-btn obs-btn-primary" data-obs="review-start">Start labelling</button>
+              <p class="mono obs-review-progress" data-obs="review-progress">0 of 77 labelled by you</p>
+              <button type="button" class="obs-btn" data-obs="review-download" disabled>Download my labels (JSON)</button>
+              <button type="button" class="obs-btn" data-obs="review-clear" disabled>Clear my labels</button>
+            </div>
+            <div class="obs-review-aside" data-obs="review-aside" hidden>
+              <p class="obs-hint" data-obs="review-aside-text">Labels were made on an earlier export and were set aside.</p>
+              <button type="button" class="obs-btn obs-btn-small" data-obs="review-aside-download">Download the set-aside labels (JSON)</button>
+            </div>
+            <p class="obs-hint obs-review-privacy">Your labels stay in this browser (localStorage, one key) and are never sent anywhere: the page sends nothing to any server; it only loads its own files. Labels name the export they were made on, because trace numbers can change between exports; labels from an earlier export are set aside and can still be downloaded. The download has the same shape as the file that holds Cesar’s labels.</p>
+            <div class="obs-scroll" role="region" aria-labelledby="obs-agree-cap" tabindex="0">
+              <table class="obs-table obs-plain obs-agree-table">
+                <caption class="visually-hidden" id="obs-agree-cap">Agreement between each check and a human label (Good means pass): traces labelled and scored, share that agree, and Cohen’s kappa, for Cesar’s labels and yours. Choose a check to see its two-by-two table.</caption>
+                <thead>
+                  <tr><td></td><th scope="colgroup" colspan="3" data-obs="agree-head-cesar">Cesar’s labels · not labelled yet</th><th scope="colgroup" colspan="3">Your labels</th></tr>
+                  <tr><th scope="col">Check</th><th scope="col">n</th><th scope="col">Agree</th><th scope="col">Kappa</th><th scope="col">n</th><th scope="col">Agree</th><th scope="col">Kappa</th></tr>
+                </thead>
+                <tbody data-obs="agree-rows"></tbody>
+              </table>
+            </div>
+            <p class="obs-hint" data-obs="agree-cesar">Cesar’s labels: not labelled yet.</p>
+            <div class="obs-confusion" data-obs="confusion"></div>
+            <details class="obs-numbers obs-formula">
+              <summary>How agreement and kappa work</summary>
+              <p>A human Good is compared with a check’s pass, Bad with fail, on the traces that are both labelled and scored by that check; “All required checks pass” compares Good with “no required check failed at the gate’s thresholds”.</p>
+              <p><strong>Agreement</strong> is the share of those traces where the two say the same. <strong>Cohen’s kappa</strong> corrects it for the agreement two raters would reach by chance: κ = (p<sub>o</sub> − p<sub>e</sub>) / (1 − p<sub>e</sub>), where p<sub>o</sub> is the observed agreement and p<sub>e</sub> = (share Good × share pass) + (share Bad × share fail). 1 is perfect agreement, 0 is chance, below 0 is worse than chance. A dash means fewer than five traces, or that one side gave the same answer every time, so chance agreement is total and kappa is undefined.</p>
+            </details>
+          </section>
+
+          <section class="obs-block obs-graph-block" aria-labelledby="obs-graph-title" data-obs="graph-block">
+            <div class="obs-block-head">
+              <h2 id="obs-graph-title">Agent graph</h2>
+              <p class="obs-hint">Who started whom across all 77 traces: the orchestrators on the left, the specialists they handed work to on the right. Open a trace and its own path lights up.</p>
+            </div>
+            <div class="obs-graph-wrap">
+              <div class="obs-graph" data-obs="graph" role="group" aria-label="Agents: arrow keys move between them"></div>
+              <div class="obs-graph-side">
+                <ul class="obs-legend obs-graph-legend" aria-label="Fill: share of the agent’s tool calls that failed">
+                  <li><span class="obs-gkey" data-bucket="0" aria-hidden="true"></span>0% failed</li>
+                  <li><span class="obs-gkey" data-bucket="1" aria-hidden="true"></span>under 2%</li>
+                  <li><span class="obs-gkey" data-bucket="2" aria-hidden="true"></span>2–5%</li>
+                  <li><span class="obs-gkey" data-bucket="3" aria-hidden="true"></span>5% or more</li>
+                  <li><span class="obs-gkey" data-bucket="-1" aria-hidden="true"></span>no tool calls</li>
+                </ul>
+                <p class="obs-caption">Circle area: tool calls. Line width: subagent runs started.</p>
+                <span class="obs-check"><input type="checkbox" id="obs-graph-path" checked><label for="obs-graph-path">Light up the open trace</label></span>
+                <p class="obs-graph-readout" data-obs="graph-readout"></p>
+                <p class="obs-graph-trace" data-obs="graph-trace"></p>
+              </div>
+            </div>
+            <div data-obs="graph-numbers"></div>
+          </section>
+
+          <section class="obs-block obs-fail-block" aria-labelledby="obs-fail-title" data-obs="fail-block">
+            <div class="obs-block-head">
+              <h2 id="obs-fail-title">Failure analysis</h2>
+              <p class="obs-hint">Every failed tool call, sorted into one class. Choose a class to filter the trace list; open a trace and the spans where it happened are marked.</p>
+            </div>
+            <ul class="obs-fail-list" data-obs="fail-list"></ul>
+            <p class="obs-hint" data-obs="fail-note"></p>
+            <p class="obs-caption">The classes come from regular-expression rules the exporter applies to each error message on my machine, first match wins (timeout, permission, not found, bad arguments, test failure, network, other). A JavaScript error from a script the agent ran counts as other, and an HTTP status counts only when the message calls it a status or code. The message itself is private and never published; only its class is.</p>
+          </section>
+
+          <section class="obs-block obs-monitor-block" aria-labelledby="obs-monitor-title" data-obs="monitor-block">
+            <div class="obs-block-head">
+              <h2 id="obs-monitor-title">Pass rate by day</h2>
+              <p class="obs-hint">Each pass/fail check, one calendar day at a time, from 0% at the bottom to 100% at the top. Dot size and n show how many runs it scored; a day with none is a gap, not a zero. Days are November 7 to 12.</p>
+            </div>
+            <div class="obs-monitor" data-obs="monitor"></div>
+          </section>
+
+          <section class="obs-block obs-sessions-block" aria-labelledby="obs-sessions-title" data-obs="sessions-block">
+            <div class="obs-block-head">
+              <h2 id="obs-sessions-title">Sessions</h2>
+              <p class="obs-hint">The six OpenCode sessions the work ran in, S1 to S6 in the order they began. Choose one to filter the trace list.</p>
+            </div>
+            <div class="obs-scroll" role="region" aria-labelledby="obs-sessions-cap" tabindex="0">
+              <table class="obs-table obs-plain obs-session-table">
+                <caption class="visually-hidden" id="obs-sessions-cap">Sessions: traces, tool calls, failed calls, subagent runs, and five checks as passed / scored</caption>
+                <thead>
+                  <tr><th scope="col">Session</th><th scope="col">Traces</th><th scope="col">Tool calls</th><th scope="col">Failed calls</th><th scope="col">Subagent runs</th><th scope="col">Recovered</th><th scope="col">Review</th><th scope="col">Tests</th><th scope="col">Checked</th><th scope="col">Latency</th></tr>
+                </thead>
+                <tbody data-obs="sessions"></tbody>
+              </table>
+            </div>
+            <p class="obs-hint" data-obs="sessions-note"></p>
+          </section>
+
+          <section class="obs-block obs-compare-block" aria-labelledby="obs-compare-title" data-obs="compare-block">
+            <div class="obs-block-head">
+              <h2 id="obs-compare-title">Compare two groups</h2>
+              <p class="obs-hint">Pass rates per check for two groups of runs, side by side, with the difference.</p>
+            </div>
+            <div class="obs-compare-pick">
+              <div class="obs-search"><label class="mono" for="obs-cmp-a">Group A</label><select id="obs-cmp-a" data-obs="cmp-a"></select></div>
+              <div class="obs-search"><label class="mono" for="obs-cmp-b">Group B</label><select id="obs-cmp-b" data-obs="cmp-b"></select></div>
+              <div class="obs-compare-presets" role="group" aria-label="Presets">
+                <button type="button" class="obs-btn obs-btn-small" data-cmp="days">First half vs second half</button>
+                <button type="button" class="obs-btn obs-btn-small" data-cmp="sessions">Last two sessions</button>
+              </div>
+            </div>
+            <ul class="obs-legend" aria-label="Markers">
+              <li><span class="obs-dumbbell-key is-a" aria-hidden="true"></span>Group A</li>
+              <li><span class="obs-dumbbell-key is-b" aria-hidden="true"></span>Group B</li>
+            </ul>
+            <div class="obs-scroll" role="region" aria-labelledby="obs-compare-cap" tabindex="0">
+              <table class="obs-table obs-plain obs-compare-table">
+                <caption class="visually-hidden" id="obs-compare-cap">Pass rate per check in group A and group B, passed / scored, and B minus A in percentage points</caption>
+                <thead>
+                  <tr><th scope="col">Check</th><th scope="col" data-obs="cmp-head-a">A</th><th scope="col" data-obs="cmp-head-b">B</th><th scope="col">B − A</th><th scope="col"><span class="visually-hidden">Both on a 0 to 100% scale</span><span aria-hidden="true">0 — 100%</span></th></tr>
+                </thead>
+                <tbody data-obs="compare"></tbody>
+              </table>
+            </div>
+            <p class="obs-caption" data-obs="cmp-caption"></p>
+            <p class="obs-caption">Descriptive, not an experiment: the groups did different tasks, on different days, at different points in the build, so a difference is not the effect of any one change. Arize’s experiments rerun the same dataset under two settings; this compares two slices of history.</p>
+          </section>
+
           <section class="obs-block obs-charts-block" aria-labelledby="obs-charts-title" data-obs="charts">
             <div class="obs-block-head">
               <h2 id="obs-charts-title">Charts</h2>
-              <p class="obs-hint" data-obs="charts-scope">For all 69 traces.</p>
+              <p class="obs-hint" data-obs="charts-scope">For all 77 traces.</p>
             </div>
             <div class="obs-charts">
               <section class="obs-chart obs-chart-hist" aria-labelledby="obs-hist-title">
@@ -274,7 +466,8 @@
                     <li><span class="obs-cell-key is-pass" aria-hidden="true"></span>Pass</li>
                     <li><span class="obs-cell-key is-fail" aria-hidden="true"></span>Fail</li>
                     <li><span class="obs-cell-key is-na" aria-hidden="true"></span>Not scored</li>
-                    <li><span class="obs-cell-key is-num" aria-hidden="true"></span>Tokens per call (brighter = more)</li>
+                    <li><span class="obs-cell-key is-num" aria-hidden="true"></span>Number (brighter = higher in its row)</li>
+                    <li><span class="obs-cell-key is-cat" aria-hidden="true"></span>Error class</li>
                   </ul>
                 </div>
                 <div class="obs-scroll" role="region" aria-label="Evaluator matrix table, scrollable" tabindex="0">
@@ -291,59 +484,167 @@
         <section class="cs-grid cs-section" aria-labelledby="obs-evals-title">
           <div class="cs-rail lab-rail">
             <h2 id="obs-evals-title">Evaluators</h2>
-            <p class="lab-rail-note">Seven deterministic checks, scored per trace on every span. A check only runs where it applies.</p>
+            <p class="lab-rail-note">Thirteen deterministic checks, scored per trace on every span; a check only runs where it applies. They are rule-based operational proxies: they say whether tests ran, a review happened or calls failed, not whether the result was good. Nine pass or fail against a published threshold, three are numbers and one names a category.</p>
           </div>
           <ol class="cs-main obs-evals">
             <li data-eval="tool_error_rate">
               <h3>Tool error rate</h3>
               <p class="obs-eval-q">Did the agents mostly call their tools correctly?</p>
               <p><strong>Rule.</strong> Passes when 10% or fewer of the trace’s tool calls returned an error.</p>
-              <p class="mono obs-eval-count"><span data-pass>58</span> pass · <span data-fail>3</span> fail · scored on <span data-scored>61</span> traces</p>
-              <p class="obs-eval-note">Eight traces made no tool call and are not scored. An error is any call the tool reported as failed; the export does not say why.</p>
+              <p class="mono obs-eval-count"><span data-pass>65</span> pass · <span data-fail>3</span> fail · scored on <span data-scored>68</span> traces</p>
+              <p class="obs-eval-note">Nine traces made no tool call and are not scored. An error is any call the tool reported as failed; the failure analysis on the dashboard says which kind.</p>
             </li>
             <li data-eval="recovered_after_error">
               <h3>Recovered after error</h3>
               <p class="obs-eval-q">When a tool call failed, did the agent retry or fix it?</p>
               <p><strong>Rule.</strong> Passes when every failed call is followed, later in the same trace, by a successful call of the same tool.</p>
-              <p class="mono obs-eval-count"><span data-pass>23</span> pass · <span data-fail>6</span> fail · scored on <span data-scored>29</span> traces</p>
+              <p class="mono obs-eval-count"><span data-pass>24</span> pass · <span data-fail>9</span> fail · scored on <span data-scored>33</span> traces</p>
               <p class="obs-eval-note">Only traces with an error are scored. The match is by tool name, so any later successful call of that tool counts, even one that did something else: a pass is a weak signal, a fail is worth opening.</p>
             </li>
-            <li data-eval="delegation_used">
-              <h3>Delegation used</h3>
-              <p class="obs-eval-q">Did the orchestrator hand work to a specialist?</p>
-              <p><strong>Rule.</strong> Passes when the trace has at least one subagent run.</p>
-              <p class="mono obs-eval-count"><span data-pass>28</span> pass · <span data-fail>41</span> fail · scored on <span data-scored>69</span> traces</p>
-              <p class="obs-eval-note">More a description than a quality bar: a short question or a plan doesn’t need a subagent, so many of these fails are fine.</p>
+            <li data-eval="delegation_fit">
+              <h3>Delegation on large tasks</h3>
+              <p class="obs-eval-q">On big jobs, did specialists do most of the hands-on work?</p>
+              <p><strong>Rule.</strong> On a large trace (<span data-large-calls>40</span> or more tool calls, or <span data-large-edits>3</span> or more edits, subagents included), passes when subagents made at least half of the trace’s tool calls. The score is that share.</p>
+              <p class="mono obs-eval-count"><span data-pass>28</span> pass · <span data-fail>5</span> fail · scored on <span data-scored>33</span> traces</p>
+              <p class="obs-eval-note">Small traces are not scored: a short question or a plan does not need a specialist. One token subagent run is not enough to pass, since the share counts calls, not runs. Size is a rough stand-in for “big enough to delegate”.</p>
             </li>
             <li data-eval="review_before_commit">
               <h3>Review before commit</h3>
               <p class="obs-eval-q">Was the change reviewed before it was saved?</p>
               <p><strong>Rule.</strong> Passes when a quality-reviewer run finished after the previous commit in the same session (or the start of the window) and before the trace’s last commit.</p>
+              <p class="mono obs-eval-count"><span data-pass>12</span> pass · <span data-fail>20</span> fail · scored on <span data-scored>32</span> traces</p>
               <p class="obs-eval-note">Needs context. The check looks back only to the previous commit in the same session, so when a reviewed commit is followed by a quick “go ahead” turn that commits small fixes, that later commit has no review of its own and fails, even though the work around it was reviewed. Read the fails trace by trace before calling them gaps.</p>
-              <p class="mono obs-eval-count"><span data-pass>10</span> pass · <span data-fail>18</span> fail · scored on <span data-scored>28</span> traces</p>
             </li>
             <li data-eval="tests_run_before_commit">
               <h3>Tests before commit</h3>
               <p class="obs-eval-q">Were the tests run before the change was saved?</p>
               <p><strong>Rule.</strong> Passes when a test command finished in that same window.</p>
-              <p class="mono obs-eval-count"><span data-pass>27</span> pass · <span data-fail>1</span> fail · scored on <span data-scored>28</span> traces</p>
-              <p class="obs-eval-note">It shows that tests ran, not that they passed: the export keeps only each command’s category, never its output.</p>
+              <p class="mono obs-eval-count"><span data-pass>31</span> pass · <span data-fail>1</span> fail · scored on <span data-scored>32</span> traces</p>
+              <p class="obs-eval-note">It shows that tests ran, not that they passed: commands are reduced to a category inside the exporter, and their output is never read.</p>
+            </li>
+            <li data-eval="verified_after_last_edit">
+              <h3>Checked after the last edit</h3>
+              <p class="obs-eval-q">Was the final state of the change tested or built?</p>
+              <p><strong>Rule.</strong> Passes when, after the trace’s last successful edit (by any agent), a test, check or build command finished with exit code 0, or with no exit code recorded.</p>
+              <p class="mono obs-eval-count"><span data-pass>21</span> pass · <span data-fail>4</span> fail · scored on <span data-scored>25</span> traces</p>
+              <p class="obs-eval-note">Only traces that edit are scored. The exit code is the only part of the result the exporter reads, so a run that printed failures but exited 0 still counts, and so does a completed call whose exit code the session store did not record.</p>
+            </li>
+            <li data-eval="stuck_loop">
+              <h3>No stuck loop</h3>
+              <p class="obs-eval-q">Did an agent keep repeating a failing call?</p>
+              <p><strong>Rule.</strong> Passes unless one agent run called the same tool and failed 3 or more times in a row.</p>
+              <p class="mono obs-eval-count"><span data-pass>68</span> pass · <span data-fail>0</span> fail · scored on <span data-scored>68</span> traces</p>
+              <p class="obs-eval-note">Any other call in between breaks the streak. Nothing failed here: the longest streak was <span data-max>2</span>.</p>
+            </li>
+            <li data-eval="review_addressed">
+              <h3>Changes after review</h3>
+              <p class="obs-eval-q">Did the review lead to changes before the commit?</p>
+              <p><strong>Rule.</strong> Where a review finished before a commit, passes when at least one edit followed a review and came before the next commit.</p>
+              <p class="mono obs-eval-count"><span data-pass>3</span> pass · <span data-fail>9</span> fail · scored on <span data-scored>12</span> traces</p>
+              <p class="obs-eval-note">A clean review with nothing to fix also fails, so read a pass as “the review changed something”, not as better work.</p>
             </li>
             <li data-eval="latency_budget">
               <h3>Model latency budget</h3>
               <p class="obs-eval-q">Did the model respond quickly enough to keep the loop moving?</p>
               <p><strong>Rule.</strong> Passes when the trace’s p90 model-step latency is under 30 s.</p>
-              <p class="mono obs-eval-count"><span data-pass>62</span> pass · <span data-fail>7</span> fail · scored on <span data-scored>69</span> traces</p>
+              <p class="mono obs-eval-count"><span data-pass>68</span> pass · <span data-fail>9</span> fail · scored on <span data-scored>77</span> traces</p>
               <p class="obs-eval-note">Latency is estimated from message timings, from a step’s start to the start of its last tool call; the store has no time to first token. A step that ends without a tool call runs to the end of its message, which pushes p90 up.</p>
             </li>
             <li data-eval="tokens_per_tool_call">
               <h3>Generated tokens per tool call</h3>
               <p class="obs-eval-q">How much did the model write for each action it took?</p>
               <p><strong>Rule.</strong> Output plus reasoning tokens, divided by tool calls. A number, not pass or fail.</p>
-              <p class="mono obs-eval-count">Median <span data-median>749</span> · range <span data-min>165</span>–<span data-max>2,951</span> · <span data-scored>61</span> traces</p>
+              <p class="mono obs-eval-count">Median <span data-median>747</span> · range <span data-min>165</span>–<span data-max>2,951</span> · <span data-scored>68</span> traces</p>
               <p class="obs-eval-note">Lower means terser actions. Cache reads are left out: they are context the model read again, not text it wrote.</p>
             </li>
+            <li data-eval="parallel_fanout">
+              <h3>Parallel subagents</h3>
+              <p class="obs-eval-q">How much work ran in parallel?</p>
+              <p><strong>Rule.</strong> The most subagent runs open at the same moment in the trace. A number.</p>
+              <p class="mono obs-eval-count">Median <span data-median>2</span> · range <span data-min>1</span>–<span data-max>4</span> · <span data-scored>32</span> traces</p>
+              <p class="obs-eval-note">Only traces with a subagent run are scored. More is not better by itself: parallel runs only help when their work is independent.</p>
+            </li>
+            <li data-eval="cache_reuse">
+              <h3>Prompt cache reuse</h3>
+              <p class="obs-eval-q">How much of each prompt came from the cache?</p>
+              <p><strong>Rule.</strong> Cache-read tokens divided by all prompt tokens over the trace’s model steps. A number from 0 to 100%.</p>
+              <p class="mono obs-eval-count">Median <span data-median>93.4%</span> · range <span data-min>0%</span>–<span data-max>99.9%</span> · <span data-scored>77</span> traces</p>
+              <p class="obs-eval-note">High reuse keeps long agent loops affordable and fast. <span data-zero>7</span> traces read nothing from the cache, among them the context compaction, which writes a fresh summary instead of reading one.</p>
+            </li>
+            <li data-eval="error_class">
+              <h3>Most common error</h3>
+              <p class="obs-eval-q">What kind of failure was most common?</p>
+              <p><strong>Rule.</strong> Each failed call gets one class from its error text inside the exporter; the label is the trace’s most common class. A category, not pass or fail.</p>
+              <p class="mono obs-eval-count">Most often <span data-top>not found</span> (<span data-top-n>11</span> traces) · scored on <span data-scored>33</span> traces</p>
+              <p class="obs-eval-note">The error text is never published, only the class. The failure analysis on the dashboard counts every failed call by class.</p>
+            </li>
           </ol>
+        </section>
+
+        <section class="cs-grid cs-section obs-download" aria-labelledby="obs-download-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="obs-download-title">Take the data with you</h2>
+            <p class="lab-rail-note">Both files are public: structure and numbers only, the same privacy rules as this page.</p>
+          </div>
+          <div class="cs-main obs-download-main">
+            <ul class="obs-files">
+              <li><a class="lab-link" href="./data/agent-traces.json" download>agent-traces.json</a> <span class="mono" data-size="agent-traces.json">341 KB</span><span class="obs-file-what">The file this page reads: traces, spans, evaluations, thresholds and rollups.</span></li>
+              <li><a class="lab-link" href="./data/agent-traces.openinference.jsonl" download>agent-traces.openinference.jsonl</a> <span class="mono" data-size="agent-traces.openinference.jsonl">438 KB</span><span class="obs-file-what">One published span per line, OpenTelemetry-style, with OpenInference attribute names.</span></li>
+            </ul>
+            <h3>OpenInference attributes used</h3>
+            <ul class="obs-attrs" data-obs-attrs>
+              <li><code>openinference.span.kind</code></li>
+              <li><code>session.id</code></li>
+              <li><code>agent.name</code></li>
+              <li><code>tool.name</code></li>
+              <li><code>llm.model_name</code></li>
+              <li><code>llm.token_count.prompt</code></li>
+              <li><code>llm.token_count.completion</code></li>
+              <li><code>llm.token_count.total</code></li>
+              <li><code>llm.token_count.prompt_details.cache_read</code></li>
+              <li><code>llm.token_count.prompt_details.cache_write</code></li>
+              <li><code>llm.token_count.completion_details.reasoning</code></li>
+              <li><code>error.class</code> (custom)</li>
+              <li><code>error.count</code> (custom)</li>
+              <li><code>error.class.&lt;class&gt;</code> (custom)</li>
+            </ul>
+            <p class="obs-download-note">A failed tool call carries <code>error.class</code>. A merged-steps row whose calls include failures carries <code>error.count</code> and one <code>error.class.&lt;class&gt;</code> count per class, and its status is ERROR, so the file counts every failed call the dashboard counts. There is no <code>input.value</code> or <code>output.value</code>. Times use a synthetic clock: each trace starts at midnight UTC on its real calendar day and its spans keep their real offsets.</p>
+            <h3>Load it into Arize Phoenix</h3>
+            <p class="obs-download-note"><strong>Not run here.</strong> Phoenix could not be installed on the machine that built this page, so this snippet follows the Phoenix and OpenTelemetry docs but has not been tested. It replays each span to a local Phoenix over OTLP (<code>http://localhost:6006/v1/traces</code>); the spans get new trace and span ids.</p>
+            <pre class="lab-code" tabindex="0" role="region" aria-label="Python: replay the spans to Phoenix, or read them with pandas"><code># pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http pandas
+import json
+from datetime import datetime
+from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.trace import Status, StatusCode
+
+provider = TracerProvider(resource=Resource.create({"openinference.project.name": "agent-traces"}))
+provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:6006/v1/traces")))
+tracer = provider.get_tracer("agent-traces-replay")
+ns = lambda iso: round(datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp() * 1000) * 1_000_000
+
+spans = {}
+with open("agent-traces.openinference.jsonl") as lines:  # a parent always comes before its children
+    for line in lines:
+        row = json.loads(line)
+        parent = spans.get(row["parent_id"])
+        context = trace.set_span_in_context(parent) if parent else None
+        span = tracer.start_span(row["name"], context=context, attributes=row["attributes"], start_time=ns(row["start_time"]))
+        if row["status_code"] == "ERROR":
+            span.set_status(Status(StatusCode.ERROR))
+        span.end(end_time=ns(row["end_time"]))
+        spans[row["span_id"]] = span
+provider.shutdown()  # flushes the batch
+
+# Or explore it as a dataframe:
+import pandas as pd
+df = pd.read_json("agent-traces.openinference.jsonl", lines=True)
+df = df.join(pd.json_normalize(df.pop("attributes").tolist()))</code></pre>
+            <p class="obs-download-note">Phoenix docs: <a class="lab-link" href="https://arize.com/docs/phoenix/tracing/concepts-tracing/otel-openinference/exporter">Exporter and OTLP</a> (Phoenix takes OTLP/HTTP on port 6006, at <code>/v1/traces</code>).</p>
+          </div>
         </section>
 
         <section class="cs-grid cs-section" aria-labelledby="obs-data-title">
@@ -352,11 +653,11 @@
           </div>
           <ul class="cs-main cs-points lab-points">
             <li><strong>Where it comes from.</strong> OpenCode, the coding agent I work in, keeps every session in a local database. A script reads it read-only and writes <a class="lab-link" href="./data/agent-traces.json">agent-traces.json</a> in an OpenInference-style shape: agent, LLM, tool and merged-step spans with times, status and token counts.</li>
-            <li><strong>What it covers.</strong> The website work from November 7 to 12, 2026: <span data-requests>68</span> requests and one automatic context compaction in five sessions, with 65 subagent sessions nested under the calls that started them. Some sessions ran more than once, so the dashboard counts 88 subagent runs. Unrelated work in the same sessions is left out.</li>
-            <li><strong>What is never published.</strong> Prompts, responses, reasoning, tool inputs and outputs, file names and contents, and commands. A shell call carries only a category (test, build, commit and so on). Calls to tools outside an allowlist are dropped: <span data-dropped>24</span> of them.</li>
+            <li><strong>What it covers.</strong> The website work from November 7 to 12, 2026: <span data-requests>76</span> requests and one automatic context compaction in six sessions, with 81 subagent sessions nested under the calls that started them. Some sessions ran more than once, so the dashboard counts 108 subagent runs. Unrelated work in the same sessions is left out.</li>
+            <li><strong>What is never published.</strong> Prompts, responses, reasoning, tool inputs and outputs, error messages, file names and contents, and commands. A shell call carries only a category (test, build, commit and so on) and a failed call only an error class. Calls to tools outside an allowlist are dropped: <span data-dropped>25</span> of them.</li>
             <li><strong>What is estimated.</strong> Model latency, from message timings. Tool and agent times come straight from recorded timestamps.</li>
-            <li><strong>Merged spans.</strong> 1,050 of 14,718 spans are published one by one; runs of ordinary steps become summary spans that keep their step, tool-call, error and token counts. Every total, percentile and evaluator result is computed from all spans before merging.</li>
-            <li><strong>No judge model.</strong> The seven evaluators are code. Nothing here is graded by an LLM, and there is no cost figure: the runs used a flat-rate subscription.</li>
+            <li><strong>Merged spans.</strong> 1,015 of 17,412 spans are published one by one; runs of ordinary steps become summary spans that keep their step, tool-call, error and token counts. Every total, percentile and evaluator result is computed from all spans before merging.</li>
+            <li><strong>No judge model.</strong> The thirteen evaluators are code. Nothing here is graded by an LLM, and the checks describe the process, not the quality of the result; human labels are the way to test them. There is no cost figure: the runs used a flat-rate subscription.</li>
           </ul>
         </section>
       </div>
