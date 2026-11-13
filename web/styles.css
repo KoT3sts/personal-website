@@ -157,7 +157,7 @@
   .hero-tour[data-tour-mode="replay"] .icon { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 3.2v9.6L12.6 8z'/%3E%3C/svg%3E"); }
   /* No second start while a tour is running (the dock's Skip and Replay take over). */
   :root.agentic-touring .hero-tour { visibility: hidden; }
-  .hero-links { display: flex; gap: 22px; font-size: var(--text-label); }
+  .hero-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 15px; font-size: var(--text-label); }
   .hero-links a { padding: 8px 0; border-bottom: 1px solid #b3b6a8; }
   .hero-links a:hover { border-bottom-color: var(--ink); }
   /* Proof strip: three facts stated further down the page, each a link to where it is
@@ -340,7 +340,7 @@
     /* Phone hero: one column below the portrait (portrait.css sizes and tucks it under ENGINEER).
        Tighter gaps keep the proof strip, résumé button and links in the first 390x844 screen;
        the tour pill follows them (DOM order). */
-    .hero-bottom { grid-template-columns: 1fr; gap: 16px; }.hero-intro p:first-of-type { font-size: 24px; margin-top: 8px; }.hero-intro .hero-scope { margin-top: 8px; }.hero-actions { justify-self: start; justify-items: start; gap: 10px; }.hero-links a { padding: 6px 0; }.hero-rule { margin-top: 46px; padding-top: 12px; }
+    .hero-bottom { grid-template-columns: 1fr; gap: 12px; }.hero-intro p:first-of-type { font-size: 24px; margin-top: 8px; }.hero-intro .hero-scope { margin-top: 8px; }.hero-actions { justify-self: start; justify-items: start; gap: 10px; }.hero-links a { padding: 6px 0; }.hero-rule { margin-top: 46px; padding-top: 12px; }
     .hero-proof { column-gap: 10px; padding-top: 12px; }.proof-label { letter-spacing: .01em; }
     .section-top { gap: 24px; padding: 25px 0; }.section-top > :last-child { text-align: right; max-width: 46%; }
     .open-heading, .work-heading, .experience-heading, .capabilities-heading { display: block; padding-top: 55px; }.open-heading h2, .work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: 12.4vw; }.open-heading > p, .work-heading > p, .experience-heading > p, .capabilities-heading > p { margin-top: 25px; }

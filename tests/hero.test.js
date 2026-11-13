@@ -322,14 +322,16 @@ test('the intro says where the work happens; the scope line adds to it without r
 test('"Watch it get built": an outline pill after the résumé and the links, in one order on screen and for Tab', async () => {
   const actions = hero.match(/<div class="hero-actions[^"]*">([\s\S]*?)\n {8}<\/div>/)?.[1] ?? '';
   assert.doesNotMatch(actions, /hero-buttons/, 'no wrapper: the pills are direct children');
-  // DOM order = visual order at every width: résumé, LinkedIn, Email, tour pill.
+  // DOM order = visual order at every width: résumé, Lab, GitHub, LinkedIn, Email, tour pill.
   const links = [...actions.matchAll(/<a [^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
-  assert.equal(links.length, 4, 'résumé, LinkedIn, Email, tour');
+  assert.equal(links.length, 6, 'résumé, Lab, GitHub, LinkedIn, Email, tour');
   assert.match(links[0], /^<a class="pill-button" href="\.\/assets\/Cesar_Tortolero_Resume\.pdf" download/, 'the résumé comes first');
-  assert.match(links[1], /linkedin\.com/);
-  assert.match(links[2], /^<a href="mailto:/);
+  assert.match(links[1], /^<a href="#lab">LAB /, 'the Lab, on this page');
+  assert.match(links[2], /^<a href="https:\/\/github\.com\/KoT3sts" target="_blank" rel="noopener noreferrer">GITHUB /);
+  assert.match(links[3], /linkedin\.com/);
+  assert.match(links[4], /^<a href="mailto:/);
   assert.ok(actions.indexOf('class="hero-links') > actions.indexOf('Cesar_Tortolero_Resume.pdf') && actions.indexOf('class="hero-links') < actions.indexOf('data-tour-replay'), 'the links sit between the pills');
-  const tour = links[3];
+  const tour = links[5];
   assert.match(tour, /^<a class="pill-button pill-ghost hero-tour" href="\.\/lab\/build-trace\.html" data-tour-replay /, 'a real link: works without scripts');
   assert.equal(attr(tour, 'aria-label'), 'Watch it get built: the recorded agent run behind this page');
   // No "~" the accessible name would not say; the length itself is decoration (the label says it in words).
