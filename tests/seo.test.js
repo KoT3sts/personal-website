@@ -42,16 +42,16 @@ test('robots.txt allows everything and points at the absolute sitemap', async ()
   assert.ok(lines.includes(`Sitemap: ${await siteUrl()}sitemap.xml`));
 });
 
-test('sitemap.xml lists the homepage, the six project pages, the evaluation lab, the build trace, the agent-evaluation notes and the agent observability lab with ISO lastmods', async () => {
+test('sitemap.xml lists the homepage, the six project pages, the evaluation lab, the build trace, the agent-evaluation notes, the agent observability lab and the Now page with ISO lastmods', async () => {
   const xml = await read('sitemap.xml');
   assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
   assert.match(xml, /<\/urlset>\s*$/);
-  assert.equal(xml.match(/<url>/g)?.length, 11);
+  assert.equal(xml.match(/<url>/g)?.length, 12);
   const site = await siteUrl();
   const slugs = ['agent-workflow', 'thoughts-to-text', 'companion-chatbot', 'voicelab', 'work-helper', 'barking-village'];
-  assert.deepEqual([...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]), [site, ...slugs.map(slug => `${site}projects/${slug}.html`), `${site}lab/sentiment-eval.html`, `${site}lab/build-trace.html`, `${site}lab/evaluating-agents.html`, `${site}lab/agent-observability.html`]);
+  assert.deepEqual([...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]), [site, ...slugs.map(slug => `${site}projects/${slug}.html`), `${site}lab/sentiment-eval.html`, `${site}lab/build-trace.html`, `${site}lab/evaluating-agents.html`, `${site}lab/agent-observability.html`, `${site}now.html`]);
   const lastmods = [...xml.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map(match => match[1]);
-  assert.equal(lastmods.length, 11);
+  assert.equal(lastmods.length, 12);
   for (const lastmod of lastmods) {
     assert.match(lastmod, /^\d{4}-\d{2}-\d{2}$/);
     assert.ok(!Number.isNaN(Date.parse(lastmod)));
@@ -61,6 +61,7 @@ test('sitemap.xml lists the homepage, the six project pages, the evaluation lab,
   assert.ok(await exists('lab/build-trace.html'), 'lab/build-trace.html exists');
   assert.ok(await exists('lab/evaluating-agents.html'), 'lab/evaluating-agents.html exists');
   assert.ok(await exists('lab/agent-observability.html'), 'lab/agent-observability.html exists');
+  assert.ok(await exists('now.html'), 'now.html exists');
 });
 
 test('apple-touch-icon.png is a 180x180 PNG and index.html links it', async () => {
@@ -128,4 +129,41 @@ test('dev server: 404 page with status 404, MIME types for the new files', async
   } finally {
     server.kill();
   }
+});
+
+test('now.html: dated November 2026, linked from the footer, with the same head as the other pages', async () => {
+  const html = await read('now.html');
+  const home = await read('index.html');
+  const site = await siteUrl();
+  assert.match(home, /<footer id="contact"[\s\S]*<a href="\.\/now\.html">NOW /, 'the homepage footer links it');
+  assert.match(html, /<link rel="canonical" href="([^"]+)">/);
+  assert.equal(html.match(/<link rel="canonical" href="([^"]+)">/)[1], `${site}now.html`);
+  assert.equal(meta(html, 'property', 'og:url'), `${site}now.html`);
+  for (const key of ['og:title', 'og:description', 'og:image:alt', 'twitter:card']) assert.ok(meta(html, 'property', key) || meta(html, 'name', key), key);
+  for (const key of ['og:image', 'twitter:image']) {
+    const value = meta(html, 'property', key) || meta(html, 'name', key);
+    assert.ok(await exists(value.slice(site.length)), `${key} file exists`);
+  }
+  const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(ld['@type'], 'ProfilePage');
+  assert.equal(ld.url, `${site}now.html`);
+  assert.equal(ld.mainEntity.name, 'Cesar Tortolero');
+  assert.match(html, /<time datetime="2026-11">NOVEMBER 2026<\/time>/);
+  assert.match(html, /<h1 id="cs-title">Now<\/h1>/);
+});
+
+test('the homepage social card is a 1200x630 JPEG on the site', async () => {
+  const html = await read('index.html');
+  const image = meta(html, 'property', 'og:image');
+  assert.match(image, /\/assets\/og-home\.jpg$/);
+  assert.equal(meta(html, 'name', 'twitter:image'), image);
+  const jpg = await readFile(new URL('assets/og-home.jpg', web));
+  assert.deepEqual([...jpg.subarray(0, 3)], [0xff, 0xd8, 0xff]);
+  // The first baseline/progressive frame header holds the size.
+  let at = 2;
+  while (at < jpg.length && ![0xc0, 0xc2].includes(jpg[at + 1])) at += 2 + jpg.readUInt16BE(at + 2);
+  assert.equal(jpg.readUInt16BE(at + 5), 630, 'height');
+  assert.equal(jpg.readUInt16BE(at + 7), 1200, 'width');
+  assert.equal(meta(html, 'property', 'og:image:width'), '1200');
+  assert.equal(meta(html, 'property', 'og:image:height'), '630');
 });
