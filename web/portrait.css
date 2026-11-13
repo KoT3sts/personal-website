@@ -1,0 +1,104 @@
+/* Portrait-led hero (SPECIFICATION V02). Owned by the portrait workstream.
+   Unlayered on purpose: it overrides the layered hero rules in styles.css.
+   Layout only; pointer depth, idle loops and the orbit live in motion.css.
+
+   Composition: Cesar's cut-out portrait stands low and centred, in front of
+   the faded ENGINEER line, its body dissolving into the paper at the hero's
+   lower edge. The orbital "C" is a small accent half hidden behind his left
+   shoulder (viewer's right), next to the vertical label. If the portrait
+   cannot load, motion.js marks the hero and the sculpture takes the centre
+   again. */
+
+.hero {
+  /* The hero's own height (styles.css: 100svh, 720 to 1150 px) and headline
+     size, so the portrait can be sized from the space below ENGINEER. */
+  --hero-h: clamp(720px, 100svh, 1150px);
+  --hero-type: clamp(54px, 8.9vw, 158px);
+  /* Where the hair should meet the headline: about 40% into the ENGINEER
+     line (kicker and h1 offsets from styles.css, line-height .8). */
+  --portrait-top: calc(204px + 1.12 * var(--hero-type));
+  --intro-w: clamp(290px, 25vw, 360px);
+  /* The face sits slightly left of the image centre; this centres the face,
+     not the box, under the headline. */
+  --portrait-shift: -47%;
+  /* Tallest that fits under the headline, never into the intro and action
+     columns, never wider than 36% of the section. */
+  --portrait-w: min(calc((var(--hero-h) - var(--portrait-top)) * .8346), calc(100vw - 2 * var(--gutter) - 2 * (var(--intro-w) + 26px)), 36vw);
+}
+
+.hero-art { top: auto; bottom: 0; width: max(240px, var(--portrait-w)); transform: translateX(var(--portrait-shift)); }
+.hero-portrait { position: relative; z-index: 1; display: block; }
+.hero-portrait img { width: 100%; height: auto; -webkit-user-drag: none; }
+
+/* The sculpture as an accent: a third of the portrait's width, tucked
+   behind the shoulder so the face stays the only focal point. */
+.hero-orbit { position: absolute; z-index: 0; left: 83%; top: 37%; width: 34%; pointer-events: none; }
+.hero-orbit .sculpture { display: block; width: 100%; height: auto; overflow: visible; }
+.hero-art .orbit-label { top: 28%; right: auto; left: 121%; }
+.hero-art .art-coordinate { top: 41%; left: -13%; }
+
+/* Desktop intro row (the centre column belongs to the portrait): the intro
+   low left with the proof strip under it, reaching a little past the intro
+   column but clear of the portrait; the scroll cue tops the right column and
+   the actions stay low right. */
+@media (min-width: 1101px) {
+  .hero-intro { max-width: var(--intro-w); }
+  .hero-bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 24px; }
+  .hero-bottom .hero-intro { grid-column: 1; grid-row: 1; }
+  .hero-bottom .hero-proof { grid-column: 1; grid-row: 2; max-width: calc(var(--intro-w) + 64px); }
+  .hero-bottom .scroll-cue { grid-column: 2; grid-row: 1; justify-self: end; align-self: start; margin: 0; }
+  .hero-bottom .hero-actions { grid-column: 2; grid-row: 1 / span 2; align-self: end; }
+}
+
+/* Tablet: the hero is in document flow (styles.css). The portrait overlaps
+   the lower half of ENGINEER and the intro row starts in its faded hem. */
+@media (max-width: 1100px) {
+  .hero-art { position: relative; bottom: auto; width: min(46vw, 440px); margin: -5.2vw 0 0 50%; }
+  .hero-bottom { margin-top: calc(min(46vw, 440px) * -.1); }
+  .hero-bottom .hero-proof { grid-column: 1; grid-row: 2; }
+  .hero-bottom .hero-actions { grid-column: 2; grid-row: 1 / span 2; align-self: end; }
+}
+
+/* Phone: three headline lines; the portrait tucks under ENGINEER so the
+   greeting, intro and résumé button still share the first 390x844 screen. */
+@media (max-width: 760px) {
+  /* 52vw (was 64vw) leaves room for the proof strip in the first screen, with
+     the résumé button still clear of the build tour's compact dock. */
+  .hero-art { width: min(52vw, 290px); margin-top: -11vw; }
+  .hero-bottom { margin-top: calc(min(52vw, 290px) * -.11); }
+  .hero-bottom .hero-proof, .hero-bottom .hero-actions { grid-column: auto; grid-row: auto; }
+  .hero-orbit { left: 80%; top: 41%; width: 31%; }
+  .hero-art .orbit-label { top: 26%; left: 111%; right: auto; }
+  .hero-art .art-coordinate { top: 56%; left: -15%; }
+}
+
+/* Fallback: no portrait. The sculpture returns to the centre at the
+   portrait's size, with its ground shadow (motion.css). */
+.hero[data-portrait="failed"] .hero-portrait { display: none; }
+.hero[data-portrait="failed"] .hero-orbit { position: relative; left: auto; top: auto; width: 100%; }
+.hero[data-portrait="failed"] { --portrait-shift: -50%; }
+.hero[data-portrait="failed"] .hero-art .orbit-label { top: 33%; left: auto; right: -9%; }
+.hero[data-portrait="failed"] .hero-art .art-coordinate { top: 57%; left: 4%; }
+
+/* Build tour: the portrait develops from the hair down, a soft edge of paper
+   giving way to the print (instead of the generic art rise). The selectors
+   outrank entrance.css, which loads later. */
+.hero .hero-portrait.agentic-target {
+  -webkit-mask-image: linear-gradient(180deg, #000 0 40%, transparent 60%);
+  mask-image: linear-gradient(180deg, #000 0 40%, transparent 60%);
+  -webkit-mask-size: 100% 250%; mask-size: 100% 250%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0; mask-position: 0 0;
+}
+.hero .hero-portrait.agentic-target[data-build-state="pending"] { opacity: 1; translate: none; scale: none; -webkit-mask-position: 0 100%; mask-position: 0 100%; filter: blur(8px) brightness(1.18); }
+.hero .hero-portrait.agentic-target[data-build-state="placing"] {
+  opacity: 1; translate: none; scale: none; filter: none;
+  transition: -webkit-mask-position var(--agentic-d, 1.1s) cubic-bezier(.62, 0, .3, 1), mask-position var(--agentic-d, 1.1s) cubic-bezier(.62, 0, .3, 1), filter calc(var(--agentic-d, 1.1s) * 1.15) cubic-bezier(.16, 1, .3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero .hero-portrait.agentic-target { -webkit-mask-image: none; mask-image: none; filter: none; }
+}
+@media print {
+  .hero .hero-portrait { -webkit-mask-image: none; mask-image: none; filter: none; }
+}

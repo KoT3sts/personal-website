@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620">
+ <rect width="900" height="620" fill="#cec6b9"/>
+ <path d="M-90 530L860-30M140 700L1090 140" stroke="#ded7ca" stroke-width="120"/>
+ <g transform="translate(82 68)">
+  <rect width="736" height="484" rx="12" fill="#f7f4ed"/>
+  <rect width="736" height="49" rx="12" fill="#282822"/><path d="M0 30h736v20H0" fill="#282822"/>
+  <text x="26" y="31" font-family="Arial" font-size="17" font-weight="700" fill="#f7f4ed">work helper<tspan fill="#b7c592"> ●</tspan></text>
+  <text x="552" y="29" font-family="Arial" font-size="10" fill="#c5c4b8">DISCOVER · ORGANIZE</text>
+  <text x="40" y="111" fill="#77786d" font-size="10" font-family="Arial" letter-spacing="2">A MORE INTENTIONAL SEARCH</text>
+  <text x="36" y="165" fill="#282822" font-size="47" font-family="Arial" font-weight="700" letter-spacing="-2">Your next chapter,</text>
+  <text x="36" y="216" fill="#282822" font-size="47" font-family="Arial" font-weight="700" letter-spacing="-2">a little clearer.</text>
+  <rect x="40" y="251" width="655" height="45" rx="23" fill="#e7e4da"/><circle cx="63" cy="272" r="6" fill="none" stroke="#94958a"/><path d="m67 277 5 5" stroke="#94958a"/><text x="90" y="279" font-size="12" fill="#8a8b7d" font-family="Arial">Explore the possibilities</text><circle cx="669" cy="274" r="15" fill="#282822"/><path d="M662 274h12m-5-5 5 5-5 5" stroke="#efeee5" fill="none"/>
+  <g><rect x="40" y="320" width="203" height="123" rx="9" fill="#e0e5d2"/><rect x="266" y="320" width="203" height="123" rx="9" fill="#eae5d9"/><rect x="492" y="320" width="203" height="123" rx="9" fill="#dedfd4"/></g>
+  <g font-family="Arial" fill="#4b5040" font-size="14" font-weight="700"><text x="58" y="356">Discover.</text><text x="284" y="356">Make sense of it.</text><text x="510" y="356">Take the next step.</text></g>
+  <g stroke="#abb49a" stroke-width="5" stroke-linecap="round"><path d="M59 380h137m-137 13h100M285 380h137m-137 13h100M511 380h137m-137 13h100"/></g>
+ </g>
+</svg>

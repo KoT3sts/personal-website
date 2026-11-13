@@ -1,0 +1,2106 @@
+{
+  "about": "Sources for the sentences, numbers and chart values on the case studies (web/projects/*.html). tests/case-studies.test.js reads every docs/case-study-facts*.json ledger: every factual sentence and number on a case study must be published on the homepage, a lab page (web/lab/*.html) or the build trace (web/trace/build-trace.json), or be listed in a ledger, and each entry must still appear on its page. \"source\" is one id or a list of ids from \"sources\"; every quote must appear word for word in one of them (homepage, lab, trace, or the file named; public records are copied into docs/case-study-sources/). \"values\" lists the chart numbers an entry backs; each must be on the page and in a quote. Résumé entries cannot be checked and stay pending-cesar until Cesar confirms them. Opinion written for Cesar is pending-cesar too. \"method\" entries describe how an on-page chart or demo works and need a note. 'reworded' means the sentence restates the quoted source in new words; Cesar should read those.",
+  "sources": {
+    "homepage": "web/index.html",
+    "lab": "web/lab/sentiment-eval.html, web/lab/build-trace.html, web/lab/evaluating-agents.html",
+    "trace": "web/trace/build-trace.json",
+    "résumé 2026-11": "Cesar's résumé of November 2026 (Cesar_Tortolero_Resume_2026-11.html, kept outside the repository)",
+    "cesar-answers": {
+      "file": "docs/case-study-answers.md",
+      "what": "Cesar's answers to docs/case-study-questions.md, November 11, 2026"
+    },
+    "metrics": {
+      "file": "docs/case-study-sources/workflow-metrics.txt",
+      "what": "Cesar's aggregate counts for the workflow and this site, measured through November 11, 2026"
+    },
+    "handoff": {
+      "file": "HANDOFF.md",
+      "what": "Test counts recorded at each round"
+    },
+    "ksu-bci-136": {
+      "file": "docs/case-study-sources/ksu-bci-136.txt",
+      "url": "https://digitalcommons.kennesaw.edu/undergradsymposiumksu/Fall2022/presentations/136"
+    },
+    "ksu-bci-255": {
+      "file": "docs/case-study-sources/ksu-bci-255.txt",
+      "url": "https://digitalcommons.kennesaw.edu/undergradsymposiumksu/spring2022/presentations/255"
+    },
+    "ksu-motor-163": {
+      "file": "docs/case-study-sources/ksu-motor-163.txt",
+      "url": "https://digitalcommons.kennesaw.edu/undergradsymposiumksu/Fall2022/presentations/163"
+    },
+    "ksu-cday-120": {
+      "file": "docs/case-study-sources/ksu-cday-120.txt",
+      "url": "https://digitalcommons.kennesaw.edu/cday/Spring_2024/Undergraduate_Capstone/3"
+    },
+    "ksu-cday-winners": {
+      "file": "docs/case-study-sources/ksu-cday-winners.txt",
+      "url": "https://www.kennesaw.edu/ccse/events/computing-showcase/sp24-cday-winners.php"
+    },
+    "chatbot-report": {
+      "file": "docs/case-study-sources/chatbot-report-excerpts.txt",
+      "url": "https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf"
+    },
+    "chatbot-site": {
+      "file": "docs/case-study-sources/chatbot-site.txt",
+      "url": "https://virtualcompanionchatbot.wordpress.com/"
+    },
+    "method": "How an on-page chart or illustration works (web/projects/case-charts.js): not a claim about any project. Each entry explains itself in a note.",
+    "opinion": "Cesar's views written in his voice from his direction (docs/case-study-answers.md, Q2). Not checkable: each entry also cites cesar-answers, and stays pending-cesar until he reads it."
+  },
+  "facts": [
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · Problem",
+      "sentence": "How do you give coding agents clear roles, and delivery context they can read but not change?",
+      "source": "homepage",
+      "quote": [
+        "Clear roles and read-only access to delivery tools",
+        "Context they can read, not change."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · Proof",
+      "sentence": "The agent run behind this site",
+      "source": "lab",
+      "quote": [
+        "The agent run behind this site"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Link text to lab/build-trace.html."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · Proof",
+      "sentence": "How I evaluate agents",
+      "source": "lab",
+      "quote": [
+        "How I evaluate agents"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Link text to lab/evaluating-agents.html."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One hard decision",
+      "sentence": "Each handoff between agents costs something.",
+      "source": "lab",
+      "quote": [
+        "Each handoff between agents costs something."
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One hard decision",
+      "sentence": "The receiving agent gets a summary instead of the full context, and a task that dies midway has to be handed off again.",
+      "source": "lab",
+      "quote": [
+        "The receiving agent gets a summary instead of the full context, and a task that dies midway has to be handed off again."
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One hard decision",
+      "sentence": "My conclusion: keep one agent in charge of integration and commits, and add specialists where an independent check is worth more than the handoff.",
+      "source": "lab",
+      "quote": [
+        "My conclusion is narrow.",
+        "Keep one agent in charge of integration and commits, and add specialists where an independent check is worth more than the handoff."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One hard decision",
+      "sentence": "The multi-agent workflow I built is set up that way: one subagent implements, one reviews, one verifies, and they get read-only access to delivery tools.",
+      "source": "lab",
+      "quote": [
+        "The multi-agent workflow I built is set up that way: one subagent implements, one reviews, one verifies, and they get read-only access to delivery tools."
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "The essay's wording. Access to delivery tools is read-only; the agents themselves have write access, and production waits for Cesar (docs/case-study-answers.md, Q2), as the \"How it works\" section says."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "In the recorded run, 8 of its 52 steps ended in an error, and 6 of those are followed by a recorded retry or fix.",
+      "source": "lab",
+      "quote": [
+        "Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "Both tasks that stopped midway and left partial edits behind were delegated worker tasks.",
+      "source": "lab",
+      "quote": [
+        "Both tasks that stopped midway and left partial edits behind were delegated worker tasks."
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "One was interrupted and one lost its connection, and both were resumed.",
+      "source": "lab",
+      "quote": [
+        "one interrupted and one after a lost connection, and both were resumed"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything.",
+      "source": "lab",
+      "quote": [
+        "There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything."
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · My part",
+      "sentence": "I built the workflow: specialist coding agents that implement, review and verify, read-only tools for CI and source-control context, and a searchable knowledge base compiled automatically from work sessions.",
+      "source": [
+        "homepage",
+        "metrics"
+      ],
+      "quote": [
+        "Specialist coding subagents split the work: one implements, one reviews, one verifies.",
+        "a searchable knowledge base is compiled automatically from work sessions",
+        "709 calls to the read-only CI and source-control tools"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "\"I built\" comes from the essay: \"The multi-agent workflow I built is set up that way\". Tool names are left out on purpose (Q5: nothing that ties the workflow to an employer)."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "In 30 seconds · Result",
+      "sentence": "The build trace is a recorded run of this same workflow: 52 steps and 16 commits from the Nov 10–11, 2026 redesign of this site, errors and retries included.",
+      "source": [
+        "cesar-answers",
+        "lab",
+        "trace"
+      ],
+      "quote": [
+        "The build trace is a run of this same workflow",
+        "Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix.",
+        "16 commits after the baseline",
+        "Recorded Nov 10–11, 2026: the redesign of this site, step by step."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · counters",
+      "sentence": "514 delegations to subagents across 121 sessions, Oct 9–Nov 11, 2026.",
+      "source": "metrics",
+      "quote": [
+        "514 delegation calls to subagents across 121 sessions (Oct 9–Nov 11, 2026)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · counters",
+      "sentence": "38% of those sessions delegated work.",
+      "source": "metrics",
+      "quote": [
+        "delegation used in 38% of sessions"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · counters",
+      "sentence": "93 review calls.",
+      "source": "metrics",
+      "quote": [
+        "93 quality-review calls and 57 verification calls"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · counters",
+      "sentence": "57 verification calls.",
+      "source": "metrics",
+      "quote": [
+        "93 quality-review calls and 57 verification calls"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · counters",
+      "sentence": "709 lookups through the read-only CI and source-control tools.",
+      "source": "metrics",
+      "quote": [
+        "709 calls to the read-only CI and source-control tools"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · counters",
+      "sentence": "199 pages, compiled from 130 of 131 recorded sessions.",
+      "source": "metrics",
+      "quote": [
+        "A searchable 199-page knowledge base compiled from 130 of 131 session exports"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · counters",
+      "sentence": "188 searches of the knowledge base.",
+      "source": "metrics",
+      "quote": [
+        "with 188 retrieval calls"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · counters",
+      "sentence": "55 commits over five days, through November 11, 2026.",
+      "source": "metrics",
+      "quote": [
+        "55 commits over five days, through round 8 (commit 92a6746)",
+        "Measured through November 11, 2026"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · caption",
+      "sentence": "Measured through November 11, 2026.",
+      "source": "metrics",
+      "quote": [
+        "Measured through November 11, 2026"
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · caption",
+      "sentence": "Aggregate counts from my own setup: session logs, the knowledge base and this site’s repository.",
+      "source": "metrics",
+      "quote": [
+        "Source: Cesar's own setup (session exports, the LLM Wiki knowledge base, this repository).",
+        "Aggregate, public-safe counts only"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works",
+      "sentence": "The build trace is a recorded run of this same workflow.",
+      "source": "cesar-answers",
+      "quote": [
+        "The build trace is a run of this same workflow"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Q1: \"The page can say so plainly.\""
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works",
+      "sentence": "One agent implements, one reviews, one verifies, and an orchestrating agent plans, delegates, integrates and commits.",
+      "source": [
+        "cesar-answers",
+        "trace"
+      ],
+      "quote": [
+        "one agent implements, one reviews, one verifies, under the orchestrator",
+        "plans, delegates, integrates, commits"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works",
+      "sentence": "The agents do real work with write access: they edit files, run tests and commit.",
+      "source": [
+        "cesar-answers",
+        "trace"
+      ],
+      "quote": [
+        "the agents do have write access",
+        "Run the available node tests and browser test harness",
+        "plans, delegates, integrates, commits",
+        "builds assigned sections and fixes tour behavior"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works",
+      "sentence": "What they know about delivery, the CI runs and source control, they read through read-only tools, so an agent can’t start a deploy or a merge by mistake.",
+      "source": [
+        "cesar-answers",
+        "metrics"
+      ],
+      "quote": [
+        "an agent can't trigger a deploy or merge by mistake",
+        "read-only context tools plus a human approval gate for production",
+        "709 calls to the read-only CI and source-control tools"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works",
+      "sentence": "Anything that touches production waits for my approval.",
+      "source": "cesar-answers",
+      "quote": [
+        "anything that touches production needs Cesar's approval first (they must ask him)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works",
+      "sentence": "When a review or a check fails, the findings come back to me.",
+      "source": "cesar-answers",
+      "quote": [
+        "When a review or check fails, the findings go back"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works",
+      "sentence": "Either I correct the agent so it learns to do it properly, or I take that step over myself and hand it back as a worked example.",
+      "source": "cesar-answers",
+      "quote": [
+        "either Cesar corrects the agent so it learns how to do it properly, or he takes over that step himself and gives it to the agent as a worked example"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works",
+      "sentence": "Then the loop runs again.",
+      "source": "cesar-answers",
+      "quote": [
+        "then it runs again"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram node",
+      "sentence": "Plans and delegates",
+      "source": "trace",
+      "quote": [
+        "plans, delegates, integrates, commits"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram node",
+      "sentence": "Correct or take over",
+      "source": "cesar-answers",
+      "quote": [
+        "either Cesar corrects the agent so it learns how to do it properly, or he takes over that step himself"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram node",
+      "sentence": "Approve production",
+      "source": "cesar-answers",
+      "quote": [
+        "anything that touches production needs Cesar's approval first"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram node",
+      "sentence": "Verified change",
+      "source": "cesar-answers",
+      "quote": [
+        "implement → review → verify"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "The orchestrator hands a task to an implementing agent.",
+      "source": "cesar-answers",
+      "quote": [
+        "under the orchestrator",
+        "one agent implements"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "The change goes to a reviewing agent.",
+      "source": "cesar-answers",
+      "quote": [
+        "Yes: implement → review → verify."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "If the review passes, a verifying agent runs the checks.",
+      "source": "cesar-answers",
+      "quote": [
+        "Yes: implement → review → verify.",
+        "one verifies"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "A failed review comes back to me.",
+      "source": "cesar-answers",
+      "quote": [
+        "When a review or check fails, the findings go back"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "A failed check comes back to me.",
+      "source": "cesar-answers",
+      "quote": [
+        "When a review or check fails, the findings go back"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "I correct the agent, or take the step over and hand it back as a worked example, and it runs again.",
+      "source": "cesar-answers",
+      "quote": [
+        "either Cesar corrects the agent so it learns how to do it properly, or he takes over that step himself and gives it to the agent as a worked example; then it runs again"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "A verified change lands.",
+      "source": "cesar-answers",
+      "quote": [
+        "Yes: implement → review → verify."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "If it touches production, it waits for my approval.",
+      "source": "cesar-answers",
+      "quote": [
+        "anything that touches production needs Cesar's approval first"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · diagram connection",
+      "sentence": "Once I approve, it goes ahead.",
+      "source": "cesar-answers",
+      "quote": [
+        "anything that touches production needs Cesar's approval first (they must ask him)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · caption",
+      "sentence": "The loop: implement, review, verify.",
+      "source": "cesar-answers",
+      "quote": [
+        "Yes: implement → review → verify."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "How it works · caption",
+      "sentence": "Failures come back to me, and anything that touches production waits for my approval.",
+      "source": "cesar-answers",
+      "quote": [
+        "When a review or check fails, the findings go back",
+        "anything that touches production needs Cesar's approval first"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Where the work goes · chart",
+      "sentence": "Delegations by role from July 22 to November 11, 2026: the top roles, out of 527 delegations in total.",
+      "source": "metrics",
+      "quote": [
+        "Delegations by role, Jul 22–Nov 11, 2026 (top roles, 527 delegations in total):",
+        "general 142; implementation 104; quality review 93; verification 57; UI/design 34; analysis 19; housekeeping 19; release helper 18."
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "values": {
+        "General purpose": "142",
+        "Implementation": "104",
+        "Quality review": "93",
+        "Verification": "57",
+        "UI and design": "34",
+        "Analysis": "19",
+        "Housekeeping": "19",
+        "Release helper": "18"
+      },
+      "note": "Role names made generic (\"General purpose\" for general, \"UI and design\" for UI/design)."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Where the work goes · chart",
+      "sentence": "This window starts earlier than the 514 above, which count from October 9.",
+      "source": "metrics",
+      "quote": [
+        "than the 514 above (Oct 9–Nov 11), so the two totals differ"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Explains why the role chart (527) and the counter (514) differ: different windows."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Where the work goes · chart",
+      "sentence": "The green bars, Implementation, Quality review and Verification, are the three agent roles of the loop.",
+      "source": "cesar-answers",
+      "quote": [
+        "one agent implements, one reviews, one verifies"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Implementation, quality review and verification."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test",
+      "sentence": "This site is where the workflow is easiest to see.",
+      "source": [
+        "opinion",
+        "cesar-answers"
+      ],
+      "quote": [
+        "The build trace is a run of this same workflow"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Cesar's view, as written for him; the recorded run of this site is the workflow's only public trace. Cesar to confirm the wording. Approved by Cesar in chat, November 11, 2026."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test",
+      "sentence": "Up to a fixed commit on November 11, 2026, it took 55 commits over five days.",
+      "source": "metrics",
+      "quote": [
+        "55 commits over five days, through round 8 (commit 92a6746)",
+        "17 (2026-11-11)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test",
+      "sentence": "The recorded replay covers 16 of those commits, from the Nov 10–11 redesign.",
+      "source": [
+        "metrics",
+        "lab"
+      ],
+      "quote": [
+        "the curated replay covers 52 steps and 16 commits",
+        "This recording covers those two days only."
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Only these 16 commits are individually supported as agent work (Q3)."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test · chart",
+      "sentence": "Commits to this site’s working branch per day, November 7 to 11, 2026: 55 in total, up to a fixed commit from November 11.",
+      "source": "metrics",
+      "quote": [
+        "Commits per day on this site's working branch, Nov 7–11, 2026: Nov 7: 2; Nov 8: 11; Nov 9: 7; Nov 10: 18; Nov 11: 17 (55 in total, through round 8, commit 92a6746)."
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "values": {
+        "Nov 7": "2",
+        "Nov 8": "11",
+        "Nov 9": "7",
+        "Nov 10": "18",
+        "Nov 11": "17"
+      },
+      "note": "Checked with git log on November 11, 2026; the command is in the source file."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test · chart",
+      "sentence": "The green columns, Nov 10 and Nov 11, are the days the recorded replay covers.",
+      "source": "trace",
+      "quote": [
+        "2026-11-10T10:12:11-05:00",
+        "2026-11-11T12:03:09-05:00"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "The trace's run.started and run.ended."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test · chart",
+      "sentence": "Runnable node tests at each documented checkpoint of this site, from 39 to 163.",
+      "source": [
+        "metrics",
+        "handoff"
+      ],
+      "quote": [
+        "runnable node tests grew 39 → 163",
+        "Nov 9 polish session: 39",
+        "Round 2: 65",
+        "Round 3: 94",
+        "Round 5: 102",
+        "Round 6: 139",
+        "Round 7: 160",
+        "Round 8: 163",
+        "`node --test` 39 pass",
+        "65 node tests pass",
+        "94 node tests pass",
+        "`node --test` 102 pass",
+        "`node --test` 139 pass",
+        "`node --test` 160 pass",
+        "163 node tests",
+        "November 9, polish + motion session",
+        "November 10 (after midnight), round 2",
+        "November 10, round 3",
+        "November 11, round 5",
+        "November 11, round 6",
+        "November 11, round 7",
+        "November 11, round 8"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "values": {
+        "Nov 9": "39",
+        "Nov 10 (a)": "65",
+        "Nov 10 (b)": "94",
+        "Nov 11 (a)": "102",
+        "Nov 11 (b)": "139",
+        "Nov 11 (c)": "160",
+        "Nov 11 (d)": "163"
+      },
+      "note": "Row labels are the checkpoint dates from HANDOFF.md instead of internal round numbers (Nov 9 polish session; rounds 2–3 on Nov 10; rounds 5–8 on Nov 11), lettered in order within a day. Round 4 recorded no count, so it has no point."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test · chart",
+      "sentence": "Checkpoints on the same day are lettered in order.",
+      "source": "method",
+      "quote": [
+        "Row labels of the test-count chart in web/projects/agent-workflow.html"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Explains the (a), (b), … row labels; not a claim."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test · chart",
+      "sentence": "The recorded replay, one square per step.",
+      "source": "lab",
+      "quote": [
+        "Of its 52 steps, 8 ended in an error"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Describes the chart."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "This site as a test · chart",
+      "sentence": "Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix.",
+      "source": "lab",
+      "quote": [
+        "Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix."
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "values": {
+        "Recorded steps": "52",
+        "Ended in an error": "8",
+        "Then retried or fixed": "6"
+      }
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Why I work this way (opinion)",
+      "sentence": "I think more of engineering will look like this: you split the work, delegate it to agents, and automate the checks around them.",
+      "source": [
+        "opinion",
+        "cesar-answers"
+      ],
+      "quote": [
+        "Expand on why delegating and automating work is the future (his view), alongside the gate.",
+        "anything that touches production needs Cesar's approval first (they must ask him)"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Cesar's view, written for him from his direction in Q2. Cesar to read and confirm the wording. Approved by Cesar in chat, November 11, 2026."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Why I work this way (opinion)",
+      "sentence": "My time goes to the parts that need judgment: what to build, how to split it, and whether the result is right.",
+      "source": [
+        "opinion",
+        "cesar-answers"
+      ],
+      "quote": [
+        "Expand on why delegating and automating work is the future (his view), alongside the gate.",
+        "anything that touches production needs Cesar's approval first (they must ask him)"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Cesar's view, written for him from his direction in Q2. Cesar to read and confirm the wording. Approved by Cesar in chat, November 11, 2026."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Why I work this way (opinion)",
+      "sentence": "Delegation only works with a gate.",
+      "source": [
+        "opinion",
+        "cesar-answers"
+      ],
+      "quote": [
+        "Expand on why delegating and automating work is the future (his view), alongside the gate.",
+        "anything that touches production needs Cesar's approval first (they must ask him)"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Cesar's view, written for him from his direction in Q2. Cesar to read and confirm the wording. Approved by Cesar in chat, November 11, 2026."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Why I work this way (opinion)",
+      "sentence": "Agents can be wrong, and they sound just as sure when they are.",
+      "source": [
+        "opinion",
+        "cesar-answers"
+      ],
+      "quote": [
+        "Expand on why delegating and automating work is the future (his view), alongside the gate.",
+        "anything that touches production needs Cesar's approval first (they must ask him)"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Cesar's view, written for him from his direction in Q2. Cesar to read and confirm the wording. Approved by Cesar in chat, November 11, 2026."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Why I work this way (opinion)",
+      "sentence": "An edit, a test run or a commit is easy to read and undo; a production change isn’t.",
+      "source": [
+        "opinion",
+        "cesar-answers"
+      ],
+      "quote": [
+        "Expand on why delegating and automating work is the future (his view), alongside the gate.",
+        "anything that touches production needs Cesar's approval first (they must ask him)"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Cesar's view, written for him from his direction in Q2. Cesar to read and confirm the wording. Approved by Cesar in chat, November 11, 2026."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Why I work this way (opinion)",
+      "sentence": "So the agents ask first, and I approve.",
+      "source": [
+        "opinion",
+        "cesar-answers"
+      ],
+      "quote": [
+        "Expand on why delegating and automating work is the future (his view), alongside the gate.",
+        "anything that touches production needs Cesar's approval first (they must ask him)"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Cesar's view, written for him from his direction in Q2. Cesar to read and confirm the wording. Approved by Cesar in chat, November 11, 2026."
+    },
+    {
+      "page": "agent-workflow",
+      "section": "One limit",
+      "sentence": "The counts above show how much I use the workflow, not how well it works, and I don’t publish success or approval rates.",
+      "source": "cesar-answers",
+      "quote": [
+        "Not to publish: success/reliability/approval-compliance percentages, time or cost savings"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "Stack",
+      "sentence": "Verification",
+      "source": "metrics",
+      "quote": [
+        "93 quality-review calls and 57 verification calls"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · Problem",
+      "sentence": "Turn the EEG of attempted handwriting into text, one character at a time, to help people who can no longer write.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "decode the attempted handwriting thoughts from neural activity in the motor cortex and translates it to text",
+        "participants attempted to handwrite each character one at a time",
+        "assist any individual that suffered any brain or physical damage that impedes the function of writing"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · My part",
+      "sentence": "I’m the first presenter listed on the Fall 2022 talk and the only presenter on the Spring 2022 poster.",
+      "source": [
+        "ksu-bci-136",
+        "ksu-bci-255"
+      ],
+      "quote": [
+        "Presenters Cesar Lucena Trujillo, Kennesaw State University Abm. Adnan Azmee",
+        "Presenters Cesar Lucena Trujillo, Kennesaw State University Primary Investigator (PI) Name",
+        "This Poster is brought to you"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "The records list Cesar under his earlier name; the page does not repeat it."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · Result",
+      "sentence": "A method presented in 2022: an autoencoder compresses the EEG into a low-dimensional space, and t-SNE maps it to 2D to show how the characters separate.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "start by using an autoencoder to compress the data into a low-dimensional space, then use t-SNE for mapping the compressed data to a 2D plane",
+        "visualizing similarity relationships in high-dimensional data",
+        "Fall 2022 Symposium of Student Scholars"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · Proof",
+      "sentence": "Presented at NCUR and received a $2,000 Research Excellence stipend.",
+      "source": "homepage",
+      "quote": [
+        "Presented the work at NCUR and received a $2,000 Research Excellence stipend."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "What the study did",
+      "sentence": "Earlier systems had people choose from a small, fixed set of words.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "Previous studies have approached this problem by using neural signals to choose from a limited set of possible words"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "What the study did",
+      "sentence": "This study aimed for a model that could type any word in English, so participants attempted to handwrite each character one at a time, following instructions on a computer screen.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "this study seeks to have a more general model that can type any word in the vast English vocabulary",
+        "participants attempted to handwrite each character one at a time, following the instructions given on a computer screen"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "What the study did",
+      "sentence": "The EEG was hard to work with: it is noisy, and trials of different characters look alike.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "The collected data from the EEG signals is challenging to process due to the noise and the similarities between different trials"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "What the study did",
+      "sentence": "To see whether the characters separate at all, an autoencoder compresses the data into a low-dimensional space, and t-SNE maps that space onto a 2D plane.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "start by using an autoencoder to compress the data into a low-dimensional space, then use t-SNE for mapping the compressed data to a 2D plane"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Pipeline · diagram node",
+      "sentence": "EEG channels",
+      "source": "ksu-bci-136",
+      "quote": [
+        "The collected data from the EEG signals"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Pipeline · diagram node",
+      "sentence": "t-SNE map in 2D",
+      "source": "ksu-bci-136",
+      "quote": [
+        "use t-SNE for mapping the compressed data to a 2D plane"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Pipeline · diagram connection",
+      "sentence": "The EEG of each attempted character goes into an autoencoder.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "participants attempted to handwrite each character one at a time",
+        "start by using an autoencoder to compress the data"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Pipeline · diagram connection",
+      "sentence": "Its low-dimensional code is mapped onto a 2D plane with t-SNE.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "compress the data into a low-dimensional space, then use t-SNE for mapping the compressed data to a 2D plane"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Pipeline · diagram connection",
+      "sentence": "The 2D map shows how the characters separate.",
+      "source": [
+        "ksu-bci-136",
+        "cesar-answers"
+      ],
+      "quote": [
+        "The TSNE technique that is applied serves to visualize the low-dimensional data",
+        "maps it to 2D with t-SNE to see how characters separate"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Pipeline · caption",
+      "sentence": "The pipeline as presented, from the EEG of attempted handwriting to a 2D map of the characters.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "the neural representation of attempted handwriting",
+        "use t-SNE for mapping the compressed data to a 2D plane"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Illustration · caption",
+      "sentence": "Illustration with synthetic points, not the study’s data.",
+      "source": "method",
+      "quote": [
+        "web/projects/case-charts.js: makeClusters(), placePoints()"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Describes the illustration drawn by web/projects/case-charts.js (seeded synthetic clusters); no study data."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Illustration · caption",
+      "sentence": "Each letter stands for one attempted character, placed where a 2D map might put it.",
+      "source": "method",
+      "quote": [
+        "web/projects/case-charts.js: drawScatter()"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Describes the illustration drawn by web/projects/case-charts.js (seeded synthetic clusters); no study data."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Illustration · caption",
+      "sentence": "Raise the noise and the letters start to mix, which is the problem the study describes.",
+      "source": "method",
+      "quote": [
+        "web/projects/case-charts.js: spreadFor(), placePoints()",
+        "docs/case-study-sources/ksu-bci-136.txt: \"challenging to process due to the noise and the similarities between different trials\""
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Describes the illustration drawn by web/projects/case-charts.js (seeded synthetic clusters); no study data. The problem itself is quoted from the Fall 2022 abstract."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "Spring 2022 · Poster 255",
+      "source": "ksu-bci-255",
+      "quote": [
+        "spring2022/presentations/255",
+        "This Poster is brought to you"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "Brain-to-text communication through an invasive BCI",
+      "source": "ksu-bci-255",
+      "quote": [
+        "Title: Brain-to-text communication through an invasive BCI"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "The record title is cut off (\"an invasive BC\"); the abstract gives the full title."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "26th Symposium of Student Scholars.",
+      "source": "ksu-bci-255",
+      "quote": [
+        "26th Annual Symposium of Student Scholars - 2022"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "I was the only presenter.",
+      "source": "ksu-bci-255",
+      "quote": [
+        "Presenters Cesar Lucena Trujillo, Kennesaw State University Primary Investigator (PI) Name"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "Record on KSU DigitalCommons",
+      "source": [
+        "ksu-bci-136",
+        "ksu-bci-255",
+        "ksu-motor-163"
+      ],
+      "quote": [
+        "DigitalCommons@Kennesaw State University"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Link text, three times."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "Fall 2022 · Talk 136",
+      "source": "ksu-bci-136",
+      "quote": [
+        "Fall2022/presentations/136",
+        "This Oral Presentation (15-min time slots)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "Brain-to-text communication through a non-invasive BCI",
+      "source": "ksu-bci-136",
+      "quote": [
+        "Brain-to-text communication through a non-invasive BCI"
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "Fall 2022 Symposium of Student Scholars, a 15-minute oral presentation with five presenters.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "Fall 2022 Symposium of Student Scholars",
+        "This Oral Presentation (15-min time slots)",
+        "Presenters Cesar Lucena Trujillo, Kennesaw State University Abm. Adnan Azmee, Kennesaw State University Hafiz Khan, Kennesaw State University Manohar Murikipudi, Kennesaw State University Christopher Dargan, Kennesaw State University"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "I’m listed first.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "Presenters Cesar Lucena Trujillo"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "Fall 2022 · Talk 163 · Related project",
+      "source": "ksu-motor-163",
+      "quote": [
+        "Fall2022/presentations/163",
+        "Motor Imagery Detection Toward Non-Invasive Brainwave Based Typing"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "Motor Imagery Detection Toward Non-Invasive Brainwave Based Typing",
+      "source": "ksu-motor-163",
+      "quote": [
+        "Motor Imagery Detection Toward Non-Invasive Brainwave Based Typing"
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022 · timeline",
+      "sentence": "A related project, not the handwriting study, with seven presenters: deep neural networks detect imagined movement in EEG, with the aim of moving a cursor to write letters.",
+      "source": [
+        "ksu-motor-163",
+        "cesar-answers"
+      ],
+      "quote": [
+        "A sister project (motor imagery) used deep neural networks.",
+        "we utilize the potential of deep neural networks to develop a model which is able to identify the motor imagery movement from the EEG signal of a subject",
+        "move the cursor using user thought to write letters and form words",
+        "Yuliana Pacheco, Kennesaw State University Md Abdullah Al Hafiz Khan, Kennesaw State University"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Seven presenters are listed on the record."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "Published in 2022",
+      "sentence": "The principal investigator on all three was Dr. Md Abdullah Al Hafiz Khan.",
+      "source": [
+        "ksu-bci-136",
+        "ksu-bci-255",
+        "ksu-motor-163",
+        "cesar-answers"
+      ],
+      "quote": [
+        "Primary Investigator (PI) Name Md Abdullah Al Hafiz Khan",
+        "lead investigator Dr. Md Abdullah Al Hafiz Khan"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "One hard decision",
+      "sentence": "Earlier studies had people use their neural signals to pick from a limited set of words.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "Previous studies have approached this problem by using neural signals to choose from a limited set of possible words"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "One hard decision",
+      "sentence": "We chose the more general design: decode one character at a time, so the model could type any word in English, not only the words on a list.",
+      "source": [
+        "ksu-bci-136",
+        "cesar-answers"
+      ],
+      "quote": [
+        "this study seeks to have a more general model that can type any word in the vast English vocabulary",
+        "an open-vocabulary, character-by-character design instead of choosing from a limited set of words"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "One limit",
+      "sentence": "EEG is noisy, and trials of different characters look alike, which makes the data hard to process.",
+      "source": "ksu-bci-136",
+      "quote": [
+        "The collected data from the EEG signals is challenging to process due to the noise and the similarities between different trials"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "One limit",
+      "sentence": "The presented work maps how the characters separate; it is not a finished real-time typing system.",
+      "source": "cesar-answers",
+      "quote": [
+        "the work shows the representation, not a finished real-time typing system"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · Problem",
+      "sentence": "Make an LLM companion listen for the tone of a message, not just its words.",
+      "source": "homepage",
+      "quote": [
+        "Listen for the tone, not just the words.",
+        "An LLM companionship chatbot for college students.",
+        "A sentiment module names the emotion in each message"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One limit",
+      "sentence": "The evaluation lab shows how I evaluate a classifier instead, on open data: a held-out test set, bootstrap intervals, a threshold you can move, and failures picked by rule, not by hand.",
+      "source": "lab",
+      "quote": [
+        "This is a public reproduction on open data, built to show how I evaluate a classifier.",
+        "Held-out test set.",
+        "1,000 bootstrap resamples of the test set",
+        "Decision threshold",
+        "Picked by rule, not by hand"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · My part",
+      "sentence": "I led the four-person capstone team, handling the planning and direction, and designed the backend LLM: the DistilGPT-2 server and the sentiment module.",
+      "source": [
+        "cesar-answers",
+        "ksu-cday-winners"
+      ],
+      "quote": [
+        "I led the four-person capstone team (planning and direction) and designed the backend LLM: the DistilGPT-2 server and the sentiment module.",
+        "I was also in charge of planning and directing the project",
+        "Tortolero, Cesar; Gurung, Rakshak; Clark, Noah; Cabrejos, Fabritzzio A"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Wording Cesar settled on November 11, 2026 (Q11)."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · My part",
+      "sentence": "One teammate designed the React Native app, and two others helped with it briefly.",
+      "source": "cesar-answers",
+      "quote": [
+        "one partner designed the front end",
+        "the other two briefly assisted with the front end"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · Result",
+      "sentence": "First Place, Undergraduate Capstone, at the KSU C-Day Computing Showcase, Spring 2024.",
+      "source": "ksu-cday-winners",
+      "quote": [
+        "Spring 2024 Computing Showcase (C-Day) Winners",
+        "Undergraduate Capstone Winners First Place UC-120 Virtual Companionship Chatbot by Tortolero, Cesar"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · Proof",
+      "sentence": "KSU C-Day winners, Spring 2024",
+      "source": "ksu-cday-winners",
+      "quote": [
+        "Spring 2024 C-Day Winners"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Link text."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "In 30 seconds · Proof",
+      "sentence": "Final presentation video",
+      "source": "chatbot-site",
+      "quote": [
+        "Final Presentation Video"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Link text; a plain link, not an embed (the CSP allows no frames)."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The project in numbers · counters",
+      "sentence": "1,360 lines of code in the final project.",
+      "source": "chatbot-report",
+      "quote": [
+        "Number of Lines of code in the Project: 1360"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "values": [
+        "1,360"
+      ]
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The project in numbers · counters",
+      "sentence": "28 components.",
+      "source": "chatbot-report",
+      "quote": [
+        "Number of Components in the Project: 28"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "values": [
+        "28"
+      ]
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The project in numbers · counters",
+      "sentence": "8 emotions the sentiment module can name.",
+      "source": "cesar-answers",
+      "quote": [
+        "names the emotion in a message (joy, sadness, anger, fear, surprise, disgust, trust, anticipation)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The project in numbers · counters",
+      "sentence": "10 labelled prompts in the report’s test.",
+      "source": [
+        "cesar-answers",
+        "chatbot-report"
+      ],
+      "quote": [
+        "checking only the detected emotion (10-prompt set)",
+        "Data set:"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The project in numbers · caption",
+      "sentence": "From the team’s final report, April 2024.",
+      "source": "chatbot-report",
+      "quote": [
+        "Submission Date: April 2024"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works",
+      "sentence": "The app is React Native, with login, chat and past conversations.",
+      "source": [
+        "chatbot-report",
+        "ksu-cday-120"
+      ],
+      "quote": [
+        "It includes features like logging in, talking with the chatbot, looking at past conversations.",
+        "The application is built on a React Native frontend"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works",
+      "sentence": "Each message goes to a Python server, where a sentiment module names the emotion in it and a DistilGPT-2 model, using the QuAC dataset, writes the reply.",
+      "source": [
+        "ksu-cday-120",
+        "cesar-answers"
+      ],
+      "quote": [
+        "employs a DistilGPT-2 language model using the QUAC dataset, and is backed by a Python server",
+        "a sentiment module added to the LLM pipeline that names the emotion in a message"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works",
+      "sentence": "Firebase Realtime Database handles logins and user information.",
+      "source": [
+        "ksu-cday-120",
+        "chatbot-report"
+      ],
+      "quote": [
+        "capable of authenticating user logins, storing user information",
+        "the primary purpose of it was to setup an authentication system to verify user login"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works",
+      "sentence": "The module names one of eight emotions: joy, sadness, anger, fear, surprise, disgust, trust or anticipation.",
+      "source": "cesar-answers",
+      "quote": [
+        "names the emotion in a message (joy, sadness, anger, fear, surprise, disgust, trust, anticipation)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works",
+      "sentence": "Knowing the emotion lets the reply console or celebrate.",
+      "source": [
+        "cesar-answers",
+        "chatbot-report"
+      ],
+      "quote": [
+        "so the reply can console or celebrate",
+        "adjust its responses to offer consolation or acknowledge accomplishments appropriately"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works · diagram node",
+      "sentence": "Firebase Realtime Database",
+      "source": "cesar-answers",
+      "quote": [
+        "Firebase Realtime Database"
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works · diagram node",
+      "sentence": "Mobile app",
+      "source": "ksu-cday-120",
+      "quote": [
+        "Our app is is ready to deploy on IOS and android"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works · diagram frame",
+      "sentence": "Python server",
+      "source": "ksu-cday-120",
+      "quote": [
+        "is backed by a Python server"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works · diagram connection",
+      "sentence": "The app signs people in and stores their information with Firebase Realtime Database.",
+      "source": [
+        "ksu-cday-120",
+        "cesar-answers"
+      ],
+      "quote": [
+        "capable of authenticating user logins, storing user information",
+        "Firebase Realtime Database"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works · diagram connection",
+      "sentence": "The app sends each message to the Python server.",
+      "source": [
+        "ksu-cday-120",
+        "chatbot-report"
+      ],
+      "quote": [
+        "is backed by a Python server",
+        "the Python server hosting the LLM used by our application for the chatbot functionality"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works · diagram connection",
+      "sentence": "The sentiment module names the emotion before DistilGPT-2 writes the reply.",
+      "source": "cesar-answers",
+      "quote": [
+        "a sentiment module added to the LLM pipeline that names the emotion in a message",
+        "so the reply can console or celebrate"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works · diagram connection",
+      "sentence": "The reply goes back to the app, ready to console or celebrate.",
+      "source": "cesar-answers",
+      "quote": [
+        "so the reply can console or celebrate"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works · caption",
+      "sentence": "One message through the app: Firebase handles the login, and the Python server names the emotion before the model replies.",
+      "source": [
+        "ksu-cday-120",
+        "cesar-answers"
+      ],
+      "quote": [
+        "capable of authenticating user logins",
+        "a sentiment module added to the LLM pipeline that names the emotion in a message"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Eight emotions · chart",
+      "sentence": "The report’s test set: 10 labelled prompts across the eight emotions, two each for joy and sadness (the green bars) and one for each of the others.",
+      "source": "chatbot-report",
+      "quote": [
+        "Joy: \"I just got promoted at work",
+        "Sadness: \"I lost my favorite necklace today",
+        "Anger: \"Someone just cut me off in traffic",
+        "Fear: \"I heard a noise downstairs",
+        "Surprise: \"I can't believe they threw me a surprise party",
+        "Disgust: \"There was mold on the bread",
+        "Trust: \"My best friend always supports me",
+        "Anticipation: \"I'm looking forward to the concert next month",
+        "Sadness: \"Watching the end of that movie",
+        "Joy: \"Winning the championship"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Counted from the data set printed in the report: joy 2, sadness 2, the other six 1 each.",
+      "values": {
+        "Joy": "2",
+        "Sadness": "2",
+        "Anger": "1",
+        "Fear": "1",
+        "Surprise": "1",
+        "Disgust": "1",
+        "Trust": "1",
+        "Anticipation": "1"
+      },
+      "counted": true
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Eight emotions",
+      "sentence": "Two prompts from that set:",
+      "source": "chatbot-report",
+      "quote": [
+        "Data set:"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Eight emotions · quote",
+      "sentence": "“I just got promoted at work and I'm ecstatic about the new opportunities!”",
+      "source": "chatbot-report",
+      "quote": [
+        "Joy: \"I just got promoted at work and I'm ecstatic about the new opportunities!\""
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Verbatim words; curly quotation marks."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Eight emotions · quote",
+      "sentence": "“I lost my favorite necklace today, and it's left me feeling really down.”",
+      "source": "chatbot-report",
+      "quote": [
+        "Sadness: \"I lost my favorite necklace today, and it's left me feeling really down.\""
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Verbatim words; curly quotation marks."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The deployment plan",
+      "sentence": "The C-Day abstract describes the Azure deployment as a plan.",
+      "source": "ksu-cday-120",
+      "quote": [
+        "We plan to deploy it on an Azure NC6s_v3 Cloud server"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The deployment plan",
+      "sentence": "The report sized it two ways.",
+      "source": "chatbot-report",
+      "quote": [
+        "we planned for a high availability (HA) architecture",
+        "we have a second architecture planned for the early stage of the application"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The deployment plan",
+      "sentence": "For a fast-growing user base, two Azure NC6s_v3 GPU servers, one on the east coast and one on the west, each with a replicated Firebase database, so a regional outage would not take the app down.",
+      "source": "chatbot-report",
+      "quote": [
+        "this would be the ideal setup assuming we would be able to grow the application’s user base rapidly",
+        "two Azure cloud servers with one strategically being on the east coast and the other being on the west coast",
+        "The servers planned for hosting are the NC6s_v3 Azure Cloud servers",
+        "memory and GPU computational resources",
+        "two Firebase Realtime databases configured for data replication",
+        "increase reliability in the event of regional outages"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The deployment plan",
+      "sentence": "For an early, small user base, one server and one database in the east.",
+      "source": "chatbot-report",
+      "quote": [
+        "a second architecture planned for the early stage of the application where we may have a very small user base",
+        "deploy one azure cloud server of the same type with a single DB on the east coast"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The deployment plan · chart",
+      "sentence": "The report’s two plans.",
+      "source": "chatbot-report",
+      "quote": [
+        "a second architecture planned"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The deployment plan · chart",
+      "sentence": "Two servers: $5,070.56 a month ($4,870.56 for the servers and $200 for the databases) for about 2,400 requests a minute, or about 22,000 users.",
+      "source": "chatbot-report",
+      "quote": [
+        "the monthly cost of running the dual server setup would be $4870.56",
+        "the Database (DB) servers would cost an additional $200",
+        "This brings our total monthly costs to $5070.56",
+        "handle a capacity of approximately 2,400 requests per minute to support approximately 22,000 users",
+        "reduce the capacity to 1,200 request per minute only support 10,000 users"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "values": {
+        "One server, east (early stage)": [
+          "1,200",
+          "10,000",
+          "about half"
+        ],
+        "Two servers, east and west": [
+          "about 2,400",
+          "about 22,000",
+          "$5,070.56"
+        ]
+      }
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The deployment plan · chart",
+      "sentence": "One server: about half the cost, for 1,200 requests a minute and 10,000 users.",
+      "source": "chatbot-report",
+      "quote": [
+        "halving our costs compared to the dual server setup",
+        "reduce the capacity to 1,200 request per minute only support 10,000 users"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "The deployment plan · chart",
+      "sentence": "The report gives no exact one-server cost, so that grey bar is drawn at half.",
+      "source": "chatbot-report",
+      "quote": [
+        "halving our costs compared to the dual server setup"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "The bar uses data-share=\"0.5\"; no dollar figure is invented."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Watch and read · link card",
+      "sentence": "Final presentation",
+      "source": "chatbot-site",
+      "quote": [
+        "Final Presentation Video"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Link text."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Watch and read · link card",
+      "sentence": "Final report",
+      "source": "chatbot-report",
+      "quote": [
+        "Final Report"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Link text."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Watch and read · link card",
+      "sentence": "C-Day poster",
+      "source": "ksu-cday-winners",
+      "quote": [
+        "Presentation | Poster"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Link text."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Watch and read · link card",
+      "sentence": "Project site",
+      "source": "ksu-cday-120",
+      "quote": [
+        "Event Website https://virtualcompanionchatbot.wordpress.com/"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Link text."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Watch and read · link card",
+      "sentence": "Code repository",
+      "source": "chatbot-site",
+      "quote": [
+        "Visit our GitHub: GitHub Repository"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Link text."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One hard decision",
+      "sentence": "Every message goes through the sentiment module before the reply.",
+      "source": "cesar-answers",
+      "quote": [
+        "a sentiment module added to the LLM pipeline that names the emotion in a message"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One hard decision",
+      "sentence": "Without it, as the report puts it, the model was a basic conversationalist; with it, the reply can console a sad message or celebrate good news.",
+      "source": "chatbot-report",
+      "quote": [
+        "we were able to upgrade it from a basic conversationalist to a perceptive friend",
+        "adjust its responses to offer consolation or acknowledge accomplishments appropriately"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One limit",
+      "sentence": "The report’s test fed the 10 labelled prompts to the backend and noted only the emotion it detected.",
+      "source": [
+        "chatbot-report",
+        "cesar-answers"
+      ],
+      "quote": [
+        "The process we followed was to feed it a prompt on the backend and then we ignored the response the LLM gave but took note of the emotions it detected",
+        "(10-prompt set)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "One limit",
+      "sentence": "It ignored the replies and reports no accuracy figure; the report’s reason is that testing an LLM widely is costly.",
+      "source": [
+        "chatbot-report",
+        "cesar-answers"
+      ],
+      "quote": [
+        "we ignored the response the LLM gave",
+        "This methodology was chosen since widely testing an LLM can be costly",
+        "The 95% sentiment accuracy and 20% higher satisfaction are not in any public record"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "Stack",
+      "sentence": "QuAC",
+      "source": "cesar-answers",
+      "quote": [
+        "DistilGPT-2 model with the QuAC dataset"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "voicelab",
+      "section": "In 30 seconds · Problem",
+      "sentence": "Can writing signals be explained, and a text revised, without losing what it means?",
+      "source": "homepage",
+      "quote": [
+        "A local prototype for explainable writing-signal analysis and meaning-preserving revision."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "work-helper",
+      "section": "In 30 seconds · Problem",
+      "sentence": "How can software help people discover job opportunities and take the next step?",
+      "source": "homepage",
+      "quote": [
+        "A project exploring how software can help people discover job opportunities and take the next step."
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "barking-village",
+      "section": "In 30 seconds · Problem",
+      "sentence": "Bring dog-care staff workflows into one place.",
+      "source": "homepage",
+      "quote": [
+        "A full-stack dog-care operations project bringing staff workflows into one place"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "barking-village",
+      "section": "In 30 seconds · What it is",
+      "sentence": "A full-stack dog-care operations project.",
+      "source": "homepage",
+      "quote": [
+        "A full-stack dog-care operations project bringing staff workflows into one place"
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "barking-village",
+      "section": "In 30 seconds · Covers",
+      "sentence": "Care sessions, daily planning, room status, and dog records.",
+      "source": "homepage",
+      "quote": [
+        "care sessions, daily planning, room status, and dog records"
+      ],
+      "wording": "verbatim",
+      "status": "approved"
+    },
+    {
+      "page": "agent-workflow",
+      "section": "The workflow in numbers · caption",
+      "sentence": "The site’s counts stop at a fixed commit from November 11, so later work doesn’t change them.",
+      "source": "metrics",
+      "quote": [
+        "through round 8 (commit 92a6746)",
+        "Pinned to that commit so later commits don't change it.",
+        "17 (2026-11-11)"
+      ],
+      "wording": "reworded",
+      "status": "approved"
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · My part",
+      "sentence": "As lead researcher, I worked on decoding attempted handwriting from non-invasive EEG, one character at a time, with an autoencoder and t-SNE.",
+      "source": [
+        "homepage",
+        "ksu-bci-136"
+      ],
+      "quote": [
+        "Lead Researcher, Thoughts-to-Text BCI",
+        "Researched decoding attempted handwriting from EEG, one character at a time, and mapped how characters separate with an autoencoder and t-SNE.",
+        "Brain-to-text communication through a non-invasive BCI"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Matches the résumé line (November 2026): \"Researched decoding attempted handwriting from non-invasive EEG, one character at a time (autoencoder + t-SNE)\"."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · My part",
+      "sentence": "I presented the work at NCUR, the National Conference on Undergraduate Research, and in two KSU symposium presentations in 2022, plus a related motor-imagery talk.",
+      "source": [
+        "homepage",
+        "ksu-bci-255",
+        "ksu-bci-136",
+        "ksu-motor-163"
+      ],
+      "quote": [
+        "As lead researcher, I presented the work at NCUR, the National Conference on Undergraduate Research",
+        "Brain-to-text communication through an invasive BC",
+        "26th Annual Symposium of Student Scholars - 2022",
+        "Brain-to-text communication through a non-invasive BCI",
+        "Fall 2022 Symposium of Student Scholars",
+        "Motor Imagery Detection Toward Non-Invasive Brainwave Based Typing"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Posters 255 (Spring 2022) and talk 136 (Fall 2022) are the handwriting study; talk 163 is a related motor-imagery project."
+    },
+    {
+      "page": "thoughts-to-text",
+      "section": "In 30 seconds · Proof",
+      "sentence": "2 KSU symposium presentations, 2022, and a related talk",
+      "source": [
+        "ksu-bci-255",
+        "ksu-bci-136",
+        "ksu-motor-163"
+      ],
+      "quote": [
+        "26th Annual Symposium of Student Scholars - 2022",
+        "Fall 2022 Symposium of Student Scholars",
+        "Motor Imagery Detection Toward Non-Invasive Brainwave Based Typing"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Link text to the timeline."
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "about": "Ledger entries for sentences the 2026-11-13 pages fix added to the case studies (branch fix/pages). Same format and checks as docs/case-study-facts*.json; kept here because docs/ belonged to the docs task during that fix. Fold these into docs/case-study-facts.json when the branches merge.",
+  "sources": {},
+  "facts": [
+    {
+      "page": "thoughts-to-text",
+      "section": "Presented in 2022",
+      "sentence": "The two KSU records share one goal but cover different work: the Spring 2022 poster is titled for an invasive BCI and sets out the aim, while the Fall 2022 talk is titled for a non-invasive BCI and adds the EEG recordings and the autoencoder and t-SNE method shown on this page.",
+      "source": ["ksu-bci-255", "ksu-bci-136"],
+      "quote": [
+        "Brain-to-text communication through an invasive BC",
+        "this study seeks to have a more general model that can type any word in the vast English vocabulary",
+        "Brain-to-text communication through a non-invasive BCI",
+        "The collected data from the EEG signals is challenging to process",
+        "start by using an autoencoder to compress the data into a low-dimensional space, then use t-SNE"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Answers the t3 audit (finding 10): the page says non-invasive EEG while poster 255 is titled for an invasive BCI. Both abstracts state the same goal; only the Fall 2022 talk (136) describes EEG data and the autoencoder and t-SNE method."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works",
+      "sentence": "The report also notes that storing chat history as context for the model was withheld from the final product.",
+      "source": "chatbot-report",
+      "quote": [
+        "store user chat information for a short period of time to provide the LLM with contextual information",
+        "this portion of the project was withheld from the final functioning product"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "t3 audit finding 11: the page lists past conversations in the app; the report says keeping chat history for the model's context did not ship."
+    },
+    {
+      "page": "companion-chatbot",
+      "section": "How it works",
+      "sentence": "The module sits in the LLM pipeline on the Python server: it reads textual cues in each message to name the emotion, and the model adjusts its reply to fit; the public report does not name the classifier behind it.",
+      "source": ["cesar-answers", "chatbot-report"],
+      "quote": [
+        "a sentiment module added to the LLM pipeline that names the emotion in a message",
+        "designed to identify user emotions based on textual cues",
+        "integrated with the LLM so that the chatbot could now determine the emotion",
+        "adjust its responses to offer consolation or acknowledge accomplishments appropriately"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "t3 audit finding 11: how the sentiment module works, from docs/case-study-answers.md and the report. Neither names the classifier, so the page says so."
+    }
+  ]
+}

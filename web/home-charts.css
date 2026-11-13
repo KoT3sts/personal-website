@@ -1,0 +1,113 @@
+/* Homepage data widgets (home-charts.js): the hero proof count-up, the small
+   charts on capability cards, and the skill tags that point to where each
+   tool is used. Everything here is drawn by script over complete markup;
+   charts are aria-hidden and drawn from the card's own sentence. Layers as
+   declared in styles.css. */
+@layer components {
+  /* ---- Hero proof count-up: the final figure keeps its place (width, and what
+     screen readers hear); the counting copy sits on top of it. ---- */
+  .proof-count { position: relative; display: inline-block; }
+  .proof-count-ink { position: absolute; left: 0; top: 0; white-space: nowrap; }
+  .proof-count:not(.is-counting) .proof-count-ink { display: none; }
+  .proof-count.is-counting .proof-count-final { color: transparent; }
+
+  /* ---- Capability charts (dark section). Labels #a5ada0 on #101114: about 8:1. ---- */
+  .cap-chart { display: grid; gap: 8px; margin-top: 18px; max-width: 420px; color: #a5ada0; }
+  .cap-chart .mono { font-size: var(--text-label); letter-spacing: .05em; line-height: 1.3; }
+  .cap-chart-caption { margin: 2px 0 0; }
+  .cap-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .cap-dots { max-width: 306px; }
+  .cap-on { fill: var(--green); }
+  .cap-dot-ring { fill: none; stroke: var(--green); stroke-width: 1.2; }
+  .cap-dot-play { fill: var(--green); }
+  /* The record set: one hatched band; the metrics it was scored on, named under it (no values). */
+  .cap-band { position: relative; display: flex; align-items: center; min-height: 30px; padding: 0 10px; border: 1px solid var(--night-line); border-radius: 4px; overflow: hidden; }
+  .cap-band-fill { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgb(199 210 168 / .3) 0 2px, transparent 2px 6px); }
+  .cap-band-label { position: relative; padding: 1px 6px; margin-left: -6px; background: var(--night); border-radius: 3px; color: #e6e9de; }
+  .cap-ticks { list-style: none; margin: 0; padding: 0; display: flex; justify-content: space-around; gap: 8px; }
+  .cap-tick { position: relative; padding-top: 12px; text-align: center; }
+  .cap-tick::before { content: ""; position: absolute; top: 0; left: calc(50% - .5px); width: 1px; height: 8px; background: var(--green); }
+
+  /* ---- Room for each chart until home-charts.js draws it. With scripts (html[data-tour], set by the
+     inline <head> script) the card is as tall from the first paint as with its chart, so a reload or
+     back/forward lands where it left off. Same box as the chart: 18px above it, the drawing (each SVG
+     keeps its viewBox ratio: 12 dots of 18px with 8px gaps; tests/home-charts.test.js derives this
+     from the card sentence), 8px gaps and a 2px-offset caption line (1.3 x the label size). If
+     home-charts.js fails, .widgets-off on the section gives the room back. ---- */
+  :root[data-tour] .capability[data-chart] { container-type: inline-size; }
+  :root[data-tour] .capabilities:not(.widgets-off) .capability[data-chart]:not(:has(.cap-chart)) .capability-proof::after { content: ""; display: block; height: var(--cap-reserve, 0px); margin-top: 18px; }
+  .capability[data-chart="records"] { --cap-reserve: calc(50px + 1.3 * var(--text-label)); }
+  .capability[data-chart="videos"] { --cap-reserve: calc(min(306px, 100cqi) * 18 / 304 + 10px + 1.3 * var(--text-label)); }
+
+  /* ---- Skills: each tag is a toggle that marks where the same tag is used. ---- */
+  /* Only tags some card or role also lists are buttons (with a dot); the rest stay
+     plain tags, set to the same height so a row lines up. */
+  /* Row height and spacing apply from the first paint with scripts (html[data-tour]), before
+     home-charts.js turns tags into buttons, so the list keeps its height. */
+  :root[data-tour] .skills:not(.widgets-off) .skill-list .tag-list { row-gap: 10px; }
+  :root[data-tour] .skills:not(.widgets-off) .skill-list .tag-list li { display: inline-flex; align-items: center; min-height: 34px; }
+  /* Tags that will become buttons (data-skill-used in index.html, where a card or role lists the same
+     tag; tests/home-charts.test.js checks the set) are as wide as the button from the first paint:
+     its 13px sides plus the 8px gap and 6px dot. */
+  :root[data-tour] .skills:not(.widgets-off) .skill-list .tag-list li[data-skill-used]:not(.has-skill-tag) { padding-left: 13px; padding-right: 27px; }
+  .has-skill-links .skill-list .tag-list li.has-skill-tag { padding: 0; border: 0; background: none; }
+  .skill-tag { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 13px 7px; border: 1px solid #3d413a; border-radius: 40px; background: #17191b; color: #dcdfd4; font-size: 12px; line-height: 1.3; text-align: left; }
+  .skill-tag::after { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .skill-tag[aria-pressed="true"]::after { background: var(--night); }
+  /* 34 px pill + 10 px row gap: the hit area reaches 44 px tall without overlapping the next row. */
+  .skill-tag::before { content: ""; position: absolute; inset: -5px 0; }
+  .skill-tag:hover, .skill-tag.is-previewed { border-color: #8e977f; color: var(--paper); }
+  .skill-tag[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--night); }
+  .skill-tag:focus-visible { outline-offset: 3px; }
+  .skill-usage, :root[data-tour] .skills:not(.widgets-off) .skills-layout:not(:has(.skill-usage))::after { grid-column: 2; margin: -22px 0 0; min-height: 3.2em; color: #a6ae9a; text-wrap: pretty; }
+  /* Until home-charts.js adds the line, its first text holds the place, unseen (same font as .mono). */
+  :root[data-tour] .skills:not(.widgets-off) .skills-layout:not(:has(.skill-usage))::after { content: "Tags with a dot are used on a card or role above. Pick one to see where." / ""; visibility: hidden; font-family: var(--font-mono); font-size: var(--text-label); font-weight: 400; letter-spacing: .035em; word-spacing: normal; line-height: 1.55; }
+  /* Where the tag is used: the card or role title brightens, the same tag fills in. */
+  .capability h3, .xp-group h4 { transition: color .25s ease; }
+  .capability.is-skill-match h3, .xp-group.is-skill-match h4 { color: var(--green); }
+  .tag-list li.is-skill-hit { background: var(--green) !important; border-color: var(--green) !important; color: var(--night) !important; }
+
+  /* Forced colors (Windows contrast themes): fills are replaced, so the pressed tag,
+     the matched cards and roles and their tags get a Highlight outline, and the
+     charts are drawn in system colours. */
+  @media (forced-colors: active) {
+    .skill-tag::after { forced-color-adjust: none; background: CanvasText; }
+    .skill-tag[aria-pressed="true"] { forced-color-adjust: none; background: Highlight; border-color: Highlight; color: HighlightText; outline: 2px solid Highlight; outline-offset: 2px; }
+    .skill-tag[aria-pressed="true"]::after { background: HighlightText; }
+    .skill-tag.is-previewed { outline: 2px dashed Highlight; outline-offset: 2px; }
+    .capability.is-skill-match, .xp-group.is-skill-match { outline: 2px solid Highlight; outline-offset: 8px; }
+    .capability.is-skill-match h3, .xp-group.is-skill-match h4 { color: Highlight; }
+    .tag-list li.is-skill-hit { forced-color-adjust: none; background: Highlight !important; border-color: Highlight !important; color: HighlightText !important; outline: 2px solid Highlight; }
+    .cap-chart svg, .cap-band-fill, .cap-tick::before { forced-color-adjust: none; }
+    .cap-on, .cap-dot-play { fill: CanvasText; }
+    .cap-dot-ring { stroke: CanvasText; }
+    .cap-band { border-color: CanvasText; }
+    .cap-band-fill { background: repeating-linear-gradient(90deg, GrayText 0 2px, Canvas 2px 6px); }
+    .cap-band-label { forced-color-adjust: none; background: Canvas; color: CanvasText; }
+    .cap-tick::before { background: CanvasText; }
+  }
+}
+
+@layer motion {
+  @media (prefers-reduced-motion: no-preference) {
+    .cap-chart.is-armed .cap-mark { clip-path: inset(0 100% 0 0); }
+    .cap-chart.is-armed.is-drawn .cap-mark { clip-path: inset(0 0 0 0); transition: clip-path 1.25s cubic-bezier(.16, 1, .3, 1) var(--d, 0ms); }
+    .cap-chart.is-armed .cap-dot { opacity: 0; transform: scale(.35); transform-box: fill-box; transform-origin: center; }
+    .cap-chart.is-armed.is-drawn .cap-dot { opacity: 1; transform: none; transition: opacity .3s ease calc(var(--i, 0) * 70ms), transform .55s cubic-bezier(.34, 1.56, .64, 1) calc(var(--i, 0) * 70ms); }
+    .cap-chart.is-armed :is(.cap-tick, .cap-chart-caption) { opacity: 0; transform: translate3d(0, 4px, 0); }
+    .cap-chart.is-armed.is-drawn :is(.cap-tick, .cap-chart-caption) { opacity: 1; transform: none; transition: opacity .45s ease, transform .6s cubic-bezier(.16, 1, .3, 1); transition-delay: calc(550ms + var(--i, 0) * 120ms); }
+  }
+}
+
+@layer responsive {
+  @media (max-width: 760px) {
+    .skill-usage, :root[data-tour] .skills:not(.widgets-off) .skills-layout:not(:has(.skill-usage))::after { grid-column: 1; margin-top: -14px; }
+    .cap-chart { max-width: none; }
+  }
+  @media print {
+    .proof-count-ink { display: none !important; }
+    .proof-count .proof-count-final { color: inherit !important; }
+    .cap-chart *, .cap-chart .cap-mark { clip-path: none !important; opacity: 1 !important; transform: none !important; }
+    .cap-chart svg { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+}

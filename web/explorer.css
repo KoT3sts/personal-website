@@ -1,0 +1,390 @@
+/* Circular / stacked work explorer (SPECIFICATION V07): the site's one project
+   gallery, a dark rounded band inside the light #work section (like the
+   Approach accordion's open row). Unlayered, scoped to .explorer. Without
+   JavaScript it is a plain grid of case-study links. With it, the stage
+   layout applies from the first paint (html[data-tour], set by the inline
+   <head> script whenever scripts run), so the section is already as tall
+   as it will be when explorer.js is done and a reload or back/forward lands
+   where it left off; the covers stay hidden until explorer.js places them
+   (.is-ready). If explorer.js fails, app.js puts the HTML's explorer back
+   and marks it .is-off: no stage rule matches it, so it is the no-script
+   grid again (and the stories show). explorer.js writes transform, opacity
+   and (only when the order changes) z-index on each .explorer-item, and the
+   geometry as custom properties on .explorer-stage on resize.
+
+   The build tour hides and pops .explorer-cover (the tour owns its opacity,
+   translate and scale), so nothing here sets those on it. */
+
+/* Edge fade of the deck: none round the ring (it fills the band), soft in the stack. */
+@property --explorer-fade { syntax: "<percentage>"; inherits: true; initial-value: 11%; }
+
+.explorer {
+  --explorer-ink: #f1f0ea;
+  --explorer-quiet: #9a9e92;
+  --explorer-rule: #2a2c31;
+  --explorer-ease: cubic-bezier(.16, 1, .3, 1);
+  --explorer-pad: clamp(16px, 2.6vw, 44px);
+  position: relative;
+  margin-top: clamp(28px, 4vw, 56px);
+  padding: 0 var(--explorer-pad);
+  border-radius: clamp(14px, 1.8vw, 26px);
+  background: var(--night);
+  color: var(--paper);
+  box-shadow: 0 34px 70px -40px rgb(16 17 20 / .6);
+  overflow: clip;
+  isolation: isolate;
+}
+.explorer :focus-visible { outline-color: var(--green); }
+
+/* ---- Fallback (no script): a readable grid of links. ---- */
+.explorer-hub h3 {
+  font-size: clamp(40px, 5vw, 84px);
+  font-weight: var(--display-weight);
+  font-stretch: var(--display-stretch);
+  letter-spacing: var(--display-tracking);
+  line-height: 1;
+  text-transform: uppercase;
+  word-spacing: .06em;
+}
+.explorer-hub { padding: 64px 0 28px; }
+.explorer-hub-count { display: block; margin-top: 14px; color: var(--explorer-quiet); font-size: 11px; letter-spacing: .08em; }
+.explorer-covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 36px 28px; margin: 0; padding: 12px 0 64px; list-style: none; }
+.explorer-card { display: grid; gap: 14px; color: var(--explorer-ink); }
+.explorer-cover { display: block; overflow: hidden; border-radius: 6px; background: #1b1d21; box-shadow: 0 0 0 1px rgb(255 255 255 / .06), 0 26px 48px -26px rgb(0 0 0 / .9); }
+.explorer-cover img { width: 100%; height: 100%; aspect-ratio: 900 / 620; object-fit: cover; transition: transform .6s var(--explorer-ease); }
+.explorer-card-text { display: grid; gap: 6px; }
+.explorer-card-name { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.explorer-card-category { color: var(--explorer-quiet); }
+.explorer-card-lead { color: #b9bbb1; font-size: 14px; line-height: 1.55; }
+.explorer-card-open { display: none; }
+/* The caption, index and hint only exist with the stage. */
+.explorer-caption, .explorer-index, .explorer-hint { display: none; }
+
+/* ---- Enhanced stage ---- */
+:root[data-tour] .explorer:not(.is-off) :is(.explorer-caption, .explorer-index, .explorer-hint) { display: block; }
+/* Until explorer.js places them, the covers would sit piled at the centre:
+   they wait unseen (the hub, caption and index already show). */
+:root[data-tour] .explorer:not(.is-ready, .is-off) .explorer-item { visibility: hidden; }
+:root[data-tour] .explorer:not(.is-off) .explorer-stage {
+  --explorer-card-w: 384px;
+  --explorer-card-h: 265px;
+  --explorer-stack-x: 0px;
+  --explorer-ring-x: 0px;
+  --explorer-perspective: 1400px;
+  --explorer-fade: 11%;
+  position: relative;
+  /* As tall as the window: the ring's diameter is ~80% of it (explorer-state.js). */
+  height: clamp(600px, 100svh, 1200px);
+  -webkit-user-select: none;
+  user-select: none;
+  transition: --explorer-fade .9s var(--explorer-ease);
+}
+:root[data-tour] .explorer:not(.is-off) .explorer-stage[data-explorer-mode="ring"] { --explorer-fade: 0%; }
+/* Light pool behind the stack: the covers are lit, the room stays dark. */
+:root[data-tour] .explorer:not(.is-off) .explorer-stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 calc(-1 * var(--explorer-pad));
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 34% 46% at calc(50% + var(--explorer-stack-x)) 50%, rgb(214 222 230 / .085), transparent 72%),
+    radial-gradient(ellipse 60% 70% at 50% 50%, rgb(199 210 168 / .03), transparent 70%);
+  opacity: .55;
+  transition: opacity .9s var(--explorer-ease);
+}
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"]::before { opacity: 1; }
+
+/* The deck: the covers' box. Covers move only by transform inside it. */
+:root[data-tour] .explorer:not(.is-off) .explorer-covers {
+  position: absolute;
+  inset: 0;
+  display: block;
+  margin: 0;
+  padding: 0;
+  perspective: var(--explorer-perspective);
+  perspective-origin: calc(50% + var(--explorer-stack-x)) 50%;
+  cursor: grab;
+  touch-action: pan-y;
+  /* Covers above and below fade into the room instead of being cut. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--explorer-fade), #000 calc(98% - var(--explorer-fade)), transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 var(--explorer-fade), #000 calc(98% - var(--explorer-fade)), transparent);
+}
+:root[data-tour] .explorer:not(.is-off) .is-dragging .explorer-covers { cursor: grabbing; }
+:root[data-tour] .explorer:not(.is-off) .explorer-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--explorer-card-w);
+  height: var(--explorer-card-h);
+  margin: calc(var(--explorer-card-h) / -2) 0 0 calc(var(--explorer-card-w) / -2);
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+}
+:root[data-tour] .explorer:not(.is-off) .is-moving .explorer-item,
+:root[data-tour] .explorer:not(.is-off) .is-dragging .explorer-item { will-change: transform, opacity; }
+/* Out of sight but still in the accessibility tree: the list stays whole. */
+:root[data-tour] .explorer:not(.is-off) .explorer-item[data-away] { pointer-events: none; }
+:root[data-tour] .explorer:not(.is-off) .explorer-card { display: block; position: relative; width: 100%; height: 100%; border-radius: 6px; outline-offset: 8px; -webkit-user-drag: none; }
+:root[data-tour] .explorer:not(.is-off) .explorer-cover { width: 100%; height: 100%; }
+:root[data-tour] .explorer:not(.is-off) .explorer-card-text {
+  position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+:root[data-tour] .explorer:not(.is-off) .explorer-card:hover img { transform: scale(1.035); }
+.explorer-shade { position: absolute; inset: 0; border-radius: 6px; background: #0c0d0f; opacity: 0; pointer-events: none; }
+
+/* The active cover carries its own way in. */
+:root[data-tour] .explorer:not(.is-off) .explorer-card-open {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 13px;
+  border-radius: 30px;
+  background: rgb(16 17 20 / .86);
+  color: var(--explorer-ink);
+  font-size: var(--text-label);
+  letter-spacing: .08em;
+  box-shadow: 0 8px 18px -10px rgb(0 0 0 / .8);
+  opacity: 0;
+  translate: 0 6px;
+  transition: opacity .25s ease, translate .25s ease, background-color .2s ease, color .2s ease;
+  pointer-events: none;
+}
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .is-active .explorer-card-open { opacity: 1; translate: none; transition-delay: .25s; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .is-active .explorer-card:hover .explorer-card-open { background: var(--explorer-ink); color: var(--night); transition-delay: 0s; }
+
+/* Centre label, at the hub of the ring. */
+:root[data-tour] .explorer:not(.is-off) .explorer-hub {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  text-align: center;
+  translate: var(--explorer-ring-x) 0;
+  pointer-events: none;
+  transition: opacity .45s ease, scale .7s var(--explorer-ease);
+}
+:root[data-tour] .explorer:not(.is-off) .explorer-hub h3 { max-width: 8.6ch; font-size: clamp(30px, 3.6vw, 64px); }
+:root[data-tour] .explorer:not(.is-off) .explorer-hub-count::before { content: "· "; content: "· " / ""; }
+:root[data-tour] .explorer:not(.is-off) .explorer-hub-count::after { content: " ·"; content: " ·" / ""; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .explorer-hub { opacity: 0; scale: .9; }
+
+/* Large active title, left of the stack. In the ring the same caption sits
+   under the index, smaller, with its own way into the case study, so a
+   skimmer sees one project without touching anything (explorer.js fades it
+   in at each change of place). */
+:root[data-tour] .explorer:not(.is-off) .explorer-caption {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 4;
+  width: max(220px, calc(50% + var(--explorer-stack-x) - var(--explorer-card-w) / 2 - 40px));
+  translate: 0 -50%;
+  container-type: inline-size;
+  pointer-events: none;
+}
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption { top: auto; bottom: 64px; left: auto; right: 0; width: clamp(220px, 19vw, 290px); translate: none; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-title { font-size: min(36px, 12.2cqi); line-height: .9; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-meta { margin-top: 14px; }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-lead { display: none; }
+/* The build tour does not build this caption: it waits until the tour is over. */
+html.agentic-touring[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption { visibility: hidden; }
+.explorer-caption-title {
+  font-size: min(clamp(38px, 4.4vw, 80px), 12.2cqi);
+  font-weight: var(--display-weight);
+  font-stretch: var(--display-stretch);
+  letter-spacing: var(--display-tracking);
+  line-height: .88;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--explorer-ink);
+}
+.explorer-caption-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 24px; color: var(--explorer-quiet); font-size: var(--text-label); letter-spacing: .08em; }
+.explorer-caption-count { color: var(--green); }
+.explorer-caption-lead { max-width: 32ch; margin-top: 12px; color: #b9bbb1; font-size: 15px; line-height: 1.55; }
+/* The ring's way in (pointer only: keyboard and screen readers open the
+   active cover, the same link). The stack shows it on the cover instead. */
+.explorer-caption-open {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 16px;
+  padding: 0 18px;
+  border: 1px solid #3d4038;
+  border-radius: 40px;
+  color: var(--explorer-ink);
+  font-size: var(--text-label);
+  letter-spacing: .08em;
+  pointer-events: auto;
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+.explorer-caption-open:hover { background: var(--explorer-ink); border-color: var(--explorer-ink); color: var(--night); }
+:root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-open { display: inline-flex; }
+
+/* The active project's facts (explorer.js reads them from its story below):
+   up to three term/value rows, the stack as tags, the lab link for the
+   chatbot. One panel per project, all in one grid cell, so the block is as
+   tall as the tallest panel (min-height is the floor) and switching projects
+   only crossfades. */
+.explorer-facts { display: grid; min-height: 116px; margin-top: 20px; }
+.explorer-facts-panel { grid-area: 1 / 1; min-width: 0; opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility 0s linear .2s; }
+.explorer-facts-panel.is-active { opacity: 1; visibility: visible; transition: opacity .32s ease .08s, visibility 0s; }
+.explorer-facts-list { display: grid; gap: 9px; margin: 0; padding-top: 12px; border-top: 1px solid var(--explorer-rule); }
+.explorer-fact { display: grid; grid-template-columns: 74px minmax(0, 1fr); column-gap: 14px; align-items: baseline; }
+.explorer-fact dt { color: var(--explorer-quiet); font-size: var(--text-label); letter-spacing: .08em; line-height: 1.3; text-transform: uppercase; }
+.explorer-fact dd { margin: 0; color: #d8dad1; font-size: 14px; line-height: 1.4; text-wrap: pretty; }
+.explorer-fact-stack { align-items: start; }
+.explorer-fact-stack dt { padding-top: 4px; }
+.explorer .explorer-tags { gap: 5px; margin: 0; }
+.explorer .explorer-tags li { padding: 3px 9px 4px; border-color: #3d413a; background: #17191b; color: #dcdfd4; font-size: 12px; line-height: 1.3; }
+.explorer .explorer-tags .explorer-tag-more { border-style: dashed; color: var(--explorer-quiet); }
+.explorer-facts-more { margin: 10px 0 0; }
+.explorer-facts-link { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: var(--green); font-size: var(--text-label); letter-spacing: .08em; text-transform: uppercase; text-decoration: underline; text-decoration-color: rgb(199 210 168 / .4); text-underline-offset: 4px; pointer-events: auto; }
+.explorer-facts-link:hover { text-decoration-color: currentColor; }
+/* A 44px hit area without changing the look (like the site's other small links). */
+.explorer-facts-link::before { content: ""; position: absolute; top: calc(50% - 22px); bottom: calc(50% - 22px); left: min(0px, calc(50% - 22px)); right: min(0px, calc(50% - 22px)); }
+/* In the desktop ring the caption is a narrow column under the index: terms
+   sit over their values. (Tablets keep one caption layout in both modes.) */
+@media (min-width: 1100px) {
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-facts { min-height: 150px; margin-top: 16px; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-fact { grid-template-columns: minmax(0, 1fr); row-gap: 3px; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-fact-stack dt { padding-top: 0; }
+}
+/* Short desktop windows: the ring caption must stay under the index, so it
+   drops the stack tags (the stack view still shows them), then the facts.
+   The narrower the column, the taller the facts (measured: 199 px at 220 px
+   wide, 180 px at 243-274, 153 px at 284+), so the threshold rises. */
+@media (min-width: 1100px) and (max-width: 1279px) and (max-height: 779px),
+  (min-width: 1280px) and (max-width: 1479px) and (max-height: 759px),
+  (min-width: 1480px) and (max-height: 729px) {
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-fact-stack { display: none; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-facts { min-height: 96px; }
+}
+@media (min-width: 1100px) and (max-height: 690px) {
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-facts { display: none; }
+}
+
+/* Compact index, upper right (the ring keeps clear of it). */
+:root[data-tour] .explorer:not(.is-off) .explorer-index { position: absolute; top: clamp(20px, 5vh, 56px); right: 0; z-index: 4; width: clamp(220px, 19vw, 290px); }
+.explorer-index-label { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--explorer-rule); color: var(--explorer-quiet); font-size: var(--text-label); letter-spacing: .08em; text-transform: uppercase; }
+.explorer-index-count { color: var(--green); }
+.explorer-index ol { margin: 0; padding: 0; list-style: none; }
+.explorer-pick {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 22px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #1e2024;
+  background: none;
+  color: #8e9287;
+  font-size: 13px;
+  letter-spacing: -.005em;
+  text-align: left;
+  cursor: pointer;
+  transition: color .25s ease;
+}
+.explorer-pick::after { content: ""; justify-self: end; width: 22px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform .5s var(--explorer-ease); }
+.explorer-pick-no { color: #868b7f; font-size: var(--text-label); transition: color .25s ease; }
+.explorer-pick:hover { color: #d8dad1; }
+.explorer-pick[aria-current="true"] { color: var(--explorer-ink); }
+.explorer-pick[aria-current="true"] .explorer-pick-no { color: var(--green); }
+.explorer-pick[aria-current="true"]::after { transform: none; }
+.explorer-pick:focus-visible { outline-offset: 2px; }
+
+/* Drag / scroll hint, bottom right under the index: the ring reaches the
+   bottom edge, so the centre bottom is taken. */
+:root[data-tour] .explorer:not(.is-off) .explorer-hint {
+  position: absolute;
+  bottom: 18px;
+  right: 0;
+  z-index: 4;
+  margin: 0;
+  color: var(--explorer-quiet);
+  font-size: var(--text-label);
+  letter-spacing: .08em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.explorer-hint-touch { display: none; }
+@media (pointer: coarse) {
+  .explorer-hint-fine { display: none; }
+  .explorer-hint-touch { display: inline; }
+}
+
+/* ---- Tablet: the deck on top, caption and index side by side below. ---- */
+@media (max-width: 1099px) {
+  :root[data-tour] .explorer:not(.is-off) .explorer-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    /* The deck is as tall as its width allows the ring (explorer-state.js), within the window. */
+    grid-template-rows: clamp(420px, min(100svh - 64px, (100vw - 2 * var(--gutter) - 2 * var(--explorer-pad)) * .96 + 16px), 900px) auto auto;
+    grid-template-areas: "deck deck" "caption index" "hint hint";
+    column-gap: 36px;
+    height: auto;
+  }
+  :root[data-tour] .explorer:not(.is-off) .explorer-covers { position: relative; inset: auto; grid-area: deck; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub { grid-area: deck; position: relative; inset: auto; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-caption, :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption { grid-area: caption; position: relative; inset: auto; width: auto; padding-top: 18px; translate: none; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-title { font-size: min(clamp(34px, 5.4vw, 56px), 12.2cqi); }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-meta { margin-top: 24px; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-index { grid-area: index; position: relative; top: auto; right: auto; width: auto; padding-top: 24px; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hint { grid-area: hint; position: relative; bottom: auto; right: auto; justify-self: center; padding: 26px 0 22px; }
+  .explorer-caption-title { font-size: min(clamp(34px, 5.4vw, 56px), 12.2cqi); }
+  /* The caption sits in the flow here: two-line title and lead and the
+     tallest facts are reserved, so the index and hint stay put. */
+  :root[data-tour] .explorer:not(.is-off) .explorer-caption-title { min-height: 1.76em; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-caption-lead { min-height: 3.1em; }
+  .explorer-facts { min-height: 144px; }
+  /* One caption layout in both modes, so ring <-> stack moves nothing: the
+     lead shows in the ring too, and the ring's case-study button keeps its
+     place (invisible) in the stack, where the cover carries its own. */
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-title { line-height: .88; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="ring"] .explorer-caption-lead { display: block; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-caption-open { display: inline-flex; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .explorer-caption-open { visibility: hidden; }
+}
+
+/* ---- Phones: a flat vertical deck (no ring), the same index below. ---- */
+@media (max-width: 699px) {
+  :root[data-tour] .explorer:not(.is-off) .explorer-stage {
+    grid-template-columns: minmax(0, 1fr);
+    /* The active cover sits near the top of the deck (not centred), so the first
+       screen of Work shows a cover instead of an empty band above it. */
+    grid-template-rows: auto calc(min(420px, max(220px, (100vw - 2 * var(--gutter) - 2 * var(--explorer-pad)) * .86)) * .689 * 1.84) auto auto auto;
+    grid-template-areas: "hub" "deck" "caption" "index" "hint";
+  }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub { grid-area: hub; place-items: start; padding: 40px 0 0; text-align: left; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode="stack"] .explorer-hub { opacity: 1; scale: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub h3 { max-width: none; font-size: clamp(34px, 10.5vw, 46px); }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub-count::before { content: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub-count::after { content: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hub-count { display: inline; margin: 0 0 0 6px; vertical-align: super; font-size: 11px; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-covers { -webkit-mask-image: linear-gradient(180deg, transparent, #000 6%, #000 91%, transparent); mask-image: linear-gradient(180deg, transparent, #000 6%, #000 91%, transparent); }
+  :root[data-tour] .explorer:not(.is-off) .explorer-item { top: calc(var(--explorer-card-h) * .66); }
+  /* No ring on phones (explorer.js turns it into the stack at once), so no
+     ring button to make room for. These match either mode: the markup starts
+     in ring mode and lays out exactly as the stack from the first paint. */
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode] .explorer-caption { padding-top: 10px; }
+  :root[data-tour] .explorer:not(.is-off) [data-explorer-mode] .explorer-caption-open { display: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-index { padding-top: 28px; }
+  .explorer-pick { font-size: 15px; }
+  .explorer-caption-title, :root[data-tour] .explorer:not(.is-off) [data-explorer-mode] .explorer-caption-title { font-size: min(40px, 12.2cqi); }
+  :root[data-tour] .explorer:not(.is-off) .explorer-hint { padding-top: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explorer-cover img, .explorer-pick::after, :root[data-tour] .explorer:not(.is-off) .explorer-hub, :root[data-tour] .explorer:not(.is-off) .explorer-stage::before { transition: none; }
+  :root[data-tour] .explorer:not(.is-off) .explorer-card:hover img { transform: none; }
+  .explorer-caption-open { transition: none; }
+  .explorer-facts-panel, .explorer-facts-panel.is-active { transition: none; }
+}

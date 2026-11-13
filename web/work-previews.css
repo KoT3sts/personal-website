@@ -1,0 +1,103 @@
+@charset "UTF-8";
+/* Homepage "Open the work" previews (web/work-previews.js). Only the .wp-* parts are
+   styled here; the card around each .work-preview belongs to the homepage. Text and
+   lines use currentColor, so the previews read on a light or a dark card at the card's
+   own text contrast. Role and dot hues are mid-tones with 3:1 or more against both the
+   paper (#eeede8) and the night (#101114). Text is 11px or larger, targets 44px.
+
+   Status colours, shared with the lab pages (one hue family each, the value tuned to
+   the background for 3:1 or more; tests/work-previews.test.js checks all three sets):
+     --status-pass  green   here #4f8a3a (3.6:1 paper, 3.9:1 card #f7f6f0, 4.5:1 night)
+                            essay and build trace (paper, lab.css) #3f5a22, dashboard (night,
+                            observability.css) #9db86e
+     --status-fail  red     here #d23f36 (4.0:1 paper, 4.3:1 card, 4.1:1 night)
+                            paper #c0362c, night #ff8f7f
+     --status-na    grey    here and on paper #7d8173 (3.4:1 paper, 4.7:1 night), night #6b725f
+   Fail never relies on hue alone: tall cells here, a cross on the dashboard, hatching in
+   the essay. Roles never use a status hue: the quality-reviewer is teal (#16897f), not red. */
+
+.wp-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.wp-obs, .wp-trace, .wp-loop { --status-pass: #4f8a3a; --status-fail: #d23f36; --status-na: #7d8173; --wp-line: currentColor; --wp-tint: transparent; position: relative; display: grid; gap: 14px; min-width: 0; margin: 0; font-size: 13px; line-height: 1.4; }
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+  .wp-obs, .wp-trace, .wp-loop { --wp-line: color-mix(in srgb, currentColor 34%, transparent); --wp-tint: color-mix(in srgb, currentColor 10%, transparent); }
+}
+.wp-label { font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 11px; font-weight: 400; letter-spacing: .04em; text-transform: uppercase; }
+.wp-caption { font-size: 13px; line-height: 1.45; }
+
+/* Observability: three KPIs, then an evaluator grid (one column per trace, one row per
+   check) between its row names and pass tallies; the range input over it reads one trace.
+   Pass cells are short green marks, fails tall red ones, so the two differ without
+   colour too. */
+.wp-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.wp-kpis > div { display: grid; grid-template-rows: 1fr auto; gap: 4px; min-width: 0; padding-top: 8px; border-top: 1px solid var(--wp-line); }
+.wp-kpis dd { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.wp-obs-grid { --wp-row: 15px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 8px; align-items: start; }
+.wp-obs-names, .wp-obs-tally { display: grid; grid-auto-rows: var(--wp-row); align-items: center; margin: 0; padding: 0; list-style: none; line-height: 1; white-space: nowrap; }
+.wp-obs-tally { text-align: right; font-variant-numeric: tabular-nums; }
+.wp-obs-scrub { position: relative; min-width: 0; border-radius: 3px; }
+.wp-obs-scrub:focus-within { outline: 2px solid currentColor; outline-offset: 3px; }
+.wp-obs-svg { display: block; width: 100%; height: calc(var(--wp-row) * var(--wp-rows, 6)); overflow: visible; }
+.wp-obs-scrub .wp-trace-range { left: 0; width: 100%; }
+.wp-cell { fill: var(--wp-line); }
+.wp-pass { fill: var(--status-pass); }
+.wp-fail { fill: var(--status-fail); }
+.wp-obs .wp-cursor { stroke: none; }
+.wp-obs[data-cursor="true"] .wp-cursor { opacity: 1; }
+.wp-obs .wp-chip-pass { height: 5px; background: var(--status-pass); }
+.wp-obs .wp-chip-fail { background: var(--status-fail); }
+
+/* Trace: one bar per recorded step, coloured by role, with a status mark below. */
+.wp-trace { --wp-orchestrator: currentColor; --wp-implementation-worker: #3c7be0; --wp-quality-reviewer: #16897f; --wp-ui-design-director: #9b6bf0; }
+.wp-trace [data-role="orchestrator"] { --wp-role: var(--wp-orchestrator); }
+.wp-trace [data-role="implementation-worker"] { --wp-role: var(--wp-implementation-worker); }
+.wp-trace [data-role="quality-reviewer"] { --wp-role: var(--wp-quality-reviewer); }
+.wp-trace [data-role="ui-design-director"] { --wp-role: var(--wp-ui-design-director); }
+.wp-trace-scrub { position: relative; display: grid; align-items: center; min-height: 44px; border-radius: 4px; }
+.wp-trace-scrub:focus-within { outline: 2px solid currentColor; outline-offset: 4px; }
+.wp-trace-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.wp-trace-range { position: absolute; top: 0; bottom: 0; left: calc(100% * 5 / 520); width: calc(100% - 100% * 10 / 520); height: 100%; margin: 0; padding: 0; opacity: 0; cursor: crosshair; -webkit-appearance: none; appearance: none; }
+.wp-trace-range::-webkit-slider-thumb { width: 2px; height: 44px; -webkit-appearance: none; appearance: none; }
+.wp-trace-range::-moz-range-thumb { width: 2px; height: 44px; border: 0; }
+.wp-mark { transform-box: fill-box; }
+.wp-bar { fill: var(--wp-role, currentColor); }
+.wp-glyph { fill: none; stroke: currentColor; stroke-width: 1.6px; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.wp-glyph-error { stroke-width: 2.2px; }
+.wp-cursor { fill: var(--wp-tint); stroke: currentColor; stroke-width: 1; opacity: 0; }
+.wp-trace[data-cursor="true"] .wp-cursor { opacity: 1; }
+/* The readout is one line of meta and two of text, always 4.6em tall (15.4 + 4 + 39.2px
+   fit in 59.8px), so scrubbing never changes the card's height or moves the page below;
+   longer text ends in an ellipsis (the slider's aria-valuetext keeps all of it). Strict
+   containment keeps each rewrite inside the readout. The grid preview contains its own
+   layout and paint; the trace strip only its layout, as its focus ring reaches above it. */
+.wp-obs { contain: content; }
+.wp-trace { contain: layout style; }
+.wp-readout { display: grid; align-content: start; gap: 4px; height: 4.6em; overflow: hidden; contain: strict; }
+.wp-readout > * { min-width: 0; overflow: hidden; }
+.wp-readout .wp-label { white-space: nowrap; text-overflow: ellipsis; }
+.wp-readout .wp-action { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+.wp-action { font-size: 14px; line-height: 1.4; }
+.wp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 11px; letter-spacing: .02em; }
+.wp-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.wp-chip { width: 10px; height: 10px; border-radius: 2px; background: var(--wp-role, currentColor); }
+.wp-legend-glyph { width: 14px; height: 14px; overflow: visible; }
+
+/* Loop: four stages on one path; the dot goes round once (4.8 s, constant speed). */
+.wp-loop-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.wp-loop-path { fill: none; stroke: var(--wp-line); stroke-width: 2; stroke-linejoin: round; }
+.wp-loop-arrow { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wp-loop-node { fill: currentColor; }
+.wp-loop-dot { fill: var(--wp-dot, #2a9065); }
+/* SVG text is in viewBox units; work-previews.js sets --wp-loop-text so it renders at 12.5px. */
+.wp-loop-text { fill: currentColor; font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: var(--wp-loop-text, 14px); letter-spacing: .03em; text-transform: uppercase; }
+
+@keyframes wp-rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes wp-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .wp-trace[data-play="wait"] .wp-mark { opacity: 0; }
+  .wp-trace[data-play="on"] .wp-mark { animation: wp-rise .45s cubic-bezier(.2, .7, .2, 1) calc(var(--i, 0) * 42ms) both; }
+  .wp-obs[data-play="wait"] .wp-col { opacity: 0; }
+  .wp-obs[data-play="on"] .wp-col { animation: wp-fade .3s ease-out calc(var(--i, 0) * 12ms) both; }
+}
+@media (max-width: 420px) {
+  .wp-kpis dd { font-size: 20px; }
+}

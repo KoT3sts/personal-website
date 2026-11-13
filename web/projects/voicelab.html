@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cesartortolero.goatcounter.com; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#eeede8">
+  <title>VoiceLab: writing-analysis prototype — Cesar Tortolero</title>
+  <meta name="description" content="VoiceLab by Cesar Tortolero: a local prototype for explainable writing-signal analysis and meaning-preserving revision that keeps text on the local device.">
+  <meta name="author" content="Cesar Alejandro Tortolero Trujillo">
+  <link rel="canonical" href="https://cesartortolero.com/projects/voicelab.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="VoiceLab: writing-analysis prototype — Cesar Tortolero">
+  <meta property="og:description" content="VoiceLab by Cesar Tortolero: a local prototype for explainable writing-signal analysis and meaning-preserving revision that keeps text on the local device.">
+  <meta property="og:url" content="https://cesartortolero.com/projects/voicelab.html">
+  <meta property="og:image" content="https://cesartortolero.com/assets/og-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. AI agents and LLM evaluation on AWS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="VoiceLab: writing-analysis prototype — Cesar Tortolero">
+  <meta name="twitter:description" content="VoiceLab by Cesar Tortolero: a local prototype for explainable writing-signal analysis and meaning-preserving revision that keeps text on the local device.">
+  <meta name="twitter:image" content="https://cesartortolero.com/assets/og-card.jpg">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./side-demos.css">
+  <script type="module" src="./side-demos.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": "VoiceLab",
+    "headline": "VoiceLab",
+    "description": "VoiceLab by Cesar Tortolero: a local prototype for explainable writing-signal analysis and meaning-preserving revision that keeps text on the local device.",
+    "url": "https://cesartortolero.com/projects/voicelab.html",
+    "image": "https://cesartortolero.com/assets/voicelab.svg",
+    "genre": "Language experiments",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Person",
+      "name": "Cesar Tortolero",
+      "alternateName": "Cesar Alejandro Tortolero Trujillo",
+      "jobTitle": "Machine Learning Engineer",
+      "url": "https://cesartortolero.com/"
+    },
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Cesar Tortolero",
+      "url": "https://cesartortolero.com/"
+    }
+  }
+  </script>
+  <script type="module" src="../count.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="cs-top">
+    <a class="cs-wordmark" href="../"><span class="cs-wordmark-first">CESAR<span class="cs-dot" aria-hidden="true"></span></span> <span class="cs-wordmark-last">TORTOLERO</span></a>
+    <a class="cs-back" href="../#work"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> All projects</a>
+  </header>
+  <main id="main">
+    <article aria-labelledby="cs-title">
+      <header class="cs-intro">
+        <h1 id="cs-title">VoiceLab</h1>
+        <div class="cs-grid cs-summary">
+          <p class="cs-main cs-lead">A local writing-analysis prototype that keeps text on the device.</p>
+          <dl class="cs-rail cs-meta">
+            <div><dt class="mono">Category</dt><dd class="mono">SIDE PROJECT · PROTOTYPE</dd></div>
+            <div><dt class="mono">Project</dt><dd class="mono">04 / 06</dd></div>
+          </dl>
+        </div>
+      </header>
+      <section class="cs-grid cs-brief" aria-labelledby="brief-title">
+        <h2 class="cs-rail mono cs-brief-title" id="brief-title">In 30 seconds</h2>
+        <dl class="cs-main cs-brief-list">
+          <div><dt class="mono">Problem</dt><dd>Can writing signals be explained, and a text revised, without losing what it means?</dd></div>
+          <div><dt class="mono">What it is</dt><dd>A local prototype for explainable writing-signal analysis and meaning-preserving revision. It explores patterns in language while keeping text on the local device.</dd></div>
+          <div><dt class="mono">Stage</dt><dd>Local prototype</dd></div>
+        </dl>
+      </section>
+      <figure class="cs-grid cs-cover">
+        <img class="cs-main" src="../assets/voicelab.svg" alt="Original interface illustration for VoiceLab, showing writing passages beside a language signal visualization" width="900" height="620" fetchpriority="high">
+        <figcaption class="cs-rail">This experiment does not establish authorship. The cover is an original illustration.</figcaption>
+      </figure>
+      <div class="cs-body">
+        <section class="cs-grid cs-section" aria-labelledby="focus-title">
+          <h2 class="cs-rail" id="focus-title">Focus</h2>
+          <div class="cs-main cs-prose">
+            <p>Explainable analysis and thoughtful revision</p>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="signals-title">
+          <h2 class="cs-rail" id="signals-title">Try the signals</h2>
+          <div class="cs-main sd-stack">
+            <div class="cs-prose">
+              <p>This page shows the idea with sample text; the prototype itself isn’t shown here.</p>
+              <p>Every signal below is computed by this page, in your browser, as you type. The text is never sent anywhere.</p>
+            </div>
+            <figure class="sd-figure sd-voicelab" data-demo="voicelab">
+              <figcaption class="sd-caption"><strong class="sd-tag">Sample data</strong><span class="sd-sr">:</span> a short paragraph written for this page. Edit it or paste your own text.</figcaption>
+              <div class="sd-field">
+                <p><label class="mono" for="vl-text">Your text</label></p>
+                <textarea class="sd-textarea" id="vl-text" rows="7" spellcheck="false" aria-describedby="vl-private">The library on the corner opens at nine. Most mornings, a short line forms outside before the doors unlock, and someone usually brings coffee for the staff. Inside, the reading room stays quiet until the school groups arrive. By noon the tables are full. People come to the library for the books, but many stay for the quiet, the long windows, and the sense that nobody is in a hurry.</textarea>
+                <p class="sd-hint" id="vl-private">It stays in this tab: nothing is sent or stored.</p>
+              </div>
+              <div class="sd-block">
+                <p class="mono sd-block-title">Words per sentence</p>
+                <div class="sd-bars" data-vl-bars aria-hidden="true"></div>
+                <p class="mono sd-lengths" data-vl-lengths>8 · 19 · 11 · 6 · 26</p>
+              </div>
+              <dl class="sd-signals">
+                <div class="sd-signal">
+                  <dt class="mono">Average sentence</dt>
+                  <dd class="sd-value"><span data-vl="avg">14.0</span> <span class="sd-unit">words</span><span class="sd-meter" aria-hidden="true"><span data-vl-meter="avg"></span></span></dd>
+                  <dd class="sd-note">Words per sentence. It shows rhythm, not quality.</dd>
+                </div>
+                <div class="sd-signal">
+                  <dt class="mono">Word variety</dt>
+                  <dd class="sd-value"><span data-vl="variety">0.76</span> <span class="sd-unit" data-vl="distinct">53 of 70 words are distinct</span><span class="sd-meter" aria-hidden="true"><span data-vl-meter="variety"></span></span></dd>
+                  <dd class="sd-note">Distinct words divided by all words, the type/token ratio. It falls as a text gets longer, so compare texts of similar length.</dd>
+                </div>
+                <div class="sd-signal">
+                  <dt class="mono">Long words</dt>
+                  <dd class="sd-value"><span data-vl="long">11%</span> <span class="sd-unit">seven letters or more</span><span class="sd-meter" aria-hidden="true"><span data-vl-meter="long"></span></span></dd>
+                  <dd class="sd-note">A hint of density. It says nothing about whether a word is the right one.</dd>
+                </div>
+                <div class="sd-signal">
+                  <dt class="mono">Reading ease</dt>
+                  <dd class="sd-value"><span data-vl="flesch">75</span> <span class="sd-unit" data-vl="band">fairly easy</span><span class="sd-meter" aria-hidden="true"><span data-vl-meter="flesch"></span></span></dd>
+                  <dd class="sd-note">Flesch reading ease: 206.835 − 1.015 × (words ÷ sentences) − 84.6 × (syllables ÷ words). Higher reads easier. Syllables are estimated, and the formula was made for English.</dd>
+                </div>
+                <div class="sd-signal sd-signal-wide">
+                  <dt class="mono">Most repeated</dt>
+                  <dd class="sd-value"><ul class="sd-words" data-vl="repeated"><li>library ×2</li><li>quiet ×2</li></ul></dd>
+                  <dd class="sd-note">Most frequent words, leaving out common ones like “the” and “and”. Repetition can be a choice; this only counts it.</dd>
+                </div>
+              </dl>
+              <p class="sd-sr" aria-live="polite" data-vl-live></p>
+            </figure>
+            <div class="cs-prose">
+              <p>None of these signals says who wrote a text. This experiment does not establish authorship.</p>
+            </div>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="revision-title">
+          <h2 class="cs-rail" id="revision-title">Keeping the meaning</h2>
+          <div class="cs-main sd-stack">
+            <div class="cs-prose">
+              <p>A meaning-preserving revision is an edit that still says the same thing. The drawing shows one way to check that, step by step.</p>
+            </div>
+            <figure class="cs-flow sd-flow" data-reveal="revision">
+              <ol class="cs-flow-steps sd-flow-4">
+                <li><p class="mono cs-flow-label">Original</p><p class="cs-flow-text">“The meeting, which had been planned for later in the week, was moved to Monday.”</p></li>
+                <li><p class="mono cs-flow-label">Suggested edit</p><p class="cs-flow-text">“The meeting moved from later in the week to Monday.”</p></li>
+                <li><p class="mono cs-flow-label">Meaning check</p><p class="cs-flow-text">Same event, same change, same day. Nothing added, nothing lost.</p></li>
+                <li class="sd-flow-end"><p class="mono cs-flow-label">Keep or reject</p><p class="cs-flow-text">Keep it. Had the day or the event changed, the original would stay.</p></li>
+              </ol>
+              <figcaption>Illustration: how a meaning-preserving revision could be checked. It shows the idea, not a measured system.</figcaption>
+            </figure>
+          </div>
+        </section>
+      </div>
+    </article>
+  </main>
+  <footer class="cs-close">
+    <nav class="cs-pager" aria-label="More projects">
+      <a href="./companion-chatbot.html" rel="prev"><span class="mono"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Previous project</span><span class="cs-pager-title">Companionship Chatbot</span></a>
+      <a href="./work-helper.html" rel="next"><span class="mono">Next project <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></span><span class="cs-pager-title">Work Helper</span></a>
+    </nav>
+    <div class="cs-contact">
+      <p>Want to talk about this work?</p>
+      <div class="cs-contact-links">
+        <a class="cs-pill cs-pill-primary" href="../#contact">Get in touch <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        <a class="cs-pill" href="../assets/Cesar_Tortolero_Resume.pdf">Résumé <span class="mono">PDF</span></a>
+      </div>
+    </div>
+    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#work">Back to all projects</a></div>
+  </footer>
+</body>
+</html>

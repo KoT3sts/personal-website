@@ -1,0 +1,36 @@
+URL: https://digitalcommons.kennesaw.edu/cday/Spring_2024/Undergraduate_Capstone/3
+Read: November 11, 2026 (record page)
+
+UC-120 Virtual Companionship Chatbot
+
+Presenter Information
+Cesar Tortolero
+Rakshak Gurung
+Noah Clark
+Fabritzzio A Cabrejos
+
+Event Website
+https://virtualcompanionchatbot.wordpress.com/
+
+Document Type
+Event
+
+Start Date
+25-4-2024 4:00 PM
+
+Description
+Loneliness affects about 77% of college students at some point, highlighted by a Gitnuss report. Our project aims to mitigate this by introducing a personalized chatbot that serves as an emotional outlet for students. The application is built on a React Native frontend, employs a DistilGPT-2 language model using the QUAC dataset, and is backed by a Python server. We plan to deploy it on an Azure NC6s_v3 Cloud server, integrating Firebase Real-Time Database for Android and iOS compatibility.
+
+---
+Poster (PDF linked from the record and the winners page)
+URL: https://digitalcommons.kennesaw.edu/cgi/viewcontent.cgi?article=1411&context=cday
+Text extracted November 11, 2026:
+
+UC-120
+Virtual Companion Chatbot Application
+METHODS
+The platform consists of a React Native frontend with a Distilgbt2 LLM, a QUAC data set and Python backend. Future plans include deployment on an Azure NC6s_v3 Cloud server with the Firebase Real-Time Database. This platform with deliver a mobile app for both Android and iOS.
+RESULTS
+Our app is is ready to deploy on IOS and android, and is capable of authenticating user logins, storing user information, and interacting with the user in real-time. Future plans include cloud deployment.
+Author(s) – Noah Clark, Cesar Lucena Trujillo, Rakshak Gurung, Fabritzzio Cabrejos
+Advisors(s) – Sharon Parry

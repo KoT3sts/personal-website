@@ -1,0 +1,331 @@
+/* First-visit agent crew and guided build tour. Everything here is decorative
+   (aria-hidden, pointer-events: none) except the dock's buttons and the footer
+   Replay. Per-frame motion is written by entrance.js as transforms; CSS only
+   handles state fades. */
+html.agentic-running { scroll-behavior: auto; }
+/* The tour scrolls the page itself; content shifting above must not move it. */
+html.agentic-touring { scroll-behavior: auto; overflow-anchor: none; }
+
+.agentic-stage { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; contain: layout style; --agentic-ink: #1d1e1b; --agentic-paper: #f3f2ec; --agentic-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, Menlo, Consolas, monospace; }
+.agentic-decoration, .agentic-layer, .agentic-cursors { position: absolute; inset: 0; }
+/* The hero starts on black; a paint agent wipes the veil away (clip-path from JS). */
+.agentic-veil { position: absolute; inset: 0; background: #101114; }
+/* Layout guides drawn over the black: 1px lines and dashed boxes that grow
+   (scale / clip-path from JS), each with a measured label. */
+.agentic-guides { position: absolute; inset: 0; --guide: #4cc3ff; transition: opacity .6s ease; }
+.agentic-guides.is-fading { opacity: 0; }
+.agentic-guide { position: absolute; left: 0; top: 0; box-sizing: border-box; opacity: .75; transform-origin: 0 0; }
+.agentic-guide.is-v, .agentic-guide.is-h { background: var(--guide); }
+.agentic-guide.is-box { border: 1px dashed var(--guide); }
+.agentic-guide-label { position: absolute; left: 0; top: 0; padding: 2px 5px 1px; border-radius: 3px; background: rgb(16 17 20 / .88); color: var(--guide); font: 700 9.5px/1.2 var(--agentic-mono); white-space: nowrap; opacity: 0; transition: opacity .25s ease; }
+.agentic-guide-label.is-on { opacity: 1; }
+/* Lower sections still below the fold start as a wireframe over the section:
+   a near-black fill (wiped by the paint agent, clip-path from JS), margin
+   guides, a dashed outline and grey skeleton blocks. The whole overlay moves
+   with one transform; it sits under frames and cursors. */
+.agentic-wire { position: absolute; left: 0; top: 0; --guide: #4cc3ff; will-change: transform; }
+.agentic-wire-base, .agentic-wire-fill, .agentic-wire-guides { position: absolute; inset: 0; }
+.agentic-wire-fill { background: #101114; }
+.agentic-skeleton { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid rgb(255 255 255 / .12); border-radius: 6px; background: rgb(255 255 255 / .07); transition: opacity .25s ease; }
+/* Light sections: the blocks left on the paper once the fill is painted away. */
+.agentic-wire.is-light > .agentic-wire-base > .agentic-skeleton { border-color: rgb(29 30 27 / .13); background: rgb(29 30 27 / .05); }
+.agentic-skeleton.is-out { opacity: 0; }
+.agentic-wire-guides { transition: opacity .5s ease; }
+.agentic-wire-guides.is-fading { opacity: 0; }
+.agentic-wire-line { position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: var(--guide); opacity: .75; }
+.agentic-wire-outline { position: absolute; inset: 0; border: 1px dashed var(--guide); opacity: .75; }
+.agentic-wire-label { position: absolute; left: 0; top: 0; padding: 2px 5px 1px; border-radius: 3px; background: rgb(16 17 20 / .88); color: var(--guide); font: 700 9.5px/1.2 var(--agentic-mono); white-space: nowrap; }
+/* The paint stroke's leading edge, so the wipe also reads on dark sections. */
+.agentic-wire-edge { position: absolute; left: -1px; top: 0; width: 2px; height: 100%; background: var(--agent-color, #a98cff); box-shadow: 0 0 10px var(--agent-color, #a98cff); opacity: 0; }
+.agentic-wire-edge.is-on { opacity: .85; }
+.agentic-stage.is-leaving .agentic-layer > * { opacity: 0; transition: opacity .2s ease; }
+/* Fallback launch row when the dock was dismissed: measured, never seen. */
+.agentic-home { position: absolute; left: 50%; bottom: 30px; display: flex; gap: 4px; translate: -50% 0; opacity: 0; }
+
+/* Cursors: position via transform from JS; pop-in and docking on the body. */
+.agentic-cursor { position: absolute; left: 0; top: 0; color: var(--agent-color); will-change: transform; }
+.agentic-cursor-body { position: relative; opacity: 0; scale: .55; transform-origin: 2px 2px; transition: opacity .26s ease, scale .36s cubic-bezier(.16,1,.3,1); }
+.agentic-cursor.is-in .agentic-cursor-body { opacity: 1; scale: 1; }
+.agentic-cursor.is-docked .agentic-cursor-body { opacity: 0; scale: .3; transition-duration: .22s, .24s; }
+.agentic-cursor svg { display: block; rotate: var(--tilt, 0deg); transform-origin: 2px 2px; filter: drop-shadow(0 1.5px 1.5px rgb(16 17 20 / .28)); }
+.agentic-cursor path { fill: currentColor; stroke: #121310; stroke-width: 1.25; stroke-linejoin: round; }
+.agentic-cursor.is-orchestrator { color: var(--agentic-ink); }
+.agentic-cursor.is-orchestrator path { stroke: var(--agentic-paper); stroke-width: 1.4; }
+/* Action label: "copy · writing intro". Shown while the agent is out working. */
+.agentic-role { position: absolute; left: 14px; top: 19px; padding: 4px 7px 3px; border-radius: 4px; background: var(--agent-color); color: #12130f; font: 700 11px/1.15 var(--agentic-mono); letter-spacing: 0; white-space: nowrap; box-shadow: 0 3px 10px -3px rgb(16 17 20 / .42); }
+.agentic-role { opacity: 0; scale: .85; transform-origin: 0 0; transition: opacity .2s ease, scale .26s cubic-bezier(.16,1,.3,1); }
+.agentic-cursor.is-working .agentic-role { opacity: 1; scale: 1; }
+.agentic-cursor.is-flip .agentic-role { left: auto; right: 16px; transform-origin: 100% 0; }
+/* Over the hero's label budget: the agent works unlabelled until there is room. */
+.agentic-cursor.is-hush .agentic-role { opacity: 0; scale: .85; }
+.agentic-cursor.is-orchestrator .agentic-role { background: var(--agentic-ink); color: var(--agentic-paper); box-shadow: 0 0 0 1px rgb(243 242 236 / .28), 0 3px 10px -3px rgb(16 17 20 / .45); }
+/* A label too long for either side of its cursor is slid back into the view. */
+.agentic-role { translate: var(--agentic-label-shift, 0px) 0; }
+/* Recorded trace labels: an error, retried or fixed step carries a status tag;
+   a recorded error is also ringed in red until its retry or fix replaces it. */
+.agentic-role[data-status]::after { content: attr(data-status); margin-left: 7px; padding: 1px 5px 0; border-radius: 3px; background: #12130f; color: #f6f9ef; }
+.agentic-cursor .agentic-role[data-status="error"] { box-shadow: 0 0 0 2px #ff5a52, 0 3px 10px -3px rgb(16 17 20 / .42); }
+/* The orchestrator's own label shadow would otherwise win over the ring. */
+.agentic-cursor.is-orchestrator .agentic-role[data-status="error"] { box-shadow: 0 0 0 2px #ff5a52, 0 3px 10px -3px rgb(16 17 20 / .45); }
+.agentic-role[data-status="error"]::after { color: #ff9a92; }
+.agentic-role[data-status="retried"]::after { color: #ffd27a; }
+.agentic-role[data-status="fixed"]::after { color: #9fe0a0; }
+/* A working cursor whose role has no recorded step for this section. */
+.agentic-role[data-quiet] { visibility: hidden; }
+
+/* Selection frames, measured from real element bounds. */
+.agentic-frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid var(--agent-color); background: color-mix(in srgb, var(--agent-color) 7%, transparent); transform-origin: 0 0; transition: opacity .45s ease; }
+.agentic-frame.is-set:not(.is-drag) { animation: agentic-frame-in .4s cubic-bezier(.22,1,.36,1) both; }
+.agentic-frame.is-out { opacity: 0; }
+.agentic-frame.is-review { border-style: dashed; background: none; }
+.agentic-frame.is-text { background: none; border-color: color-mix(in srgb, var(--agent-color) 70%, transparent); }
+.agentic-frame.is-orbit { border-style: dashed; border-radius: 50%; background: none; border-color: color-mix(in srgb, var(--agent-color) 80%, transparent); }
+.agentic-frame i { position: absolute; width: 6px; height: 6px; box-sizing: border-box; background: #fbfaf6; border: 1px solid var(--agent-color); opacity: 0; transition: opacity .15s; }
+.agentic-frame i:nth-child(1) { top: -3.5px; left: -3.5px; }
+.agentic-frame i:nth-child(2) { top: -3.5px; right: -3.5px; }
+.agentic-frame i:nth-child(3) { bottom: -3.5px; left: -3.5px; }
+.agentic-frame i:nth-child(4) { bottom: -3.5px; right: -3.5px; }
+.agentic-frame.is-set:not(.is-review):not(.is-orbit) i { opacity: 1; }
+.agentic-size { position: absolute; left: 50%; top: 100%; translate: -50% 6px; padding: 2px 5px 1px; border-radius: 3px; background: var(--agent-color); color: #12130f; font: 700 9.5px/1.2 var(--agentic-mono); white-space: nowrap; opacity: 0; transition: opacity .15s; }
+.agentic-frame.is-drag.is-set .agentic-size, .agentic-frame.has-size.is-set .agentic-size, .agentic-frame.is-coord .agentic-size { opacity: 1; }
+.agentic-frame.is-coord .agentic-size { top: 50%; translate: 9px 9px; }
+/* The hero's frames carry no size chip (it would sit over the headline). */
+.agentic-frame.no-size .agentic-size { display: none; }
+.agentic-cross { position: absolute; left: 50%; top: 50%; width: 11px; height: 11px; translate: -50% -50%; opacity: 0; transition: opacity .15s; }
+.agentic-cross::before, .agentic-cross::after { content: ""; position: absolute; background: var(--agent-color); }
+.agentic-cross::before { left: 5px; top: 0; width: 1px; height: 11px; }
+.agentic-cross::after { top: 5px; left: 0; height: 1px; width: 11px; }
+.agentic-frame.has-cross.is-set .agentic-cross { opacity: 1; }
+
+/* Text caret and dispatch lines. */
+.agentic-caret { position: absolute; left: 0; top: 0; width: 2px; border-radius: 1px; background: var(--agent-color); }
+.agentic-caret.is-idle { animation: agentic-blink .9s steps(1, end) infinite; }
+.agentic-dispatch { position: absolute; left: 0; top: 0; height: 1px; transform-origin: 0 50%; background: linear-gradient(90deg, color-mix(in srgb, var(--agent-color) 15%, transparent), var(--agent-color)); animation: agentic-dispatch .7s cubic-bezier(.16,1,.3,1) both; }
+/* Work passing from one agent to another: the same thin line, dashed. */
+.agentic-dispatch.is-handoff { background: repeating-linear-gradient(90deg, var(--agent-color) 0 5px, transparent 5px 9px); animation-duration: .5s; }
+
+/* A cursor held at the screen edge (its work is off screen) shows no label. */
+.agentic-cursor.is-away .agentic-role { opacity: 0; scale: .85; transition: none; }
+
+/* Copy / paste: a dashed outline (⌘C), a ghost dragged in and dropped (⌘V). */
+.agentic-frame.is-copy { border-width: 1.5px; }
+.agentic-frame.is-ghost { border-width: 1.5px; background: color-mix(in srgb, var(--agent-color) 9%, transparent); box-shadow: 0 14px 30px -18px rgb(16 17 20 / .55); opacity: .9; }
+.agentic-frame.is-ghost.is-dropped { border-style: solid; transition: opacity .45s ease, background-color .3s ease; }
+.agentic-frame.is-ghost.is-out, .agentic-frame.is-copy.is-out { opacity: 0; transition: opacity .22s ease; }
+.agentic-tag { position: absolute; left: 0; top: 0; padding: 3px 6px 2px; border-radius: 4px; background: var(--agent-color); color: #12130f; font: 700 10.5px/1.15 var(--agentic-mono); white-space: nowrap; opacity: 0; scale: .7; transform-origin: 0 100%; transition: opacity .18s ease, scale .3s cubic-bezier(.16,1,.3,1); box-shadow: 0 3px 10px -3px rgb(16 17 20 / .42); }
+.agentic-tag.is-on { opacity: 1; scale: 1; }
+.agentic-tag.is-out { opacity: 0; transition-delay: .35s; }
+/* Placeholder bars a pasted copy leaves where its editors will write. */
+.agentic-hole { transition: opacity .25s ease; }
+.agentic-hole.is-light { border-color: rgb(29 30 27 / .13); background: rgb(29 30 27 / .06); }
+
+/* QA comment pin: a dot and a short note; resolved, it turns into a check. */
+.agentic-pin { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; color: #12130f; opacity: 0; scale: .7; transform-origin: 0 50%; transition: opacity .2s ease, scale .32s cubic-bezier(.16,1,.3,1); }
+.agentic-pin.is-on { opacity: 1; scale: 1; }
+.agentic-pin.is-out { opacity: 0; transition: opacity .4s ease .5s; }
+.agentic-pin-dot { position: relative; display: grid; place-items: center; width: 18px; height: 18px; box-sizing: border-box; border: 2px solid #fbfaf6; border-radius: 50% 50% 50% 2px; background: var(--agent-color); box-shadow: 0 3px 10px -3px rgb(16 17 20 / .5); transition: background-color .25s ease, border-radius .25s ease; }
+.agentic-pin-note:empty { display: none; }
+.agentic-pin-note { padding: 3px 7px 2px; border-radius: 4px; background: #fbfaf6; color: #12130f; font: 700 10.5px/1.15 var(--agentic-mono); white-space: nowrap; box-shadow: 0 3px 10px -3px rgb(16 17 20 / .42); transition: opacity .25s ease; }
+.agentic-pin.is-resolved .agentic-pin-dot { border-radius: 50%; background: #72d27c; }
+.agentic-pin.is-resolved .agentic-pin-dot::after { content: ""; width: 7px; height: 4px; margin-top: -2px; border-left: 2px solid #12130f; border-bottom: 2px solid #12130f; rotate: -45deg; }
+.agentic-pin.is-resolved .agentic-pin-note { opacity: .55; text-decoration: line-through; }
+
+/* A mistyped key, set right after the caret until the backspace. */
+.agentic-typo { position: absolute; left: 0; top: 0; white-space: pre; pointer-events: none; }
+.agentic-typo[hidden] { display: none; }
+
+/* ---- Dock: live crew count, current section, progress, Skip tour. ----
+   Bottom centre, above the home indicator; lifted by JS (an eased translate)
+   clear of in-page controls near the bottom edge. Collapses to a small pill
+   after the tour. */
+.agentic-dock { --agentic-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, Menlo, Consolas, monospace; position: fixed; z-index: 62; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px) + 8px); translate: -50% calc(-1 * var(--agentic-dock-lift, 0px)); transition: translate .22s cubic-bezier(.22,1,.36,1); display: flex; align-items: center; max-width: calc(100vw - 20px); min-height: 46px; box-sizing: border-box; padding: 0 1px; border: 1px solid rgb(230 237 218 / .2); border-radius: 30px; background: rgb(23 26 22 / .94); color: #eef2e6; font: 11px/1.3 var(--agentic-mono); letter-spacing: .01em; white-space: nowrap; box-shadow: 0 12px 30px -14px rgb(16 17 20 / .6); animation: agentic-dock-in .45s cubic-bezier(.33,1,.68,1) both; }
+@supports (backdrop-filter: blur(1px)) { .agentic-dock { background: rgb(23 26 22 / .86); backdrop-filter: blur(10px) saturate(1.2); } }
+.agentic-dock[hidden] { display: none; }
+.agentic-dock-live { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.agentic-dock-face { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.agentic-dock-dots { display: flex; align-items: center; gap: 4px; }
+.agentic-dock-dots:empty { display: none; }
+.agentic-dot { width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--agent-color) 30%, #2b2f28); transition: background-color .25s, box-shadow .25s, scale .25s cubic-bezier(.16,1,.3,1); }
+.agentic-dot.is-active { background: var(--agent-color); box-shadow: 0 0 7px color-mix(in srgb, var(--agent-color) 75%, transparent); scale: 1.25; }
+.agentic-dot.is-done { background: color-mix(in srgb, var(--agent-color) 70%, #2b2f28); }
+.agentic-dot.is-orchestrator { box-sizing: border-box; background: none; border: 1.5px solid #eef2e6; }
+.agentic-dot.is-orchestrator.is-done { background: #eef2e6; }
+.agentic-dock-status { display: flex; align-items: baseline; gap: 7px; color: #b9c5ab; }
+.agentic-dock-count { display: inline-block; min-width: 2ch; color: #f6f9ef; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.agentic-dock-unit { color: #eef2e6; }
+.agentic-dock-sep { color: #7d8873; }
+.agentic-dock-where { color: #f6f9ef; }
+.agentic-dock-progress { padding-left: 4px; color: #9aa68e; font-variant-numeric: tabular-nums; }
+.agentic-dock-summary { display: none; color: #eef2e6; }
+.agentic-dock button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; box-sizing: border-box; margin: 0; padding: 0 16px; border: 0; border-radius: 30px; background: none; color: #eef2e6; font: inherit; letter-spacing: inherit; cursor: pointer; transition: background-color .2s; }
+.agentic-dock button:hover { background: rgb(238 242 230 / .1); }
+.agentic-dock button:focus-visible { outline: 2px solid #d7e8b9; outline-offset: -3px; }
+.agentic-dock-skip-more { white-space: pre; }
+.agentic-dock-skip { margin-left: 12px !important; border-left: 1px solid rgb(230 237 218 / .16) !important; border-radius: 0 30px 30px 0 !important; text-decoration: underline; text-underline-offset: 3px; }
+.agentic-dock-replay, .agentic-dock-close, .agentic-dock-full { display: none !important; }
+.agentic-dock-close { padding: 0 !important; font-size: 16px !important; color: #b9c5ab !important; }
+
+/* Trace toggle (left), speed toggle (right of the status). */
+.agentic-dock .agentic-dock-trace { gap: 7px; margin-right: 8px; padding: 0 12px 0 15px; border-radius: 30px 0 0 30px; border-right: 1px solid rgb(230 237 218 / .16); color: #d7e8b9; }
+/* A tiny waterfall: three staggered bars. */
+.agentic-trace-icon { width: 12px; height: 10px; background: linear-gradient(currentColor, currentColor) 0 0 / 7px 2px no-repeat, linear-gradient(currentColor, currentColor) 3px 4px / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) 6px 8px / 6px 2px no-repeat; }
+.agentic-dock.is-trace-open .agentic-dock-trace { background: rgb(238 242 230 / .12); }
+.agentic-dock .agentic-dock-speed { margin-left: 8px; padding: 0 10px; font-weight: 700; font-variant-numeric: tabular-nums; color: #b9c5ab; }
+.agentic-dock .agentic-dock-speed[aria-pressed="true"] { color: #12130f; background: #d7e8b9; }
+.agentic-dock .agentic-dock-speed[aria-pressed="true"]:hover { background: #e6f1d2; }
+
+/* The recorded trace, opened above the dock: heading, honesty line, then a
+   waterfall of every recorded step (role chip, action, result, status, time
+   accuracy, commit, and a bar on a compressed time axis). */
+.agentic-trace { position: absolute; left: 50%; bottom: calc(100% + 10px); translate: -50% 0; display: flex; flex-direction: column; width: min(500px, calc(100vw - 20px)); max-height: min(64vh, 580px); box-sizing: border-box; padding-top: 12px; border: 1px solid rgb(230 237 218 / .2); border-radius: 14px; background: rgb(23 26 22 / .97); color: #eef2e6; font-size: 11px; line-height: 1.4; white-space: normal; text-align: left; box-shadow: 0 16px 34px -16px rgb(16 17 20 / .7); animation: agentic-trace-in .26s cubic-bezier(.16,1,.3,1) both; }
+.agentic-trace[hidden] { display: none; }
+.agentic-trace-title { margin: 0 14px; color: #d7e8b9; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.agentic-trace-honesty { margin: 6px 14px 0; color: #d3dcc7; font-size: 11px; }
+.agentic-trace-where { margin: 6px 14px 0; color: #b9c5ab; font-size: 11px; }
+.agentic-trace-more { margin: 6px 14px 0; font-size: 11px; }
+.agentic-trace-full, .agentic-dock-full { color: #d7e8b9; text-decoration: underline; text-underline-offset: 3px; }
+.agentic-trace-full { position: relative; display: inline-flex; align-items: center; min-height: 24px; }
+/* A 44 px hit area without changing the link's look (like the site's other small links). */
+.agentic-trace-full::before { content: ""; position: absolute; top: calc(50% - 22px); bottom: calc(50% - 22px); left: min(0px, calc(50% - 22px)); right: min(0px, calc(50% - 22px)); }
+.agentic-trace-full:hover, .agentic-dock-full:hover { color: #f6f9ef; }
+.agentic-trace-full:focus-visible, .agentic-dock-full:focus-visible { outline: 2px solid #d7e8b9; outline-offset: 2px; border-radius: 3px; }
+.agentic-trace-where[hidden], .agentic-trace-status[hidden], .agentic-trace-axis[hidden], .agentic-trace-list[hidden] { display: none; }
+.agentic-trace-status { margin: 10px 14px 14px; color: #b9c5ab; font-size: 11px; }
+.agentic-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* The axis labels sit over the bar column of the rows below. */
+.agentic-trace-axis { display: grid; grid-template-columns: 10px minmax(0, 1fr) 22%; column-gap: 10px; margin: 10px 0 0; padding: 0 14px 5px; color: #a9b59c; font-size: 11px; }
+.agentic-trace-axis-scale { grid-column: 3; display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
+.agentic-trace-list { position: relative; flex: 1 1 auto; min-height: 0; margin: 0; padding: 0 0 6px; border-top: 1px solid rgb(230 237 218 / .1); list-style: none; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgb(230 237 218 / .3) transparent; }
+.agentic-trace-list:focus-visible { outline: 2px solid #d7e8b9; outline-offset: -2px; }
+.agentic-span { display: grid; grid-template-columns: 10px minmax(0, 1fr) 22%; column-gap: 10px; align-items: center; padding: 5px 14px 6px; border-top: 1px solid rgb(230 237 218 / .07); }
+.agentic-span:first-child { border-top: 0; }
+/* The steps mapped to the stop the tour is on. */
+.agentic-span.is-current { background: rgb(238 242 230 / .08); box-shadow: inset 3px 0 0 #d7e8b9; }
+.agentic-span-chip { align-self: start; width: 10px; height: 10px; margin-top: 3px; box-sizing: border-box; border-radius: 3px; }
+/* Each role's chip shows the cursor colours that stand for it. */
+.agentic-span[data-role="orchestrator"] .agentic-span-chip { background: #1d1e1b; border: 1.5px solid #eef2e6; }
+.agentic-span[data-role="implementation-worker"] .agentic-span-chip { background: linear-gradient(135deg, #6f9bff 0 20%, #e07bff 20% 40%, #ff6ea9 40% 60%, #ffa04a 60% 80%, #72d27c 80%); }
+.agentic-span[data-role="ui-design-director"] .agentic-span-chip { background: linear-gradient(135deg, #a98cff 0 34%, #55c4f5 34% 67%, #f1cf3a 67%); }
+.agentic-span[data-role="quality-reviewer"] .agentic-span-chip { background: #2fb8a6; }
+.agentic-span-body { display: grid; gap: 1px; min-width: 0; }
+.agentic-span-action { color: #f6f9ef; font-size: 12px; font-weight: 700; line-height: 1.25; }
+.agentic-span-result { color: #c8d2bb; font-size: 11px; line-height: 1.3; }
+.agentic-span-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin-top: 1px; color: #b0bca3; font-size: 11px; line-height: 1.25; }
+.agentic-span-status, .agentic-span-timing { padding: 0 4px; border: 1px solid currentColor; border-radius: 4px; }
+.agentic-span[data-status="ok"] .agentic-span-status { color: #c3cdb6; }
+.agentic-span[data-status="error"] .agentic-span-status { color: #ff9a92; }
+.agentic-span[data-status="retried"] .agentic-span-status { color: #ffd27a; }
+.agentic-span[data-status="fixed"] .agentic-span-status { color: #9fe0a0; }
+.agentic-span-timing { border-style: dashed; }
+.agentic-span-commit { color: #d7e8b9; font-variant-numeric: tabular-nums; }
+.agentic-span-track { position: relative; height: 8px; border-radius: 4px; background: rgb(238 242 230 / .07); }
+.agentic-span-bar { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 4px; background: #8fa37c; transform-origin: 0 50%; animation: agentic-bar-in .5s cubic-bezier(.22,1,.36,1) both; }
+/* Commit save points: a dot rather than a bar. */
+.agentic-span-bar.is-point { width: 6px !important; min-width: 0; margin-left: -3px; background: #d7e8b9; }
+.agentic-span[data-status="error"] .agentic-span-bar { background: #ff8a80; }
+.agentic-span[data-status="retried"] .agentic-span-bar { background: #ffd166; }
+.agentic-span[data-status="fixed"] .agentic-span-bar:not(.is-point) { background: #9fe0a0; }
+
+/* Handoff note: a short decorative line beside the dock, one at a time. */
+.agentic-note { position: absolute; left: calc(100% + 10px); top: 50%; margin: 0; padding: 6px 10px 5px; border-radius: 20px; background: rgb(23 26 22 / .9); color: #d7e8b9; font-size: 10.5px; white-space: nowrap; pointer-events: none; opacity: 0; translate: -6px -50%; transition: opacity .3s ease, translate .4s cubic-bezier(.16,1,.3,1); }
+.agentic-note.is-on { opacity: 1; translate: 0 -50%; }
+.agentic-dock.is-trace-open .agentic-note, .agentic-dock[data-state="pill"] .agentic-note { display: none; }
+@media (max-width: 1099px) {
+  .agentic-note { left: 50%; top: auto; bottom: calc(100% + 8px); translate: -50% 4px; }
+  .agentic-note.is-on { translate: -50% 0; }
+}
+
+/* Pill: what remains after the tour; the count returns only during a pass. */
+.agentic-dock[data-state="pill"] { padding-left: 1px; }
+.agentic-dock[data-state="pill"] .agentic-dock-speed { display: none; }
+.agentic-dock[data-state="pill"] .agentic-dock-skip { display: none; }
+.agentic-dock[data-state="pill"] .agentic-dock-replay, .agentic-dock[data-state="pill"] .agentic-dock-close, .agentic-dock[data-state="pill"] .agentic-dock-full { display: inline-flex !important; }
+/* "Open the full trace": a plain link in the pill, 44 px tall like its buttons. */
+.agentic-dock[data-state="pill"] .agentic-dock-full { align-items: center; min-height: 44px; padding: 0 10px; white-space: pre; }
+.agentic-dock[data-state="pill"] .agentic-dock-replay { margin-left: 6px; padding: 0 12px; text-decoration: underline; text-underline-offset: 3px; }
+.agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-status, .agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-dots { display: none; }
+.agentic-dock[data-state="pill"]:not(.is-busy) .agentic-dock-summary { display: inline; }
+.agentic-dock[data-state="pill"] .agentic-dock-progress { display: none; }
+
+/* Targets: hidden only while a job is pending, never content already seen. */
+.agentic-target[data-build-state="pending"] { opacity: 0; translate: 0 .35em; }
+.agentic-target[data-build-kind="art"][data-build-state="pending"] { translate: 0 14px; scale: .93; }
+.agentic-target[data-build-state="placing"] { opacity: 1; translate: none; scale: none; transition: opacity var(--agentic-d, .6s) cubic-bezier(.33,1,.68,1), translate var(--agentic-d, .6s) cubic-bezier(.22,1,.36,1), scale var(--agentic-d, .6s) cubic-bezier(.22,1,.36,1); }
+.agentic-target[data-build-state="typing"] { opacity: 1; translate: none; }
+/* Per-item placement: the item pops in with a slight settle when its agent
+   drops it; its tags cascade in after it; its sub line is written. Pending
+   items are only transparent (no transform), so their bounds stay exact. */
+.agentic-target[data-build-kind="pop"][data-build-state="pending"],
+.agentic-target[data-build-kind="kid"][data-build-state="pending"],
+.agentic-target[data-build-kind="text"][data-build-state="pending"] { opacity: 0; translate: none; }
+.agentic-target[data-build-kind="pop"][data-build-state="placing"] { transition: opacity calc(var(--agentic-d, .65s) * .7) cubic-bezier(.33,1,.68,1); animation: agentic-pop var(--agentic-d, .65s) cubic-bezier(.22,1,.36,1) both; }
+.agentic-target[data-build-kind="kid"][data-build-state="placing"] { transition: opacity calc(var(--agentic-d, .42s) * .7) cubic-bezier(.33,1,.68,1); animation: agentic-pop-kid var(--agentic-d, .42s) cubic-bezier(.22,1,.36,1) both; }
+
+/* Replay sits inside the footer's small mono row without changing its height. */
+.agentic-replay { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -16px; padding: 0; color: inherit; font: inherit; text-transform: uppercase; letter-spacing: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.agentic-replay { white-space: nowrap; }
+.agentic-replay .icon { margin-left: .45em; }
+.agentic-replay:hover { color: #d7deca; }
+.agentic-replay:disabled { display: none; }
+
+@keyframes agentic-frame-in { from { opacity: 0; scale: .985; } }
+@keyframes agentic-blink { 50% { opacity: 0; } }
+@keyframes agentic-dispatch { 0% { scale: 0 1; opacity: .95; } 40% { scale: 1 1; opacity: .9; } 100% { scale: 1 1; opacity: 0; } }
+@keyframes agentic-dock-in { from { opacity: 0; } }
+/* Soft settle: a small rise and a barely-there overshoot. */
+@keyframes agentic-pop { 0% { scale: .95; translate: 0 10px; } 62% { scale: 1.005; translate: 0 -1px; } 100% { scale: 1; translate: none; } }
+@keyframes agentic-pop-kid { 0% { scale: .86; translate: 0 5px; } 62% { scale: 1.02; translate: 0 -.5px; } 100% { scale: 1; translate: none; } }
+@keyframes agentic-trace-in { from { opacity: 0; translate: -50% 6px; } }
+@keyframes agentic-trace-fade { from { opacity: 0; } }
+@keyframes agentic-bar-in { from { scale: 0 1; } }
+
+@media (max-width: 760px) {
+  .footer-bottom > .agentic-replay { order: 4; margin-block: -12px -14px; }
+}
+@media (max-width: 639px) {
+  .agentic-dock { font-size: 11px; }
+  .agentic-dock .agentic-dock-trace { margin-right: 6px; padding: 0 10px 0 13px; }
+  .agentic-trace-word, .agentic-dock-where, .agentic-dock-skip-more { display: none; }
+  .agentic-dock .agentic-dock-speed { margin-left: 4px; padding: 0 8px; }
+  /* A sheet above the dock, the full width of the screen less 10 px a side. */
+  .agentic-trace { width: calc(100vw - 20px); max-height: min(60vh, 520px); border-radius: 14px 14px 10px 10px; }
+  .agentic-span, .agentic-trace-axis { grid-template-columns: 10px minmax(0, 1fr) 20%; column-gap: 8px; padding-inline: 12px; }
+  .agentic-trace-title, .agentic-trace-honesty, .agentic-trace-where, .agentic-trace-status { margin-inline: 12px; }
+  /* Hero stop: a compact dock in the bottom-right corner, beside the résumé
+     button and links (left-aligned) rather than lifted over the hero copy. */
+  .agentic-dock.is-compact { left: auto; right: max(10px, env(safe-area-inset-right, 0px) + 6px); translate: 0 calc(-1 * var(--agentic-dock-lift, 0px)); }
+  .agentic-dock.is-compact .agentic-dock-speed, .agentic-dock.is-compact .agentic-dock-unit, .agentic-dock.is-compact .agentic-dock-sep, .agentic-dock.is-compact .agentic-dock-progress, .agentic-dock.is-compact .agentic-note { display: none; }
+  .agentic-dock.is-compact .agentic-dock-face { gap: 7px; }
+  .agentic-dock.is-compact .agentic-dock-skip { margin-left: 2px !important; padding: 0 12px !important; }
+  .agentic-dock.is-compact .agentic-trace { left: auto; right: 0; translate: none; animation-name: agentic-trace-fade; }
+  .agentic-dock-face { gap: 9px; }
+  .agentic-dock-dots { gap: 3px; }
+  .agentic-dot { width: 5px; height: 5px; }
+  .agentic-dock-status { gap: 5px; }
+  .agentic-dock-agents { display: none; }
+  .agentic-dock-progress { padding-left: 2px; }
+  .agentic-dock-skip { margin-left: 4px !important; padding: 0 13px !important; }
+  .agentic-role { font-size: 10px; top: 18px; padding: 3px 6px 2px; }
+  /* Post-tour pill on phones: a compact chip in the bottom-right corner, away
+     from the left-aligned reading column. The Trace toggle stays (icon only) so
+     the trace can still be opened and focus has somewhere to return. */
+  .agentic-dock[data-state="pill"] { left: auto; right: max(10px, env(safe-area-inset-right, 0px) + 6px); translate: 0 calc(-1 * var(--agentic-dock-lift, 0px)); transition: none; min-height: 44px; max-width: calc(100vw - 20px); font-size: 11px; }
+  .agentic-dock[data-state="pill"] .agentic-dock-replay { margin-left: 2px; padding: 0 10px; }
+  .agentic-dock[data-state="pill"] .agentic-dock-full { padding: 0 6px; }
+  .agentic-dock-full-more { display: none; }
+  .agentic-dock[data-state="pill"] .agentic-trace { left: auto; right: 0; translate: none; animation-name: agentic-trace-fade; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agentic-stage, .agentic-dock { display: none; }
+  .agentic-trace, .agentic-span-bar { animation: none; }
+  .agentic-target[data-build-state] { opacity: 1 !important; translate: none !important; scale: none !important; clip-path: none !important; animation: none !important; }
+}
+
+/* Ride-along agents carry over between tour stops without re-animating in. */
+.agentic-cursor.is-carried .agentic-cursor-body,
+.agentic-cursor.is-carried .agentic-role { transition: none; }
+
+/* Set by the inline head script when the tour will play: black from the first
+   paint until the tour's own veil takes over (self-clears after 4 s). */
+html.agentic-pending body::before { content: ""; position: fixed; inset: 0; z-index: 60; background: #101114; pointer-events: none; animation: agentic-pending-out 0s 4s forwards; }
+@keyframes agentic-pending-out { to { visibility: hidden; } }

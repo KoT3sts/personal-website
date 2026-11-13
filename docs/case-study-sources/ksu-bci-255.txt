@@ -1,0 +1,26 @@
+URL: https://digitalcommons.kennesaw.edu/undergradsymposiumksu/spring2022/presentations/255
+Read: November 11, 2026 (record page; email addresses left out)
+
+26th Annual Symposium of Student Scholars - 2022
+
+Brain-to-text communication through an invasive BC
+
+Presenters
+Cesar Lucena Trujillo, Kennesaw State University
+
+Primary Investigator (PI) Name
+Md Abdullah Al Hafiz Khan
+
+Department
+CCSE - Computer Science
+
+Abstract
+Title: Brain-to-text communication through an invasive BCI
+Authors:
+Cesar Lucena Trujillo
+Donovan McGregor
+Md Abdullah Al Hafiz Khan
+Abstract: The purpose of the current study is to investigate the functionality of BCI’s to decode the attempted handwriting thoughts from neural activity in the motor cortex and translates it to text in real time. While there have been past studies regarding the efficacy of BCI’s the practical realization has been proven difficult due to limitations in accuracy and speed. Previous studies have approached this problem by using neural signals to choose from a limited set of possible words, this study seeks to have a more general model that can type any word in the vast English vocabulary. In this study, we create an end-to-end BCI that translates neural signals associated with visualization of the handwriting motion into text output. With this BCI, our study attempts to assist any individual that suffered any brain or physical damage that impedes the function of writing or that it affects the parietal lobes impeding the person of communicating.
+
+From the PDF cover page:
+This Poster is brought to you for free and open access by the Office of Undergraduate Research at DigitalCommons@Kennesaw State University.

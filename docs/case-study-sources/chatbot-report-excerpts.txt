@@ -1,0 +1,122 @@
+URL: https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf
+Read: November 11, 2026. Text extracted from the 24-page PDF; line breaks as extracted, excerpts only.
+Excerpts are separated by '---' and keep the report's own wording and typos.
+
+--- Title page (lines 2-11)
+Virtual Companionship Chatbot - Indy 13
+Final Report
+Course Number: CS4850
+Semester: Spring 2023
+Professor: Ms. Perry
+Github Link: https://github.com/NoahDClark/VirtualCompanionChatbot
+Website Link: https://virtualcompanionchatbot.wordpress.com/
+Submission Date: April 2024
+Number of Lines of code in the Project: 1360
+Number of Components in the Project: 28
+
+--- System Architecture: User Interface Component
+a. b. c. User Interface Component: The User Interface Component serves as the application’s
+front-end, presenting the chatbot interface to users in an intuitive and visually appealing
+manner. It includes features like logging in, talking with the chatbot, looking at past
+conversations. Since it is implemented with ReactJS, it is compatible for both IOS and
+Android platforms. There is easy access and flow in the chatbot, but also to improve it,
+we had ideas like voice commands and screen reader to improve the usability for people
+with disabilities (but this is still in work).
+
+--- Software Development Life Cycle (UI & DBMS): the database
+Setting up the DBMS was fairly straightforward, as the primary purpose of it was to setup an
+authentication system to verify user login. We designed this system to contain and store user chat
+information for a short period of time to provide the LLM with contextual information. However,
+given computational and resource constraints, this portion of the project was withheld from the
+final functioning product.
+
+--- Software Development Life Cycle (LLM): sentiment analysis
+Developing Capabilities: Our LLM's role grew as the project did. By adding sentiment analysis
+capabilities, we were able to upgrade it from a basic conversationalist to a perceptive friend that
+could recognize and react to the emotional overtones in user messages. This change represented
+a significant milestone in the chatbot's lifecycle, extending its capabilities beyond information
+retrieval to include emotional support.
+The Implementation phase then arrived, during which our plans began to take shape. As if they
+were composers at the piano, our team members' fingers danced over keyboards, coding away to
+produce a symphony of algorithms that would enable our chatbot to communicate with grace and
+empathy.
+Sentiment analysis implementation: The first step in the update was adding a sentiment
+analysis module that was designed to identify user emotions based on textual cues. This
+was integrated with the LLM so that the chatbot could now determine the emotion in a
+user's message—be it happiness, sorrow, or annoyance—and adjust its responses to offer
+consolation or acknowledge accomplishments appropriately.
+
+--- Server Architecture
+Server Architecture
+In developing the architecture, it was decided to focus on ensuring that there would always be a
+high likelihood that the application would be available to retain users because outages tend to
+drive users to other platforms. As a result, for production deployment of this application we
+planned for a high availability (HA) architecture. For this we would deploy the app across two
+Azure cloud servers with one strategically being on the east coast and the other being on the west
+coast. Doing this will reduce latency across the U.S, where our main target audience is located,
+and increase reliability in the event of regional outages or natural disasters.
+The servers planned for hosting are the NC6s_v3 Azure Cloud servers. These have the
+memory and GPU computational resources that would be required for hosting the Python server
+hosting the LLM used by our application for the chatbot functionality. These Python servers will
+integrate with two Firebase Realtime databases configured for data replication to prevent the
+complete data loss of the data necessary to customize the individual user experience.
+It is important to avoid focusing too heavily on the technical requirements of the
+architecture design because each deploying applications in the real world always have monetary
+costs associated with scaling the application. Our deployment strategy has also taken finances
+into consideration. By using Microsoft’s freely available Azure Pricing Calculator we were able
+to determine the monthly cost of running the dual server setup would be $4870.56. Additionally
+using Firebases equivalent cost estimator, the Database (DB) servers would cost an additional
+$200. This brings our total monthly costs to $5070.56. This deployment would allow us to
+handle a capacity of approximately 2,400 requests per minute to support approximately 22,000
+users signed up for the application bases on our usage frequency estimates.
+While this would be the ideal setup assuming we would be able to grow the application’s
+user base rapidly through some advertising campaigns. This could be an unlikely scenario. This
+is why we have a second architecture planned for the early stage of the application where we
+may have a very small user base which the first architecture would be too much. We would
+deploy one azure cloud server of the same type with a single DB on the east coast of the U.S.
+This would have reduced latency compared to self-hosting the server as well as halving our costs
+compared to the dual server setup. The downside being it would reduce the capacity to 1,200
+request per minute only support 10,000 users. This would be an efficient cost saving measure
+which would not pose major issues due to Azure’s ability to quickly deploy cloud servers if we
+notice the user base approaching 10,000 users.
+
+--- Test Plan and Report
+Test Plan and Report
+Using the backend tool for testing the LLM before it was connected to the UI, we were able to
+use the following data set to test if it was able to detect the correct emotion for the prompt
+associated with the emotion. The process we followed was to feed it a prompt on the backend
+and then we ignored the response the LLM gave but took note of the emotions it detected in the
+prompt it was given. This methodology was chosen since widely testing an LLM can be costly as
+shown by the current leaders in the space OpenAI.
+Evaluating the quality of responses is typically done at-scale by employing a large team of
+humans. If we wanted to test the LLM on a larger scale, and were provided with the appropriate
+budget, we would leverage Amazon’s Mechanical Turk service. This is a service which offers a
+low-cost solution to getting a very large number of very small tasks completed by real humans
+compared to employing a workforce of employees yourself. This method would allow us to
+further train and reinforce the current model we have trained. Additionally with further time and
+resources there are several training benchmarks we could employ for further testing the LLMs
+ability to read emotions.
+Data set:
+Joy: "I just got promoted at work and I'm ecstatic about the new opportunities!"
+Sadness: "I lost my favorite necklace today, and it's left me feeling really down."
+Anger: "Someone just cut me off in traffic, and it made me incredibly angry!"
+Fear: "I heard a noise downstairs in the middle of the night and felt terrified."
+Surprise: "I can't believe they threw me a surprise party for my birthday!"
+Disgust: "There was mold on the bread I almost ate; it was disgusting."
+Trust: "My best friend always supports me, which makes me feel deeply trusted and secure."
+Anticipation: "I'm looking forward to the concert next month; I’ve been excited for weeks!"
+Sadness: "Watching the end of that movie always brings tears to my eyes."
+Joy: "Winning the championship was the happiest moment of my life."
+
+--- Conclusion
+As we conclude the final report, we have demonstrated that our project has made progress in
+addressing the growing issue of loneliness among college students. Through our project we
+created a sophisticated chatbot that is not only able to respond to interactions but through
+sentiment analysis is able to categorize the emotions being used in the conversations it is having.
+This allows our chatbot to augment its responses to account for the emotional nuances of user’s
+messages.
+With 1360 lines of code we took our project and transformed it from a concept thought up during
+the first few weeks of the semester and transformed it into several components which each
+operated separately before finally having our completed project where all the individual
+components operate together seamlessly.
+

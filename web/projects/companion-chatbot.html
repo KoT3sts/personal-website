@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cesartortolero.goatcounter.com; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#eeede8">
+  <title>Companionship Chatbot: LLM with sentiment analysis — Cesar Tortolero</title>
+  <meta name="description" content="Companionship Chatbot by Cesar Tortolero: an LLM companion chatbot for college students whose sentiment module names the emotion in each message. First Place, Undergraduate Capstone, KSU C-Day, Spring 2024.">
+  <meta name="author" content="Cesar Alejandro Tortolero Trujillo">
+  <link rel="canonical" href="https://cesartortolero.com/projects/companion-chatbot.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Companionship Chatbot: LLM with sentiment analysis — Cesar Tortolero">
+  <meta property="og:description" content="Companionship Chatbot by Cesar Tortolero: an LLM companion chatbot for college students whose sentiment module names the emotion in each message. First Place, Undergraduate Capstone, KSU C-Day, Spring 2024.">
+  <meta property="og:url" content="https://cesartortolero.com/projects/companion-chatbot.html">
+  <meta property="og:image" content="https://cesartortolero.com/assets/og-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. AI agents and LLM evaluation on AWS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Companionship Chatbot: LLM with sentiment analysis — Cesar Tortolero">
+  <meta name="twitter:description" content="Companionship Chatbot by Cesar Tortolero: an LLM companion chatbot for college students whose sentiment module names the emotion in each message. First Place, Undergraduate Capstone, KSU C-Day, Spring 2024.">
+  <meta name="twitter:image" content="https://cesartortolero.com/assets/og-card.jpg">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./case-charts.css">
+  <script type="module" src="./case-charts.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": "Companionship Chatbot",
+    "headline": "Companionship Chatbot",
+    "description": "Companionship Chatbot by Cesar Tortolero: an LLM companion chatbot for college students whose sentiment module names the emotion in each message. First Place, Undergraduate Capstone, KSU C-Day, Spring 2024.",
+    "url": "https://cesartortolero.com/projects/companion-chatbot.html",
+    "image": "https://cesartortolero.com/assets/companion-chatbot.svg",
+    "genre": "Conversational AI",
+    "inLanguage": "en",
+    "keywords": "DistilGPT-2, Sentiment analysis, React Native, Firebase, Python",
+    "award": "First Place, Undergraduate Capstone, KSU C-Day, Spring 2024",
+    "author": {
+      "@type": "Person",
+      "name": "Cesar Tortolero",
+      "alternateName": "Cesar Alejandro Tortolero Trujillo",
+      "jobTitle": "Machine Learning Engineer",
+      "url": "https://cesartortolero.com/"
+    },
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Cesar Tortolero",
+      "url": "https://cesartortolero.com/"
+    }
+  }
+  </script>
+  <script type="module" src="../count.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="cs-top">
+    <a class="cs-wordmark" href="../"><span class="cs-wordmark-first">CESAR<span class="cs-dot" aria-hidden="true"></span></span> <span class="cs-wordmark-last">TORTOLERO</span></a>
+    <a class="cs-back" href="../#work"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> All projects</a>
+  </header>
+  <main id="main">
+    <article aria-labelledby="cs-title">
+      <header class="cs-intro">
+        <h1 id="cs-title">Companionship Chatbot</h1>
+        <div class="cs-grid cs-summary">
+          <p class="cs-main cs-lead">Listen for the tone, not just the words.</p>
+          <dl class="cs-rail cs-meta">
+            <div><dt class="mono">Category</dt><dd class="mono">CONVERSATIONAL AI</dd></div>
+            <div><dt class="mono">Project</dt><dd class="mono">03 / 06</dd></div>
+            <div><dt class="mono">Role</dt><dd>Team lead, backend LLM</dd></div>
+            <div><dt class="mono">Award</dt><dd>First Place, KSU C-Day, Spring 2024</dd></div>
+          </dl>
+        </div>
+      </header>
+      <section class="cs-grid cs-brief" aria-labelledby="brief-title">
+        <h2 class="cs-rail mono cs-brief-title" id="brief-title">In 30 seconds</h2>
+        <dl class="cs-main cs-brief-list">
+          <div><dt class="mono">Problem</dt><dd>Make an LLM companion listen for the tone of a message, not just its words.</dd></div>
+          <div><dt class="mono">My part</dt><dd>I led the four-person capstone team, handling the planning and direction, and designed the backend LLM: the DistilGPT-2 server and the sentiment module. One teammate designed the React Native app, and two others helped with it briefly.</dd></div>
+          <div><dt class="mono">Result</dt><dd><strong>First Place</strong>, Undergraduate Capstone, at the KSU C-Day Computing Showcase, Spring 2024.</dd></div>
+          <div><dt class="mono">Proof</dt><dd><ul class="cs-proof">
+            <li><a class="cs-text-link" href="https://www.kennesaw.edu/ccse/events/computing-showcase/sp24-cday-winners.php">KSU C-Day winners, Spring 2024 <span class="cs-arrow icon icon-arrow-ne" aria-hidden="true"></span></a></li>
+            <li><a class="cs-text-link" href="https://youtu.be/NBu8LE_WF8Q">Final presentation video <span class="cs-arrow icon icon-arrow-ne" aria-hidden="true"></span></a></li>
+            <li><a class="cs-text-link" href="../lab/sentiment-eval.html">How I evaluate a classifier (public data): two sentiment classifiers tested on open review data, not the chatbot’s original model <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+          </ul></dd></div>
+        </dl>
+      </section>
+      <figure class="cs-grid cs-cover">
+        <img class="cs-main" src="../assets/companion-chatbot.svg" alt="Original illustration of a companion chat conversation beside the eight emotions a sentiment module can name, with joy highlighted" width="900" height="620" fetchpriority="high">
+        <figcaption class="cs-rail">The cover is an original illustration. The conversation shown is sample text.</figcaption>
+      </figure>
+      <div class="cs-body">
+        <section class="cc-band" aria-labelledby="numbers-title">
+          <h2 class="mono cc-band-title" id="numbers-title">The project in numbers</h2>
+          <figure class="cc-figure" data-chart="counters">
+            <dl class="cc-stats">
+              <div><dt class="mono">Code</dt><dd><span class="cc-num">1,360</span> lines of code in the final project.</dd></div>
+              <div><dt class="mono">Components</dt><dd><span class="cc-num">28</span> components.</dd></div>
+              <div><dt class="mono">Emotions</dt><dd><span class="cc-num">8</span> emotions the sentiment module can name.</dd></div>
+              <div><dt class="mono">Test prompts</dt><dd><span class="cc-num">10</span> labelled prompts in the report’s test.</dd></div>
+            </dl>
+            <figcaption>From the team’s final report, April 2024.</figcaption>
+          </figure>
+          <p class="cs-repro"><span class="mono cs-repro-label">Check the source</span> <a class="cs-repro-link" href="https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf"><span class="mono">Final report · PDF</span> <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></p>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="flow-title">
+          <h2 class="cs-rail" id="flow-title">How it works</h2>
+          <div class="cs-main">
+            <div class="cs-prose">
+              <p>The app is React Native, with login, chat and past conversations. Each message goes to a Python server, where a sentiment module names the emotion in it and a DistilGPT-2 model, using the QuAC dataset, writes the reply. Firebase Realtime Database handles logins and user information. The report also notes that storing chat history as context for the model was withheld from the final product.</p>
+              <p>The module names one of eight emotions: joy, sadness, anger, fear, surprise, disgust, trust or anticipation. Knowing the emotion lets the reply console or celebrate.</p>
+              <p>The module sits in the LLM pipeline on the Python server: it reads textual cues in each message to name the emotion, and the model adjusts its reply to fit; the public report does not name the classifier behind it.</p>
+              <p class="cs-repro"><span class="mono cs-repro-label">Check the source</span> <a class="cs-repro-link" href="https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf"><span class="mono">Final report · PDF</span> <span class="icon icon-arrow-ne" aria-hidden="true"></span></a> <a class="cs-repro-link" href="https://github.com/NoahDClark/VirtualCompanionChatbot"><span class="mono">Code · GitHub</span> <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></p>
+            </div>
+            <figure class="cc-figure" data-chart="graph" data-grid="4x1" data-grid-narrow="1x4" data-narrow-below="640" data-node-scale-narrow="0.8" data-route="app db app mood model app">
+              <div class="cc-canvas"></div>
+              <div class="cc-data" data-toggle="Show the steps as a list">
+                <ol class="cc-nodes" aria-label="The parts of the app">
+                  <li data-node="db" data-at="0,0" data-at-narrow="0,0" data-glyph="database"><span class="mono cc-node-label">Accounts</span> <span class="cc-node-text">Firebase Realtime Database</span></li>
+                  <li data-node="app" data-at="1,0" data-at-narrow="0,1" data-glyph="phone" data-tone="dark"><span class="mono cc-node-label">React Native</span> <span class="cc-node-text">Mobile app</span></li>
+                  <li data-node="mood" data-at="2,0" data-at-narrow="0,2" data-glyph="emotion"><span class="mono cc-node-label">First</span> <span class="cc-node-text">Sentiment module</span></li>
+                  <li data-node="model" data-at="3,0" data-at-narrow="0,3" data-glyph="model"><span class="mono cc-node-label">Then</span> <span class="cc-node-text">DistilGPT-2</span></li>
+                </ol>
+                <ul class="cc-frames" aria-label="Where they run">
+                  <li data-frame="mood model">Python server</li>
+                </ul>
+                <ul class="cc-edges" aria-label="How a message moves">
+                  <li data-from="app" data-to="db" data-kind="both">The app signs people in and stores their information with Firebase Realtime Database.</li>
+                  <li data-from="app" data-to="mood">The app sends each message to the Python server.</li>
+                  <li data-from="mood" data-to="model">The sentiment module names the emotion before DistilGPT-2 writes the reply.</li>
+                  <li data-from="model" data-to="app" data-bend="loop-down:34" data-bend-narrow="loop-right:30">The reply goes back to the app, ready to console or celebrate.</li>
+                </ul>
+              </div>
+              <figcaption>One message through the app: Firebase handles the login, and the Python server names the emotion before the model replies.</figcaption>
+            </figure>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="emotions-title">
+          <h2 class="cs-rail" id="emotions-title">Eight emotions</h2>
+          <div class="cs-main">
+            <figure class="cc-figure" data-chart="bars">
+              <div class="cc-canvas"></div>
+              <div class="cc-data">
+                <table class="cc-table">
+                  <caption>Prompts per emotion in the report’s test set</caption>
+                  <thead><tr><th scope="col">Emotion</th><th scope="col">Prompts</th></tr></thead>
+                  <tbody>
+                    <tr data-tone="accent"><th scope="row">Joy <span class="cc-mark">(two prompts)</span></th><td>2</td></tr>
+                    <tr data-tone="accent"><th scope="row">Sadness <span class="cc-mark">(two prompts)</span></th><td>2</td></tr>
+                    <tr><th scope="row">Anger</th><td>1</td></tr>
+                    <tr><th scope="row">Fear</th><td>1</td></tr>
+                    <tr><th scope="row">Surprise</th><td>1</td></tr>
+                    <tr><th scope="row">Disgust</th><td>1</td></tr>
+                    <tr><th scope="row">Trust</th><td>1</td></tr>
+                    <tr><th scope="row">Anticipation</th><td>1</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <figcaption>The report’s test set: 10 labelled prompts across the eight emotions, two each for joy and sadness (the green bars) and one for each of the others.</figcaption>
+            </figure>
+            <div class="cs-prose">
+              <p>Two prompts from that set:</p>
+              <blockquote class="cc-quote"><p>“I just got promoted at work and I'm ecstatic about the new opportunities!”</p><p class="mono">Joy</p></blockquote>
+              <blockquote class="cc-quote"><p>“I lost my favorite necklace today, and it's left me feeling really down.”</p><p class="mono">Sadness</p></blockquote>
+            </div>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="deploy-title">
+          <h2 class="cs-rail" id="deploy-title">The deployment plan</h2>
+          <div class="cs-main">
+            <div class="cs-prose">
+              <p>The C-Day abstract describes the Azure deployment as a plan. The report sized it two ways. For a fast-growing user base, two Azure NC6s_v3 GPU servers, one on the east coast and one on the west, each with a replicated Firebase database, so a regional outage would not take the app down. For an early, small user base, one server and one database in the east.</p>
+            </div>
+            <figure class="cc-figure" data-chart="bars">
+              <div class="cc-canvas"></div>
+              <div class="cc-data">
+                <table class="cc-table">
+                  <caption>Planned capacity and monthly cost</caption>
+                  <thead><tr><th scope="col">Setup</th><th scope="col">Requests per minute</th><th scope="col">Users</th><th scope="col">Monthly cost</th></tr></thead>
+                  <tbody>
+                    <tr data-tone="soft"><th scope="row" data-short="One server">One server, east (early stage)</th><td>1,200</td><td>10,000</td><td data-share="0.5">about half</td></tr>
+                    <tr><th scope="row" data-short="Two servers">Two servers, east and west</th><td>about 2,400</td><td>about 22,000</td><td>$5,070.56</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <figcaption>The report’s two plans. Two servers: $5,070.56 a month ($4,870.56 for the servers and $200 for the databases) for about 2,400 requests a minute, or about 22,000 users. One server: about half the cost, for 1,200 requests a minute and 10,000 users. The report gives no exact one-server cost, so that grey bar is drawn at half.</figcaption>
+            </figure>
+            <p class="cs-repro"><span class="mono cs-repro-label">Check the source</span> <a class="cs-repro-link" href="https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf"><span class="mono">Server architecture · PDF</span> <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></p>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="links-title">
+          <h2 class="cs-rail" id="links-title">Watch and read</h2>
+          <div class="cs-main">
+            <ul class="cc-links">
+              <li><a class="cc-linkcard" href="https://youtu.be/NBu8LE_WF8Q"><span class="cc-linkcard-icon"><span class="icon icon-play" aria-hidden="true"></span></span><span class="mono">Video · YouTube</span><span class="cc-linkcard-title">Final presentation</span></a></li>
+              <li><a class="cc-linkcard" href="https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf"><span class="cc-linkcard-icon"><span class="icon icon-doc" aria-hidden="true"></span></span><span class="mono">PDF · project site</span><span class="cc-linkcard-title">Final report</span></a></li>
+              <li><a class="cc-linkcard" href="https://digitalcommons.kennesaw.edu/cgi/viewcontent.cgi?article=1411&amp;context=cday"><span class="cc-linkcard-icon"><span class="icon icon-doc" aria-hidden="true"></span></span><span class="mono">PDF · KSU</span><span class="cc-linkcard-title">C-Day poster</span></a></li>
+              <li><a class="cc-linkcard" href="https://virtualcompanionchatbot.wordpress.com/"><span class="cc-linkcard-icon"><span class="icon icon-arrow-ne" aria-hidden="true"></span></span><span class="mono">Website</span><span class="cc-linkcard-title">Project site</span></a></li>
+              <li><a class="cc-linkcard" href="https://github.com/NoahDClark/VirtualCompanionChatbot"><span class="cc-linkcard-icon"><span class="icon icon-arrow-ne" aria-hidden="true"></span></span><span class="mono">GitHub</span><span class="cc-linkcard-title">Code repository</span></a></li>
+            </ul>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="decision-title">
+          <h2 class="cs-rail" id="decision-title">One hard decision</h2>
+          <div class="cs-main cs-prose">
+            <p>Every message goes through the sentiment module before the reply. Without it, as the report puts it, the model was a basic conversationalist; with it, the reply can console a sad message or celebrate good news.</p>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="limit-title">
+          <h2 class="cs-rail" id="limit-title">One limit</h2>
+          <div class="cs-main cs-prose">
+            <p>The report’s test fed the 10 labelled prompts to the backend and noted only the emotion it detected. It ignored the replies and reports no accuracy figure; the report’s reason is that testing an LLM widely is costly.</p>
+            <p>The evaluation lab shows how I evaluate a classifier instead, on open data: a held-out test set, bootstrap intervals, a threshold you can move, and failures picked by rule, not by hand.</p>
+          </div>
+        </section>
+        <section class="cs-grid cs-section" aria-labelledby="stack-title">
+          <h2 class="cs-rail" id="stack-title">Stack</h2>
+          <div class="cs-main cs-prose">
+            <ul class="cs-tags" aria-label="Tools and topics"><li>DistilGPT-2</li><li>QuAC</li><li>Sentiment analysis</li><li>Python</li><li>React Native</li><li>Firebase</li></ul>
+          </div>
+        </section>
+      </div>
+    </article>
+  </main>
+  <footer class="cs-close">
+    <nav class="cs-pager" aria-label="More projects">
+      <a href="./thoughts-to-text.html" rel="prev"><span class="mono"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Previous project</span><span class="cs-pager-title">Thoughts-to-Text BCI</span></a>
+      <a href="./voicelab.html" rel="next"><span class="mono">Next project <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></span><span class="cs-pager-title">VoiceLab</span></a>
+    </nav>
+    <div class="cs-contact">
+      <p>Want to talk about this work?</p>
+      <div class="cs-contact-links">
+        <a class="cs-pill cs-pill-primary" href="../#contact">Get in touch <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        <a class="cs-pill" href="../assets/Cesar_Tortolero_Resume.pdf">Résumé <span class="mono">PDF</span></a>
+      </div>
+    </div>
+    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#work">Back to all projects</a></div>
+  </footer>
+</body>
+</html>

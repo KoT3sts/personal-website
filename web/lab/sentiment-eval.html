@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cesartortolero.goatcounter.com; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#eeede8">
+  <title>Evaluation lab: two sentiment models on public data — Cesar Tortolero</title>
+  <meta name="description" content="A reproducible evaluation by Cesar Tortolero: Naive Bayes and logistic regression on 3,000 public review sentences (UCI, CC BY 4.0), with an interactive threshold scorecard, per-source slices, real failures and bootstrap intervals. A public reproduction, not the Companionship Chatbot model.">
+  <meta name="author" content="Cesar Alejandro Tortolero Trujillo">
+  <link rel="canonical" href="https://cesartortolero.com/lab/sentiment-eval.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Evaluation lab: two sentiment models on public data — Cesar Tortolero">
+  <meta property="og:description" content="Naive Bayes and logistic regression on 3,000 public review sentences: where each one fails, and what a threshold costs. A public reproduction, not the Companionship Chatbot model.">
+  <meta property="og:url" content="https://cesartortolero.com/lab/sentiment-eval.html">
+  <meta property="og:image" content="https://cesartortolero.com/assets/og-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. AI agents and LLM evaluation on AWS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Evaluation lab: two sentiment models on public data — Cesar Tortolero">
+  <meta name="twitter:description" content="Naive Bayes and logistic regression on 3,000 public review sentences: where each one fails, and what a threshold costs. A public reproduction, not the Companionship Chatbot model.">
+  <meta name="twitter:image" content="https://cesartortolero.com/assets/og-card.jpg">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./lab.css">
+  <script type="module" src="./lab.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": "Evaluation lab: two sentiment models on public data",
+    "headline": "Two sentiment models on 3,000 public review sentences",
+    "description": "A reproducible evaluation of Naive Bayes and logistic regression on the UCI Sentiment Labelled Sentences dataset, with a threshold scorecard, per-source slices, failure examples and bootstrap intervals. A public reproduction, not the Companionship Chatbot model.",
+    "url": "https://cesartortolero.com/lab/sentiment-eval.html",
+    "inLanguage": "en",
+    "keywords": "Model evaluation, Sentiment analysis, Naive Bayes, Logistic regression, Bootstrap",
+    "isBasedOn": {
+      "@type": "Dataset",
+      "name": "Sentiment Labelled Sentences",
+      "url": "https://archive.ics.uci.edu/dataset/331/sentiment+labelled+sentences",
+      "identifier": "https://doi.org/10.24432/C57604",
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "creator": { "@type": "Person", "name": "Dimitrios Kotzias" }
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Cesar Tortolero",
+      "alternateName": "Cesar Alejandro Tortolero Trujillo",
+      "jobTitle": "Machine Learning Engineer",
+      "url": "https://cesartortolero.com/"
+    },
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Cesar Tortolero",
+      "url": "https://cesartortolero.com/"
+    }
+  }
+  </script>
+  <script type="module" src="../count.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="cs-top">
+    <a class="cs-wordmark" href="../"><span class="cs-wordmark-first">CESAR<span class="cs-dot" aria-hidden="true"></span></span> <span class="cs-wordmark-last">TORTOLERO</span></a>
+    <a class="cs-back" href="../#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Back to the Lab</a>
+  </header>
+  <main id="main">
+    <article class="lab-eval" aria-labelledby="lab-title">
+      <header class="cs-intro">
+        <p class="mono lab-kicker">Evaluation lab · public reproduction</p>
+        <h1 id="lab-title" class="lab-title">Sentiment, measured</h1>
+        <div class="cs-grid cs-summary">
+          <div class="cs-main">
+            <p class="cs-lead lab-lead">Two sentiment models on 3,000 public review sentences: where each one fails, and what a threshold costs.</p>
+            <figure class="lab-first lab-ci" aria-labelledby="ci-cap">
+              <table class="lab-ci-table">
+                <caption class="visually-hidden">Test-set F1 at threshold 0.50 with bootstrap intervals, and the gap between the models</caption>
+                <thead class="visually-hidden"><tr><th scope="col">Model</th><th scope="col">F1 and bootstrap interval</th><th scope="col">Plot</th></tr></thead>
+                <tbody>
+                    <tr class="lab-ci-a"><th scope="row">A · Naive Bayes</th><td class="lab-ci-num"><span class="lab-ci-value">0.795</span> <span class="lab-ci-range">0.757 to 0.828</span></td><td class="lab-ci-plot"><svg class="lab-ci-svg" aria-hidden="true" focusable="false"><line class="lab-ci-band" x1="14.17%" x2="73.17%" y1="50%" y2="50%"></line><circle class="lab-ci-point" cx="46.09%" cy="50%" r="5"></circle></svg></td></tr>
+                    <tr class="lab-ci-b"><th scope="row">B · Logistic</th><td class="lab-ci-num"><span class="lab-ci-value">0.803</span> <span class="lab-ci-range">0.764 to 0.835</span></td><td class="lab-ci-plot"><svg class="lab-ci-svg" aria-hidden="true" focusable="false"><line class="lab-ci-band" x1="20.42%" x2="79.33%" y1="50%" y2="50%"></line><circle class="lab-ci-point" cx="52.8%" cy="50%" r="5"></circle></svg></td></tr>
+                  <tr class="lab-ci-axis" aria-hidden="true"><td></td><td class="mono">F1</td><td class="lab-ci-plot"><svg class="lab-ci-svg lab-ci-ticks" aria-hidden="true" focusable="false"><text x="8.33%" y="11">0.75</text><text x="50%" y="11">0.80</text><text x="91.67%" y="11">0.85</text></svg></td></tr>
+                </tbody>
+                <tbody class="lab-ci-gap">
+                  <tr><th scope="row">B minus A</th><td class="lab-ci-num"><span class="lab-ci-value">+0.008</span> <span class="lab-ci-range">−0.021 to +0.038</span></td><td class="lab-ci-plot"><svg class="lab-ci-svg" aria-hidden="true" focusable="false"><line class="lab-ci-zero" x1="50%" x2="50%" y1="0" y2="100%"></line><line class="lab-ci-band" x1="32.25%" x2="81.75%" y1="50%" y2="50%"></line><circle class="lab-ci-point" cx="56.72%" cy="50%" r="5"></circle></svg></td></tr>
+                  <tr class="lab-ci-axis" aria-hidden="true"><td></td><td class="mono">Gap</td><td class="lab-ci-plot"><svg class="lab-ci-svg lab-ci-ticks" aria-hidden="true" focusable="false"><text x="8.33%" y="11">−0.05</text><text x="50%" y="11">0</text><text x="91.67%" y="11">+0.05</text></svg></td></tr>
+                </tbody>
+              </table>
+              <figcaption id="ci-cap">Test-set F1 at the default threshold, each with its bootstrap interval: the 2.5th to 97.5th percentile of 1,000 resamples. The two intervals overlap almost entirely, and the interval for the gap crosses zero.</figcaption>
+            </figure>
+            <p class="lab-disclaimer">This is a public reproduction on open data, built to show how I evaluate a classifier. It is not the <a class="lab-link" href="../projects/companion-chatbot.html">Companionship Chatbot</a>’s model, data or reported result.</p>
+          </div>
+          <dl class="cs-rail cs-meta">
+            <div><dt class="mono">Data</dt><dd class="mono">UCI · CC BY 4.0</dd></div>
+            <div><dt class="mono">Models</dt><dd class="mono">Naive Bayes · Logistic</dd></div>
+            <div><dt class="mono">Code</dt><dd class="mono">Python stdlib · JS</dd></div>
+          </dl>
+        </div>
+      </header>
+
+      <section class="lab-strip-band" aria-labelledby="strip-title">
+        <h2 class="visually-hidden" id="strip-title">The 30-second version</h2>
+        <dl class="lab-strip">
+          <!-- generated:strip -->
+          <div><dt class="mono">Test sentences</dt><dd><a class="lab-strip-link" href="#scorecard">596<span class="visually-hidden">, see the scorecard</span></a></dd></div>
+          <div><dt class="mono">Best F1</dt><dd><a class="lab-strip-link" href="#scorecard">0.803<span class="visually-hidden">, see the scorecard</span></a> <span class="lab-unit">model B</span></dd></div>
+          <div><dt class="mono">F1 gap, B minus A</dt><dd><a class="lab-strip-link" href="#scorecard">+0.008<span class="visually-hidden">, see the scorecard</span></a></dd></div>
+          <div class="lab-strip-take"><dt class="mono">Takeaway</dt><dd>Model B edges model A by 0.8 F1 points at the default threshold, but the bootstrap interval for the gap (−0.021 to +0.038) crosses zero: on 596 sentences that is not a reliable win.</dd></div>
+          <!-- /generated:strip -->
+        </dl>
+      </section>
+
+      <div class="cs-body">
+        <section class="cs-grid cs-section lab-scorecard" id="scorecard" aria-labelledby="score-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="score-title">Scorecard</h2>
+            <p class="lab-rail-note">Held-out test set. Every number is computed in your browser from the published predictions.</p>
+          </div>
+          <div class="cs-main lab-score">
+            <div class="lab-fallback" data-lab-fallback>
+              <!-- generated:static -->
+              <p class="lab-note">Reference numbers at the default threshold of 0.50, computed by the Python script. With JavaScript on, this becomes an interactive scorecard.</p>
+              <div class="lab-table-wrap">
+                <table class="lab-table">
+                  <caption>Test-set metrics at threshold 0.50</caption>
+                  <thead><tr><th scope="col">Metric</th><th scope="col">A · Naive Bayes</th><th scope="col">B · Logistic</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">Precision</th><td>0.795</td><td>0.805</td></tr>
+                    <tr><th scope="row">Recall</th><td>0.795</td><td>0.802</td></tr>
+                    <tr><th scope="row">F1</th><td>0.795</td><td>0.803</td></tr>
+                    <tr><th scope="row">Accuracy</th><td>0.795</td><td>0.804</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="lab-table-wrap">
+                <table class="lab-table">
+                  <caption>Accuracy by source at threshold 0.50</caption>
+                  <thead><tr><th scope="col">Source</th><th scope="col">A</th><th scope="col">B</th><th scope="col">Sentences</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">Amazon</th><td>0.797</td><td>0.843</td><td>197</td></tr>
+                    <tr><th scope="row">Yelp</th><td>0.814</td><td>0.819</td><td>199</td></tr>
+                    <tr><th scope="row">IMDb</th><td>0.775</td><td>0.750</td><td>200</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <!-- /generated:static -->
+            </div>
+            <div class="lab-live" data-lab-live hidden>
+              <div class="lab-controls">
+                <div class="lab-threshold">
+                  <p class="lab-cue mono"><span class="icon icon-arrow-s" aria-hidden="true"></span> Start here: drag the threshold</p>
+                  <div class="lab-threshold-head">
+                    <label class="mono" for="threshold">Decision threshold</label>
+                    <output class="lab-threshold-value" id="threshold-value" for="threshold" aria-live="off">0.50</output>
+                  </div>
+                  <input type="range" id="threshold" min="0.05" max="0.95" step="0.01" value="0.5" aria-describedby="threshold-help">
+                  <p class="lab-help" id="threshold-help">Call a sentence positive when the model’s P(positive) is at least this value. Raise it and fewer sentences pass: precision tends to rise, recall can only fall.</p>
+                </div>
+                <fieldset class="lab-toggle">
+                  <legend class="mono">Model</legend>
+                  <div class="lab-toggle-options">
+                    <input type="radio" name="lab-model" id="model-a" value="A"><label for="model-a">A · Naive Bayes</label>
+                    <input type="radio" name="lab-model" id="model-b" value="B"><label for="model-b">B · Logistic</label>
+                    <input type="radio" name="lab-model" id="model-both" value="both" checked><label for="model-both">Both</label>
+                  </div>
+                </fieldset>
+              </div>
+
+              <div class="lab-table-wrap">
+                <table class="lab-table lab-metrics">
+                  <caption>Test-set metrics at the chosen threshold</caption>
+                  <thead><tr><th scope="col">Metric</th><th scope="col" data-model="A">A · Naive Bayes</th><th scope="col" data-model="B">B · Logistic</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">Precision</th><td data-model="A" data-metric="precision"></td><td data-model="B" data-metric="precision"></td></tr>
+                    <tr><th scope="row">Recall</th><td data-model="A" data-metric="recall"></td><td data-model="B" data-metric="recall"></td></tr>
+                    <tr><th scope="row">F1</th><td data-model="A" data-metric="f1"></td><td data-model="B" data-metric="f1"></td></tr>
+                    <tr><th scope="row">Accuracy</th><td data-model="A" data-metric="accuracy"></td><td data-model="B" data-metric="accuracy"></td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <figure class="lab-chart" data-lab-chart>
+                <svg class="lab-chart-svg" viewBox="0 0 640 272" role="img" aria-labelledby="chart-caption" data-lab-chart-svg></svg>
+                <figcaption id="chart-caption">Precision (solid) and recall (dashed) across thresholds from 0.05 to 0.95. The vertical line is the current threshold.</figcaption>
+                <ul class="lab-legend" aria-hidden="true">
+                  <li data-model="A"><span class="lab-swatch lab-swatch-a"></span>A · Naive Bayes</li>
+                  <li data-model="B"><span class="lab-swatch lab-swatch-b"></span>B · Logistic</li>
+                </ul>
+              </figure>
+
+              <div class="lab-matrices">
+                <div class="lab-table-wrap" data-model="A">
+                  <table class="lab-table lab-matrix">
+                    <caption>Model A confusion matrix</caption>
+                    <thead><tr><td></td><th scope="col">Predicted positive</th><th scope="col">Predicted negative</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">Actually positive</th><td class="lab-hit"><span data-cell="A-tp"></span><span class="mono">True pos.</span></td><td class="lab-miss"><span data-cell="A-fn"></span><span class="mono">False neg.</span></td></tr>
+                      <tr><th scope="row">Actually negative</th><td class="lab-miss"><span data-cell="A-fp"></span><span class="mono">False pos.</span></td><td class="lab-hit"><span data-cell="A-tn"></span><span class="mono">True neg.</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="lab-table-wrap" data-model="B">
+                  <table class="lab-table lab-matrix">
+                    <caption>Model B confusion matrix</caption>
+                    <thead><tr><td></td><th scope="col">Predicted positive</th><th scope="col">Predicted negative</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">Actually positive</th><td class="lab-hit"><span data-cell="B-tp"></span><span class="mono">True pos.</span></td><td class="lab-miss"><span data-cell="B-fn"></span><span class="mono">False neg.</span></td></tr>
+                      <tr><th scope="row">Actually negative</th><td class="lab-miss"><span data-cell="B-fp"></span><span class="mono">False pos.</span></td><td class="lab-hit"><span data-cell="B-tn"></span><span class="mono">True neg.</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="lab-table-wrap">
+                <table class="lab-table lab-slices">
+                  <caption>Accuracy by source at the chosen threshold</caption>
+                  <thead><tr><th scope="col">Source</th><th scope="col" data-model="A">A · Naive Bayes</th><th scope="col" data-model="B">B · Logistic</th><th scope="col">Sentences</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row">Amazon</th><td data-model="A" data-slice="amazon"></td><td data-model="B" data-slice="amazon"></td><td data-slice-n="amazon"></td></tr>
+                    <tr><th scope="row">Yelp</th><td data-model="A" data-slice="yelp"></td><td data-model="B" data-slice="yelp"></td><td data-slice-n="yelp"></td></tr>
+                    <tr><th scope="row">IMDb</th><td data-model="A" data-slice="imdb"></td><td data-model="B" data-slice="imdb"></td><td data-slice-n="imdb"></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="lab-help">Exploring the slider on the test set is fine; choosing the threshold here would not be. A deployed threshold should come from validation data or from what a false positive costs.</p>
+              <p class="visually-hidden" aria-live="polite" aria-atomic="true" data-lab-announce></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="fail-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="fail-title">Where they fail</h2>
+            <p class="lab-rail-note">Picked by rule, not by hand: the most confident shared errors, then negation cases, then errors only one model makes.</p>
+          </div>
+          <div class="cs-main">
+            <p class="lab-prose">Double negatives beat both models: “wasn’t terrible” and “not a bad watch” read as negative, because “terrible” and “bad” are among the strongest negative words in training and the <code>not_</code> feature has too few examples to flip them. Model A counts every token, so nine exclamation marks in “no longer working!!!!!!!!!” are nine votes for positive; model B only notes that “!” is present and gets it right. Model A also learned that “Hitchcock” signals a positive review.</p>
+            <ol class="lab-fails">
+            <!-- generated:failures -->
+            <li class="lab-fail">
+              <p class="lab-fail-reason mono">Both models wrong, both confident · IMDb</p>
+              <blockquote class="lab-fail-text"><p>The soundtrack wasn&#x27;t terrible, either.</p></blockquote>
+              <dl class="lab-fail-meta">
+                <div><dt class="mono">Gold</dt><dd>positive</dd></div>
+                <div><dt class="mono">P(positive), A</dt><dd>0.004 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+                <div><dt class="mono">P(positive), B</dt><dd>0.002 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+              </dl>
+            </li>
+            <li class="lab-fail">
+              <p class="lab-fail-reason mono">Both models wrong, both confident · IMDb</p>
+              <blockquote class="lab-fail-text"><p>Predictable, but not a bad watch.</p></blockquote>
+              <dl class="lab-fail-meta">
+                <div><dt class="mono">Gold</dt><dd>positive</dd></div>
+                <div><dt class="mono">P(positive), A</dt><dd>0.002 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+                <div><dt class="mono">P(positive), B</dt><dd>0.007 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+              </dl>
+            </li>
+            <li class="lab-fail">
+              <p class="lab-fail-reason mono">Negation: A wrong, B right · Amazon</p>
+              <blockquote class="lab-fail-text"><p>I purchased this and within 2 days it was no longer working!!!!!!!!!</p></blockquote>
+              <dl class="lab-fail-meta">
+                <div><dt class="mono">Gold</dt><dd>negative</dd></div>
+                <div><dt class="mono">P(positive), A</dt><dd>0.994 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+                <div><dt class="mono">P(positive), B</dt><dd>0.286 <span class="lab-call lab-call-right">right</span></dd></div>
+              </dl>
+            </li>
+            <li class="lab-fail">
+              <p class="lab-fail-reason mono">Negation: A wrong, B right · Amazon</p>
+              <blockquote class="lab-fail-text"><p>Not a good bargain.</p></blockquote>
+              <dl class="lab-fail-meta">
+                <div><dt class="mono">Gold</dt><dd>negative</dd></div>
+                <div><dt class="mono">P(positive), A</dt><dd>0.814 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+                <div><dt class="mono">P(positive), B</dt><dd>0.304 <span class="lab-call lab-call-right">right</span></dd></div>
+              </dl>
+            </li>
+            <li class="lab-fail">
+              <p class="lab-fail-reason mono">Negation: B still wrong · Yelp</p>
+              <blockquote class="lab-fail-text"><p>If you&#x27;re not familiar, check it out.</p></blockquote>
+              <dl class="lab-fail-meta">
+                <div><dt class="mono">Gold</dt><dd>positive</dd></div>
+                <div><dt class="mono">P(positive), A</dt><dd>0.048 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+                <div><dt class="mono">P(positive), B</dt><dd>0.016 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+              </dl>
+            </li>
+            <li class="lab-fail">
+              <p class="lab-fail-reason mono">Negation: B still wrong · Yelp</p>
+              <blockquote class="lab-fail-text"><p>The goat taco didn&#x27;t skimp on the meat and wow what FLAVOR!</p></blockquote>
+              <dl class="lab-fail-meta">
+                <div><dt class="mono">Gold</dt><dd>positive</dd></div>
+                <div><dt class="mono">P(positive), A</dt><dd>0.013 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+                <div><dt class="mono">P(positive), B</dt><dd>0.021 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+              </dl>
+            </li>
+            <li class="lab-fail">
+              <p class="lab-fail-reason mono">Only B wrong · Yelp</p>
+              <blockquote class="lab-fail-text"><p>Ryan&#x27;s Bar is definitely one Edinburgh establishment I won&#x27;t be revisiting.</p></blockquote>
+              <dl class="lab-fail-meta">
+                <div><dt class="mono">Gold</dt><dd>negative</dd></div>
+                <div><dt class="mono">P(positive), A</dt><dd>0.470 <span class="lab-call lab-call-right">right</span></dd></div>
+                <div><dt class="mono">P(positive), B</dt><dd>0.918 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+              </dl>
+            </li>
+            <li class="lab-fail">
+              <p class="lab-fail-reason mono">Only A wrong · IMDb</p>
+              <blockquote class="lab-fail-text"><p>There are the usual Hitchcock logic flaws.</p></blockquote>
+              <dl class="lab-fail-meta">
+                <div><dt class="mono">Gold</dt><dd>negative</dd></div>
+                <div><dt class="mono">P(positive), A</dt><dd>0.913 <span class="lab-call lab-call-wrong">wrong</span></dd></div>
+                <div><dt class="mono">P(positive), B</dt><dd>0.417 <span class="lab-call lab-call-right">right</span></dd></div>
+              </dl>
+            </li>
+            <!-- /generated:failures -->
+            </ol>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="method-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="method-title">Method</h2>
+          </div>
+          <div class="cs-main">
+            <ul class="cs-points lab-points">
+            <!-- generated:method -->
+            <li><strong>Data.</strong> 3,000 labelled sentences, 1,000 each from Amazon, Yelp and IMDb, half positive. 21 exact repeats (ignoring case and spacing) were dropped first, leaving 2,979, so no sentence can appear in both training and test.</li>
+            <li><strong>Split.</strong> Seeded (331) and stratified by source and label: 2,084 train, 299 validation, 596 test.</li>
+            <li><strong>Features.</strong> Lowercase regex tokens; contractions split so “don’t” keeps its “n’t”. Model A counts unigrams. Model B uses unigram and bigram presence plus a <code>not_</code> copy of each word between a negation and the next punctuation mark.</li>
+            <li><strong>Training.</strong> A: multinomial Naive Bayes, Laplace smoothing (alpha 1), not tuned. B: L2 logistic regression, full-batch gradient descent with Nesterov momentum, 1,000 steps; the L2 strength (3 × 10<sup>−5</sup>) was picked from 7 values by validation log loss. The test set played no part in fitting or tuning.</li>
+            <li><strong>Uncertainty.</strong> 1,000 bootstrap resamples of the test set; intervals are the 2.5th to 97.5th percentiles. F1 for A: 0.757 to 0.828; B: 0.764 to 0.835; B minus A: −0.021 to +0.038 (B ahead in 70% of resamples).</li>
+            <!-- /generated:method -->
+            </ul>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="limits-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="limits-title">Limits</h2>
+          </div>
+          <div class="cs-main">
+            <ul class="cs-points lab-points">
+              <li><strong>Small sample.</strong> Each source contributes about 200 test sentences, so a slice accuracy moves by half a point with every sentence. Read slice gaps as hints, not findings.</li>
+              <li><strong>One split, one seed.</strong> The bootstrap covers test-set sampling only. A different split or seed would also move the numbers.</li>
+              <li><strong>Easier than real use.</strong> The dataset’s authors kept sentences with a clear polarity and no neutral ones. Chat messages, sarcasm and mixed feelings are harder, and these models have never seen them.</li>
+              <li><strong>Domain shift is not tested.</strong> Training and test sentences come from the same three sites. Training on two sources and testing on the third would be the next experiment.</li>
+              <li><strong>Examples are quoted, not written.</strong> The failure examples are verbatim test sentences from the public dataset, reviews posted on Amazon, Yelp and IMDb; any names in them come from that text.</li>
+              <li><strong>Validation reads higher than test.</strong> At the L2 strength it picked, model B scored F1 0.852 on the 299 validation sentences and 0.803 on the test set. That setting was chosen on the validation set, so its score there is optimistic; the test number is the one to quote.</li>
+              <li><strong>Scores are not calibrated.</strong> Neither model’s P(positive) was checked against observed frequencies. Naive Bayes pushes more of its scores to the extremes, so the same slider move changes fewer of its calls.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="repro-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="repro-title">Reproduce it</h2>
+          </div>
+          <div class="cs-main lab-prose">
+            <p>One script, Python 3 standard library only. It downloads the zip (or reuses a cached copy outside the repository), checks its SHA-256, trains both models and writes the predictions this page reads.</p>
+            <pre class="lab-code"><code>python3 scripts/eval/build_sentiment_eval.py</code></pre>
+            <p>The same seed gives a byte-identical file. Only test sentences and their predictions are published, as <a class="lab-link" href="./data/sentiment-eval.json">sentiment-eval.json</a>.</p>
+            <p class="lab-cite">Data: Kotzias, D., Denil, M., de Freitas, N., and Smyth, P. “From Group to Individual Labels Using Deep Features.” KDD 2015. <a class="lab-link" href="https://archive.ics.uci.edu/dataset/331/sentiment+labelled+sentences" target="_blank" rel="noopener noreferrer">Sentiment Labelled Sentences</a>, UCI Machine Learning Repository, doi:10.24432/C57604, licensed <a class="lab-link" href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>. Changes: exact repeats removed, punctuation encoding repaired.</p>
+            <p>Related reading: <a class="lab-link" href="./evaluating-agents.html">How I evaluate agents <span class="icon icon-arrow-e" aria-hidden="true"></span></a>, the same habits applied to AI agents.</p>
+          </div>
+        </section>
+      </div>
+    </article>
+  </main>
+  <footer class="cs-close">
+    <nav class="cs-pager" aria-label="Where next">
+      <a href="../projects/companion-chatbot.html"><span class="mono"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Case study</span><span class="cs-pager-title">Companionship Chatbot</span></a>
+      <a href="../"><span class="mono">Homepage <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></span><span class="cs-pager-title">Cesar Tortolero</span></a>
+    </nav>
+    <div class="cs-contact">
+      <p>Want to talk about this work?</p>
+      <div class="cs-contact-links">
+        <a class="cs-pill cs-pill-primary" href="../#contact">Get in touch <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        <a class="cs-pill" href="../assets/Cesar_Tortolero_Resume.pdf">Résumé <span class="mono">PDF</span></a>
+      </div>
+    </div>
+    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#lab">Back to the Lab</a></div>
+  </footer>
+</body>
+</html>

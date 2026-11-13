@@ -1,0 +1,827 @@
+{
+  "about": "Sources for the sentences added to the three side-project pages (voicelab, work-helper, barking-village) in round 9: in-browser demos and illustrations built on sample data, following Cesar's direction of November 11, 2026 (docs/case-study-answers.md, Q16–Q24). Same schema as docs/case-study-facts.json. Sentences that say something about a project come from the homepage (source homepage). Everything else describes how a demo works, defines a measure, or is sample data written for the page: source method, quoting the code or reference that backs it. No sentence here claims a feature, result, user, metric, stack or status beyond the homepage.",
+  "sources": {
+    "homepage": "web/index.html",
+    "method": "How the demos on these pages work: web/projects/text-signals.js and web/projects/side-demos.js, the sample data written for them, and named methods (Flesch, 1948). Not a claim about any project."
+  },
+  "facts": [
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Intro",
+      "sentence": "This page shows the idea with sample text; the prototype itself isn’t shown here.",
+      "source": "homepage",
+      "quote": [
+        "A local prototype for explainable writing-signal analysis and meaning-preserving revision."
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Only says that a prototype exists (homepage) and that this page does not show it."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Intro",
+      "sentence": "Every signal below is computed by this page, in your browser, as you type. The text is never sent anywhere.",
+      "source": "method",
+      "quote": [
+        "web/projects/text-signals.js: analyze()",
+        "web/projects/side-demos.js: no network calls (tests/side-demos.test.js)"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "About the demo on this page, not the prototype."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Demo caption",
+      "sentence": "Sample data: a short paragraph written for this page. Edit it or paste your own text.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Demo",
+      "sentence": "Your text",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Input label."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Sample paragraph",
+      "sentence": "The library on the corner opens at nine. Most mornings, a short line forms outside before the doors unlock, and someone usually brings coffee for the staff. Inside, the reading room stays quiet until the school groups arrive. By noon the tables are full. People come to the library for the books, but many stay for the quiet, the long windows, and the sense that nobody is in a hurry.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Original neutral sample paragraph written for the demo."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Demo",
+      "sentence": "It stays in this tab: nothing is sent or stored.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "True of the demo: side-demos.js makes no requests and uses no storage."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Words per sentence",
+      "sentence": "Words per sentence 8 · 19 · 11 · 6 · 26",
+      "source": "method",
+      "quote": [
+        "web/projects/text-signals.js: analyze(sample).sentences"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Static fallback for the sample paragraph; tests/side-demos.test.js recomputes it."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Average sentence",
+      "sentence": "14.0 words Words per sentence. It shows rhythm, not quality.",
+      "source": "method",
+      "quote": [
+        "web/projects/text-signals.js: avgSentence"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Value is the sample paragraph's, recomputed by tests/side-demos.test.js."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Word variety",
+      "sentence": "0.76 53 of 70 words are distinct Distinct words divided by all words, the type/token ratio. It falls as a text gets longer, so compare texts of similar length.",
+      "source": "method",
+      "quote": [
+        "web/projects/text-signals.js: variety"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Value computed by text-signals.js on the sample paragraph (type/token ratio); recomputed in tests/side-demos.test.js."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Long words",
+      "sentence": "11% seven letters or more A hint of density. It says nothing about whether a word is the right one.",
+      "source": "method",
+      "quote": [
+        "web/projects/text-signals.js: longShare (LONG_WORD = 7)"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Value computed by text-signals.js on the sample paragraph (share of words with seven or more letters); recomputed in tests."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Reading ease",
+      "sentence": "75 fairly easy Flesch reading ease: 206.835 − 1.015 × (words ÷ sentences) − 84.6 × (syllables ÷ words). Higher reads easier. Syllables are estimated, and the formula was made for English.",
+      "source": "method",
+      "quote": [
+        "Flesch, R. (1948). A new readability yardstick. Journal of Applied Psychology, 32(3), 221–233.",
+        "web/projects/text-signals.js: flesch(), syllables()"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Flesch reading ease computed by text-signals.js on the sample paragraph (Flesch 1948 formula); recomputed in tests."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Most repeated",
+      "sentence": "library ×2 quiet ×2 Most frequent words, leaving out common ones like “the” and “and”. Repetition can be a choice; this only counts it.",
+      "source": "method",
+      "quote": [
+        "web/projects/text-signals.js: repeated, STOPWORDS"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Most repeated words computed by text-signals.js on the sample paragraph; recomputed in tests."
+    },
+    {
+      "page": "voicelab",
+      "section": "Try the signals · Authorship",
+      "sentence": "None of these signals says who wrote a text.",
+      "source": "method",
+      "quote": [
+        "This experiment does not establish authorship."
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Leads into the homepage sentence that follows it."
+    },
+    {
+      "page": "voicelab",
+      "section": "Keeping the meaning · Intro",
+      "sentence": "A meaning-preserving revision is an edit that still says the same thing. The drawing shows one way to check that, step by step.",
+      "source": "method",
+      "quote": [
+        "meaning-preserving revision"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Explains the homepage term; the drawing is labelled as an illustration."
+    },
+    {
+      "page": "voicelab",
+      "section": "Keeping the meaning · Illustration",
+      "sentence": "“The meeting, which had been planned for later in the week, was moved to Monday.”",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Example sentence written for the illustration."
+    },
+    {
+      "page": "voicelab",
+      "section": "Keeping the meaning · Illustration",
+      "sentence": "“The meeting moved from later in the week to Monday.”",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Example edit written for the illustration."
+    },
+    {
+      "page": "voicelab",
+      "section": "Keeping the meaning · Illustration",
+      "sentence": "Same event, same change, same day. Nothing added, nothing lost.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Illustration step."
+    },
+    {
+      "page": "voicelab",
+      "section": "Keeping the meaning · Illustration",
+      "sentence": "Keep it. Had the day or the event changed, the original would stay.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Illustration step."
+    },
+    {
+      "page": "voicelab",
+      "section": "Keeping the meaning · Illustration caption",
+      "sentence": "Illustration: how a meaning-preserving revision could be checked. It shows the idea, not a measured system.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Says what the drawing is not."
+    },
+    {
+      "page": "work-helper",
+      "section": "The idea · Intro",
+      "sentence": "This page shows the idea with sample data; the prototype itself isn’t shown here.",
+      "source": "homepage",
+      "quote": [
+        "The current work includes a local onboarding prototype."
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Only says that a prototype exists (homepage) and that this page does not show it."
+    },
+    {
+      "page": "work-helper",
+      "section": "The idea · Intro",
+      "sentence": "A job search often starts with a loose sense of what you like. The path below turns that into role ideas, then into one small step you can take.",
+      "source": "homepage",
+      "quote": [
+        "A project exploring how software can help people discover job opportunities and take the next step."
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Describes the illustration of the homepage idea; no feature is claimed."
+    },
+    {
+      "page": "work-helper",
+      "section": "The idea · Illustration",
+      "sentence": "What you enjoy or want to learn",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Illustration step."
+    },
+    {
+      "page": "work-helper",
+      "section": "The idea · Illustration",
+      "sentence": "Roles that share those interests",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Illustration step."
+    },
+    {
+      "page": "work-helper",
+      "section": "The idea · Illustration",
+      "sentence": "One small action you can take this week",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Illustration step."
+    },
+    {
+      "page": "work-helper",
+      "section": "The idea · Illustration caption",
+      "sentence": "Illustration: the path from interests to a next step, drawn to show the idea.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Caption of an illustrative diagram drawn for this page; describes the idea, not a measured system."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Intro",
+      "sentence": "Pick two or three interests. The page matches them against a small hand-written table and suggests where to start.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: rankRoles()"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "About the demo on this page."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Demo caption",
+      "sentence": "Sample data: role ideas and next steps written for this page. They are not job listings or advice.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table",
+      "sentence": "The whole sample table",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Disclosure label."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table",
+      "sentence": "Role idea Interests Suggested next step",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Table header."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Data analyst Data, Organizing Clean and chart one public dataset, then write up what you found.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Technical writer Writing, Building things Rewrite the setup guide of a tool you use and share the before and after.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "UX researcher Helping people, Design, Writing Ask three people how they use one everyday app and sum up where they get stuck.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Product designer Design, Building things Redesign one screen you use every day and explain each change.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Customer success specialist Helping people, Organizing Answer questions in a community forum for a week and note the ones that come up most.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Software developer Building things, Data Build a small tool that solves one problem you have, and put the code online.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Instructional designer Teaching, Writing, Design Turn something you know well into a short lesson and try it on a friend.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Project coordinator Organizing, Helping people Plan one small event from start to finish with a simple timeline.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Health data analyst Health, Data Explore a public health dataset and chart one trend you did not expect.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Community health educator Health, Teaching, Helping people Volunteer at a community health event and help explain the information.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Tutor Teaching, Helping people Offer one free session in a subject you know well.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "work-helper",
+      "section": "Try it · Sample table row",
+      "sentence": "Content strategist Writing, Organizing, Data Review a small website and suggest which pages to keep, merge or cut.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Intro",
+      "sentence": "This page shows the idea with sample data; the project itself isn’t shown here.",
+      "source": "homepage",
+      "quote": [
+        "A full-stack dog-care operations project"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "Only says that the project exists (homepage) and that this page does not show it."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Intro",
+      "sentence": "Care sessions, daily planning, room status and dog records sit on one board below.",
+      "source": "homepage",
+      "quote": [
+        "care sessions, daily planning, room status, and dog records"
+      ],
+      "wording": "reworded",
+      "status": "approved",
+      "note": "The four areas named on the homepage, drawn as one sample board."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Intro",
+      "sentence": "Move the clock and they stay in step; choose a session to open that dog’s record.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "How the demo works."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Demo caption",
+      "sentence": "Sample data: an illustrated day board. Rooms, dogs and times are made up.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project. The caption's last sentence is the homepage's \"No customer or operational data is shown.\""
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Rooms",
+      "sentence": "Rooms at 10:45",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: BOARD_TIME"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Static fallback time; tests/side-demos.test.js recomputes the grid."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Rooms",
+      "sentence": "Bath In session Biscuit · until 11:00",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: roomStates()"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Rooms",
+      "sentence": "Grooming Cleaning Ready at 11:00",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: roomStates()"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Rooms",
+      "sentence": "Play yard Free Next at 12:30",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: roomStates()"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Rooms",
+      "sentence": "Quiet room In session Juniper · until 12:00",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: roomStates()"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Rooms",
+      "sentence": "Training Cleaning Ready at 11:00",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: roomStates()"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Dog record",
+      "sentence": "Biscuit Breed Beagle mix Today 08:00 Morning play, Play yard 10:00 Bath and brush, Bath 13:00 Recall practice, Training Note Shy around the dryer; likes a treat after a bath.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: DOGS, dogToday()"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Made-up dog for the demo. Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan",
+      "sentence": "The day plan as a table",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Disclosure label."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan",
+      "sentence": "Time Room Dog Care",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Table header."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "08:00–09:00 Play yard Biscuit Morning play",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "08:30–09:30 Bath Juniper Bath and dry",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "09:00–10:30 Grooming Pepper Full groom",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "09:30–10:30 Training Moose Leash practice",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "10:00–11:00 Bath Biscuit Bath and brush",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "10:30–12:00 Quiet room Juniper Rest",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "11:00–12:00 Grooming Moose Nail trim",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "12:30–13:30 Play yard Pepper Group play",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "13:00–14:00 Training Biscuit Recall practice",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "14:00–15:30 Grooming Juniper Full groom",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "14:30–15:30 Bath Moose Bath and dry",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "15:00–16:00 Quiet room Pepper Rest",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan row",
+      "sentence": "16:00–17:00 Play yard Moose Evening play",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "Sample data written for this page; it describes nothing about the project."
+    },
+    {
+      "page": "barking-village",
+      "section": "A day on one board · Day plan",
+      "sentence": "In this sample, a room is cleaned for 30 minutes after each session.",
+      "source": "method",
+      "quote": [
+        "web/projects/side-demos.js: CLEAN_MINUTES"
+      ],
+      "wording": "verbatim",
+      "status": "approved",
+      "note": "A rule of the sample, not of the project."
+    }
+  ]
+}
