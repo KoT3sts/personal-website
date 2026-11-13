@@ -56,7 +56,7 @@ Answers given one by one in chat. Each one is the source for the matching questi
     https://digitalcommons.kennesaw.edu/undergradsymposiumksu/Fall2022/presentations/163
   - "UC-120 Virtual Companionship Chatbot", C-Day Computing Showcase, Spring 2024 undergraduate
     capstone (Cesar Tortolero, Rakshak Gurung, Noah Clark, Fabritzzio A Cabrejos; advisor
-    Sharon Parry): React Native app, DistilGPT-2 with the QuAC dataset, Python server, Firebase
+    Sharon Perry; the KSU C-Day listing spells it "Parry"): React Native app, DistilGPT-2 with the QuAC dataset, Python server, Firebase
     Real-Time Database; logins, stored user info, real-time chat; planned Azure deployment.
     https://digitalcommons.kennesaw.edu/cday/Spring_2024/Undergraduate_Capstone/3
   - None of these documents states the +15%, the preprocessing steps, the 95% sentiment accuracy
