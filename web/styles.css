@@ -75,6 +75,11 @@
   .site-header::before { content: ""; position: absolute; z-index: -1; top: calc(-1 * var(--header-top)); bottom: calc(-1 * var(--header-bar-pad)); left: calc(-1 * var(--gutter)); right: calc(-1 * var(--gutter)); background: rgb(238 237 232 / .985); border-bottom: 1px solid rgb(23 23 22 / .09); opacity: 0; pointer-events: none; }
   .site-header.is-solid::before { opacity: 1; pointer-events: auto; }
   .site-header.is-dark::before { background: rgb(16 17 20 / .985); border-bottom-color: rgb(238 237 232 / .08); }
+  /* The canvas (html) takes the header's tone; body keeps the page's paper. While the build tour
+     scrolls the page every frame, a frame can be composed a few pixels behind, and the canvas then
+     shows above the fixed header: it must match the dark bar, not paint a light strip over it. */
+  html { background-color: var(--paper); }
+  html:has(.site-header.is-dark) { background-color: var(--night); }
   /* Hidden while reading downward; header.js never hides it at the top, with focus inside, or during the build tour. */
   .site-header.is-hidden { transform: translate3d(0, calc(-100% - var(--header-top) - var(--header-bar-pad) - 2px), 0); }
   .site-header:has(:focus-visible) { transform: none; }
