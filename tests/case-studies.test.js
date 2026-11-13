@@ -71,10 +71,13 @@ function chartTables(html) {
 const BUILT_IN = ['homepage', 'lab', 'trace'];
 const root = new URL('../', import.meta.url);
 const docs = new URL('../docs/', import.meta.url);
-// Every ledger: docs/case-study-facts.json, docs/case-study-facts-side.json, …
+// Every ledger: docs/case-study-facts.json, docs/case-study-facts-side.json, …, plus
+// tests/case-study-facts-pages.json (entries added by the pages fix while docs/ belonged
+// to another task; same format, same checks).
 const ledgers = (async () => {
   const names = (await readdir(docs)).filter(name => /^case-study-facts.*\.json$/.test(name)).sort();
-  return Promise.all(names.map(async name => ({ name, ...JSON.parse(await read(new URL(name, docs))) })));
+  const urls = [...names.map(name => new URL(name, docs)), new URL('./case-study-facts-pages.json', import.meta.url)];
+  return Promise.all(urls.map(async url => ({ name: url.pathname.split('/').pop(), ...JSON.parse(await read(url)) })));
 })();
 const facts = ledgers.then(list => list.flatMap(ledger => ledger.facts.map(fact => ({ ...fact, ledger: ledger.name }))));
 const sourceList = fact => [].concat(fact.source);
@@ -461,4 +464,34 @@ test('dev server serves the project pages and stylesheet', async () => {
   } finally {
     server.kill();
   }
+});
+
+test('the pages fix: honest review sentence, the BCI records told apart, NCUR flagged, and source links next to key claims', async () => {
+  const html = Object.fromEntries((await pages).map(({ slug, html }) => [slug, html]));
+  const telemetry = JSON.parse(await read(new URL('lab/data/agent-traces.json', web)));
+  const d = telemetry.rollups.delegations;
+  const all = Object.values(d).reduce((a, b) => a + b, 0);
+  const review = telemetry.evaluations.filter(row => row.evaluator === 'review_before_commit');
+  const pass = review.filter(row => row.label === 'pass').length;
+  assert.ok(plain(html['agent-workflow']).includes(`review and verification were selective: a verifier ran in ${d['verification-runner']} of ${all} delegations and a reviewer in ${d['quality-reviewer']}, and “Review before commit” passed in only ${pass} of ${review.length} scored traces`));
+  assert.match(html['thoughts-to-text'], /stipend\. <span class="mono cs-flag">Self-reported, no public record<\/span>/, 'NCUR and the stipend are marked as self-reported');
+  assert.match(plain(html['thoughts-to-text']), /the Spring 2022 poster is titled for an invasive BCI and sets out the aim, while the Fall 2022 talk is titled for a non-invasive BCI/);
+  // "Reproduce this" / "Check the source" rows: a label and link names only (no new claims),
+  // each pointing at public evidence that exists: a lab page, a published data file or a public record.
+  const PUBLIC = /^(?:\.\.\/lab\/[\w-]+\.html(?:#[\w-]+)?|\.\.\/lab\/data\/[\w.-]+\.json|\.\.\/trace\/build-trace\.json|https:\/\/(?:digitalcommons\.kennesaw\.edu|virtualcompanionchatbot\.wordpress\.com|github\.com\/NoahDClark)\/\S+)$/;
+  let rows = 0;
+  for (const [slug, page] of Object.entries(html)) {
+    for (const [row] of page.matchAll(/<p class="cs-repro">[\s\S]*?<\/p>/g)) {
+      rows += 1;
+      assert.match(row, /^<p class="cs-repro"><span class="mono cs-repro-label">(?:Reproduce this|Check the source)<\/span>/, `${slug}: ${row}`);
+      const links = [...row.matchAll(/<a class="cs-repro-link" href="([^"]+)"><span class="mono">([^<]+)<\/span>/g)];
+      assert.ok(links.length, `${slug}: a row has links`);
+      for (const [, href, name] of links) {
+        assert.match(href, PUBLIC, `${slug}: ${href} is public evidence`);
+        assert.doesNotMatch(name, /\d/, `${slug}: link names stay labels`);
+        if (href.startsWith('../')) assert.ok(await exists(new URL(href.split('#')[0], new URL(`${slug}.html`, projects))), `${slug}: ${href} exists`);
+      }
+    }
+  }
+  assert.ok(rows >= 6, `${rows} source rows`);
 });

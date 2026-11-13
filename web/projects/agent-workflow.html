@@ -114,6 +114,8 @@
               <p>The build trace is a recorded run of this same workflow. One agent implements, one reviews, one verifies, and an orchestrating agent plans, delegates, integrates and commits.</p>
               <p>The agents do real work with write access: they edit files, run tests and commit. What they know about delivery, the CI runs and source control, they read through read-only tools, so an agent can’t start a deploy or a merge by mistake. Anything that touches production waits for my approval.</p>
               <p>When a review or a check fails, the findings come back to me. Either I correct the agent so it learns to do it properly, or I take that step over myself and hand it back as a worked example. Then the loop runs again.</p>
+              <p>In the 77 traces of this site’s build, review and verification were selective: a verifier ran in 2 of 108 delegations and a reviewer in 14, and “Review before commit” passed in only 12 of 32 scored traces.</p>
+              <p class="cs-repro"><span class="mono cs-repro-label">Reproduce this</span> <a class="cs-repro-link" href="../lab/agent-observability.html#obs-evals-title"><span class="mono">Evaluators · dashboard</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a> <a class="cs-repro-link" href="../lab/data/agent-traces.json"><span class="mono">Trace data · JSON</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></p>
             </div>
             <figure class="cc-figure" data-chart="graph" data-grid="5x2" data-grid-narrow="2x6" data-narrow-below="600" data-route="task impl review me impl review verify gate done">
               <div class="cc-canvas"></div>
@@ -230,6 +232,7 @@
               </div>
               <figcaption>The recorded replay, one square per step. Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix.</figcaption>
             </figure>
+            <p class="cs-repro"><span class="mono cs-repro-label">Reproduce this</span> <a class="cs-repro-link" href="../lab/build-trace.html"><span class="mono">Build trace page</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a> <a class="cs-repro-link" href="../trace/build-trace.json"><span class="mono">Trace file · JSON</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></p>
           </div>
         </section>
         <section class="cs-grid cs-section" aria-labelledby="view-title">
