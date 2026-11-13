@@ -53,3 +53,32 @@
 @media print {
   .bt-step { break-inside: avoid; }
 }
+
+/* The first-screen trace: one bar per recorded step, a row per day, every row on the
+   same column width (--bt-steps, the longest day) so a bar means the same on both days.
+   Flat role colours, each at 3:1 or more on the paper; an error is marked under its bar
+   (position, not hue alone) and a commit with a tick above it. */
+.bt-ribbon-days { display: grid; gap: 14px; }
+.bt-ribbon-label { margin: 0 0 6px; color: var(--label); }
+.bt-ribbon-cells { display: grid; grid-template-columns: repeat(var(--bt-steps, 30), minmax(0, 1fr)); gap: 2px; padding: 7px 0 8px; }
+.bt-cell { position: relative; display: block; min-width: 0; height: 30px; border-radius: 2px; background: #8b8c83; }
+.bt-cell[data-role="orchestrator"], [data-role="orchestrator"] > .bt-cell { background: #1d1e1b; }
+.bt-cell[data-role="implementation-worker"], [data-role="implementation-worker"] > .bt-cell { background: #3d6fe0; }
+.bt-cell[data-role="ui-design-director"], [data-role="ui-design-director"] > .bt-cell { background: #7c5ce0; }
+.bt-cell[data-role="quality-reviewer"], [data-role="quality-reviewer"] > .bt-cell { background: #16897f; }
+.bt-cell[data-status="error"]::after, .bt-key-error { content: ""; position: absolute; right: 0; bottom: -7px; left: 0; height: 4px; border-radius: 1px; background: #c0362c; }
+.bt-cell.is-commit::before, .bt-key-commit { content: ""; position: absolute; top: -7px; left: 50%; width: 2px; height: 5px; margin-left: -1px; background: var(--ink); }
+a.bt-cell:hover { outline: 2px solid var(--ink); outline-offset: 1px; }
+.bt-key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 12px; }
+.bt-key li { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); }
+.bt-key .bt-cell { width: 10px; height: 12px; }
+.bt-key-error, .bt-key-commit { position: static; display: inline-block; margin: 0; }
+.bt-key-error { width: 12px; }
+.bt-key-commit { height: 10px; }
+@media (max-width: 560px) {
+  .bt-ribbon-cells { gap: 1px; }
+  .bt-cell { height: 26px; border-radius: 1px; }
+}
+@media (forced-colors: active) {
+  .bt-cell, .bt-key-error, .bt-key-commit { forced-color-adjust: none; }
+}

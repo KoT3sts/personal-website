@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { TRACE_HONESTY, TRACE_CURSORS, TRACE_PAGE } from '../web/entrance.js';
-import { TRACE_JSON, HONESTY, CURSORS, readSpans, summarize, groupByDay, agentNote, timeText, offsetText, dayLabel } from '../web/lab/build-trace.js';
+import { TRACE_JSON, HONESTY, CURSORS, readSpans, summarize, groupByDay, agentNote, timeText, offsetText, dayLabel, ribbonCaption } from '../web/lab/build-trace.js';
 
 const web = new URL('../web/', import.meta.url);
 const read = path => readFileSync(new URL(path, web), 'utf8');
@@ -36,7 +36,11 @@ test('the page: title, honesty sentence, no-JS link to the raw trace, own script
   assert.match(page, /<script type="module" src="\.\/build-trace\.js"><\/script>/);
   for (const sheet of ['../project.css', './lab.css', './build-trace.css']) assert.ok(page.includes(`<link rel="stylesheet" href="${sheet}">`), sheet);
   assert.match(page, /<link rel="canonical" href="https:\/\/[^"]+\/lab\/build-trace\.html">/);
-  assert.doesNotMatch(page, /<script(?![^>]*\bsrc=)[^>]*>/, 'no inline scripts');
+  assert.doesNotMatch(page, /<script(?![^>]*\bsrc=)(?![^>]*type="application\/ld\+json")[^>]*>/, 'no inline scripts');
+  const ld = JSON.parse(page.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(ld['@type'], 'Article');
+  assert.equal(ld.url, page.match(/<link rel="canonical" href="([^"]+)">/)[1]);
+  assert.equal(ld.headline, data.title);
   assert.doesNotMatch(page, /\sstyle="/);
   // Every relative link and asset exists.
   for (const [, ref] of page.matchAll(/(?:href|src)="(\.{1,2}\/[^"#]*)/g)) {
@@ -115,4 +119,31 @@ test('role chips: the quality-reviewer is teal, never the error red of the statu
   const error = css.match(/\[data-status="error"\] \.bt-state \{ color: (#[0-9a-f]{6}); \}/)[1];
   assert.notEqual(chip, error);
   assert.doesNotMatch(css, /#ff6767/, 'the old red chip is gone');
+});
+
+test('the Lab back links, and a trace on the first screen: one bar per step, coloured by role, errors and commits marked', () => {
+  assert.match(page, /<a class="cs-back" href="\.\.\/#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"><\/span> Back to the Lab<\/a>/);
+  assert.match(page, /<a href="\.\.\/#lab">Back to the Lab<\/a>/);
+  assert.doesNotMatch(page, /href="\.\.\/#work"/, 'a lab page goes back to the Lab, not to the projects');
+  assert.match(page, /<article class="lab-compact"/, 'the shorter intro');
+  const figure = page.match(/<figure class="lab-first bt-ribbon" data-bt-live hidden aria-labelledby="bt-ribbon-cap">[\s\S]*?<\/figure>/)?.[0];
+  assert.ok(figure, 'the ribbon is hidden until the trace loads');
+  assert.ok(page.indexOf(figure) < page.indexOf('<div class="cs-grid cs-summary">'), 'right under the dated line, before the summary');
+  for (const hook of ['ribbon', 'ribbon-key', 'ribbon-cap']) assert.ok(figure.includes(`data-bt="${hook}"`), hook);
+  const summary = summarize(data);
+  const commits = summary.spans.filter(span => span.timing === 'commit' && span.commit && span.commit !== data.run.from).length;
+  assert.equal(commits, summary.saves, 'one tick per commit saved during the run');
+  assert.equal(ribbonCaption(summary), `${data.spans.length} recorded steps in time order, one bar per step, coloured by role. The ${summary.errors} marks under the bars are steps that ended in an error, ${summary.recovered} of them followed by a recorded retry or fix; the ${summary.saves} ticks above are the commits. Every step is listed below.`);
+  assert.match(script, /root\.setAttribute\('aria-hidden', 'true'\)/, 'the bars are decorative; the caption and the step list carry the text');
+  assert.match(script, /cell\.tabIndex = -1/, 'the bars stay out of the tab order');
+  assert.match(script, /item\.id = stepId\(span\)/, 'each bar links to its step');
+  // Role colours on the first screen stay at 3:1 or more on the paper.
+  const lum = hex => {
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+  const colours = [...css.matchAll(/^\.bt-cell\[data-role="[\w-]+"\][^{]*\{ background: #([0-9a-f]{6}); \}/gm)].map(match => match[1]);
+  assert.equal(colours.length, 4);
+  for (const colour of colours) assert.ok(ratio(colour, 'eeede8') >= 3, colour);
 });

@@ -138,8 +138,62 @@ function el(document, tag, className, parent, value) {
   return node;
 }
 
+const stepId = span => (/^[\w-]{1,40}$/.test(span.id) ? `bt-step-${span.id}` : '');
+const roleLabel = (summary, id) => summary.roles.find(role => role.id === id)?.label || id;
+
+// The first-screen trace: every step in time order, one bar per step, a row per day,
+// coloured by role, with a mark under each error and a tick over each commit saved
+// during the run. Decorative for screen readers (the caption says what it shows and
+// the full step list follows); each bar links to its step for pointer users.
+export function ribbonCaption(summary) {
+  return `${summary.spans.length} recorded steps in time order, one bar per step, coloured by role. `
+    + `The ${summary.errors} marks under the bars are steps that ended in an error, ${summary.recovered} of them followed by a recorded retry or fix; `
+    + `the ${summary.saves} ticks above are the commits. Every step is listed below.`;
+}
+function renderRibbon(document, summary, run) {
+  const root = document.querySelector('[data-bt="ribbon"]');
+  if (!root) return;
+  root.textContent = '';
+  root.setAttribute('aria-hidden', 'true');
+  const groups = groupByDay(summary.spans);
+  root.style.setProperty('--bt-steps', String(Math.max(...groups.map(group => group.spans.length))));
+  for (const group of groups) {
+    const day = el(document, 'div', 'bt-ribbon-day', root);
+    el(document, 'p', 'mono bt-ribbon-label', day, `${short(group.spans[0].start)} · ${group.spans.length} steps`);
+    const cells = el(document, 'div', 'bt-ribbon-cells', day);
+    for (const span of group.spans) {
+      const cell = el(document, 'a', 'bt-cell', cells);
+      cell.dataset.role = span.role;
+      cell.dataset.status = span.status;
+      if (span.timing === 'commit' && span.commit && span.commit !== run?.from) cell.classList.add('is-commit');
+      if (stepId(span)) cell.href = `#${stepId(span)}`;
+      cell.tabIndex = -1;
+      cell.title = `${timeText(span)} · ${roleLabel(summary, span.role)} · ${span.status}: ${text(span.action, 120)}`;
+    }
+  }
+  const key = document.querySelector('[data-bt="ribbon-key"]');
+  if (key) {
+    key.textContent = '';
+    for (const role of summary.roles) {
+      const item = el(document, 'li', '', key);
+      item.dataset.role = role.id;
+      el(document, 'span', 'bt-cell', item);
+      item.append(role.label);
+    }
+    const error = el(document, 'li', '', key);
+    el(document, 'span', 'bt-key-error', error);
+    error.append('Error');
+    const commit = el(document, 'li', '', key);
+    el(document, 'span', 'bt-key-commit', commit);
+    commit.append('Commit');
+  }
+  const caption = document.querySelector('[data-bt="ribbon-cap"]');
+  if (caption) caption.textContent = ribbonCaption(summary);
+}
+
 function renderStep(document, list, span) {
   const item = el(document, 'li', 'bt-step', list);
+  if (stepId(span)) item.id = stepId(span);
   item.dataset.role = span.role;
   item.dataset.status = span.status;
   el(document, 'span', 'bt-chip', item).setAttribute('aria-hidden', 'true');
@@ -164,6 +218,7 @@ function renderStep(document, list, span) {
 export function render(document, data) {
   const summary = summarize(data);
   if (!summary.spans.length) throw new Error('empty trace');
+  renderRibbon(document, summary, data?.run);
   const set = (selector, value) => { const node = document.querySelector(selector); if (node) node.textContent = value; return node; };
   set('[data-bt="commits"]', String(summary.commits));
   set('[data-bt="steps"]', String(summary.spans.length));
