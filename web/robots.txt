@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cesar-tortolero.cesartortolero.chatgpt.site/sitemap.xml
+Sitemap: https://cesartortolero.up.railway.app/sitemap.xml
