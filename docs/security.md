@@ -69,7 +69,7 @@ subdomain of a custom domain serves HTTPS.)
 2. **Repository settings:** enable secret scanning with push protection and Dependabot
    alerts (free on public repos); add a branch ruleset on `main` that blocks force-pushes and
    deletion and requires a pull request.
-3. **Never commit** `.env` files, tokens or the ADP machine's credentials; `.gitignore`
+3. **Never commit** `.env` files, tokens or any other computer's credentials; `.gitignore`
    already excludes `.env*`.
 4. **Email:** the address on the site is public and will attract spam. A separate alias that
    forwards to your inbox can be retired if it gets abused.
