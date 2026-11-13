@@ -428,7 +428,7 @@ test('the live previews are optional: a missing or failing module keeps the summ
   assert.equal(loads, 1, 'once');
 });
 
-test('home charts: the proof figures keep their final text, four capability cards get a chart drawn from their own sentence', () => {
+test('home charts: the proof figures keep their final text, two capability cards get a chart drawn from their own sentence', () => {
   const { window } = new JSDOM(html, { url: 'https://portfolio.test/' });
   const { document } = window;
   window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
@@ -444,27 +444,25 @@ test('home charts: the proof figures keep their final text, four capability card
   }
   assert.deepEqual([...document.querySelectorAll('.proof-count-final')].map(final => final.textContent), ['350', '250+']);
   const charts = [...document.querySelectorAll('.capability .cap-chart')];
-  assert.deepEqual(charts.map(chart => chart.closest('.capability').dataset.chart), ['records', 'inventory', 'jobs', 'videos']);
+  assert.deepEqual(charts.map(chart => chart.closest('.capability').dataset.chart), ['records', 'videos']);
   charts.forEach(chart => {
     assert.equal(chart.getAttribute('aria-hidden'), 'true');
     assert.equal(chart.previousElementSibling.className, 'capability-proof', 'right under the proof line');
     assert.equal(chart.classList.contains('is-armed'), false, 'drawn in full, no animation');
   });
-  const [records, inventory, jobs, videos] = charts;
+  const [records, videos] = charts;
   assert.equal(records.querySelector('.cap-band-label').textContent, '2,400+ RECORDS');
   assert.deepEqual([...records.querySelectorAll('.cap-tick')].map(tick => tick.textContent), ['PRECISION', 'RECALL', 'F1']);
   assert.doesNotMatch(records.textContent, /0\.\d/, 'metric names only, no values');
-  assert.equal(inventory.querySelectorAll('rect').length, 296);
-  assert.deepEqual([...jobs.querySelectorAll('.cap-row')].map(row => [row.querySelector('.cap-row-label').textContent, row.querySelectorAll('rect.cap-on').length, row.querySelector('.cap-row-value').textContent]), [['US', 58, '58/58'], ['EU', 21, '21/21']]);
   assert.equal(videos.querySelectorAll('.cap-dot').length, 12);
   // No chart where the card states no number.
-  for (const title of ['Build and ship AI agents and MCP integrations on AWS', 'Build serverless backends and cloud infrastructure', 'Do applied ML research']) {
+  for (const title of ['Build and ship AI agents and MCP integrations on AWS', 'Build serverless backends and cloud infrastructure', 'Run MLOps and model deployment', 'Run multi-region releases', 'Do applied ML research']) {
     const card = [...document.querySelectorAll('.capability')].find(item => item.querySelector('h3').textContent === title);
     assert.equal(card.querySelector('.cap-chart'), null, title);
   }
   // Running it twice draws nothing twice.
   initHomeCharts(document, window);
-  assert.equal(document.querySelectorAll('.cap-chart').length, 4);
+  assert.equal(document.querySelectorAll('.cap-chart').length, 2);
   assert.equal(document.querySelectorAll('.proof-count').length, 2);
   window.close();
 });

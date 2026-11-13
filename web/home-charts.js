@@ -1,7 +1,8 @@
 // Homepage data widgets, all progressive enhancement over complete markup:
 // - the hero proof figures count up the first time they come into view;
 // - capability cards with a number in their proof line get a small chart
-//   drawn from that line (never from anywhere else);
+//   drawn from that line (never from anywhere else). Employer-internal
+//   counts are not stated on the page, so they are never drawn either;
 // - each skill tag shows where on the page the same tag is used.
 // Text is only ever written with textContent and elements are built with
 // createElement/createElementNS. Charts are aria-hidden: the card's own
@@ -41,18 +42,6 @@ const int = text => Number(String(text).replace(/,/g, ''));
 
 // Each chart reads its numbers from the card's proof sentence; no match, no chart.
 export const CHART_PARSERS = {
-  // "58/58 US and 21/21 EU jobs green" -> one row per region.
-  jobs(text) {
-    const runs = [...String(text).matchAll(/\b(\d+)\/(\d+) ([A-Z]{2})\b/g)].map(([, passed, total, label]) => ({ label, passed: int(passed), total: int(total) }))
-      .filter(run => run.total > 0 && run.passed <= run.total && run.total <= MAX_MARKS);
-    return runs.length ? { runs } : null;
-  },
-  // "across a 296-model inventory"
-  inventory(text) {
-    const match = /\b(\d{1,3}(?:,\d{3})*|\d+)-model inventory\b/.exec(String(text));
-    const count = match ? int(match[1]) : 0;
-    return count > 0 && count <= MAX_MARKS ? { count } : null;
-  },
   // "on 2,400+ records with precision, recall, F1 and slice analysis":
   // the record count as written, and the metric names only (no values).
   records(text) {
@@ -187,35 +176,6 @@ function chartBox(document, kind) {
 }
 
 const DRAW = {
-  // One block per job, a row per region, the same scale for both rows.
-  jobs(document, box, { runs }) {
-    const widest = Math.max(...runs.map(run => run.total));
-    const cell = 4;
-    const gap = 2;
-    const width = widest * (cell + gap) - gap;
-    runs.forEach((run, row) => {
-      const line = el(document, 'div', 'cap-row', box);
-      el(document, 'span', 'cap-row-label mono', line, run.label);
-      const svg = svgRoot(document, width, 14, 'cap-mark', line);
-      svg.style.setProperty('--d', `${row * 160}ms`);
-      for (let i = 0; i < run.total; i++) svgEl(document, 'rect', { x: i * (cell + gap), y: 0, width: cell, height: 14, rx: 1, class: i < run.passed ? 'cap-on' : 'cap-off' }, svg);
-      el(document, 'span', 'cap-row-value mono', line, `${run.passed}/${run.total}`);
-    });
-    el(document, 'p', 'cap-chart-caption mono', box, 'ONE RELEASE · ONE BLOCK PER JOB');
-  },
-  // A waffle: one cell per model, filled column by column.
-  inventory(document, box, { count }) {
-    const rows = 8;
-    const cols = Math.ceil(count / rows);
-    const cell = 6;
-    const gap = 2;
-    const svg = svgRoot(document, cols * (cell + gap) - gap, rows * (cell + gap) - gap, 'cap-mark cap-waffle', box);
-    for (let i = 0; i < count; i++) {
-      const col = Math.floor(i / rows);
-      svgEl(document, 'rect', { x: col * (cell + gap), y: (i % rows) * (cell + gap), width: cell, height: cell, rx: 1, class: 'cap-on' }, svg);
-    }
-    el(document, 'p', 'cap-chart-caption mono', box, `${count} MODELS · ONE CELL EACH`);
-  },
   // The record set as one band, the metrics named under it (no values).
   records(document, box, { records, metrics }) {
     const band = el(document, 'div', 'cap-band', box);

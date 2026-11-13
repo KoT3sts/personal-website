@@ -147,7 +147,7 @@ test('the proof strip: three facts under the intro, each linking to where it is 
   const links = [...strip.matchAll(/<li><a href="(#[a-z]+)"><span class="proof-figure">([\s\S]*?)<\/span> <span class="proof-label mono">([^<]+?) <span class="icon icon-arrow-s" aria-hidden="true"><\/span><\/span><\/a><\/li>/g)];
   assert.deepEqual(links.map(([, href]) => href), ['#experience', '#experience', '#approach']);
   assert.deepEqual(links.map(([, , figure]) => plainText(figure)), ['~ 350', '250+', 'Day minutes']);
-  assert.deepEqual(links.map(([, , , label]) => label), ['Developers I helped train', 'Agents running on the platform I teach', 'Firewall checks across 24 AWS accounts']);
+  assert.deepEqual(links.map(([, , , label]) => label), ['Developers I helped train', 'Agents running on the platform I teach', 'Firewall checks across many AWS accounts']);
   // The arrow in "Day → minutes" is a drawn icon; screen readers hear "Day to minutes".
   assert.match(links[2][2], /^Day <span class="icon icon-arrow-e" aria-hidden="true"><\/span><span class="visually-hidden">to <\/span>minutes$/);
   // "~" is not read out: screen readers hear "About 350".
@@ -176,7 +176,8 @@ test('each headline figure is stated once on the page (plus the strip), where it
   assert.equal(count(/~350/g), 1, '~350: the Experience bullet');
   assert.equal(count(/250\+/g), 1, '250+: the Experience bullet');
   assert.equal(count(/18\+/g), 2, '18+: the Experience bullet and the Approach story');
-  assert.equal(count(/\b24(?:-account| AWS accounts)/g), 2, '24 accounts: the Experience bullet and the Approach story');
+  assert.equal(count(/many AWS accounts/g), 2, 'many accounts: the Experience bullet and the Approach story');
+  assert.doesNotMatch(body, /\b24(?:-account| AWS accounts)/, 'no exact internal account count');
   assert.equal(count(/about a day/g), 1, 'a day to minutes: the Approach story only (plus the strip)');
   assert.equal(count(/firewall/gi), 2, 'the firewall app: the Experience bullet and one Approach story');
   assert.doesNotMatch(html, /class="xp-marks"/, 'no milestone rows repeating the bullets');

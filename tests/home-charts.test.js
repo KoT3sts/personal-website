@@ -41,18 +41,14 @@ test('each chart reads its numbers from the card sentence on the page, and nothi
     assert.ok(card, title);
     return plain(card);
   };
-  assert.deepEqual(CHART_PARSERS.jobs(proof('Run multi-region releases')), { runs: [{ label: 'US', passed: 58, total: 58 }, { label: 'EU', passed: 21, total: 21 }] });
-  assert.deepEqual(CHART_PARSERS.inventory(proof('Run MLOps and model deployment')), { count: 296 });
   assert.deepEqual(CHART_PARSERS.records(proof('Trace and evaluate LLM systems')), { records: '2,400+', metrics: ['precision', 'recall', 'F1'] });
   assert.deepEqual(CHART_PARSERS.videos(proof('Teach and unblock developers')), { count: 12 });
   // Without the number in the sentence there is no chart.
-  assert.equal(CHART_PARSERS.jobs('Weekly releases with green jobs.'), null);
-  assert.equal(CHART_PARSERS.inventory('a large model inventory'), null);
   assert.equal(CHART_PARSERS.records('Evaluated a model with precision and recall.'), null);
   assert.equal(CHART_PARSERS.videos('an onboarding guide and demo videos'), null);
-  assert.equal(CHART_PARSERS.jobs('5/4 US'), null, 'more passed than run is refused');
-  // Exactly the four cards that state a number ask for a chart.
-  assert.deepEqual([...html.matchAll(/<li class="capability" data-chart="([a-z]+)">/g)].map(match => match[1]), ['records', 'inventory', 'jobs', 'videos']);
+  // Exactly the two cards that state a public number ask for a chart.
+  assert.deepEqual([...html.matchAll(/<li class="capability" data-chart="([a-z]+)">/g)].map(match => match[1]), ['records', 'videos']);
+  assert.deepEqual(Object.keys(CHART_PARSERS).sort(), ['records', 'videos']);
 });
 
 test('skill matching ignores case and spacing; the usage line names places or says there are none', () => {
@@ -93,9 +89,15 @@ test('skill tags keep a 44px-tall hit area without overlapping the next row', ()
   assert.match(css, /\.skill-tag\[aria-pressed="true"\] \{[^}]*background: var\(--green\);[^}]*color: var\(--night\);/);
 });
 
-test('the release chart is captioned as one release, one block per job', () => {
-  assert.match(js, /'ONE RELEASE · ONE BLOCK PER JOB'/);
-  assert.doesNotMatch(js, /ALL GREEN/);
+test('employer-internal figures are neither stated nor drawn on the homepage', () => {
+  const text = plain(html);
+  for (const figure of [/\b296\b/, /\b58\/58\b/, /\b21\/21\b/, /\b24 AWS\b/, /24-account/]) {
+    assert.doesNotMatch(text, figure);
+    assert.doesNotMatch(js, figure);
+  }
+  assert.match(text, /model inventory in the hundreds/);
+  assert.match(text, /many AWS accounts/);
+  assert.match(text, /every job finished green/);
 });
 
 test('forced colors: the pressed tag, matched cards and roles, and the charts stay visible in system colours', () => {
@@ -118,13 +120,11 @@ test('only skill tags some card or role lists become buttons; the hint says whic
   assert.match(css, /\.skill-tag::after \{ content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var\(--green\); \}/);
 });
 
-test('capability charts: labels at 11px or more, one scale for both job rows, every block drawn from zero', () => {
+test('capability charts: labels at 11px or more', () => {
   const styles = read('web/styles.css');
   assert.match(styles, /--text-label: clamp\(11px,/, 'the mono label size never drops under 11px');
   assert.match(css, /\.cap-chart \.mono \{ font-size: var\(--text-label\);/);
   for (const [, size] of css.matchAll(/font-size: ([\d.]+)px/g)) assert.ok(Number(size) >= 11, `${size}px`);
-  assert.match(js, /const widest = Math\.max\(\.\.\.runs\.map\(run => run\.total\)\);/, 'both regions share the widest total as the scale');
-  assert.match(js, /for \(let i = 0; i < run\.total; i\+\+\) svgEl\(document, 'rect', \{ x: i \* \(cell \+ gap\)/, 'one block per job, from x = 0');
 });
 
 test('with scripts each chart, the skill buttons and the usage line take their room from the first paint', () => {
@@ -135,19 +135,9 @@ test('with scripts each chart, the skill buttons and the usage line take their r
   assert.match(css, /\.cap-chart-caption \{ margin: 2px 0 0; \}/);
   assert.match(css, /\.cap-chart \.mono \{ font-size: var\(--text-label\); letter-spacing: \.05em; line-height: 1\.3; \}/);
   // Each SVG's viewBox ratio, from the sentence, as DRAW lays it out.
-  const { count: models } = CHART_PARSERS.inventory(proof('inventory'));
-  const cols = Math.ceil(models / 8);
-  assert.match(css, new RegExp(`--cap-reserve: calc\\(min\\(294px, 100cqi\\) \\* ${8 * 8 - 2} / ${cols * 8 - 2} \\+ 10px \\+ 1\\.3 \\* var\\(--text-label\\)\\)`));
-  assert.match(css, /\.cap-waffle \{ max-width: 294px; \}/);
   const { count: videos } = CHART_PARSERS.videos(proof('videos'));
   assert.match(css, new RegExp(`--cap-reserve: calc\\(min\\(306px, 100cqi\\) \\* 18 / ${videos * 26 - 8} \\+ 10px \\+ 1\\.3 \\* var\\(--text-label\\)\\)`));
   assert.match(css, /\.cap-dots \{ max-width: 306px; \}/);
-  const { runs } = CHART_PARSERS.jobs(proof('jobs'));
-  const widest = Math.max(...runs.map(run => run.total));
-  assert.equal(runs.length, 2, 'two rows reserved');
-  assert.match(css, new RegExp(`--cap-reserve: calc\\(2 \\* max\\(1\\.3 \\* var\\(--text-label\\), \\(var\\(--cap-chart-w\\) - 38\\.4px - 20px - 3\\.25 \\* var\\(--text-label\\)\\) \\* 14 / ${widest * 6 - 2}\\) \\+ 18px \\+ 1\\.3 \\* var\\(--text-label\\)\\)`));
-  assert.ok(runs.every(run => `${run.passed}/${run.total}`.length === 5), 'the value column holds five mono characters');
-  assert.match(css, /\.cap-row \{ display: grid; grid-template-columns: 2\.4em minmax\(0, 1fr\) auto; align-items: center; gap: 10px; \}/);
   assert.match(css, /\.capability\[data-chart="records"\] \{ --cap-reserve: calc\(50px \+ 1\.3 \* var\(--text-label\)\); \}/);
   assert.match(css, /\.cap-band \{[^}]*min-height: 30px;/);
   assert.match(css, /\.cap-tick \{ position: relative; padding-top: 12px;/);
