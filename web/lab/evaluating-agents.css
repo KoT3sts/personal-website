@@ -1,0 +1,228 @@
+@charset "UTF-8";
+/* "How I evaluate agents" (web/lab/evaluating-agents.html). Loaded after ../project.css
+   and ./lab.css, which supply the fonts, tokens, header, reading grid and footer; this
+   file adds the essay measure, the figures (./evaluating-agents.js) and the checklist.
+   Text stays at 11px or larger, all text colours at 4.5:1 or more on their background,
+   and every control is at least 44px tall on phones. */
+
+/* Reading column: about 68 characters a line. */
+.ea-prose { max-width: 68ch; font-size: clamp(16px, 1.2vw, 18px); line-height: 1.65; text-wrap: pretty; }
+.ea-prose > * + * { margin-top: .9em; }
+.ea-prose strong { font-weight: 700; }
+.ea-points { font-size: inherit; line-height: 1.6; }
+
+/* The loop: trace -> classify -> fixed test set -> gate, as an ordered list. */
+.ea-flow { display: grid; gap: 12px; margin: 0 0 1.6em; }
+.ea-flow-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; margin: 0; padding: 0; list-style: none; counter-reset: ea-step; }
+.ea-flow-steps li { position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px 14px 14px; border: 1px solid #b9b9b1; border-radius: 6px; counter-increment: ea-step; }
+/* The arrow between steps is the same drawn icon as .icon-arrow-e in ../project.css
+   (a CSS mask, not a font glyph); it turns to point down when the steps stack. */
+.ea-flow-steps li + li::before { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M9 3.5 13.5 8 9 12.5'/%3E%3C/svg%3E"); content: ""; position: absolute; top: 50%; left: -19px; width: 15px; height: 15px; background-color: var(--label); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; transform: translateY(-50%); }
+.ea-flow-steps li:last-child { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.ea-flow-label { color: var(--label); }
+.ea-flow-label::before { content: counter(ea-step, decimal-leading-zero) " · "; }
+.ea-flow-steps li:last-child .ea-flow-label { color: #c4c7bd; }
+.ea-flow-text { font-size: 14px; line-height: 1.4; }
+.ea-flow figcaption { color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+.ea-flow-data { margin-top: auto; padding-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.ea-flow-steps li:last-child .ea-flow-data { color: #c4c7bd; }
+/* While the loop plays, the highlight moves; the gate step loses its resting fill. */
+.ea-flow.is-playing .ea-flow-steps li:last-child:not(.is-active) { border-color: #b9b9b1; background: none; color: var(--ink); }
+.ea-flow.is-playing .ea-flow-steps li:last-child:not(.is-active) .ea-flow-label { color: var(--label); }
+.ea-flow.is-playing .ea-flow-steps li:last-child:not(.is-active) .ea-flow-data { color: var(--muted); }
+.ea-flow-steps li.is-active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.ea-flow-steps li.is-active .ea-flow-label, .ea-flow-steps li.is-active .ea-flow-data { color: #c4c7bd; }
+.ea-play { justify-self: start; }
+
+/* Figures inside the essay: kicker, live part, caption, then the folded data table. */
+.ea-fig { display: grid; gap: 14px; min-width: 0; margin-block: 1.8em; padding-top: 14px; border-top: 1px solid var(--ink); font-size: 15px; line-height: 1.5; }
+.ea-prose > .ea-fig { margin-top: 1.8em; }
+.ea-flow.ea-fig { margin: 0 0 1.8em; }
+.ea-fig-kicker { color: var(--label); }
+.ea-fig figcaption { max-width: 62ch; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.ea-fig em { font-style: normal; font-weight: 600; color: var(--ink); }
+.ea-live { display: grid; gap: 14px; min-width: 0; }
+.ea-sub { color: var(--label); }
+.ea-toggle legend { margin-bottom: 8px; }
+.ea-data summary { display: inline-flex; align-items: center; min-height: 44px; color: var(--label); font-family: var(--font-mono); font-size: 12px; letter-spacing: .035em; text-transform: uppercase; cursor: pointer; }
+.ea-data summary:focus-visible { outline: 2px solid #627942; outline-offset: 2px; }
+.ea-table { font-size: 14px; }
+.ea-table caption { padding-top: 4px; }
+.ea-table tbody th { font-weight: 500; overflow-wrap: anywhere; }
+.ea-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 18px; border: 1px solid #b9b9b1; border-radius: 50px; background: #f8f7f1; color: var(--ink); font: inherit; font-size: 13px; line-height: 1.2; cursor: pointer; }
+.ea-button:hover { border-color: var(--ink); }
+.ea-button:focus-visible, .ea-bar:focus-visible, .ea-checklist input:focus-visible { outline: 2px solid #627942; outline-offset: 2px; }
+.ea-status { min-height: 1.5em; font-size: 14px; }
+
+/* Figure 1: four tiles, then the lab's one number against its slices. */
+.ea-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.ea-tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 12px 14px 14px; border: 1px solid #b9b9b1; border-radius: 6px; background: #f6f5f0; }
+.ea-tile-label { color: var(--label); }
+.ea-tile-value { font-size: 28px; line-height: 1; font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.ea-tile-note { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.ea-tile-missing { border-style: dashed; background: none; }
+.ea-tile-missing .ea-tile-value { color: var(--muted); font-size: 20px; }
+.ea-split { padding-top: 14px; border-top: 1px solid var(--line); }
+.ea-split-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px 24px; }
+.ea-split-head .ea-sub { padding-bottom: 12px; }
+.ea-split-table td { font-weight: 600; }
+.ea-split-table td.is-lead { background: #e1e7d3; font-weight: 800; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.ea-verdict { min-height: 3em; font-size: 15px; font-weight: 600; }
+
+/* Figure 3: bars are buttons; the chosen one lists its spans. */
+.ea-bars { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.ea-bar { display: grid; grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr) minmax(0, 8.5rem); gap: 12px; align-items: center; width: 100%; min-height: 38px; padding: 4px 8px; border: 0; border-radius: 4px; background: none; color: var(--ink); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.ea-bar:hover { background: #e4e3dc; }
+.ea-bar[aria-pressed="true"] { background: #e1e7d3; }
+.ea-bar-name { font-family: var(--font-mono); font-size: 12px; overflow-wrap: anywhere; }
+.ea-bar-track { display: block; height: 12px; border-radius: 2px; background: #dcdbd3; overflow: hidden; }
+.ea-bar-fill { display: block; width: var(--w, 0%); height: 100%; background: var(--ink); }
+.ea-bar-fill.is-no { background: #a0672e; }
+.ea-bar-value { font-variant-numeric: tabular-nums; }
+.ea-bar-value strong { font-size: 15px; }
+.ea-bar-note { color: var(--muted); font-size: 12px; }
+.ea-examples { display: grid; gap: 4px; }
+.ea-example-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.ea-example { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--line); }
+.ea-example-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: 14px; overflow-wrap: anywhere; }
+.ea-kind { color: var(--label); }
+.ea-example-meta { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.ea-open { justify-self: start; font-size: 14px; }
+[data-ea-more] { justify-self: start; margin-top: 6px; }
+
+/* Figure 4: traces x evaluators. Status colours come from lab.css (--status-*), the same
+   hue families as the homepage and the dashboard. Pass and fail differ in lightness and
+   pattern (fail is hatched), not hue alone; not scored is an empty outlined slot. */
+.ea-matrix { display: grid; gap: 8px; }
+.ea-mrow-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; margin-bottom: 3px; font-size: 13px; line-height: 1.3; }
+.ea-mrow-count { color: var(--label); }
+.ea-mcells { display: grid; grid-template-columns: repeat(var(--n, 69), minmax(0, 1fr)); gap: 1px; height: 20px; cursor: crosshair; }
+.ea-cell { display: block; min-width: 0; height: 100%; border-radius: 1px; background: #dcdbd3; }
+.ea-cell.is-none { background: none; box-shadow: inset 0 0 0 1px var(--status-na); }
+.ea-cell.is-pass { background: var(--status-pass); }
+.ea-cell.is-fail { background: repeating-linear-gradient(135deg, var(--status-fail) 0 3px, #ecbcb6 3px 5px); }
+.ea-cell.is-q1 { background: #cfd6dc; }
+.ea-cell.is-q2 { background: #9fb0bd; }
+.ea-cell.is-q3 { background: #6d8597; }
+.ea-cell.is-q4 { background: #3f5668; }
+.ea-cell.is-category { background: #857a62; }
+.ea-cell.is-on { position: relative; z-index: 1; outline: 2px solid var(--ink); outline-offset: 1px; }
+.ea-key, .ea-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 13px; }
+.ea-key li, .ea-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.ea-key .ea-cell { width: 12px; height: 12px; }
+.lab-threshold.ea-picker { display: flex; align-items: center; gap: 10px; }
+.ea-picker input[type="range"] { flex: 1; min-width: 0; }
+.ea-step { flex: none; padding-inline: 14px; }
+.ea-results { display: grid; margin: 0; }
+.ea-result { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 4px 14px; padding: 9px 0; border-top: 1px solid var(--line); }
+.ea-result dt { font-size: 14px; font-weight: 600; }
+.ea-result dd { margin: 0; font-size: 14px; }
+.ea-result-what { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
+.ea-badge { display: inline-block; padding: 1px 7px 2px; border-radius: 20px; vertical-align: 1px; }
+.ea-badge.is-pass { background: #e1e7d3; color: #34401f; }
+.ea-badge.is-fail { background: #f3dcd8; color: #842619; }
+.ea-badge.is-none { background: #e2e1d9; color: #575b4f; }
+.ea-badge.is-number { background: #dde3e8; color: #2c3e4c; }
+.ea-badge.is-category { background: #e6e0d2; color: #4a4231; }
+
+/* Figure 5: the scatter and the paired group bars. */
+.ea-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+.ea-dot.is-yes { background: var(--ink); }
+.ea-dot.is-no { border: 2px solid #a0672e; }
+.ea-plot { position: relative; min-width: 0; min-height: 230px; touch-action: pan-y; }
+.ea-plot-svg { display: block; overflow: visible; }
+.ea-axes line { stroke: #d1d0c8; stroke-width: 1; }
+.ea-axes text { fill: #646a5a; font-family: var(--font-mono); font-size: 11px; }
+.ea-axes .ea-axis-title { fill: #5f6157; }
+.ea-plot circle { stroke-width: 2; }
+.ea-plot circle.is-yes { fill: var(--ink); stroke: var(--paper); stroke-width: 1; }
+.ea-plot circle.is-no { fill: var(--paper); stroke: #a0672e; }
+.ea-plot circle.is-hot { stroke: #627942; stroke-width: 3; }
+/* The tip moves by transform only (no left/top changes), so following a dot is not a layout shift. */
+.ea-tip { position: absolute; left: 0; top: 0; z-index: 2; width: max-content; max-width: min(260px, 100%); padding: 6px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font-size: 12px; line-height: 1.4; pointer-events: none; transform: translate(calc(var(--x, 0px) - 50%), calc(var(--y, 0px) - 100% - 10px)); }
+.ea-tip.is-below { transform: translate(calc(var(--x, 0px) - 50%), calc(var(--y, 0px) + 12px)); }
+.ea-pairs { display: grid; gap: 6px; }
+.ea-pairs-title { color: var(--label); }
+.ea-pair { display: grid; grid-template-columns: minmax(0, 8rem) minmax(0, 1fr) 3.5rem; gap: 12px; align-items: center; font-size: 13px; }
+.ea-pair-value { font-size: 15px; font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Compact checklist: an empty box per item, numbered by the list itself. */
+.ea-checklist { max-width: 68ch; margin: 0; padding: 0; list-style: none; font-size: clamp(16px, 1.15vw, 17px); line-height: 1.5; }
+.ea-checklist li { position: relative; padding: 11px 0 11px 34px; border-bottom: 1px solid var(--line); text-wrap: pretty; }
+.ea-checklist li:first-child { padding-top: 4px; }
+.ea-checklist li:last-child { border-bottom: 0; }
+.ea-checklist li::before { content: ""; position: absolute; left: 0; top: calc(11px + .2em); width: 16px; height: 16px; border: 1.5px solid var(--ink); border-radius: 3px; }
+.ea-checklist li:first-child::before { top: calc(4px + .2em); }
+
+/* With the script: real checkboxes, the whole row is the target, and a progress ring. */
+.ea-checklist.is-live li { padding: 0; }
+.ea-checklist.is-live li::before { display: none; }
+.ea-checklist.is-live label { display: block; min-height: 44px; padding: 11px 0 11px 34px; cursor: pointer; }
+.ea-checklist.is-live li:first-child label { padding-top: 4px; }
+.ea-checklist.is-live input { position: absolute; left: 0; top: calc(11px + .15em); width: 18px; height: 18px; margin: 0; accent-color: var(--ink); cursor: pointer; }
+.ea-checklist.is-live li:first-child input { top: calc(4px + .15em); }
+.ea-checklist.is-live input:checked + label { color: var(--muted); }
+.ea-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; max-width: 68ch; margin-bottom: 18px; padding: 12px 0; border-block: 1px solid var(--line); }
+.ea-ring { width: 56px; height: 56px; transform: rotate(-90deg); }
+.ea-ring circle { fill: none; stroke-width: 5; }
+.ea-ring-track { stroke: #d1d0c8; }
+.ea-ring-fill { stroke: var(--ink); stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--p, 0)); }
+.ea-progress.is-done .ea-ring-fill { stroke: #4d6a2a; }
+.ea-progress-text { display: grid; gap: 2px; flex: 1; min-width: 12rem; }
+.ea-progress-count { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ea-progress-state { color: var(--muted); font-size: 14px; }
+.ea-progress.is-done .ea-progress-state { color: #34401f; font-weight: 600; }
+
+/* Read next. */
+.ea-next { margin: 0; padding: 0; list-style: none; font-size: 17px; }
+.ea-next li { border-bottom: 1px solid var(--line); }
+.ea-next li:last-child { border-bottom: 0; }
+.ea-next .cs-text-link { padding: 8px 0; }
+
+
+@media (prefers-reduced-motion: no-preference) {
+  .ea-flow-steps li, .ea-flow-label, .ea-flow-data { transition: background-color .35s ease, color .35s ease, border-color .35s ease; }
+  .ea-bar-fill { transition: width .6s cubic-bezier(.16, 1, .3, 1); }
+  .ea-ring-fill { transition: stroke-dashoffset .4s ease, stroke .4s ease; }
+  .ea-bar, .ea-button { transition: background-color .2s ease, border-color .2s ease; }
+}
+
+@media (max-width: 700px) {
+  .ea-flow-steps { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .ea-flow-steps li + li::before { top: -18px; left: 18px; transform: rotate(90deg); }
+  .ea-bar { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; min-height: 44px; padding: 6px 8px; }
+  .ea-bar .ea-bar-track { grid-column: 1 / -1; grid-row: 2; }
+  .ea-open { display: inline-flex; align-items: center; min-height: 44px; }
+  .ea-result { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .ea-tiles { grid-template-columns: minmax(0, 1fr); }
+  .ea-pair { grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr) 3rem; gap: 8px; }
+}
+@media (forced-colors: active) {
+  .ea-flow-steps li + li::before { background-color: CanvasText; forced-color-adjust: none; }
+  .ea-cell, .ea-bar-fill, .ea-dot, .ea-plot circle { forced-color-adjust: none; }
+  .ea-bar[aria-pressed="true"] { outline: 2px solid Highlight; }
+}
+@media print {
+  .ea-flow-steps li:last-child { background: none; color: var(--ink); }
+  .ea-flow-steps li:last-child .ea-flow-label { color: var(--label); }
+  .ea-checklist li { break-inside: avoid; }
+  .ea-live, .ea-play, .ea-progress { display: none; }
+}
+
+/* First screen: the code checks across all 77 traces, as a compact table with bars
+   (the same counts as Figure 4's data table). */
+.ea-glance { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.ea-glance th, .ea-glance td { padding: 4px 0; font-weight: 400; text-align: left; vertical-align: middle; }
+.ea-glance thead th { padding-bottom: 8px; color: var(--label); font-family: var(--font-mono); font-size: 11px; letter-spacing: .035em; text-transform: uppercase; }
+.ea-glance tbody th { padding-right: 16px; white-space: nowrap; }
+.ea-glance-plot { width: 100%; }
+.ea-glance td:nth-child(n+3), .ea-glance thead th:nth-child(n+3) { width: 3.4em; padding-left: 8px; text-align: right; }
+.ea-lead .ea-key { font-size: 12px; }
+@media (max-width: 560px) {
+  .ea-glance { font-size: 12px; }
+  .ea-glance tbody th { padding-right: 10px; white-space: normal; min-width: 8.5em; }
+  .ea-glance td:nth-child(n+3), .ea-glance thead th:nth-child(n+3) { width: 2.6em; padding-left: 4px; }
+}

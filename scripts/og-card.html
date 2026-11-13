@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  Link-preview card (Open Graph / Twitter). Regenerate web/assets/og-card.jpg by
+  serving the repository root (e.g. `python3 -m http.server 4185 --bind 127.0.0.1`
+  from the repo),
+  opening http://127.0.0.1:4185/scripts/og-card.html at a 1200x630 viewport with
+  device scale factor 1, taking a PNG screenshot, and converting it with
+  `sips -s format jpeg -s formatOptions 85 og-card.png --out web/assets/og-card.jpg`
+  (last regenerated November 12, 2026, after the hero was reframed).
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face { font-family: "Archivo"; font-weight: 100 900; font-stretch: 62% 125%; src: url("../web/assets/fonts/archivo-latin.woff2") format("woff2"); }
+  @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("../web/assets/fonts/geist-mono-latin.woff2") format("woff2"); }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { position: relative; background: #eeede8; color: #171716; font-family: "Archivo", sans-serif; -webkit-font-smoothing: antialiased; }
+  body::after { content: ""; position: absolute; inset: 0; background: url("../web/assets/grain.svg"); opacity: .35; pointer-events: none; }
+  .mono { font-family: "Geist Mono", monospace; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: #646a5a; }
+  .wordmark { position: absolute; left: 64px; top: 52px; display: flex; flex-direction: column; gap: 2px; }
+  .wordmark b { font-size: 34px; font-weight: 850; font-stretch: 87.5%; letter-spacing: -.045em; display: inline-flex; align-items: center; gap: 6px; }
+  .wordmark b i { width: 9px; height: 9px; border-radius: 50%; background: #171716; }
+  .wordmark span { font-size: 12px; font-weight: 600; letter-spacing: .11em; }
+  .place { position: absolute; right: 64px; top: 66px; display: flex; align-items: center; gap: 10px; }
+  .place i { width: 8px; height: 8px; border-radius: 50%; background: #7c8566; }
+  h1 { position: absolute; left: 58px; top: 140px; font-size: 112px; line-height: .82; font-weight: 850; font-stretch: 87.5%; letter-spacing: -.05em; text-transform: uppercase; z-index: 1; }
+  h1 span { display: block; }
+  h1 .fade { margin-top: 8px; background: linear-gradient(180deg, #262724 15%, #eeede8 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  /* Cesar's cut-out portrait (web/assets/cesar-portrait-1040.webp), standing
+     on the card's lower edge and fading into the paper like the site hero. */
+  .portrait { position: absolute; right: 44px; bottom: 0; width: 436px; z-index: 2; }
+  .portrait img { display: block; width: 100%; height: auto; }
+  .intro { position: absolute; left: 64px; bottom: 62px; max-width: 620px; z-index: 3; }
+  .intro p { font-size: 30px; line-height: 1.08; letter-spacing: -.035em; font-weight: 500; }
+  .intro .mono { margin-top: 18px; }
+  .rule { position: absolute; left: 64px; right: 64px; bottom: 30px; height: 1px; background: #d1d0c8; }
+</style>
+</head>
+<body>
+  <div class="wordmark"><b>CESAR<i></i></b><span>TORTOLERO</span></div>
+  <div class="place mono"><i></i>Morristown, NJ — NYC area</div>
+  <h1><span>Machine</span><span>Learning</span><span class="fade">Engineer</span></h1>
+  <div class="portrait"><img src="../web/assets/cesar-portrait-1040.webp" alt="" width="1040" height="1247"></div>
+  <div class="intro">
+    <p>AI agents and LLM evaluation on AWS.</p>
+    <div class="mono">MCP · Bedrock AgentCore · Python · MLOps</div>
+  </div>
+  <div class="rule"></div>
+</body>
+</html>

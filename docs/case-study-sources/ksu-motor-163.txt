@@ -1,0 +1,27 @@
+URL: https://digitalcommons.kennesaw.edu/undergradsymposiumksu/Fall2022/presentations/163
+Read: November 11, 2026 (record page)
+
+Fall 2022 Symposium of Student Scholars
+
+Motor Imagery Detection Toward Non-Invasive Brainwave Based Typing
+
+Presenters
+Abm. Adnan Azmee, Kennesaw State University
+Manohar Murikipudi, Kennesaw State University
+Cesar Lucena
+Ibrahima Gueye, Kennesaw State University
+Bryce Wishart, Keneesaw State University
+Yuliana Pacheco, Kennesaw State University
+Md Abdullah Al Hafiz Khan, Kennesaw State University
+
+Primary Investigator (PI) Name
+Md Abdullah Al Hafiz Khan
+
+Department
+Computer Science
+
+Abstract
+Electroencephalography (EEG) signals can be captured non-invasively with the help of Brain-Computer Interfaces (BCI). These EEG signals contain many essential information that can serve a great purpose when used correctly. By the appropriate interpretation of this EEG signal, we can provide people with limited ability to perform certain actions which they are unable to do due to their current condition. Paralyzed and semi-paralyzed people who are often found struggling to express themselves due to their medical condition can greatly benefit from the application of EEG. Typing or writing a letter requires functional motor movement. If we can detect the motor imagery movement from the EEG signal and determine the intent of the subject who is unable to perform motor functions but is imagining them, we can apply it to determine what they are trying to express in typed textual format. However, extracting features from EEG signals is incredibly challenging as EEG is susceptible to noise. Due to the absence of any informative association between the signals and the activity of the brain detecting motor movements and classifying them is difficult. Deep neural networks are proficient in understanding complicated features and performing computation which is very demanding. In this paper, we utilize the potential of deep neural networks to develop a model which is able to identify the motor imagery movement from the EEG signal of a subject. We envision to use this motor imagery obtained from the non-invasive brainwave to move the cursor using user thought to write letters and form words.
+
+From the PDF cover page:
+This Oral Presentation (15-min time slots) is brought to you for free and open access by the Office of Undergraduate Research at DigitalCommons@Kennesaw State University.

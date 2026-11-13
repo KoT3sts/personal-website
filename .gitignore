@@ -10,3 +10,7 @@ build/
 *.log
 .DS_Store
 Thumbs.db
+.impeccable/
+__pycache__/
+# Telemetry export: local root-session config (session names and windows stay private)
+scripts/telemetry/roots.local.json

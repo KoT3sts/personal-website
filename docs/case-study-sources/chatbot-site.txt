@@ -1,0 +1,13 @@
+URL: https://virtualcompanionchatbot.wordpress.com/
+Read: November 11, 2026 (page text; link targets in brackets)
+
+Virtual Companionship Chatbot – Indy 13
+Course Number: CS4850, Spring 2023
+Professor: Sharon Perry
+Cesar Lucena
+Noah Clark
+Rakshak Nath Gurung
+Fabritzzio Cabrejos
+Project Report (PDF) [https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf]
+Final Presentation Video [https://youtu.be/NBu8LE_WF8Q]
+Visit our GitHub: GitHub Repository [https://github.com/NoahDClark/VirtualCompanionChatbot]

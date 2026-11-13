@@ -1,86 +1,396 @@
-@layer layout {
-  #about, #introduction { scroll-margin-top: -108px; }
-  /* V03: an original illustrated field, with one quiet, architectural panel. */
-  .about-transition { position: relative; min-height: 760px; height: 108svh; max-height: 1120px; display: grid; place-items: center; isolation: isolate; overflow: clip; background: #202124; }
-  .about-flow { position: absolute; inset: -8%; z-index: -2; }
-  .about-flow img { width: 100%; height: 100%; object-fit: cover; }
-  .about-transition::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(#08090b70, transparent 35%, #08090b60); }
-  .about-transition-meta, .about-transition-foot { position: absolute; left: var(--gutter); right: var(--gutter); display: flex; justify-content: space-between; gap: 28px; color: #eeede8; text-shadow: 0 1px 5px #000; }
-  .about-transition-meta { top: 110px; font-size: 9px; }
-  .about-transition-foot { bottom: 30px; font-size: 8px; }
-  .about-title-panel { width: clamp(260px, 26vw, 380px); min-height: 475px; padding: 30px 25px 26px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; position: relative; border: 1px solid #ffffff32; border-radius: 18px; background: radial-gradient(ellipse at 110% 0%, #77797c, #222327 30%, #0b0c0e 68%); box-shadow: 0 35px 70px #0008; }
-  .about-panel-index { font-size: 8px; color: #c3c3c3; letter-spacing: .1em; }
-  .about-title-panel h2 { font-size: clamp(80px, 8vw, 120px); text-align: center; letter-spacing: -.085em; line-height: .85; font-weight: 800; }
-  .about-discover { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid #ffffff65; border-radius: 50%; font-size: 23px; }
-  .about-discover:hover { background: var(--paper); color: var(--night); }
+/* About transition (SPECIFICATION V03) and cinematic introduction (V04).
+   Default (no JS, phones, short screens, reduced motion, print): the swirl
+   field with the ABOUT ME panel, then the light-shaft scene, each read as is;
+   the field's lower edge fades into the scene's ground, so they meet without a
+   seam. The "opening" (wide screens with JS and motion, see @layer motion):
+   the scene pins while the page scrolls through #about; the panel widens into
+   a full-screen window, ABOUT ME recedes and #introduction, pulled up under
+   the pinned scene, shows through as one camera move; then the light scene holds still for a while (the hold)
+   while Icarus lands. */
 
-  /* V04: a beam-lit sculpture with copy kept on the panel's perimeter. */
-  .cinematic { padding: clamp(90px, 6vw, 110px) var(--gutter) 36px; overflow: clip; background: #101114; }
-  .cinematic-stage { position: relative; isolation: isolate; min-height: max(750px, 86svh); border: 1px solid #2e3037; border-radius: 14px; overflow: clip; background: radial-gradient(ellipse at 48% 42%, #191b25 0%, #0a0b11 43%, #090a10 80%); box-shadow: inset 0 0 100px #0005; }
+/* Progress through the pinned #about: 0 = the ABOUT ME panel, 1 = the window
+   fills the screen and #introduction sits exactly behind it. Driven by a
+   scroll timeline, or by motion.js where scroll timelines are missing. */
+@property --about-p { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+@layer layout {
+  /* Full-bleed scenes open under the header bar instead of below it. */
+  #about, #introduction { scroll-margin-top: calc(-1 * var(--header-clear)); }
+  /* V03: an original illustrated field, with one quiet, architectural panel. */
+  .about-transition { position: relative; min-height: 760px; height: 108svh; max-height: 1120px; background: #202124; }
+  .about-scene { position: relative; height: 100%; display: grid; place-items: center; isolation: isolate; overflow: clip; }
+  .about-field { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
+  .about-flow { position: absolute; inset: -8%; z-index: -1; }
+  .about-flow img { width: 100%; height: 100%; object-fit: cover; }
+  /* Shade at the top; the lower edge settles into the introduction's ground (#101114). */
+  .about-field::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(#08090b70, transparent 35%, #08090b60 80%, #101114); }
+  .about-transition-meta, .about-transition-foot { position: absolute; z-index: 1; left: var(--gutter); right: var(--gutter); display: flex; justify-content: space-between; gap: 28px; color: #eeede8; text-shadow: 0 1px 5px #000; }
+  .about-transition-meta { top: 110px; font-size: var(--text-label); }
+  .about-transition-foot { bottom: 30px; font-size: var(--text-label); }
+  /* The window the opening widens; only drawn while it runs. */
+  .about-window { display: none; }
+  .about-title-panel { container-type: inline-size; position: relative; z-index: 3; width: clamp(260px, 26vw, 380px); min-height: 475px; padding: 30px 25px 26px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; border: 1px solid #ffffff32; border-radius: 18px; background: radial-gradient(ellipse at 110% 0%, #5b5d60, #222327 30%, #0b0c0e 68%); box-shadow: 0 35px 70px #0008; }
+  /* A hairline where the arrow button was: the title keeps its place and the panel points down into the scene. */
+  .about-title-panel::after { content: ""; width: 1px; height: 48px; background: linear-gradient(#ffffff00, #ffffff8c); }
+  /* The highlight is held back (#5b5d60) and the index lifted so the small label reads at >= 4.5:1 across the gradient. */
+  .about-panel-index { font-size: var(--text-label); color: #e2e2de; letter-spacing: .1em; }
+  /* Sized to the panel (container units) so ABOUT always keeps the panel's inner padding. */
+  .about-title-panel h2 { font-size: min(120px, 31cqi); text-align: center; letter-spacing: var(--display-tracking); line-height: .86; font-weight: var(--display-weight); font-stretch: var(--display-stretch); }
+
+  /* V04: Icarus falling out of the light shaft, with copy kept on the panel's perimeter. --beam-turn is the shaft's
+     angle; the figure rests low in the open area between the topline (--art-top) and the copy (--foot-top, the
+     footer's top margin), held --art-clear above the copy so his later drift and tumble can never reach it. */
+  .cinematic { --cine-pad: clamp(90px, 6vw, 110px); padding: var(--cine-pad) var(--gutter) 36px; overflow: clip; background: #101114; }
+  .cinematic-stage { --beam-turn: 128deg; --art-top: 64px; --foot-top: 440px; position: relative; isolation: isolate; min-height: max(750px, 86svh); border: 1px solid #2e3037; border-radius: 14px; overflow: clip; background: radial-gradient(ellipse at 48% 42%, #191b25 0%, #0a0b11 43%, #090a10 80%); box-shadow: inset 0 0 100px #0005; }
   .cinematic-stage::after { content: ""; pointer-events: none; position: absolute; inset: 0; z-index: -1; opacity: .12; background-image: url("./assets/grain.svg"); }
-  .cinematic-light { position: absolute; inset: 0; z-index: -3; pointer-events: none; background: linear-gradient(128deg, transparent 32%, #eaebf210 37%, #f2f2f557 46%, #ffffff7a 49%, #e2e3ed3d 54%, transparent 64%); mask-image: linear-gradient(#000, #000c 40%, transparent 85%); }
+  /* Dark cloud banks at the edges, between the light and the figure, so the shaft reads as light breaking through.
+     Lumpy edges come from several overlapping ellipses; two faint lit rims sit where the clouds meet the shaft. */
+  .cinematic-stage::before { content: ""; pointer-events: none; position: absolute; inset: 0; z-index: -3; background:
+    radial-gradient(ellipse 14% 6% at 60% 9%, #ffffff14, transparent 70%),
+    radial-gradient(ellipse 12% 5% at 75% 31%, #ffffff0d, transparent 70%),
+    radial-gradient(ellipse 14% 6% at 38% 60%, #ffffff0c, transparent 70%),
+    radial-gradient(ellipse 36% 28% at 3% 5%, #040508f5, transparent 72%),
+    radial-gradient(ellipse 22% 15% at 24% 2%, #05060ae6, transparent 70%),
+    radial-gradient(ellipse 15% 11% at 38% 10%, #06070bb3, transparent 70%),
+    radial-gradient(ellipse 12% 9% at 47% 4%, #06070b8c, transparent 70%),
+    radial-gradient(ellipse 32% 26% at 0% 44%, #040508e0, transparent 72%),
+    radial-gradient(ellipse 18% 15% at 17% 30%, #06070ba6, transparent 70%),
+    radial-gradient(ellipse 14% 10% at 27% 46%, #06070b80, transparent 70%),
+    radial-gradient(ellipse 34% 26% at 100% 38%, #040508eb, transparent 72%),
+    radial-gradient(ellipse 20% 14% at 83% 50%, #06070bb3, transparent 70%),
+    radial-gradient(ellipse 16% 10% at 90% 20%, #06070ba6, transparent 70%),
+    radial-gradient(ellipse 14% 9% at 73% 60%, #06070b80, transparent 70%),
+    radial-gradient(ellipse 42% 26% at 88% 100%, #040508ee, transparent 72%),
+    radial-gradient(ellipse 26% 16% at 64% 90%, #06070bb3, transparent 70%); }
+  .cinematic-light { position: absolute; inset: 0; z-index: -4; pointer-events: none; background: linear-gradient(128deg, transparent 32%, #eaebf210 37%, #f2f2f557 46%, #ffffff7a 49%, #e2e3ed3d 54%, transparent 64%); mask-image: linear-gradient(#000, #000c 40%, transparent 85%); }
   .cinematic-light::before { content: ""; position: absolute; inset: -10%; background: linear-gradient(128deg, transparent 38%, #fff3 44%, transparent 46%, transparent 48%, #fff5 49%, transparent 50%, #fff2 53%, transparent 57%); filter: blur(8px); }
-  .cinematic-topline { position: absolute; left: 32px; right: 32px; top: 30px; display: flex; justify-content: space-between; gap: 38px; font-size: 9px; color: #d8d9de; }
+  /* "Heaven": the shaft's core is brightest at its top-right end (the mask runs up the shaft, at --beam-turn - 90deg),
+     and stays bright while the figure falls away from it. */
+  .cinematic-light::after { content: ""; position: absolute; inset: 0; background: linear-gradient(var(--beam-turn), transparent 41%, #ffffff1c 45.5%, #ffffff8f 49%, #ffffff24 52.5%, transparent 58%); mask-image: linear-gradient(calc(var(--beam-turn) - 90deg), transparent 46%, #000b 72%, #000 92%); opacity: .85; }
+  .cinematic-topline { position: absolute; left: 32px; right: 32px; top: 30px; display: flex; justify-content: space-between; gap: 38px; font-size: var(--text-label); color: #d8d9de; }
   .cinematic-topline > :first-child { max-width: 330px; }
   .cinematic-topline > :last-child { text-align: right; }
-  .cinematic-art { position: absolute; width: min(42%, 470px); aspect-ratio: 1; top: 15%; left: 50%; transform: translateX(-50%) rotate(-14deg); pointer-events: none; z-index: -2; }
-  .cinematic-art::after { content: ""; position: absolute; width: 55%; height: 7%; top: 87%; left: 24%; border-radius: 50%; background: #0009; filter: blur(17px); transform: rotate(-27deg); }
-  .cinematic-art img { width: 100%; height: 100%; object-fit: contain; }
-  .cinematic-footer { position: relative; display: grid; grid-template-columns: minmax(0, 540px) auto; align-items: end; justify-content: space-between; gap: 35px; padding: 32px; margin-top: 440px; }
+  /* Icarus (web/assets/icarus-{560,960}.webp, 960 x 1130: a cutout of the owner-supplied pen drawing, lit from the
+     shaft's bright end, legs toward it). .cinematic-art is the figure's own box, --fig-w wide and --fig-ratio (height / width) tall, placed so the
+     image's body point (--body-ax, --body-ay, fractions of the box; also the tumble pivot and the halo's centre) sits
+     --fig-x across the stage. The box's bottom rests --art-clear above the copy: room for the post-rest drift
+     (--drift along the shaft, at most .82 of it downward), the tumble's wider rotated box (~8% of --fig-w) and a
+     14px margin. To swap in a cutout photo, change the <img> src/width/height, then --fig-ratio and the body point
+     (see docs/assets.md). */
+  .cinematic-art {
+    --fig-ratio: 1.177; --body-ax: .5; --body-ay: .5;
+    --fig-h: calc(var(--fig-w, 290px) * var(--fig-ratio));
+    --art-clear: calc(var(--drift, 40px) * .82 + var(--fig-w, 290px) * .08 + 14px);
+    position: absolute; z-index: -2; pointer-events: none;
+    left: calc(var(--fig-x, 54%) - var(--fig-w, 290px) * var(--body-ax));
+    top: calc(var(--foot-top) - var(--art-clear) - var(--fig-h));
+    width: var(--fig-w, 290px); height: var(--fig-h);
+  }
+  .beam-fall { position: absolute; inset: 0; }
+  /* Light behind him, stretched along the shaft, so the dark wings read against it. */
+  .beam-halo { position: absolute; left: calc(var(--body-ax) * 100%); top: calc(var(--body-ay) * 100%); width: calc(var(--fig-w, 290px) * 1.15); height: calc(var(--fig-h) * 1.25); translate: -50% -50%; rotate: calc(var(--beam-turn) - 90deg); border-radius: 50%; background: radial-gradient(closest-side, #ffffff47, #eceeff1f 48%, #eceeff09 76%, transparent); }
+  /* The drawing carries its own light and shadow; the filter only adds a thin bright edge and a soft bloom. */
+  .beam-figure { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; transform-origin: calc(var(--body-ax) * 100%) calc(var(--body-ay) * 100%); rotate: var(--fig-tilt, 0deg); filter: drop-shadow(0 0 .8px #ffffff73) drop-shadow(0 0 14px #ffffff26); }
+  /* Loose feathers shed from the wings, mostly above him toward the light. Each is lit from the top and masked to a
+     feather shape (inline SVG); sizes are fractions of --fig-w. */
+  .beam-feathers { position: absolute; inset: 0; opacity: .75; }
+  .beam-feathers > span { --feather: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 52'%3E%3Cpath d='M5.4 52 5 41C3.4 39 2 35 1.6 31L3.6 29.2 1.2 27C.8 19 2.6 8 5.6.5 8.2 6 9.6 14 9.4 22 9.2 28 8.2 33 6.9 36.5L8.4 38.4 6.4 38.4 5.8 41 5.9 52Z'/%3E%3C/svg%3E"); position: absolute; left: var(--x); top: var(--y); width: calc(var(--fig-w, 290px) * var(--s)); aspect-ratio: 10 / 52; rotate: var(--r); opacity: var(--o); background: linear-gradient(90deg, transparent 49%, #ffffffa6 54%, transparent 59%), linear-gradient(#eceef3, #8b8e9a 34%, #2b2d35 82%); -webkit-mask: var(--feather) center / 100% 100% no-repeat; mask: var(--feather) center / 100% 100% no-repeat; }
+  .beam-feathers > :nth-child(1) { --x: 76%; --y: 16%; --s: .032; --r: 38deg; --o: .9; --d: 1; --dx: 18px; --spin: 140deg; }
+  .beam-feathers > :nth-child(2) { --x: 90%; --y: 29%; --s: .025; --r: -24deg; --o: .75; --d: .8; --dx: 26px; --spin: -110deg; }
+  .beam-feathers > :nth-child(3) { --x: 62%; --y: 5%; --s: .028; --r: 74deg; --o: .85; --d: 1.2; --dx: -12px; --spin: 190deg; }
+  .beam-feathers > :nth-child(4) { --x: 44%; --y: -3%; --s: .021; --r: 14deg; --o: .6; --d: .7; --dx: -20px; --spin: -80deg; }
+  .beam-feathers > :nth-child(5) { --x: 99%; --y: 9%; --s: .022; --r: 122deg; --o: .65; --d: .9; --dx: 30px; --spin: 120deg; }
+  .beam-feathers > :nth-child(6) { --x: 22%; --y: 3%; --s: .024; --r: -36deg; --o: .55; --d: .6; --dx: -26px; --spin: -150deg; }
+  .beam-feathers > :nth-child(7) { --x: 87%; --y: 64%; --s: .02; --r: 158deg; --o: .55; --d: .5; --dx: 14px; --spin: 90deg; }
+  .beam-feathers > :nth-child(8) { --x: 55%; --y: 21%; --s: .018; --r: 202deg; --o: .7; --d: 1.1; --dx: 8px; --spin: -170deg; }
+  .beam-feathers > :nth-child(9) { --x: 2%; --y: 30%; --s: .02; --r: -68deg; --o: .45; --d: .55; --dx: -18px; --spin: 70deg; }
+  .beam-feathers > :nth-child(10) { --x: 70%; --y: -7%; --s: .019; --r: 96deg; --o: .6; --d: 1.3; --dx: 22px; --spin: 210deg; }
+  .beam-feathers > :nth-child(11) { --x: 33%; --y: 13%; --s: .017; --r: 28deg; --o: .5; --d: .8; --dx: -10px; --spin: -120deg; }
+  .beam-feathers > :nth-child(12) { --x: 97%; --y: 47%; --s: .026; --r: -112deg; --o: .7; --d: .75; --dx: 34px; --spin: 160deg; }
+  /* The pills sit just right of the copy, their bottom level with the Currently block's last line. */
+  .cinematic-footer { position: relative; display: grid; grid-template-columns: minmax(0, 560px) auto; align-items: end; justify-content: start; gap: 35px clamp(32px, 3.6vw, 64px); padding: 32px; margin-top: var(--foot-top); }
   .cinematic-copy { padding-top: 20px; border-top: 1px solid #ffffff26; }
-  .cinematic-copy > .mono { display: block; font-size: 8px; color: #a7a9b3; margin-bottom: 15px; }
-  .cinematic-copy h2 { font-size: clamp(26px, 2.7vw, 42px); line-height: 1.03; letter-spacing: -.06em; font-weight: 500; margin-bottom: 16px; text-wrap: balance; }
-  .cinematic-copy p { max-width: 475px; font-size: 12px; line-height: 1.65; color: #adaeb8; }
+  .cinematic-copy > .mono { display: block; font-size: var(--text-label); color: #a7a9b3; margin-bottom: 15px; }
+  .cinematic-copy h2 { font-size: clamp(26px, 2.7vw, 42px); line-height: 1.03; letter-spacing: -.035em; font-weight: 500; margin-bottom: 16px; text-wrap: balance; }
+  .cinematic-copy p { max-width: min(500px, 68ch); font-size: var(--text-body); line-height: 1.6; color: #b4b5be; text-wrap: pretty; }
   .cinematic-copy p + p { margin-top: 10px; }
   .scene-actions { display: flex; flex-wrap: wrap; gap: 9px; padding-bottom: 2px; }
-  .scene-pill { display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 44px; padding: 12px 19px; border: 1px solid #85868c; border-radius: 50px; font-size: 9px; line-height: 1.4; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+  .scene-pill { display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 44px; padding: 11px 19px; border: 1px solid #85868c; border-radius: 50px; font-size: var(--text-pill); line-height: 1.4; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
   .scene-pill-primary { background: var(--paper); color: #15161b; border-color: var(--paper); box-shadow: 0 0 22px #f1edff24; }
   .scene-pill:hover { background: #fff; color: #15161b; }
-  .cinematic-caption { display: flex; justify-content: space-between; gap: 24px; margin-top: 24px; color: #8b8d97; font-size: 8px; }
+  .cinematic-caption { display: flex; justify-content: space-between; gap: 24px; margin-top: 24px; color: #8b8d97; font-size: var(--text-label); }
 }
 
 @layer motion {
-  /* Progressive enhancement only: text and artwork remain complete without it. */
+  /* Scroll-linked scene changes. Progressive enhancement only: text and artwork
+     are complete without them. Outside the opening, text opacity is never tied to scroll. */
   @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) and (min-width: 761px) {
-      .about-transition { view-timeline-name: --about-scene; view-timeline-axis: block; }
-      .about-flow { animation: about-flow-shift linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
-      .about-title-panel { animation: about-panel-settle linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
+    @media (prefers-reduced-motion: no-preference) {
+      /* V03 (simple fade): the swirl drifts and dims into the introduction's ground as the section leaves. */
+      .about-transition { view-timeline: --about-scene block; }
+      .about-field::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: #101114; opacity: 0; animation: about-dim linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
+      .about-flow { animation: about-flow-drift linear both; animation-timeline: --about-scene; animation-range: entry 0% exit 100%; }
+
+      /* V04: the inset stage opens, the light shaft sweeps in and the figure falls down it, away from the light. */
+      .cinematic { view-timeline: --cine-scene block; }
+      .cinematic-stage { animation: cine-stage-open linear both; animation-timeline: --cine-scene; animation-range: entry 0% cover 42%; }
+      .cinematic-light { animation: cine-light-sweep linear both; animation-timeline: --cine-scene; animation-range: entry 5% cover 50%; }
+      .cinematic-light::before { animation: cine-streak-drift linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      /* Icarus drops out of the bright end of the shaft (--fall, from above the stage's top edge) while the scene
+         comes up, tumbling, and lands in his rest pose at 45% (about where /#introduction lands; with the hold, see
+         below, 45% is moved into it); from there he only drifts a little further (--drift) so he never reaches the
+         copy while it is read. The feathers he sheds fall slower, so they lag behind and above him, turning as they
+         go; the halo thins as he leaves the light. The 45% pose is also the rest state without support, with reduced
+         motion, without JS and in print. */
+      .cinematic-light::after { animation: cine-heaven linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      .beam-fall { animation: figure-fall linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      .beam-figure { animation: figure-tumble linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      .beam-halo { animation: halo-fade linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      .beam-feathers > span { animation: feather-shed linear both; animation-timeline: --cine-scene; animation-range: entry 0% exit 100%; }
+      /* Phones: the shaft leaves through the stage's right edge, so a long fall would carry him past it while he is in
+         view. He lands sooner (40svh after the scene enters, as he comes up from the bottom of the screen), so the
+         last part of the fall that is seen stays inside the stage; then he drifts as on wider screens. */
+      @media (max-width: 760px) {
+        :is(.beam-fall, .beam-figure, .beam-halo, .beam-feathers > span), .cinematic-light::after { animation-range: cover 0% cover calc(40svh / .45); }
+      }
+      .cinematic-topline { animation: cine-edge-settle linear both; animation-timeline: --cine-scene; animation-range: entry 15% cover 45%; }
+      .cinematic-footer { animation: cine-copy-settle linear both; animation-timeline: --cine-scene; animation-range: entry 25% cover 50%; }
     }
   }
-  @keyframes about-flow-shift { from { transform: translateY(-3%) scale(1.03); } to { transform: translateY(3%) scale(1.08); } }
-  @keyframes about-panel-settle { 0% { transform: translateY(35px) rotate(-5deg); } 45%, 65% { transform: translateY(0) rotate(0); } 100% { transform: translateY(-25px) rotate(3deg); } }
+  @keyframes about-dim { 0%, 60% { opacity: 0; } 100% { opacity: .78; } }
+  @keyframes about-flow-drift {
+    0% { transform: translate3d(0, -3.5%, 0) scale(1.14) rotate(var(--flow-turn, -1.2deg)); }
+    50% { transform: translate3d(0, 0, 0) scale(1.06) rotate(0deg); }
+    100% { transform: translate3d(0, 3.5%, 0) scale(1.02) rotate(calc(var(--flow-turn, -1.2deg) * -.6)); }
+  }
+  @keyframes cine-stage-open { from { transform: translate3d(0, 46px, 0) scale(.94); } to { transform: none; } }
+  @keyframes cine-light-sweep { from { opacity: .12; transform: translate3d(14%, -10%, 0); } to { opacity: 1; transform: none; } }
+  @keyframes cine-streak-drift { from { transform: translate3d(-4%, 3%, 0); } to { transform: translate3d(4%, -3%, 0); } }
+  /* Along the shaft: (cos, sin) of the beam's angle points down it (away from the light). */
+  @keyframes figure-fall {
+    0% { translate: calc(cos(var(--beam-turn)) * var(--fall, 560px) * -1) calc(sin(var(--beam-turn)) * var(--fall, 560px) * -1); }
+    45% { translate: 0 0; }
+    100% { translate: calc(cos(var(--beam-turn)) * var(--drift, 40px)) calc(sin(var(--beam-turn)) * var(--drift, 40px)); }
+  }
+  @keyframes figure-tumble {
+    0% { rotate: calc(var(--fig-tilt, 0deg) - 16deg); }
+    45% { rotate: var(--fig-tilt, 0deg); }
+    100% { rotate: calc(var(--fig-tilt, 0deg) + 10deg); }
+  }
+  @keyframes halo-fade { 0% { opacity: 1; scale: 1.12; } 45% { opacity: 1; scale: 1; } 100% { opacity: .5; scale: .9; } }
+  @keyframes cine-heaven { 0% { opacity: .5; } 45% { opacity: .85; } 100% { opacity: 1; } }
+  /* A feather starts on the wing (moving with the figure), then falls at a fraction of his speed (.85 of his drop,
+     --d x .4 of his drift), drifts sideways (--dx) and turns (--spin). */
+  @keyframes feather-shed {
+    0% { translate: calc(cos(var(--beam-turn)) * var(--fall, 560px) * -.85) calc(sin(var(--beam-turn)) * var(--fall, 560px) * -.85); rotate: calc(var(--r) - 40deg); opacity: 0; }
+    18% { opacity: var(--o); }
+    45% { translate: 0 0; rotate: var(--r); opacity: var(--o); }
+    100% { translate: calc(cos(var(--beam-turn)) * var(--drift, 40px) * .4 * var(--d) + var(--dx)) calc(sin(var(--beam-turn)) * var(--drift, 40px) * .4 * var(--d)); rotate: calc(var(--r) + var(--spin)); opacity: calc(var(--o) * .6); }
+  }
+  @keyframes cine-edge-settle { from { transform: translate3d(0, -18px, 0); } to { transform: none; } }
+  @keyframes cine-copy-settle { from { transform: translate3d(0, 52px, 0); } to { transform: none; } }
+
+  /* The opening. Wide, tall-enough screens with motion, and only when JS runs: the inline head script
+     always sets html[data-tour], and motion.js drives --about-p where scroll timelines are missing.
+     ABOUT_OPEN_MEDIA in motion.js mirrors this query. Nothing here is interactive (pointer-events: none),
+     and every layer of #about is transparent at --about-p = 1, so #introduction takes over seamlessly. */
+  @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+    /* Pinned scroll distance: #about is one screen plus this, and #introduction (pulled up 100svh) slides up
+       under the pinned scene by the same amount. Short (200px at 1280x800), so the phases below share it evenly:
+       none spans less than .3 of the run, and they still play in the same order. */
+    :root[data-tour] :is(#about, #about + #introduction) { --about-run: 25svh; }
+    :root[data-tour] #about {
+      --w0: clamp(260px, 26vw, 380px); --h0: 475px; --r0: 18px;
+      /* Phases of --about-p: the title recedes (t), the window opens (o, eased oe) and its own ground
+         dissolves onto #introduction behind it (f); once the window nearly fills the screen the field around
+         it fades (g), and its edge goes last (e). A shaft inside the window (b) hands over to the real one. */
+      --t: clamp(0, var(--about-p) / .45, 1);
+      --o: clamp(0, (var(--about-p) - .02) / .5, 1);
+      --oe: calc(var(--o) * var(--o) * (3 - 2 * var(--o)));
+      --g: clamp(0, (var(--about-p) - .4) / .3, 1);
+      --f: clamp(0, (var(--about-p) - .3) / .45, 1);
+      --e: clamp(0, (var(--about-p) - .55) / .4, 1);
+      --b: clamp(0, (var(--about-p) - .4) / .35, 1);
+      z-index: 1; height: calc(100svh + var(--about-run)); min-height: 0; max-height: none; background: transparent;
+      /* It overlaps the top of #introduction, whose links and text must stay reachable. */
+      pointer-events: none;
+    }
+    /* A size container, so the window below can be sized and placed in the scene's own units (cqw, cqh). */
+    :root[data-tour] #about .about-scene { position: sticky; top: 0; height: 100svh; container-type: size; }
+    /* The field is cut away inside the window (even-odd hole, a hair inside its rounded corners), so the window
+       shows #introduction behind it as its own ground fades. */
+    :root[data-tour] #about .about-field {
+      --hx: calc((100% - var(--w0)) * (1 - var(--oe)) / 2 + var(--r0) * (1 - var(--oe)) * .3);
+      --hy: calc((100% - var(--h0)) * (1 - var(--oe)) / 2 + var(--r0) * (1 - var(--oe)) * .3);
+      clip-path: polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, var(--hx) var(--hy), calc(100% - var(--hx)) var(--hy), calc(100% - var(--hx)) calc(100% - var(--hy)), var(--hx) calc(100% - var(--hy)), var(--hx) var(--hy));
+      opacity: calc(1 - var(--g));
+    }
+    :root[data-tour] #about .about-field::before { content: none; }
+    /* The camera pushes into the field while the panel opens. */
+    :root[data-tour] #about .about-flow { animation: none; transition: none; transform: scale(calc(1.04 + var(--about-p) * .16)); }
+    /* The meta and foot lines leave before the opening window reaches them. */
+    :root[data-tour] #about .about-transition-meta, :root[data-tour] #about .about-transition-foot { opacity: calc(1 - var(--o) * 2.4); }
+    /* The window grows from the panel's box to the scene's. Its layout box stays at the scene's top-left and only
+       changes size; translate centres it. Moving its top-left by layout (inset) counted as a layout shift on every
+       frame of the opening, while scrolling or landing on a deep link (CLS ~0.37 at 1280 x 800). The size is written
+       as panel + share of the rest: Chrome resolved "100cqw - 2 * (100cqw - w0) * (1 - oe) / 2" to 0 when oe was 0. */
+    :root[data-tour] #about .about-window {
+      display: block; position: absolute; z-index: 2; top: 0; left: 0;
+      width: calc(var(--w0) + (100cqw - var(--w0)) * var(--oe)); height: calc(var(--h0) + (100cqh - var(--h0)) * var(--oe));
+      translate: round(calc((100cqw - var(--w0)) * (1 - var(--oe)) / 2), 1px) round(calc((100cqh - var(--h0)) * (1 - var(--oe)) / 2), 1px);
+      border: 1px solid rgb(255 255 255 / calc(.196 * (1 - var(--e))));
+      border-radius: calc(var(--r0) * (1 - var(--oe)));
+      box-shadow: 0 35px 70px rgb(0 0 0 / calc(.53 * (1 - var(--o))));
+    }
+    :root[data-tour] #about .about-window::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(ellipse at 110% 0%, #5b5d60, #222327 30%, #0b0c0e 68%); opacity: calc(1 - var(--f)); }
+    /* The shaft starts inside the window as it opens, then hands over to the real one as #introduction settles. */
+    :root[data-tour] #about .about-window::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(128deg, transparent 32%, #eaebf210 37%, #f2f2f557 46%, #ffffff7a 49%, #e2e3ed3d 54%, transparent 64%); mask-image: linear-gradient(#000, #000c 40%, transparent 85%); opacity: calc(var(--oe) * .85 * (1 - var(--b))); }
+    /* The panel keeps its box (the build tour frames it) and only its contents move: ABOUT ME recedes. */
+    :root[data-tour] #about .about-title-panel { height: var(--h0); min-height: 0; border-color: transparent; background: none; box-shadow: none; }
+    :root[data-tour] #about .about-title-panel > *, :root[data-tour] #about .about-title-panel::after { transform: translate3d(0, calc(var(--t) * -26px), 0) scale(calc(1 - var(--t) * .42)); opacity: calc(1 - var(--t) * 1.1); }
+    /* The shadow is the scene's ground above #introduction's top, inside the window: #introduction's top sits
+       --about-run below #about's, so the shadow is lifted by exactly that and never reaches above #about (over the
+       hero). */
+    :root[data-tour] #about + #introduction { position: relative; z-index: 0; margin-top: -100svh; box-shadow: 0 calc(-1 * var(--about-run)) 0 #101114; }
+  }
+  @supports (animation-timeline: view()) {
+    @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+      /* Inset 0: the page's scroll-padding (header clearance) must not shift the range. */
+      :root[data-tour] #about { animation: about-open linear both; animation-timeline: view(block 0px 0px); animation-range: contain 0% contain 100%; }
+    }
+  }
+  @keyframes about-open { from { --about-p: 0; } to { --about-p: 1; } }
+
+  /* The hold. Where the opening runs on a scroll timeline, the frame it hands over (#introduction's top at the
+     window's top, the stage --cine-pad down, just under the header bar) stands still for --cine-hold more scrolling:
+     the stage sticks there while #introduction, grown by --cine-hold above its caption, scrolls on, then releases.
+     Sticky stops where the stage's margin box meets the section's content box (the caption's bottom), so the stage
+     carries a margin of 24px plus the caption's one mono line; it collapses into the caption's larger top margin, and
+     the stage sticks for exactly --cine-hold and ends 24px above the caption, as without the hold. Icarus finishes his
+     fall inside the hold, lands in the rest pose 40% of the way in, floats until the release, and his drift carries
+     on after it. The other scene ranges below are rewritten so they play exactly as without the hold. Without scroll
+     timelines (motion.js drives the opening) there is no hold and no extra height. On wide screens the stage is also
+     framed to fit the window during the hold (see the end of the responsive layer). */
+  @supports (animation-timeline: view()) {
+    @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+      :root[data-tour] #about + #introduction {
+        --cine-hold: 50svh;
+        /* Offsets from the start of --cine-scene's cover range: 100svh puts #introduction's top at the window's top. */
+        --hold-in: 100svh;
+        --hold-land: calc(var(--hold-in) + var(--cine-hold) * .4);
+        --hold-out: calc(var(--hold-in) + var(--cine-hold));
+        /* The fall's first 45% (out of the light into the rest pose) takes 75svh of scrolling and ends on the landing:
+           it starts behind the About scene, about 30svh before the (25svh) opening, so most of the drop shows through
+           the opening window and the first part of the hold, at about the scroll speed it had before. */
+        --hold-fall: calc(var(--hold-land) - 75svh);
+        /* /#introduction lands on the rest pose, inside the hold. */
+        scroll-margin-top: calc(-1 * var(--header-clear) - var(--cine-hold) * .4);
+      }
+      :root[data-tour] #about + #introduction .cinematic-stage {
+        position: sticky; top: var(--cine-pad); margin-bottom: calc(24px + var(--text-label) * 1.55);
+        animation-range: entry 0% cover calc(42% - var(--cine-hold) * .42);
+      }
+      :root[data-tour] #about + #introduction .cinematic-caption { margin-top: calc(24px + var(--cine-hold)); }
+      /* cover P% of the taller section, less P% of the hold, is the same scroll position as cover P% without it. */
+      :root[data-tour] #about + #introduction .cinematic-light { animation-range: entry 5% cover calc(50% - var(--cine-hold) * .5); }
+      :root[data-tour] #about + #introduction .cinematic-topline { animation-range: entry 15% cover calc(45% - var(--cine-hold) * .45); }
+      :root[data-tour] #about + #introduction .cinematic-footer { animation-range: entry 25% cover calc(50% - var(--cine-hold) * .5); }
+      /* The fall keeps its keyframes; its range runs from --hold-fall so that 45% (the rest pose) falls on --hold-land. */
+      :root[data-tour] #about + #introduction :is(.beam-figure, .beam-halo, .beam-feathers > span),
+      :root[data-tour] #about + #introduction .cinematic-light::after { animation-range: cover var(--hold-fall) cover calc(var(--hold-fall) + (var(--hold-land) - var(--hold-fall)) / .45); }
+      /* The float runs from the landing to the release and is still at both ends: its few px along the shaft are added
+         to the fall and drift; its sway turns figure and halo about the body point (nothing else turns .beam-fall). */
+      :root[data-tour] #about + #introduction .beam-fall {
+        animation: figure-fall linear both, figure-float ease-in-out none; animation-composition: replace, add; animation-timeline: --cine-scene, --cine-scene;
+        animation-range: cover var(--hold-fall) cover calc(var(--hold-fall) + (var(--hold-land) - var(--hold-fall)) / .45), cover var(--hold-land) cover var(--hold-out);
+      }
+    }
+  }
+  /* A few px down the shaft and back up past the rest pose, swaying +-2.5deg. */
+  @keyframes figure-float {
+    0%, 100% { translate: 0 0; rotate: 0deg; }
+    40% { translate: calc(cos(var(--beam-turn)) * var(--float, 5px)) calc(sin(var(--beam-turn)) * var(--float, 5px)); rotate: 2.5deg; }
+    78% { translate: calc(cos(var(--beam-turn)) * var(--float, 5px) * -.5) calc(sin(var(--beam-turn)) * var(--float, 5px) * -.5); rotate: -2.5deg; }
+  }
+
+  /* Without scroll timelines: a one-time, decoration-only settle (motion.js sets data-scene). */
+  @supports not (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .about-flow, .cinematic-light { transition: opacity 1s cubic-bezier(.33,1,.68,1), transform 1.4s cubic-bezier(.16,1,.3,1); }
+      #about[data-scene="pending"] .about-flow { transform: scale(1.1); }
+      #introduction[data-scene="pending"] .cinematic-light { opacity: .12; transform: translate3d(14%, -10%, 0); }
+    }
+  }
 }
 
 @layer responsive {
-  @media (min-width: 1500px) { .cinematic-footer { margin-top: 490px; } }
+  /* --fig-x keeps the figure near the shaft's axis at its height: the axis is about 0.49W + 0.38H - 0.78y from the
+     stage's left edge for the 128deg shaft, 0.41W + 0.29H - 0.70y for the phone's 125deg one (W, H = stage size). */
+  /* --fall is the drop before the rest pose (it starts above the stage's top edge), --drift the little that follows. */
+  .cinematic-art { --fall: 560px; --drift: 40px; }
+  @media (min-width: 1500px) { .cinematic-stage { --foot-top: 500px; } .cinematic-art { --fig-w: 345px; --fall: 660px; --drift: 46px; } }
+  @media (min-width: 1900px) { .cinematic-stage { --foot-top: 600px; } .cinematic-art { --fig-w: 420px; --fall: 780px; --drift: 54px; } }
   @media (max-width: 1000px) {
     .cinematic-stage { min-height: 790px; height: auto; }
-    .cinematic-art { width: 390px; max-width: 65%; top: 13%; }
-    .cinematic-footer { grid-template-columns: minmax(0, 1fr); margin-top: 440px; gap: 24px; }
+    .cinematic-art { --fig-w: 250px; --fig-x: 54%; --fall: 480px; --drift: 34px; }
+    .cinematic-footer { grid-template-columns: minmax(0, 1fr); gap: 24px; }
     .cinematic-copy { max-width: 540px; }
   }
   @media (max-width: 760px) {
-    #about, #introduction { scroll-margin-top: -90px; }
+    #about, #introduction { scroll-margin-top: calc(-1 * var(--header-clear)); }
     .about-transition { height: 90svh; min-height: 620px; max-height: 850px; }
-    .about-transition-meta { top: 100px; font-size: 8px; }
+    .about-transition-meta { top: 100px; }
     .about-transition-meta > :last-child, .about-transition-foot > :last-child { max-width: 44%; text-align: right; }
-    .about-transition-foot { font-size: 7px; }
     .about-flow { inset: -4% -65%; }
     .about-title-panel { width: min(67vw, 300px); min-height: 365px; padding: 25px 20px; border-radius: 13px; }
-    .about-title-panel h2 { font-size: clamp(70px, 19vw, 90px); }
+    .about-title-panel::after { height: 36px; }
+    .about-flow { --flow-turn: -.6deg; }
+    .about-title-panel h2 { font-size: min(96px, 31cqi); }
     .cinematic { padding: 90px 14px 26px; }
     .cinematic-stage { min-height: 0; max-height: none; border-radius: 10px; }
-    .cinematic-topline { left: 22px; right: 22px; top: 24px; font-size: 7px; gap: 22px; }
-    .cinematic-topline > :last-child { max-width: 35%; }
-    .cinematic-art { top: 100px; width: 330px; max-width: 91%; }
+    .cinematic-topline { left: 22px; right: 22px; top: 24px; gap: 22px; }
+    .cinematic-topline > :last-child { max-width: 44%; }
+    /* Phone: the 125deg shaft leaves through the right edge; the figure falls in the open area under the topline. */
+    .cinematic-stage { --beam-turn: 125deg; --art-top: 76px; --foot-top: 390px; }
+    /* A little smaller and left of centre, so the whole figure (wings included) and his last bit of fall stay inside
+       the stage at 360px. */
+    .cinematic-art { --fig-w: 180px; --fig-x: 52%; --fall: 300px; --drift: 26px; --fig-tilt: -3deg; }
     .cinematic-light { background: linear-gradient(125deg, transparent 15%, #e2e3ed0a 26%, #f2f2f555 37%, #ffffff74 41%, #e2e3ed21 49%, transparent 61%); mask-image: linear-gradient(#000, transparent 62%); }
-    .cinematic-footer { margin-top: 390px; padding: 22px; gap: 25px; }
+    .cinematic-light::after { background: linear-gradient(125deg, transparent 31%, #ffffff1a 35.5%, #ffffff85 39.5%, #ffffff22 43%, transparent 49%); }
+    .cinematic-footer { padding: 22px; gap: 25px; }
     .cinematic-copy h2 { font-size: clamp(27px, 7.6vw, 36px); }
-    .cinematic-copy p { font-size: 13px; }
     .scene-actions { gap: 8px; }
-    .scene-pill { padding-inline: 16px; gap: 19px; }
-    .cinematic-caption { margin-inline: 8px; font-size: 7px; }
+    .scene-pill { padding-inline: 15px; gap: 14px; }
+    .cinematic-caption { margin-inline: 8px; }
     .cinematic-caption > :last-child { text-align: right; max-width: 42%; }
+  }
+  /* The hold's frame (wide screens, only where the hold runs): the whole stage stands in the window while it is
+     held, from --cine-pad under the header bar to 20px above the window's bottom, so the copy and pills are read with
+     Icarus. The copy sits at the stage's foot (--foot-top is then only its least offset), and Icarus is placed from
+     the stage's top on the shaft's axis, or further right if that is needed to keep --art-side clear of the copy
+     column (500px from the footer's 32px padding): beside the copy's top lines rather than above them. --art-side is
+     --art-clear turned sideways: the drift's leftward part (.62 of it), the tumble's wider box and a margin that also
+     covers the float. Above the pills (78px with the footer's padding), --art-clear still holds, so his width is
+     capped by the stage's height (--fig-fit; the breakpoint widths 290/345/420px are repeated here). Narrower
+     screens (761-1000px, copy above the pills) keep the stacked layout. */
+  @supports (animation-timeline: view()) {
+    @media screen and (min-width: 761px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+      @media (min-width: 1001px) {
+        :root[data-tour] #about + #introduction .cinematic-stage {
+          --stage-h: calc(100svh - var(--cine-pad) - 20px); --art-top: 84px; --foot-top: 96px;
+          display: flex; flex-direction: column; justify-content: flex-end; min-height: var(--stage-h);
+        }
+        :root[data-tour] #about + #introduction .cinematic-footer { grid-template-columns: minmax(0, 500px) auto; }
+        :root[data-tour] #about + #introduction .cinematic-art {
+          --fig-fit: calc((var(--stage-h) - var(--art-top) - 78px - 14px - var(--drift, 40px) * .82) / (var(--fig-ratio) + .08));
+          --fig-w: min(290px, var(--fig-fit));
+          --art-side: calc(var(--drift, 40px) * .62 + var(--fig-w) * .08 + 20px);
+          top: var(--art-top);
+          left: max(calc(49% + var(--stage-h) * .38 - (var(--art-top) + var(--fig-h) * var(--body-ay)) * .78 - var(--fig-w) * var(--body-ax)), calc(532px + var(--art-side)));
+        }
+      }
+      @media (min-width: 1500px) { :root[data-tour] #about + #introduction .cinematic-art { --fig-w: min(345px, var(--fig-fit)); } }
+      @media (min-width: 1900px) { :root[data-tour] #about + #introduction .cinematic-art { --fig-w: min(420px, var(--fig-fit)); } }
+    }
   }
 }

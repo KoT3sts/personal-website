@@ -1,6 +1,6 @@
 # Cesar Tortolero — Personal Website
 
-Cesar Tortolero's personal website: code, curiosity, and selected projects.
+Cesar Tortolero's personal website: Machine Learning Engineer (Morristown, NJ, NYC area). It covers experience, selected projects, skills and education, and contact links, including a downloadable résumé.
 
 Full name: Cesar Alejandro Tortolero Trujillo. Preferred short/display name: Cesar Tortolero.
 
@@ -37,7 +37,25 @@ npm run build
 
 Open the printed local URL. Source lives in `web/`; the build copies it into `dist/`. Sites hosting configuration is in `.openai/hosting.json`.
 
-The design includes original SVG artwork, a draggable perspective gallery with keyboard and button controls, project dialogs, reduced motion support, and inline fallbacks. Project covers are illustrations; biography and copy remain open to owner review.
+### Build output and asset optimization
+
+`npm run build` copies `web/` to `dist/`, then minifies every CSS file in `dist/` with `scripts/minify-css.mjs` and prints per-file and total byte counts. `scripts/bundle-css.mjs` then gives each page one stylesheet: its `<link rel="stylesheet">` files are joined in document order into a content-hashed file at the root of `dist/` (`home.<hash>.css` for the homepage; pages with the same stylesheets share one), `url()`s are rebased, one `@charset` is kept and `@import` is refused; the joined originals are removed from `dist/`. The sources in `web/` keep their separate files. The minifier is dependency-free and conservative: it removes comments and whitespace only, never touches strings, `url()` bodies, escapes, spaces around `+`/`-` or before `(`, and falls back to the original file if a token check fails. JavaScript and HTML are shipped exactly as authored.
+
+`web/assets/about-flow.svg` is already optimized in the source tree. To regenerate it from an authored original, run once:
+
+```sh
+node scripts/optimize-svg.mjs web/assets/about-flow.svg --simplify 0.15
+```
+
+The script removes comments and editor metadata, compacts path data at 1-decimal precision (rounded against absolute positions, so there is no drift), moves repeated stroke colours, widths and opacities into one-rule classes, and with `--simplify` drops polyline vertices within 0.15 user units of the line. Simplification is lossy, so run it on the original drawing, not on an already optimized file. Use `--out <path>` to write elsewhere and `--simplify 0` for a pixel-identical result. Tests for both tools live in `scripts/build-tools.test.mjs`.
+
+The design includes original SVG artwork, one project gallery (a ring of covers that turns into a stack, with wheel, drag, keyboard and index controls, each cover linking to its case study page), reduced motion support, and inline fallbacks. Project covers are illustrations; biography and copy remain open to owner review.
+
+Page sections: hero (role, location, résumé/LinkedIn/email actions), About, Experience (ADP, Kennesaw State University research), Selected projects, Skills & education, Approach, and Contact.
+
+Projects in the gallery: Multi-Agent Workflow, Thoughts-to-Text BCI, Companionship Chatbot, VoiceLab, Work Helper, and Barking Village.
+
+The résumé is served from `web/assets/Cesar_Tortolero_Resume.pdf`; the owner approved publishing it. Do not copy the phone number from the PDF into the HTML.
 
 ## Collaborating
 

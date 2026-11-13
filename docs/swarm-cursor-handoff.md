@@ -75,7 +75,7 @@ Use the footer Replay intro for repeat visual checks. Check desktop 1440×900 an
 
 ## Return the work without GitHub write access
 
-An Enterprise Managed User account cannot be invited to this personal repository. That does not prevent preparing local commits and returning patches. Do not change account permissions or log the personal account into the work machine for this task.
+The second account cannot be invited to this repository. That does not prevent preparing local commits and returning patches. Do not change account permissions or log the personal account into the other computer for this task.
 
 After committing only your owned files:
 
@@ -90,4 +90,4 @@ cp swarm-base.txt swarm-patches/base.txt
 
 Include a small `swarm-patches/HANDOFF.md`: what changed, why, exact tests/results, browser evidence, unresolved issues and the source-reference timestamps used. Package that directory with the short sanitized clip if available. Return it through a user-approved transfer channel (for example a separate Overleaf transfer project) and give Cesar the exact project name. A download ZIP is a transport package, not a contribution already merged or deployed.
 
-Keep this package limited to website patches and review evidence. Do not include the private career repository, application answers, résumés, contact records, work-machine setup, tokens, raw logs or phone notifications. The main agent will verify the base, inspect the patch, apply it on an integration branch, rerun checks and publish to the existing private preview.
+Keep this package limited to website patches and review evidence. Do not include the private career repository, application answers, résumés, contact records, other-computer setup, tokens, raw logs or phone notifications. The main agent will verify the base, inspect the patch, apply it on an integration branch, rerun checks and publish to the existing private preview.

@@ -1,0 +1,84 @@
+@charset "UTF-8";
+/* The recorded build trace (web/lab/build-trace.html). Loaded after ../project.css
+   and ./lab.css, which supply the fonts, tokens, header, reading grid, the dark
+   number strip and the footer; this file only adds the step list, role chips and
+   badges. Text stays at 11px or larger, all colours at 4.5:1 or more on the paper. */
+
+.bt-dated { max-width: 44ch; margin-top: 22px; color: var(--muted); font-size: clamp(17px, 1.5vw, 21px); line-height: 1.4; text-wrap: pretty; }
+.bt-sub { max-width: 58ch; margin-top: 16px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.bt-status { margin: 0 var(--gutter) 40px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+.lab-strip-band .lab-strip-take dd { font-size: 16px; }
+
+/* Role chips: the cursor colours each recorded role stands for in the tour. No role uses a
+   status hue (lab.css): the quality-reviewer is teal (#16897f, 3.6:1 on the paper), the
+   same as on the homepage preview, so it never reads as an error. */
+.bt-chip { display: inline-block; flex: none; width: 12px; height: 12px; box-sizing: border-box; border-radius: 3px; }
+[data-role="orchestrator"] .bt-chip { background: #1d1e1b; border: 1.5px solid #8b8c83; }
+[data-role="implementation-worker"] .bt-chip { background: linear-gradient(135deg, #6f9bff 0 20%, #e07bff 20% 40%, #ff6ea9 40% 60%, #ffa04a 60% 80%, #72d27c 80%); }
+[data-role="ui-design-director"] .bt-chip { background: linear-gradient(135deg, #a98cff 0 34%, #55c4f5 34% 67%, #f1cf3a 67%); }
+[data-role="quality-reviewer"] .bt-chip { background: #16897f; }
+
+.bt-roles { display: grid; gap: 0; margin: 0; }
+.bt-role-row { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 8px 24px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.bt-role-row:first-child { padding-top: 4px; }
+.bt-role-row dt { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 13px; letter-spacing: .01em; }
+.bt-role-row dd { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
+
+/* Steps, a day at a time. */
+.bt-days { display: grid; gap: 44px; min-width: 0; }
+.bt-day-title { margin: 0 0 6px; color: var(--label); font-family: var(--font-mono); font-size: 12px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; }
+.bt-steps { margin: 0; padding: 0; list-style: none; }
+.bt-step { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 14px; padding: 16px 0; border-top: 1px solid var(--line); }
+.bt-step .bt-chip { margin-top: 5px; }
+.bt-step-body { display: grid; gap: 5px; min-width: 0; }
+.bt-action { font-size: 17px; font-weight: 700; line-height: 1.35; }
+.bt-result { color: #3f413a; font-size: 15px; line-height: 1.5; }
+.bt-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 3px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; line-height: 1.4; }
+.bt-badge { padding: 1px 6px; border: 1px solid currentColor; border-radius: 4px; }
+.bt-timing { border-style: dashed; }
+.bt-commit { color: var(--ink); font-variant-numeric: tabular-nums; }
+.bt-time { font-variant-numeric: tabular-nums; }
+[data-status="ok"] .bt-state { color: #5f6157; }
+[data-status="error"] .bt-state { color: #a3261e; }
+[data-status="retried"] .bt-state { color: #7a4b00; }
+[data-status="fixed"] .bt-state { color: #2f6b30; }
+.bt-sections, .bt-evidence { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.bt-evidence { font-style: italic; }
+
+@media (max-width: 560px) {
+  .bt-role-row { grid-template-columns: minmax(0, 1fr); }
+  .bt-action { font-size: 16px; }
+  .bt-result { font-size: 14px; }
+}
+@media print {
+  .bt-step { break-inside: avoid; }
+}
+
+/* The first-screen trace: one bar per recorded step, a row per day, every row on the
+   same column width (--bt-steps, the longest day) so a bar means the same on both days.
+   Flat role colours, each at 3:1 or more on the paper; an error is marked under its bar
+   (position, not hue alone) and a commit with a tick above it. */
+.bt-ribbon-days { display: grid; gap: 14px; }
+.bt-ribbon-label { margin: 0 0 6px; color: var(--label); }
+.bt-ribbon-cells { display: grid; grid-template-columns: repeat(var(--bt-steps, 30), minmax(0, 1fr)); gap: 2px; padding: 7px 0 8px; }
+.bt-cell { position: relative; display: block; min-width: 0; height: 30px; border-radius: 2px; background: #8b8c83; }
+.bt-cell[data-role="orchestrator"], [data-role="orchestrator"] > .bt-cell { background: #1d1e1b; }
+.bt-cell[data-role="implementation-worker"], [data-role="implementation-worker"] > .bt-cell { background: #3d6fe0; }
+.bt-cell[data-role="ui-design-director"], [data-role="ui-design-director"] > .bt-cell { background: #7c5ce0; }
+.bt-cell[data-role="quality-reviewer"], [data-role="quality-reviewer"] > .bt-cell { background: #16897f; }
+.bt-cell[data-status="error"]::after, .bt-key-error { content: ""; position: absolute; right: 0; bottom: -7px; left: 0; height: 4px; border-radius: 1px; background: #c0362c; }
+.bt-cell.is-commit::before, .bt-key-commit { content: ""; position: absolute; top: -7px; left: 50%; width: 2px; height: 5px; margin-left: -1px; background: var(--ink); }
+a.bt-cell:hover { outline: 2px solid var(--ink); outline-offset: 1px; }
+.bt-key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 12px; }
+.bt-key li { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); }
+.bt-key .bt-cell { width: 10px; height: 12px; }
+.bt-key-error, .bt-key-commit { position: static; display: inline-block; margin: 0; }
+.bt-key-error { width: 12px; }
+.bt-key-commit { height: 10px; }
+@media (max-width: 560px) {
+  .bt-ribbon-cells { gap: 1px; }
+  .bt-cell { height: 26px; border-radius: 1px; }
+}
+@media (forced-colors: active) {
+  .bt-cell, .bt-key-error, .bt-key-commit { forced-color-adjust: none; }
+}

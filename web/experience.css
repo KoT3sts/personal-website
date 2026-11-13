@@ -1,0 +1,254 @@
+/* Experience chapters (SPECIFICATION V05). Owned by the experience workstream.
+   Dark ground. Each chapter pairs an outlined role title (a solid layer wipes
+   over it while the chapter is current), small captions and milestones, its
+   bullet groups with category pills, and a huge low-contrast year behind it.
+   Default: the chapters stack and read top to bottom (no script, phones,
+   reduced motion, print, short screens). On wide, tall-enough screens with
+   scripts the travel layout applies from the first paint, and experience.js
+   keeps it (data-xp="travel") when the chapters fit one screen, or stacks
+   them (data-xp="stack"); in travel the stage pins and
+   the page scroll carries the track sideways, driven by a scroll timeline
+   (or by the script where scroll timelines are missing). Each chapter rests
+   aligned at the gutter for part of its scroll before the next slides in. */
+
+/* Scroll progress through the pinned stretch (0..1): the timeline (or the script) drives it. */
+@property --xp-q { syntax: "<number>"; inherits: true; initial-value: 0; }
+/* Track position (0..1): 0 at the first chapter, 1 at the last. experience.js
+   sets it on .xp-travel to a piecewise map of --xp-q (flat while a chapter rests). */
+@property --xp-p { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+@layer layout {
+  .experience { padding: 0 var(--gutter) clamp(36px, 6vw, 80px); overflow-x: clip; }
+  .experience-heading > p { color: #a5ada0; }
+  .experience-heading h2 span { color: #8c9285; }
+
+  /* ---- stacked chapters (default) ---------------------------------------- */
+  .xp-travel { margin-top: clamp(40px, 6vw, 72px); }
+  .xp-chapter { position: relative; display: grid; grid-template-columns: var(--split); gap: 34px 5vw; padding: clamp(48px, 6vw, 84px) 0 clamp(52px, 6vw, 88px); border-top: 1px solid var(--night-line); overflow: clip; }
+  .xp-head { position: sticky; z-index: 1; top: calc(var(--header-clear) + 34px); grid-column: 1; grid-row: 1 / span 3; align-self: start; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .xp-group { position: relative; z-index: 1; grid-column: 2; }
+  .xp-group + .xp-group { padding-top: 34px; border-top: 1px solid var(--night-line); }
+
+  /* The year: oversized, near the ground colour, never in the reading path. */
+  .xp-year { position: absolute; z-index: 0; top: -.06em; right: -.05em; font-size: clamp(120px, 21vw, 340px); font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: -.06em; line-height: .8; color: rgb(238 237 232 / .05); white-space: nowrap; pointer-events: none; user-select: none; }
+
+  .xp-org { color: #a4a59f; font-size: 11px; letter-spacing: .06em; }
+  .xp-when { color: #d6d8cf; font-size: 12px; letter-spacing: .05em; }
+  .xp-note { margin-top: 10px; max-width: 34em; color: #b9bcb1; font-size: var(--text-body, 15px); line-height: 1.45; }
+  /* Outlined title with a solid layer set a hair up and left of it: the
+     outline reads as the print plate behind. In travel mode the solid layer
+     wipes in only while its chapter is current. */
+  .xp-title { position: relative; max-width: 100%; margin: 0; font-size: clamp(40px, 4.2vw, 76px); overflow-wrap: normal; font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: -.035em; word-spacing: .06em; line-height: .88; text-transform: uppercase; text-wrap: balance; color: transparent; -webkit-text-stroke: 1px rgb(238 237 232 / .72); }
+  .xp-title::after { content: attr(data-ghost) / ""; position: absolute; top: 0; left: 0; width: 100%; color: var(--paper); -webkit-text-stroke: 0; translate: -.035em -.035em; pointer-events: none; }
+  .xp-title::selection, .xp-title-tail::selection { color: var(--ink); -webkit-text-stroke: 0; }
+  .xp-title-tail { display: block; margin-top: 16px; font-family: var(--font-mono); font-size: 12px; font-weight: 400; font-stretch: 100%; letter-spacing: .06em; word-spacing: normal; line-height: 1.5; color: #d6d8cf; -webkit-text-stroke: 0; }
+
+
+  .xp-group-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .xp-group-head .mono { color: #a4a59f; font-size: 11px; }
+  .xp-group-head h4 { margin: 0; font-size: clamp(22px, 2.1vw, 30px); font-weight: 500; letter-spacing: -.03em; line-height: 1.1; text-wrap: balance; color: var(--paper); }
+  .xp-points { list-style: none; display: grid; gap: 11px; margin: 18px 0 0; padding: 0; }
+  .xp-points li { position: relative; padding-left: 22px; max-width: 66ch; font-size: 15px; line-height: 1.58; color: #b6b9b0; text-wrap: pretty; }
+  .xp-points li::before { content: ""; position: absolute; left: 1px; top: .8em; width: 10px; height: 1px; background: #73796c; }
+  .xp-points strong { color: var(--paper); font-weight: 650; }
+  .xp-group .tag-list { margin: 18px 0 0 22px; }
+
+  .xp-chapter:focus-visible { outline: 2px solid var(--green); outline-offset: -8px; }
+
+  /* Stacked with scripts: experience.js puts the career timeline (rows) above the chapters. Until it
+     has (no data-xp yet) the same room is kept, so what follows is already where it will be: 24px
+     above, one 44px row per span (three roles and the gap between them, timelinePlan), 4px apart.
+     (The travel layout below drops it: there the timeline sits in the controls band.) */
+  @media screen {
+    :root[data-tour] .experience:not([data-xp]) .xp-travel::before { content: ""; display: block; height: calc(24px + 4 * 44px + 3 * 4px); margin-bottom: clamp(30px, 4vw, 48px); }
+  }
+
+  /* ---- travel mode: pinned stage, sideways track ----------------------------
+     Scripts on (html[data-tour], set by the inline <head> script before the
+     first paint) and this query (TRAVEL_MEDIA in experience.js mirrors it:
+     where the chapters fit one screen): travel is the layout from the first
+     paint, so a reload or back/forward lands where it left off.
+     experience.js then marks data-xp="travel", or "stack" when the chapters
+     still do not fit. */
+  @media screen and (min-width: 761px) and (prefers-reduced-motion: no-preference) and (((min-width: 1500px) and (min-height: 600px)) or ((min-width: 1050px) and (min-height: 620px)) or ((min-width: 950px) and (min-height: 660px)) or ((min-width: 900px) and (min-height: 700px)) or ((min-width: 850px) and (min-height: 800px)) or (min-height: 1000px)) {
+    :root[data-tour] .experience:not([data-xp="stack"]) { --xp-bar: clamp(72px, 10.5svh, 96px); --xp-top: calc(var(--header-clear) + clamp(8px, 2.2svh, 28px)); padding-bottom: 0; }
+    /* Inset 0: the page's scroll-padding (header clearance) must not shift the range. */
+    /* Until experience.js measures it, the pinned stretch is the one it computes whenever the track
+       moves further than the moves need (every travel layout measured, 761-1920 px): three chapters x
+       DISTANCE_PER_CHAPTER (.45) stage heights of moves, which are 1 - HOLD_SHARE (.78) of it. */
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-travel { position: relative; height: calc(100svh + var(--xp-distance, 100svh * 1.35 / .78)); margin: clamp(28px, 4svh, 52px) calc(-1 * var(--gutter)) 0; animation: xp-progress linear both; animation-timeline: view(block 0px 0px); animation-range: contain 0% contain 100%; }
+    :root[data-tour] .experience[data-xp-driver="script"] .xp-travel { animation: none; }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-travel::before { content: none; }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-stage { position: sticky; top: 0; height: 100svh; overflow: clip; container-type: inline-size; }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-track { display: flex; width: max-content; height: 100%; padding: 0 var(--xp-tail, var(--gutter)) 0 var(--gutter); transform: translate3d(calc(var(--xp-p) * var(--xp-shift, 0px) * -1), 0, 0); }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-chapter { display: flex; align-items: stretch; gap: clamp(28px, 3.4cqw, 60px); height: 100%; padding: var(--xp-top) clamp(40px, 4.6cqw, 88px) var(--xp-bar) clamp(22px, 2.2cqw, 40px); border-top: 0; overflow: visible; }
+    /* Chapter rule: a hairline from the top of the stage down to the controls. */
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-chapter::before { content: ""; position: absolute; top: 0; bottom: var(--xp-bar); left: 0; width: 1px; background: var(--night-line); }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-head { position: static; align-self: stretch; flex: none; width: clamp(330px, 44cqw, 680px); gap: clamp(10px, 1.7svh, 18px); padding-bottom: clamp(14px, 2.6svh, 30px); }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-title { font-size: clamp(46px, min(6.8cqw, 11.5svh), 112px); }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-group { flex: none; width: clamp(340px, 34cqw, 500px); }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-group + .xp-group { padding-top: 0; border-top: 0; }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-group-head h4 { font-size: clamp(21px, min(2.1cqw, 3.6svh), 30px); }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-points { gap: clamp(7px, 1.25svh, 11px); margin-top: clamp(12px, 2svh, 18px); }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-points li { font-size: clamp(13.5px, 1.8svh, 15px); line-height: 1.55; }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-group .tag-list { margin-top: clamp(12px, 2svh, 18px); }
+    /* Behind every chapter's copy (the track is the stacking context), and
+       drifting a little slower than its chapter for depth; it follows the
+       scroll (--xp-q), so it keeps easing along while the chapter rests. */
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-year { top: auto; right: auto; left: -.05em; bottom: calc(var(--xp-bar) - .13em); font-size: clamp(180px, 42svh, 480px); transform: translate3d(calc((var(--xp-q) - var(--xp-at, 0)) * var(--xp-shift, 0px) * .2), 0, 0); }
+    /* Focus frames the chapter's copy, not the controls band below it. */
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-chapter:focus-visible { outline: none; }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-chapter:focus-visible::after { content: ""; position: absolute; z-index: 3; inset: calc(var(--xp-top) - 16px) 14px calc(var(--xp-bar) + 6px) 8px; border-radius: 6px; outline: 2px solid var(--green); pointer-events: none; }
+  }
+
+  @media screen {
+    .xp-controls { position: absolute; z-index: 2; left: var(--gutter); right: var(--gutter); bottom: 0; height: var(--xp-bar); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 20px; border-top: 1px solid var(--night-line); }
+    .xp-progress { position: absolute; top: -1px; left: 0; width: 100%; height: 1px; background: var(--paper); transform-origin: 0 50%; transform: scaleX(var(--xp-q)); }
+    .xp-count { margin: 0; color: #a4a59f; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .xp-count-current { color: var(--paper); }
+    .xp-index { display: flex; gap: 6px; }
+    .xp-index-button { position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 18px; border: 1px solid #3b3e39; border-radius: 40px; color: #a9aba4; font-size: 13px; letter-spacing: -.01em; white-space: nowrap; }
+    .xp-index-button .mono { font-size: var(--text-label); }
+    .xp-index-button:hover { color: var(--paper); border-color: #70756a; }
+    .xp-index-button[aria-current="true"] { background: var(--paper); border-color: var(--paper); color: var(--ink); }
+    .xp-steps { justify-self: end; display: flex; gap: 8px; }
+    .xp-step { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #3b3e39; border-radius: 50%; color: var(--paper); }
+    .xp-step:hover:not([aria-disabled="true"]) { background: var(--paper); border-color: var(--paper); color: var(--ink); }
+    .xp-step[aria-disabled="true"] { color: #5f635b; cursor: default; }
+    .xp-step svg { display: block; }
+
+    /* ---- career timeline (experience.js turns the chapter index into it) ----
+       Each role is a button spanning its months on one axis, Sep 2021 to now;
+       --xp-from / --xp-span are fractions of the axis. A gap between roles is
+       a dashed, non-interactive span. Year markers sit on the axis. */
+    .xp-tl { --xp-tl-bar: #6f7469; position: relative; }
+    .xp-tl .xp-index-button.xp-tl-span { display: block; min-height: 44px; padding: 0; border: 0; border-radius: 4px; background: none; color: #a9aba4; font-size: 13px; letter-spacing: -.01em; text-align: left; white-space: normal; }
+    .xp-tl .xp-tl-span > :not(.xp-tl-text, .xp-tl-lane) { display: none; }
+    .xp-tl-text { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+    .xp-tl-label { white-space: nowrap; }
+    .xp-tl-dates { color: #a4a59f; font-size: 11px; letter-spacing: .05em; white-space: nowrap; }
+    .xp-tl-lane { position: relative; display: block; }
+    .xp-tl-bar { position: absolute; inset: 0; border-radius: 2px; background: var(--xp-tl-bar); transform-origin: 0 50%; }
+    .xp-tl-gap { color: #a4a59f; font-size: 12px; }
+    .xp-tl-gap .xp-tl-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+    .xp-tl-gap .xp-tl-bar { background: repeating-linear-gradient(90deg, var(--xp-tl-bar) 0 4px, transparent 4px 8px); }
+    .xp-tl-years { position: absolute; inset: 0; pointer-events: none; }
+    .xp-tl-year { position: absolute; left: calc(var(--xp-at) * 100%); translate: -50% 0; color: #a4a59f; font-size: 11px; line-height: 14px; letter-spacing: .05em; white-space: nowrap; }
+    .xp-tl-year[data-xp-edge] { translate: -100% 0; }
+    .xp-tl .xp-tl-span:hover { color: var(--paper); }
+    .xp-tl .xp-tl-span:focus-visible { outline-offset: 3px; }
+    .xp-tl .xp-tl-span:hover .xp-tl-bar { background: #b7bab0; }
+    .xp-tl .xp-tl-span[aria-current="true"] { background: none; color: var(--paper); }
+    .xp-tl .xp-tl-span[aria-current="true"] .xp-tl-bar { background: var(--paper); }
+    .xp-tl .xp-tl-span[aria-current="true"] .xp-tl-dates { color: #d6d8cf; }
+
+    /* One axis inside the controls band (travel mode): label above the bar,
+       years below it, 58px tall so the band (72-96px) keeps its height. */
+    .xp-tl[data-xp-layout="axis"] { display: block; width: min(760px, 100cqw - 2 * var(--gutter) - 240px); height: 58px; }
+    /* experience.js sets each role's hit box (--xp-hit-x/-w, at least 44px)
+       and its bar inside it (--xp-bar-x/-w/-r), so short roles stay to scale. */
+    .xp-tl[data-xp-layout="axis"] > .xp-tl-span, .xp-tl[data-xp-layout="axis"] > .xp-tl-gap { position: absolute; top: 0; left: calc(var(--xp-from) * 100%); width: calc(var(--xp-span) * 100%); height: 44px; }
+    .xp-tl[data-xp-layout="axis"] > .xp-tl-span { left: var(--xp-hit-x, calc(var(--xp-from) * 100%)); width: var(--xp-hit-w, calc(var(--xp-span) * 100%)); min-width: 44px; }
+    .xp-tl[data-xp-layout="axis"] > .xp-tl-gap { pointer-events: none; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-text { position: absolute; top: 5px; left: var(--xp-bar-x, 0px); display: block; line-height: 16px; }
+    .xp-tl[data-xp-layout="axis"] [data-xp-end-label] .xp-tl-text { left: auto; right: var(--xp-bar-r, 0px); }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-dates { display: none; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-gap .xp-tl-text { top: 7px; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-lane { position: absolute; top: 28px; pointer-events: none; left: var(--xp-bar-x, 0px); width: var(--xp-bar-w, 100%); height: 3px; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-span[aria-current="true"] .xp-tl-lane { top: 27px; height: 5px; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-axis { position: absolute; top: 29px; left: 0; right: 0; height: 1px; background: var(--night-line); }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-year { top: 34px; padding-top: 8px; }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-year::before { content: ""; position: absolute; top: 0; left: calc(50% - .5px); width: 1px; height: 5px; background: var(--xp-tl-bar); }
+    .xp-tl[data-xp-layout="axis"] .xp-tl-year[data-xp-edge]::before { left: auto; right: 0; }
+    /* Labels too close to share the axis: only the current one (or a hovered or focused one) shows. */
+    .xp-tl[data-xp-crowded] .xp-tl-gap .xp-tl-text, .xp-tl[data-xp-crowded] .xp-tl-span:not([aria-current="true"]) .xp-tl-text { visibility: hidden; }
+    .xp-tl[data-xp-crowded] .xp-tl-span:is(:hover, :focus-visible) { z-index: 1; }
+    .xp-tl[data-xp-crowded] .xp-tl-span:is(:hover, :focus-visible) .xp-tl-text { visibility: visible; padding: 0 4px; background: var(--night); }
+    .xp-tl[data-xp-crowded]:has(.xp-tl-span:is(:hover, :focus-visible):not([aria-current="true"])) .xp-tl-span[aria-current="true"] .xp-tl-text { visibility: hidden; }
+
+    /* Stacked chapters: a compact chart above them, one row per role (oldest
+       first, so the bars step right), year lines behind the rows. */
+    .xp-tl[data-xp-layout="rows"] { display: grid; gap: 4px; width: min(100%, 760px); margin: 0 0 clamp(30px, 4vw, 48px); padding-top: 24px; }
+    .xp-tl[data-xp-layout="rows"] > .xp-tl-span, .xp-tl[data-xp-layout="rows"] > .xp-tl-gap { position: relative; display: grid; align-content: center; gap: 7px; min-height: 44px; }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-gap[data-xp-unlabelled] .xp-tl-text { justify-content: flex-end; }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-lane { height: 4px; border-radius: 2px; background: rgb(238 237 232 / .06); }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-bar { left: calc(var(--xp-from) * 100%); right: auto; width: max(4px, calc(var(--xp-span) * 100%)); }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-axis { display: none; }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-year { top: 0; bottom: 0; }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-year::before { content: ""; position: absolute; top: 20px; bottom: 0; left: calc(50% - .5px); width: 1px; background: rgb(238 237 232 / .07); }
+    .xp-tl[data-xp-layout="rows"] .xp-tl-year[data-xp-edge]::before { left: auto; right: 0; }
+  }
+  @media print { .xp-tl { display: none; } }
+}
+
+@layer motion {
+  @keyframes xp-progress { from { --xp-q: 0; } to { --xp-q: 1; } }
+  /* The current chapter's title fills from the left as it arrives; leaving, the fill withdraws faster. */
+  @media screen and (min-width: 761px) and (prefers-reduced-motion: no-preference) and (((min-width: 1500px) and (min-height: 600px)) or ((min-width: 1050px) and (min-height: 620px)) or ((min-width: 950px) and (min-height: 660px)) or ((min-width: 900px) and (min-height: 700px)) or ((min-width: 850px) and (min-height: 800px)) or (min-height: 1000px)) {
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-title::after { clip-path: inset(-.3em 101% -.3em -.3em); transition: clip-path .55s cubic-bezier(.55, 0, .15, 1); }
+    :root[data-tour] .experience:not([data-xp="stack"]) .xp-chapter.is-current .xp-title::after { clip-path: inset(-.3em -.3em -.3em -.3em); transition: clip-path 1.15s cubic-bezier(.16, 1, .3, 1) .08s; }
+  }
+  @media screen {
+    .xp-index-button, .xp-step { transition: background-color .25s, color .25s, border-color .25s; }
+  }
+  /* Timeline draw-in, once, the first time it is in view (experience.js sets
+     data-xp-draw="pending" only when motion is allowed): the axis runs out,
+     then each span grows in time order, then the years appear. */
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .xp-tl-axis, .xp-tl-bar { transition: transform .9s cubic-bezier(.16, 1, .3, 1) calc(.2s + var(--xp-order, 0) * .16s), background-color .25s; }
+    .xp-tl-axis { transform-origin: 0 50%; transition-delay: 0s; }
+    .xp-tl-text, .xp-tl-year { transition: opacity .6s ease calc(.45s + var(--xp-order, 0) * .16s); }
+    .xp-tl-year { transition-delay: .5s; }
+    .xp-tl[data-xp-draw="pending"] :is(.xp-tl-axis, .xp-tl-bar) { transform: scaleX(0); }
+    .xp-tl[data-xp-draw="pending"] :is(.xp-tl-text, .xp-tl-year) { opacity: 0; }
+    .xp-tl-lane { transition: top .3s, height .3s; }
+  }
+  /* Build tour: chapters still off to the right wait unseen, so the tour
+     neither builds nor hides them; each arrives sideways as the track
+     brings it in (experience.js marks data-reached). Only while touring. */
+  @keyframes xp-arrive { from { opacity: 0; transform: translate3d(12cqw, 0, 0); } to { opacity: 1; transform: none; } }
+  html.agentic-touring .experience[data-xp="travel"] .xp-chapter:not([data-reached]) { visibility: hidden; }
+  html.agentic-touring .experience[data-xp="travel"] .xp-chapter[data-reached] { animation: xp-arrive .9s cubic-bezier(.16, 1, .3, 1) both; }
+}
+
+@layer responsive {
+  @media (max-width: 1100px) {
+    /* Stacked: one column, the title above its groups. */
+    .xp-chapter { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+    .xp-head { position: static; grid-row: auto; }
+    .xp-group { grid-column: 1; }
+    .xp-title { font-size: clamp(40px, 7vw, 72px); }
+    .xp-index-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .xp-index-button { padding: 0 16px; }
+    .xp-tl .xp-index-button.xp-tl-span { padding: 0; }
+    /* Tablets: the current chapter's title column and first group share one screen. */
+    @media screen and (min-width: 761px) and (prefers-reduced-motion: no-preference) and (((min-width: 1500px) and (min-height: 600px)) or ((min-width: 1050px) and (min-height: 620px)) or ((min-width: 950px) and (min-height: 660px)) or ((min-width: 900px) and (min-height: 700px)) or ((min-width: 850px) and (min-height: 800px)) or (min-height: 1000px)) {
+      :root[data-tour] .experience:not([data-xp="stack"]) .xp-head { width: clamp(290px, 40cqw, 440px); }
+      :root[data-tour] .experience:not([data-xp="stack"]) .xp-group { width: clamp(310px, 42cqw, 440px); }
+      :root[data-tour] .experience:not([data-xp="stack"]) .xp-title { font-size: clamp(40px, 6cqw, 72px); }
+    }
+  }
+  @media (max-width: 760px) {
+    .xp-travel { margin-top: 40px; }
+    .xp-chapter { gap: 28px; padding: 46px 0 52px; }
+    .xp-head { gap: 12px; }
+    .xp-group + .xp-group { padding-top: 28px; }
+    .xp-title { font-size: 12.4vw; }
+    .xp-year { top: .02em; font-size: 36vw; }
+    .xp-points li { padding-left: 20px; font-size: 14.5px; }
+    .xp-group .tag-list { margin-left: 0; }
+  }
+  @media (forced-colors: active) {
+    .xp-title { color: CanvasText; -webkit-text-stroke: 0; }
+    .xp-title::after { content: none; }
+    .xp-index-button[aria-current="true"] { outline: 2px solid Highlight; }
+    /* Timeline: bars keep their own system colours (backgrounds are otherwise dropped). */
+    .xp-tl :is(.xp-tl-bar, .xp-tl-axis), .xp-tl-year::before { forced-color-adjust: none; background: CanvasText; }
+    .xp-tl .xp-tl-axis, .xp-tl .xp-tl-year::before { background: GrayText; }
+    .xp-tl .xp-tl-span[aria-current="true"] .xp-tl-bar { background: Highlight; }
+    .xp-tl .xp-tl-gap .xp-tl-bar { background: none; outline: 1px dashed CanvasText; outline-offset: -1px; }
+    /* Year lines through the rows and the huge background years would be forced to full-strength text colours. */
+    .xp-tl[data-xp-layout="rows"] .xp-tl-year::before { content: none; }
+    .xp-year { display: none; }
+  }
+}

@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#eeede8">
+  <title>How I evaluate agents — Cesar Tortolero</title>
+  <meta name="description" content="How Cesar Tortolero approaches evaluating AI agents: what to measure beyond one accuracy number, how to find failures from traces, when fewer agents beat more, and a checklist for calling an agent done. Tied to the public evaluation lab and the recorded agent run behind this site.">
+  <meta name="author" content="Cesar Alejandro Tortolero Trujillo">
+  <link rel="canonical" href="https://cesar-tortolero.cesartortolero.chatgpt.site/lab/evaluating-agents.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="How I evaluate agents — Cesar Tortolero">
+  <meta property="og:description" content="What to measure beyond one accuracy number, how to find failures from traces, when fewer agents beat more, and a checklist for calling an agent done.">
+  <meta property="og:url" content="https://cesar-tortolero.cesartortolero.chatgpt.site/lab/evaluating-agents.html">
+  <meta property="og:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. AI agents and LLM evaluation on AWS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How I evaluate agents — Cesar Tortolero">
+  <meta name="twitter:description" content="What to measure beyond one accuracy number, how to find failures from traces, when fewer agents beat more, and a checklist for calling an agent done.">
+  <meta name="twitter:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-card.jpg">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../project.css">
+  <link rel="stylesheet" href="./lab.css">
+  <link rel="stylesheet" href="./evaluating-agents.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How I evaluate agents",
+    "description": "What to measure beyond one accuracy number, how to find failures from traces, when fewer agents beat more, and a checklist for calling an agent done.",
+    "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/lab/evaluating-agents.html",
+    "datePublished": "2026-11-11",
+    "inLanguage": "en",
+    "keywords": "Agent evaluation, LLM tracing, Groundedness, Tool calls, Bootstrap, Multi-agent systems",
+    "author": {
+      "@type": "Person",
+      "name": "Cesar Tortolero",
+      "alternateName": "Cesar Alejandro Tortolero Trujillo",
+      "jobTitle": "Machine Learning Engineer",
+      "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/"
+    },
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Cesar Tortolero",
+      "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/"
+    }
+  }
+  </script>
+  <script type="module" src="./evaluating-agents.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="cs-top">
+    <a class="cs-wordmark" href="../"><span class="cs-wordmark-first">CESAR<span class="cs-dot" aria-hidden="true"></span></span> <span class="cs-wordmark-last">TORTOLERO</span></a>
+    <a class="cs-back" href="../#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Back to the Lab</a>
+  </header>
+  <main id="main">
+    <article class="lab-compact" aria-labelledby="ea-title">
+      <header class="cs-intro">
+        <p class="mono lab-kicker">Notes · method</p>
+        <h1 id="ea-title" class="lab-title">How I evaluate agents</h1>
+        <div class="cs-grid cs-summary">
+          <div class="cs-main">
+            <p class="cs-lead lab-lead">How I evaluate agents, shown on public evidence only: the agents that built this site and an open-data lab. No employer systems or data appear here.</p>
+            <figure class="lab-first ea-lead" aria-labelledby="ea-lead-cap">
+              <svg class="lab-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><pattern id="ea-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="lab-hatch-bg" width="5" height="5"></rect><rect class="lab-hatch-fg" width="2" height="5"></rect></pattern></defs></svg>
+              <table class="ea-glance">
+                <caption class="visually-hidden">Pass and fail for each code check across the 77 traces</caption>
+                <thead><tr><th scope="col">Check</th><th scope="col"><span class="visually-hidden">Share of the </span>77 traces</th><th scope="col">Pass</th><th scope="col">Fail</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Tool error rate</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="84.42%" height="100%"></rect><rect class="is-fail" x="84.42%" y="0" width="3.9%" height="100%"></rect><rect class="is-none" x="88.31%" y="0" width="11.69%" height="100%"></rect></svg></td><td>65</td><td>3</td></tr>
+                  <tr><th scope="row">Recovered after error</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="31.17%" height="100%"></rect><rect class="is-fail" x="31.17%" y="0" width="11.69%" height="100%"></rect><rect class="is-none" x="42.86%" y="0" width="57.14%" height="100%"></rect></svg></td><td>24</td><td>9</td></tr>
+                  <tr><th scope="row">Delegation on large tasks</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="36.36%" height="100%"></rect><rect class="is-fail" x="36.36%" y="0" width="6.49%" height="100%"></rect><rect class="is-none" x="42.86%" y="0" width="57.14%" height="100%"></rect></svg></td><td>28</td><td>5</td></tr>
+                  <tr><th scope="row">Review before commit</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="15.58%" height="100%"></rect><rect class="is-fail" x="15.58%" y="0" width="25.97%" height="100%"></rect><rect class="is-none" x="41.56%" y="0" width="58.44%" height="100%"></rect></svg></td><td>12</td><td>20</td></tr>
+                  <tr><th scope="row">Tests before commit</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="40.26%" height="100%"></rect><rect class="is-fail" x="40.26%" y="0" width="1.3%" height="100%"></rect><rect class="is-none" x="41.56%" y="0" width="58.44%" height="100%"></rect></svg></td><td>31</td><td>1</td></tr>
+                  <tr><th scope="row">Checked after the last edit</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="27.27%" height="100%"></rect><rect class="is-fail" x="27.27%" y="0" width="5.19%" height="100%"></rect><rect class="is-none" x="32.47%" y="0" width="67.53%" height="100%"></rect></svg></td><td>21</td><td>4</td></tr>
+                  <tr><th scope="row">No stuck loop</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="88.31%" height="100%"></rect><rect class="is-fail" x="88.31%" y="0" width="0%" height="100%"></rect><rect class="is-none" x="88.31%" y="0" width="11.69%" height="100%"></rect></svg></td><td>68</td><td>0</td></tr>
+                  <tr><th scope="row">Changes after review</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="3.9%" height="100%"></rect><rect class="is-fail" x="3.9%" y="0" width="11.69%" height="100%"></rect><rect class="is-none" x="15.58%" y="0" width="84.42%" height="100%"></rect></svg></td><td>3</td><td>9</td></tr>
+                  <tr><th scope="row">Model latency budget</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="88.31%" height="100%"></rect><rect class="is-fail" x="88.31%" y="0" width="11.69%" height="100%"></rect><rect class="is-none" x="100%" y="0" width="0%" height="100%"></rect></svg></td><td>68</td><td>9</td></tr>
+                </tbody>
+              </table>
+              <ul class="ea-key" aria-hidden="true">
+                <li><span class="ea-cell is-pass"></span>Pass</li>
+                <li><span class="ea-cell is-fail"></span>Fail</li>
+                <li><span class="ea-cell is-none"></span>Not scored</li>
+              </ul>
+              <figcaption id="ea-lead-cap">Each bar is the 77 traces of the agent sessions that built this site, scored by one deterministic code check; not scored means the check did not apply. <a class="lab-link" href="#fig-evaluators">Figure 4</a> opens every trace.</figcaption>
+            </figure>
+            <p class="lab-disclaimer">The facts and numbers come from this site: my homepage, the <a class="lab-link" href="./sentiment-eval.html">evaluation lab</a>, <a class="lab-link" href="./build-trace.html">the recorded agent run</a> that built the site and, for the figures, the exported telemetry of the agent sessions behind it.</p>
+          </div>
+          <dl class="cs-rail cs-meta">
+            <div><dt class="mono">Topic</dt><dd class="mono">Agent evaluation</dd></div>
+            <div><dt class="mono">Evidence</dt><dd class="mono">Lab · build trace · telemetry</dd></div>
+            <div><dt class="mono">Length</dt><dd class="mono" data-reading-time>About a 6-minute read</dd></div>
+          </dl>
+        </div>
+      </header>
+
+      <div class="cs-body">
+        <section class="cs-grid cs-section" aria-labelledby="measure-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="measure-title">What to measure</h2>
+            <p class="lab-rail-note">One score hides where the errors are.</p>
+          </div>
+          <div class="cs-main ea-prose">
+            <p>An agent can give a fluent answer and still fail the task, so a single accuracy number is the wrong place to start. For each task I would want four things, reported separately:</p>
+            <ul class="cs-points ea-points">
+              <li><strong>Task success.</strong> Did the run do what was asked, judged against an expected outcome written down before the run, not against whether the answer sounds right?</li>
+              <li><strong>Groundedness.</strong> Is each claim supported by context the agent retrieved or a tool result it actually received? A correct answer with no support is a lucky answer.</li>
+              <li><strong>Tool-call errors.</strong> Wrong tool, wrong or malformed arguments, and failed calls the agent quietly ignored.</li>
+              <li><strong>Latency and cost per successful task.</strong> Totals divided by the tasks that succeeded, not by all runs. An agent that is cheap per call but needs retries to finish is not cheap.</li>
+            </ul>
+            <p>A single number also hides where the errors fall. In the evaluation lab, at the default threshold, model B has the higher F1 overall, 0.803 against 0.795. On the IMDb slice it is the less accurate of the two, 0.750 against 0.775. I evaluated a skill-extraction model on 2,400+ records with precision, recall, F1 and slice analysis, not one score.</p>
+            <figure class="ea-fig" id="fig-measures" data-ea-fig="measures" aria-labelledby="fig-measures-cap">
+              <p class="mono ea-fig-kicker">Figure 1 · One number against four</p>
+              <ul class="ea-tiles">
+                <li class="ea-tile ea-tile-missing"><span class="mono ea-tile-label">Task success</span><span class="ea-tile-value">Not measured</span><span class="ea-tile-note">Needs an expected outcome for each task. The telemetry has no task labels.</span></li>
+                <li class="ea-tile ea-tile-missing"><span class="mono ea-tile-label">Groundedness</span><span class="ea-tile-value">Not measured</span><span class="ea-tile-note">Needs each claim checked against its sources. The telemetry keeps no text.</span></li>
+                <li class="ea-tile"><span class="mono ea-tile-label">Tool-call errors</span><span class="ea-tile-value"><span data-ea-m="rate">1.7</span>%</span><span class="ea-tile-note"><span data-ea-m="errors">162</span> of <span data-ea-m="calls">9,712</span> tool calls failed.</span></li>
+                <li class="ea-tile"><span class="mono ea-tile-label">Latency and cost</span><span class="ea-tile-value"><span data-ea-m="p50">5.4</span> s</span><span class="ea-tile-note">Median model step; p90 <span data-ea-m="p90">21.5</span> s over <span data-ea-m="steps">7,515</span> steps. <span data-ea-m="perCall">797</span> generated tokens per tool call, all traces pooled. Per successful task needs the success labels.</span></li>
+              </ul>
+              <div class="ea-split" data-ea-live hidden>
+                <div class="ea-split-head">
+                  <p class="mono ea-sub">Evaluation lab · test set</p>
+                  <fieldset class="lab-toggle ea-toggle">
+                    <legend class="mono">Show</legend>
+                    <div class="lab-toggle-options">
+                      <input type="radio" id="ea-view-one" name="ea-view" value="one" checked><label for="ea-view-one">One number</label>
+                      <input type="radio" id="ea-view-split" name="ea-view" value="split"><label for="ea-view-split">By slice</label>
+                    </div>
+                  </fieldset>
+                </div>
+                <div class="lab-threshold ea-threshold">
+                  <div class="lab-threshold-head"><label class="mono" for="ea-threshold">Threshold</label><output class="lab-threshold-value" id="ea-threshold-value" for="ea-threshold">0.50</output></div>
+                  <input type="range" id="ea-threshold" min="0.05" max="0.95" step="0.01" value="0.5">
+                </div>
+                <table class="lab-table ea-split-table">
+                  <caption class="visually-hidden">Model A and model B at the chosen threshold</caption>
+                  <thead><tr><th scope="col">Score</th><th scope="col">Model A</th><th scope="col">Model B</th></tr></thead>
+                  <tbody data-ea-split></tbody>
+                </table>
+                <p class="ea-verdict" data-ea-verdict aria-live="polite"></p>
+              </div>
+              <figcaption id="fig-measures-cap">The four measures, filled in from the telemetry of the agent runs that built this site where it can answer, and left empty where it cannot: task success and groundedness need labels the export does not have, so they are not estimated. Below, the lab’s one-number view: move the threshold, then switch to <em>By slice</em> to see what the single F1 hides.</figcaption>
+              <details class="ea-data" open>
+                <summary>Data table</summary>
+                <div class="lab-table-wrap">
+                  <table class="lab-table ea-table" data-ea-table="measures">
+                    <caption>The four measures, from the telemetry and the lab</caption>
+                    <thead><tr><th scope="col">Measure</th><th scope="col">Value</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">Task success</th><td>Not measured, no task labels</td></tr>
+                      <tr><th scope="row">Groundedness</th><td>Not measured, no text kept</td></tr>
+                      <tr><th scope="row">Tool-call errors</th><td>162 of 9,712 calls failed, 1.7%</td></tr>
+                      <tr><th scope="row">Model step latency</th><td>median 5.4 s, p90 21.5 s, 7,515 steps</td></tr>
+                      <tr><th scope="row">Generated tokens per tool call, all traces pooled</th><td>797, from 7,739,418 output and reasoning tokens</td></tr>
+                      <tr><th scope="row">Lab F1 at threshold 0.50</th><td>A 0.795, B 0.803</td></tr>
+                      <tr><th scope="row">Lab IMDb accuracy at 0.50</th><td>A 0.775, B 0.750</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </figure>
+            <p>A threshold is a decision, not a default. Raising it trades recall for precision, and the right point depends on what a false positive costs. The lab’s slider shows the trade on the test set, but a threshold you deploy should come from validation data. For an agent, the same choice decides when it acts on its own and when it stops and asks.</p>
+            <p>A small gap is often noise. In the lab, B leads A by 0.008 F1 on 596 test sentences. Across 1,000 bootstrap resamples of the test set, the interval for that gap runs from −0.021 to +0.038, and B comes out ahead in 70% of them. The interval crosses zero, so a 0.008 F1 gap is not a win, and I would not switch models on it. A hand-built agent test set with fewer cases gives a wider interval, so it needs one even more.</p>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="catch-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="catch-title">How to catch failures</h2>
+            <p class="lab-rail-note">Read the trace before you touch the prompt.</p>
+          </div>
+          <div class="cs-main ea-prose">
+            <figure class="ea-flow ea-fig" id="fig-loop" data-ea-fig="loop" aria-labelledby="fig-loop-cap">
+              <p class="mono ea-fig-kicker">Figure 2 · Illustration</p>
+              <ol class="ea-flow-steps">
+                <li><span class="mono ea-flow-label">Trace</span><span class="ea-flow-text">Every run, every span</span><span class="ea-flow-data">Here: <span data-ea-m="traces">77</span> traces, <span data-ea-m="spans">17,412</span> spans</span></li>
+                <li><span class="mono ea-flow-label">Classify</span><span class="ea-flow-text">One bucket per failure</span><span class="ea-flow-data">Here: <span data-ea-m="errors">162</span> failed tool calls, Figure 3</span></li>
+                <li><span class="mono ea-flow-label">Fixed test set</span><span class="ea-flow-text">Real failures, expected outcomes</span><span class="ea-flow-data">Not in the telemetry yet</span></li>
+                <li><span class="mono ea-flow-label">Gate</span><span class="ea-flow-text">Block a release while it fails</span><span class="ea-flow-data">Here: <span data-ea-m="evaluators">13</span> code evaluators per trace, Figure 4</span></li>
+              </ol>
+              <figcaption id="fig-loop-cap">The loop I would set up: a failure found in a trace becomes a test case, and the test set decides whether a change ships. Illustration: the moving highlight is a diagram; the counts under the steps come from the telemetry, which has no fixed test set yet. The dashboard’s release gate re-scores the traces offline and blocks nothing.</figcaption>
+            </figure>
+            <p>Traces come first. I set up LLM tracing and evaluation with Arize AX and OpenTelemetry/OpenInference. In OpenTelemetry terms a run is a trace and each step inside it is a span; OpenInference adds conventions for LLM steps such as model calls, retrievals and tool calls. When spans record inputs, outputs, timing and errors, a failed run shows which step went wrong instead of leaving you guessing from the final answer.</p>
+            <p>Then put each failure in one bucket:</p>
+            <ul class="cs-points ea-points">
+              <li><strong>Wrong tool.</strong> The agent called a tool that cannot answer the question, or answered without the tool it needed.</li>
+              <li><strong>Bad arguments.</strong> The right tool with the wrong parameters or format.</li>
+              <li><strong>Missing evidence.</strong> The answer states something that no span supports.</li>
+              <li><strong>Timeouts and infrastructure.</strong> The call never had a fair chance. Some agent integration failures I have debugged were of this kind and had nothing to do with the model: MCP IAM request signing, OAuth credentials, missing deployment secrets and network rules.</li>
+            </ul>
+            <p>The exporter behind these figures does a rough version of this step from the error text alone: the 162 failed calls split into not found 48, permission 44, timeout 30, other 20, network 16 and bad arguments 4. It cannot see a wrong tool or missing evidence. The <a class="lab-link" href="./agent-observability.html#obs-fail-title">dashboard’s failure analysis</a> splits the classes by tool.</p>
+            <figure class="ea-fig" id="fig-failures" data-ea-fig="failures" aria-labelledby="fig-failures-cap">
+              <p class="mono ea-fig-kicker">Figure 3 · Failed tool calls in the telemetry</p>
+              <div class="ea-live" data-ea-live hidden>
+                <fieldset class="lab-toggle ea-toggle">
+                  <legend class="mono">Group by</legend>
+                  <div class="lab-toggle-options">
+                    <input type="radio" id="ea-group-tool" name="ea-group" value="tool" checked><label for="ea-group-tool">Tool</label>
+                    <input type="radio" id="ea-group-bucket" name="ea-group" value="bucket"><label for="ea-group-bucket">Duration bucket</label>
+                  </div>
+                </fieldset>
+                <ul class="ea-bars" data-ea-bars aria-label="Failed tool calls. Choose a bar to list its spans."></ul>
+                <div class="ea-examples">
+                  <p class="ea-status" data-ea-status aria-live="polite"></p>
+                  <ul class="ea-example-list" data-ea-examples></ul>
+                  <button type="button" class="ea-button" data-ea-more hidden>Show all</button>
+                </div>
+              </div>
+              <figcaption id="fig-failures-cap">Of 9,712 tool calls, 162 failed. <em>Tool</em> counts every failure. <em>Duration bucket</em> uses the 8 failures published as single spans (the rest sit inside merged steps, whose durations are not published) and sorts them only by how long they ran: with no tool inputs in the export, it cannot tell a wrong tool from bad arguments. Choose a bar to list its spans; each opens in the <a class="lab-link" href="./agent-observability.html">agent observability dashboard</a>.</figcaption>
+              <details class="ea-data" open>
+                <summary>Data tables</summary>
+                <div class="lab-table-wrap">
+                  <table class="lab-table ea-table" data-ea-table="tools">
+                    <caption>Failed calls by tool, all 162</caption>
+                    <thead><tr><th scope="col">Tool</th><th scope="col">Failed</th><th scope="col">Calls</th><th scope="col">Failed share</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">bash</th><td>39</td><td>4,761</td><td>0.8%</td></tr>
+                      <tr><th scope="row">browser.evaluate_script</th><td>35</td><td>1,085</td><td>3.2%</td></tr>
+                      <tr><th scope="row">read</th><td>25</td><td>1,323</td><td>1.9%</td></tr>
+                      <tr><th scope="row">webfetch</th><td>15</td><td>81</td><td>18.5%</td></tr>
+                      <tr><th scope="row">browser.list_pages</th><td>11</td><td>47</td><td>23.4%</td></tr>
+                      <tr><th scope="row">browser.navigate_page</th><td>9</td><td>448</td><td>2.0%</td></tr>
+                      <tr><th scope="row">task</th><td>7</td><td>109</td><td>6.4%</td></tr>
+                      <tr><th scope="row">browser.take_screenshot</th><td>6</td><td>563</td><td>1.1%</td></tr>
+                      <tr><th scope="row">browser.emulate</th><td>4</td><td>257</td><td>1.6%</td></tr>
+                      <tr><th scope="row">browser.click</th><td>2</td><td>24</td><td>8.3%</td></tr>
+                      <tr><th scope="row">write</th><td>2</td><td>164</td><td>1.2%</td></tr>
+                      <tr><th scope="row">browser.lighthouse_audit</th><td>1</td><td>12</td><td>8.3%</td></tr>
+                      <tr><th scope="row">browser.new_page</th><td>1</td><td>74</td><td>1.4%</td></tr>
+                      <tr><th scope="row">browser.performance_start_trace</th><td>1</td><td>8</td><td>12.5%</td></tr>
+                      <tr><th scope="row">browser.select_page</th><td>1</td><td>47</td><td>2.1%</td></tr>
+                      <tr><th scope="row">browser.wait_for</th><td>1</td><td>2</td><td>50.0%</td></tr>
+                      <tr><th scope="row">edit</th><td>1</td><td>353</td><td>0.3%</td></tr>
+                      <tr><th scope="row">grep</th><td>1</td><td>18</td><td>5.6%</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="lab-table-wrap">
+                  <table class="lab-table ea-table" data-ea-table="buckets">
+                    <caption>Published failed spans by duration, 8</caption>
+                    <thead><tr><th scope="col">Bucket</th><th scope="col">Spans</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">Fast failure (under a second)</th><td>1</td></tr>
+                      <tr><th scope="row">Slow failure (a second to a minute)</th><td>1</td></tr>
+                      <tr><th scope="row">Timeout-like (a minute or more)</th><td>0</td></tr>
+                      <tr><th scope="row">Delegated run stopped (a task call that failed after a minute or more)</th><td>6</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </figure>
+            <p>Each classified failure should become a case in a small, fixed test set with an expected outcome. If the set does not change between runs, a moving score means the agent changed. Next to it, keep a failure log: the trace, the bucket, the fix, and the test that now covers it. Learning from what went wrong also shaped the onboarding guide for the workshops I co-delivered. Each workshop showed where developers got stuck, such as missing secrets, access groups and network rules, and the guide changed to match. It has been revised more than 40 times.</p>
+            <p>The recorded run that built this site shows the pattern on a small scale. Of its 52 steps, 8 ended in an error, and 6 of those are followed by a recorded retry or fix. Two were delegated tasks that stopped midway, one interrupted and one after a lost connection, and both were resumed. One was a measurement: the first attempt to hold a figure on screen longer overshot, 6.4 s against 3.8 s before, and the saved version settled at about 5.2 s. The dependency download never cleared: it kept failing with a 503, and the trace records the normal full test command as blocked. Separately, a grounding test caught two homepage labels that the text did not support, and both were reworded before the commit.</p>
+            <figure class="ea-fig" id="fig-evaluators" data-ea-fig="evaluators" aria-labelledby="fig-evaluators-cap">
+              <p class="mono ea-fig-kicker">Figure 4 · Code evaluators, trace by trace</p>
+              <div class="ea-live" data-ea-live hidden>
+                <div class="ea-matrix" data-ea-matrix aria-hidden="true"></div>
+                <ul class="ea-key" aria-hidden="true">
+                  <li><span class="ea-cell is-pass"></span>Pass</li>
+                  <li><span class="ea-cell is-fail"></span>Fail</li>
+                  <li><span class="ea-cell is-none"></span>Not scored</li>
+                  <li><span class="ea-cell is-q1"></span><span class="ea-cell is-q4"></span>Number, low to high</li>
+                  <li><span class="ea-cell is-category"></span>Error class</li>
+                </ul>
+                <div class="lab-threshold ea-picker">
+                  <button type="button" class="ea-button ea-step" data-ea-step="-1">Previous</button>
+                  <label class="visually-hidden" for="ea-trace">Trace</label>
+                  <input type="range" id="ea-trace" min="0" max="0" step="1" value="0">
+                  <button type="button" class="ea-button ea-step" data-ea-step="1">Next</button>
+                </div>
+                <p class="ea-status" data-ea-status aria-live="polite"></p>
+                <dl class="ea-results" data-ea-results></dl>
+              </div>
+              <figcaption id="fig-evaluators-cap">Each column is a trace (one user turn), each row a deterministic check the exporter runs; there is no model acting as judge. Pick a trace, or point at a column, to read every result and its reason. One caveat: <em>Review before commit</em> only counts a quality-reviewer run recorded since the previous commit in the same session. A review by another agent type, or by a person, does not count, so its 20 fails mean no recorded reviewer run, not an unreviewed change. Rows that hold a number are shaded from low to high, and <em>Most common error</em> names the error class a trace hit most.</figcaption>
+              <details class="ea-data" open>
+                <summary>Data table</summary>
+                <div class="lab-table-wrap">
+                  <table class="lab-table ea-table" data-ea-table="evaluators">
+                    <caption>Results across 77 traces</caption>
+                    <thead><tr><th scope="col">Evaluator</th><th scope="col">Pass</th><th scope="col">Fail</th><th scope="col">Not scored</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">Tool error rate</th><td>65</td><td>3</td><td>9</td></tr>
+                      <tr><th scope="row">Recovered after error</th><td>24</td><td>9</td><td>44</td></tr>
+                      <tr><th scope="row">Delegation on large tasks</th><td>28</td><td>5</td><td>44</td></tr>
+                      <tr><th scope="row">Review before commit</th><td>12</td><td>20</td><td>45</td></tr>
+                      <tr><th scope="row">Tests before commit</th><td>31</td><td>1</td><td>45</td></tr>
+                      <tr><th scope="row">Checked after the last edit</th><td>21</td><td>4</td><td>52</td></tr>
+                      <tr><th scope="row">No stuck loop</th><td>68</td><td>0</td><td>9</td></tr>
+                      <tr><th scope="row">Changes after review</th><td>3</td><td>9</td><td>65</td></tr>
+                      <tr><th scope="row">Model latency budget</th><td>68</td><td>9</td><td>0</td></tr>
+                      <tr><th scope="row">Generated tokens per tool call</th><td colspan="2">median 747.3, range 164.9 to 2,951</td><td>9</td></tr>
+                      <tr><th scope="row">Parallel subagents</th><td colspan="2">median 2, range 1 to 4</td><td>45</td></tr>
+                      <tr><th scope="row">Prompt cache reuse</th><td colspan="2">median 0.9336, range 0 to 0.9993</td><td>0</td></tr>
+                      <tr><th scope="row">Most common error</th><td colspan="2">most often not found, in 11 of 33 traces</td><td>44</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </figure>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="fewer-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="fewer-title">When fewer agents beat more</h2>
+            <p class="lab-rail-note">Add a specialist only where it pays for the handoff.</p>
+          </div>
+          <div class="cs-main ea-prose">
+            <p>Each handoff between agents costs something. The receiving agent gets a summary instead of the full context, and a task that dies midway has to be handed off again. So start with one agent, and add a specialist only when it does a job the first one does badly and has a clear input and output.</p>
+            <p>In the build trace, one orchestrator, my primary agent working under my direction, recorded 37 of the 52 steps and made all 16 commits. The implementation-worker recorded 9, the quality-reviewer 4 and the ui-design-director 2. Both tasks that stopped midway and left partial edits behind were delegated worker tasks.</p>
+            <p>The specialist reviewers added value at review points. The quality-reviewer’s first pass found frozen review notes, blank waits and copy hidden on short screens. A later pass on the integrated changes found no high-severity issues and six smaller findings. A second pass on the security changes reported five low-priority findings, all fixed before saving. The ui-design-director’s review found tiny text, crowded labels and uneven tour pacing. A reviewer with fresh context reads the change, not the conversation that produced it.</p>
+            <p>There is no second run with more or fewer agents, so the trace cannot tell you whether this split beat one agent doing everything. It counts role types, not separate agent instances. Most times are estimates, so it says nothing about latency or cost per role. And it covers one project, the Nov 10–11 redesign only.</p>
+            <figure class="ea-fig" id="fig-delegation" data-ea-fig="delegation" aria-labelledby="fig-delegation-cap">
+              <p class="mono ea-fig-kicker">Figure 5 · Traces with and without delegation</p>
+              <div class="ea-live" data-ea-live hidden>
+                <fieldset class="lab-toggle ea-toggle">
+                  <legend class="mono">Per tool call</legend>
+                  <div class="lab-toggle-options">
+                    <input type="radio" id="ea-metric-rate" name="ea-metric" value="rate" checked><label for="ea-metric-rate">Failed calls</label>
+                    <input type="radio" id="ea-metric-tokens" name="ea-metric" value="perCall"><label for="ea-metric-tokens">Generated tokens</label>
+                  </div>
+                </fieldset>
+                <ul class="ea-legend" aria-hidden="true">
+                  <li><span class="ea-dot is-yes"></span>Delegated to a subagent</li>
+                  <li><span class="ea-dot is-no"></span>No delegation</li>
+                </ul>
+                <div class="ea-plot" data-ea-plot aria-hidden="true">
+                  <p class="ea-tip" data-ea-tip hidden></p>
+                </div>
+                <div class="lab-threshold ea-picker">
+                  <button type="button" class="ea-button ea-step" data-ea-point-step="-1">Previous</button>
+                  <label class="visually-hidden" for="ea-point">Trace, from fewest to most tool calls</label>
+                  <input type="range" id="ea-point" min="0" max="0" step="1" value="0">
+                  <button type="button" class="ea-button ea-step" data-ea-point-step="1">Next</button>
+                </div>
+                <!-- Previous/Next leave focus on the button: this reads the chosen trace aloud. -->
+                <p class="visually-hidden" data-ea-point-status aria-live="polite"></p>
+                <div class="ea-pairs" data-ea-pairs></div>
+                <details class="ea-data ea-numbers">
+                  <summary>Show the numbers</summary>
+                  <div class="lab-table-wrap">
+                    <table class="lab-table ea-table ea-points-table">
+                      <caption>Each trace with tool calls, from fewest to most calls</caption>
+                      <thead><tr><th scope="col">Trace</th><th scope="col">Tool calls</th><th scope="col">Failed calls</th><th scope="col">Failed, %</th><th scope="col">Generated tokens per call</th><th scope="col">Delegated</th></tr></thead>
+                      <tbody data-ea-points></tbody>
+                    </table>
+                  </div>
+                </details>
+              </div>
+              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 68 of the 77, placed by how many calls it made (log scale). A trace counts as delegated when it has at least one subagent run. The <em>Delegation on large tasks</em> check in Figure 4 is narrower: it scores only the 33 large traces, and passes the 28 where subagents made at least half of the tool calls. Point at a dot, or use the slider, to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and day all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out. In the 77 traces of this site’s build, review and verification were selective: a verifier ran in 2 of 108 delegations and a reviewer in 14, and “Review before commit” passed in only 12 of 32 scored traces.</figcaption>
+              <details class="ea-data" open>
+                <summary>Data table</summary>
+                <div class="lab-table-wrap">
+                  <table class="lab-table ea-table" data-ea-table="delegation">
+                    <caption>Traces with and without a subagent run</caption>
+                    <thead><tr><th scope="col">Measure</th><th scope="col">Delegated</th><th scope="col">No delegation</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">Traces</th><td>32</td><td>45</td></tr>
+                      <tr><th scope="row">Traces with tool calls</th><td>32</td><td>36</td></tr>
+                      <tr><th scope="row">Tool calls</th><td>9,391</td><td>321</td></tr>
+                      <tr><th scope="row">Failed calls</th><td>145</td><td>17</td></tr>
+                      <tr><th scope="row">Share of calls that failed</th><td>1.5%</td><td>5.3%</td></tr>
+                      <tr><th scope="row">Median generated tokens per call</th><td>749</td><td>714</td></tr>
+                      <tr><th scope="row">Median tool calls per trace</th><td>247</td><td>3</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </figure>
+            <p>My conclusion is narrow. Keep one agent in charge of integration and commits, and add specialists where an independent check is worth more than the handoff. The <a class="lab-link" href="../projects/agent-workflow.html">multi-agent workflow</a> I built is set up that way: one subagent implements, one reviews, one verifies, and they get read-only access to delivery tools.</p>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="check-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="check-title">A checklist for calling an agent done</h2>
+            <p class="lab-rail-note">Every item should be true, not mostly true.</p>
+          </div>
+          <div class="cs-main">
+            <div class="ea-progress" data-ea-progress hidden>
+              <svg class="ea-ring" viewBox="0 0 48 48" aria-hidden="true"><circle class="ea-ring-track" cx="24" cy="24" r="20"></circle><circle class="ea-ring-fill" cx="24" cy="24" r="20" pathLength="100"></circle></svg>
+              <p class="ea-progress-text"><span class="ea-progress-count" data-ea-count></span><span class="ea-progress-state" data-ea-state aria-live="polite">Not done until all are true.</span></p>
+              <button type="button" class="ea-button" data-ea-reset>Clear ticks</button>
+            </div>
+            <ol class="ea-checklist">
+              <li>Every run is traced, and any failing case can be opened in its trace.</li>
+              <li>A fixed test set built from real failures, each with an expected outcome, runs on every change.</li>
+              <li>Task success, groundedness and tool-call errors are reported separately, overall and by slice.</li>
+              <li>Latency and cost are reported per successful task, not per call.</li>
+              <li>Any comparison between versions comes with an interval. If it crosses zero, it is not a win.</li>
+              <li>Thresholds and settings were chosen on validation data, never on the test set.</li>
+              <li>Every open failure is in the log with its bucket and the test that will cover it.</li>
+              <li>Permissions are the smallest that work, and secrets and network rules are checked in the deployed environment.</li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="cs-grid cs-section" aria-labelledby="next-title">
+          <div class="cs-rail lab-rail">
+            <h2 id="next-title">Read next</h2>
+          </div>
+          <div class="cs-main">
+            <ul class="ea-next">
+              <li><a class="cs-text-link" href="./sentiment-eval.html">Evaluation lab <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+              <li><a class="cs-text-link" href="./build-trace.html">The agent run behind this site <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+              <li><a class="cs-text-link" href="./agent-observability.html">Agent observability dashboard <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+              <li><a class="cs-text-link" href="../#lab">Back to the Lab <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </article>
+  </main>
+  <footer class="cs-close">
+    <nav class="cs-pager" aria-label="Where next">
+      <a href="./sentiment-eval.html"><span class="mono"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Lab</span><span class="cs-pager-title">Evaluation lab</span></a>
+      <a href="./build-trace.html"><span class="mono">Trace <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></span><span class="cs-pager-title">The agent run</span></a>
+    </nav>
+    <div class="cs-contact">
+      <p>Want to talk about this work?</p>
+      <div class="cs-contact-links">
+        <a class="cs-pill cs-pill-primary" href="../#contact">Get in touch <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        <a class="cs-pill" href="../assets/Cesar_Tortolero_Resume.pdf">Résumé <span class="mono">PDF</span></a>
+      </div>
+    </div>
+    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#lab">Back to the Lab</a></div>
+  </footer>
+</body>
+</html>

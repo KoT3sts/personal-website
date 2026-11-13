@@ -3,142 +3,547 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cotA06SiTGADRBDfMMTvHHO2HvGdhDlnlCtOQBaHUxM='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#eeede8">
-  <meta name="description" content="Cesar Tortolero's personal corner of the internet. Explore software projects, applied AI, and the curiosity behind the work.">
+  <meta name="description" content="Cesar Tortolero is a Machine Learning Engineer in Morristown, NJ (NYC area) who builds AI agents, MCP integrations and LLM evaluation on AWS Bedrock AgentCore, plus serverless Python and MLOps.">
   <meta name="author" content="Cesar Alejandro Tortolero Trujillo">
-  <meta property="og:title" content="Cesar Tortolero — Code & Curiosity">
-  <meta property="og:description" content="Useful software. Thoughtful experiments. A few things I'm building.">
-  <meta property="og:type" content="website">
+  <meta property="og:title" content="Cesar Tortolero — Machine Learning Engineer · AI Agents &amp; LLM Evaluation">
+  <meta property="og:description" content="Machine Learning Engineer in the NYC area. I build AI agents, MCP integrations and LLM evaluation on AWS Bedrock AgentCore, plus serverless Python and MLOps.">
+  <meta property="og:type" content="profile">
   <meta property="og:url" content="https://cesar-tortolero.cesartortolero.chatgpt.site/">
-  <title>Cesar Tortolero — Code & Curiosity</title>
+  <meta property="og:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-home.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer, open to AI/ML engineer roles in the NYC area. About 350 developers helped to train in AI agent workshops.">
+  <meta property="profile:first_name" content="Cesar">
+  <meta property="profile:last_name" content="Tortolero">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cesar Tortolero — Machine Learning Engineer · AI Agents &amp; LLM Evaluation">
+  <meta name="twitter:description" content="Machine Learning Engineer in the NYC area. I build AI agents, MCP integrations and LLM evaluation on AWS Bedrock AgentCore, plus serverless Python and MLOps.">
+  <meta name="twitter:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-home.jpg">
+  <title>Cesar Tortolero — Machine Learning Engineer · AI Agents &amp; LLM Evaluation</title>
+  <link rel="canonical" href="https://cesar-tortolero.cesartortolero.chatgpt.site/">
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <link rel="manifest" href="./site.webmanifest">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Cesar Tortolero",
+    "alternateName": "Cesar Alejandro Tortolero Trujillo",
+    "jobTitle": "Machine Learning Engineer",
+    "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/",
+    "image": "https://cesar-tortolero.cesartortolero.chatgpt.site/assets/cesar-portrait-1040.webp",
+    "address": { "@type": "PostalAddress", "addressLocality": "Morristown", "addressRegion": "NJ", "addressCountry": "US" },
+    "email": "mailto:lucenatrujillo.cesar@gmail.com",
+    "knowsLanguage": ["en", "es"],
+    "knowsAbout": ["Machine learning", "Large language models", "AI agents", "Model Context Protocol (MCP)", "LLM evaluation", "LLM tracing", "AWS Bedrock AgentCore", "Strands Agents", "Arize AX", "OpenTelemetry", "Python", "AWS Lambda", "Terraform", "MLflow", "Amazon SageMaker", "MLOps"],
+    "alumniOf": { "@type": "CollegeOrUniversity", "name": "Kennesaw State University" },
+    "sameAs": ["https://www.linkedin.com/in/cesar-tortolero", "https://github.com/KoT3sts"]
+  }
+  </script>
+  <script>
+  // Decide synchronously whether the build tour will play, so the page starts
+  // behind a dark veil and entrance.js downloads early. Mirrors
+  // entranceWillPlay() in app.js and shouldPlayEntrance() in entrance.js: the
+  // tour plays once (entrance.js marks the visit "seen" as it starts), never
+  // under reduced motion, on a deep link or on back/forward.
+  // app.js follows the decision recorded in data-tour. It also tells the
+  // stylesheets that scripts run, so what app.js lays out (the explorer,
+  // Experience, the charts, the Lab previews) has its final size from the
+  // first paint and a reload or back/forward lands where it left off. If
+  // app.js does not boot (its file or an import fails to load or run), it
+  // goes and the page keeps its no-script layout: at once when the file
+  // fails to load, otherwise at the latest on window load (module scripts
+  // have run by then), unless app.js marked html[data-booted].
+  (() => {
+    const root = document.documentElement;
+    let play = false;
+    try {
+      const nav = performance.getEntriesByType?.('navigation')?.[0];
+      const key = 'cesar:portfolio:agentic-intro:v1';
+      const seen = localStorage.getItem(key) === 'seen';
+      localStorage.setItem(`${key}:probe`, '1'); localStorage.removeItem(`${key}:probe`);
+      play = !(seen || matchMedia('(prefers-reduced-motion: reduce)').matches || (location.hash && location.hash !== '#home') || nav?.type === 'back_forward');
+    } catch { play = false; }
+    root.dataset.tour = play ? 'play' : 'skip';
+    const fallback = () => { delete root.dataset.tour; root.classList.remove('agentic-pending'); };
+    document.addEventListener('error', event => { if (/\/app\.js$/.test(event.target?.src || '')) fallback(); }, true);
+    addEventListener('load', () => { if (!('booted' in root.dataset)) fallback(); });
+    if (!play) return;
+    root.classList.add('agentic-pending');
+    const link = document.createElement('link'); link.rel = 'modulepreload'; link.href = './entrance.js'; document.head.append(link);
+  })();
+  </script>
+  <link rel="preload" href="./assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./about-scenes.css">
+  <link rel="stylesheet" href="./portrait.css">
+  <link rel="stylesheet" href="./accordion.css">
+  <link rel="stylesheet" href="./experience.css">
+  <link rel="stylesheet" href="./explorer.css">
+  <link rel="stylesheet" href="./home-charts.css">
+  <link rel="stylesheet" href="./work-previews.css">
+  <link rel="stylesheet" href="./motion.css">
   <link rel="stylesheet" href="./entrance.css">
-  <link rel="preload" href="./assets/sculpture.svg" as="image" type="image/svg+xml">
+  <link rel="modulepreload" href="./motion.js">
+  <link rel="modulepreload" href="./section-plan.js">
+  <link rel="modulepreload" href="./header.js">
+  <link rel="modulepreload" href="./experience.js">
+  <link rel="modulepreload" href="./explorer.js">
+  <link rel="modulepreload" href="./explorer-state.js">
+  <link rel="modulepreload" href="./home-charts.js">
   <script type="module" src="./app.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="wordmark" href="#home" aria-label="Cesar Tortolero home"><span class="wordmark-first">CESAR<span class="brand-dot"></span></span><span class="wordmark-last">TORTOLERO</span></a>
+    <a class="wordmark" href="#home" aria-label="Cesar Tortolero home"><span class="wordmark-first">CESAR<span class="brand-dot"></span></span> <span class="wordmark-last">TORTOLERO</span></a>
     <nav class="main-nav" aria-label="Main navigation">
-      <a href="#home" aria-current="location">Home</a>
-      <a href="#about">About</a>
+      <a href="#introduction" class="nav-optional">About</a>
+      <a href="#experience">Experience</a>
       <a href="#work">Work</a>
-      <a href="#approach">Approach</a>
+      <a href="#lab">Lab</a>
+      <a href="#skills" class="nav-optional">Skills</a>
+      <a href="#contact" class="nav-menu-swap">Contact</a>
+      <!-- Below 900px About and Skills (and, once the menu is wired, Contact) step out of the pill;
+           header.js shows this button, which opens every section and the résumé. Hidden without scripts. -->
+      <button class="nav-menu-button" type="button" aria-expanded="false" aria-controls="site-menu" hidden><span class="nav-menu-icon" aria-hidden="true"></span>Menu</button>
     </nav>
-    <a class="header-contact" href="#contact">Let's connect <span aria-hidden="true">↗</span></a>
+    <div class="site-menu" id="site-menu" hidden>
+      <ul class="site-menu-list" aria-label="All sections">
+        <li><a href="#introduction">About</a></li>
+        <li><a href="#experience">Experience</a></li>
+        <li><a href="#work">Work</a></li>
+        <li><a href="#lab">Lab</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a class="site-menu-resume mono" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Résumé (PDF) <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
+    </div>
+    <a class="header-contact" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Résumé (PDF) <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
   </header>
 
   <main id="main">
     <section id="home" class="hero" aria-labelledby="hero-title">
-      <div class="hero-kicker mono"><span class="status-dot" aria-hidden="true"></span> A PERSONAL SPACE FOR CODE & CURIOSITY</div>
-      <h1 id="hero-title">EXPLORE MY<span>PORTFOLIO</span></h1>
-      <div class="hero-art" aria-hidden="true">
-        <div class="orbit-label orbit-label-top mono">IMAGINE / BUILD / REPEAT</div>
-        <img class="sculpture" src="./assets/sculpture.svg" alt="" width="760" height="660" fetchpriority="high">
-        <div class="art-coordinate mono">C — 01</div>
+      <div class="hero-kicker mono"><span class="status-dot" aria-hidden="true"></span> <span class="kicker-text">OPEN TO AI/ML ENGINEER ROLES<span class="kicker-sep"> · </span><span class="kicker-where">NYC AREA, HYBRID OR REMOTE</span></span></div>
+      <h1 id="hero-title"><span class="visually-hidden">Cesar Tortolero, </span><span class="hero-line"><span>Machine</span> <span>Learning</span></span> <span class="hero-fade">Engineer</span></h1>
+      <div class="hero-art">
+        <!-- The orbital "C" stays as a small accent behind the shoulder (and is
+             the centrepiece again if the portrait cannot load). Inline so the
+             orbit points can pause with the hero loop (motion.css). -->
+        <div class="hero-orbit" aria-hidden="true">
+          <svg class="sculpture" viewBox="0 0 760 660" width="760" height="660" fill="none" focusable="false">
+            <defs>
+              <radialGradient id="sculpture-core" cx=".33" cy=".2" r=".85"><stop stop-color="#555954"/><stop offset=".35" stop-color="#222420"/><stop offset=".75" stop-color="#0c0d0c"/><stop offset="1" stop-color="#343630"/></radialGradient>
+              <linearGradient id="sculpture-metal" x1="140" y1="100" x2="600" y2="570" gradientUnits="userSpaceOnUse"><stop stop-color="#6f736a"/><stop offset=".22" stop-color="#fafbf2"/><stop offset=".42" stop-color="#62675b"/><stop offset=".57" stop-color="#12150e"/><stop offset=".76" stop-color="#b7bcae"/><stop offset="1" stop-color="#30352a"/></linearGradient>
+              <linearGradient id="sculpture-letter" x1="310" y1="250" x2="450" y2="415" gradientUnits="userSpaceOnUse"><stop stop-color="#f8f8ee"/><stop offset=".6" stop-color="#c9cec0"/><stop offset="1" stop-color="#656c5d"/></linearGradient>
+              <clipPath id="sculpture-ball"><circle cx="380" cy="310" r="180"/></clipPath>
+            </defs>
+            <g stroke="url(#sculpture-metal)">
+              <ellipse cx="380" cy="310" rx="290" ry="93" transform="rotate(-34 380 310)" stroke-width="13"/>
+              <ellipse cx="380" cy="310" rx="266" ry="99" transform="rotate(53 380 310)" stroke-width="9"/>
+            </g>
+            <circle class="orbiter" cx="621.9" cy="150.2" r="24" fill="url(#sculpture-metal)"/>
+            <circle class="orbiter orbiter-trail" cx="139.9" cy="425" r="9" fill="#20241b"/>
+            <circle cx="380" cy="310" r="180" fill="url(#sculpture-core)"/>
+            <g clip-path="url(#sculpture-ball)" stroke="#a7b09d" stroke-opacity=".18" stroke-width=".8">
+              <ellipse cx="380" cy="310" rx="50" ry="180"/><ellipse cx="380" cy="310" rx="105" ry="180"/><ellipse cx="380" cy="310" rx="153" ry="180"/>
+              <ellipse cx="380" cy="310" rx="180" ry="46"/><ellipse cx="380" cy="310" rx="180" ry="99"/><ellipse cx="380" cy="310" rx="180" ry="149"/>
+              <path d="M200 310h360M380 130v360"/>
+            </g>
+            <path d="M438 248a87 87 0 1 0 0 124" stroke="#030403" stroke-width="35" transform="translate(3 7)"/>
+            <path d="M438 248a87 87 0 1 0 0 124" stroke="url(#sculpture-letter)" stroke-width="31"/>
+            <circle cx="458" cy="311" r="12" fill="#c7d2a8"/>
+            <path d="M140 460C206 493 393 405 546 283" stroke="url(#sculpture-metal)" stroke-width="13" stroke-linecap="round"/>
+            <path d="M500 496c41-47 17-149-48-247" stroke="url(#sculpture-metal)" stroke-width="9" stroke-linecap="round"/>
+            <path d="M166 128v17m-8-8h17M614 442v17m-8-8h17" stroke="#858c7c" stroke-width="1.2"/>
+          </svg>
+        </div>
+        <picture class="hero-portrait">
+          <source type="image/webp" srcset="./assets/cesar-portrait-560.webp 560w, ./assets/cesar-portrait-1040.webp 1040w" sizes="(max-width: 760px) min(66vw, 300px), (max-width: 1100px) min(46vw, 440px), min(36vw, 600px)">
+          <img src="./assets/cesar-portrait-640.png" alt="Cesar Tortolero" width="560" height="671" fetchpriority="high">
+        </picture>
+        <div class="orbit-label orbit-label-top mono" aria-hidden="true">TRACE / EVALUATE / SHIP</div>
+        <div class="art-coordinate mono" aria-hidden="true">C — 01</div>
       </div>
       <div class="hero-bottom">
-        <div class="hero-intro"><span class="mono small-label">HELLO, I'M CESAR TORTOLERO</span><p>Developer.<br>Curious by default.</p></div>
-        <a class="scroll-cue" href="#about" aria-label="Explore the about section"><span aria-hidden="true">↘</span></a>
-        <p class="hero-note mono">BUILDING USEFUL SOFTWARE.<br>EXPLORING WHAT COMES NEXT.<br>ALWAYS A WORK IN PROGRESS.</p>
+        <div class="hero-intro">
+          <span class="mono small-label">HELLO, I’M CESAR TORTOLERO</span>
+          <p>At ADP I build AI agents and LLM evaluation on AWS.</p>
+          <p class="hero-scope">Also MCP integrations, LLM tracing, serverless APIs and MLOps.</p>
+        </div>
+        <!-- Proof strip: three facts stated further down, each linking to where it is backed up. -->
+        <ul class="hero-proof" aria-label="Highlights">
+          <li><a href="#experience"><span class="proof-figure"><span aria-hidden="true">~</span><span class="visually-hidden">About </span>350</span> <span class="proof-label mono">Developers I helped train <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
+          <li><a href="#experience"><span class="proof-figure">250+</span> <span class="proof-label mono">Agents running on the platform I teach <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
+          <li><a href="#approach"><span class="proof-figure">Day <span class="icon icon-arrow-e" aria-hidden="true"></span><span class="visually-hidden">to </span>minutes</span> <span class="proof-label mono">Firewall checks across many AWS accounts <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
+        </ul>
+        <a class="scroll-cue" href="#about" aria-label="Skip to the about section"><span class="icon icon-arrow-se" aria-hidden="true"></span></a>
+        <!-- One column, the same order on screen and in the tab order at every width:
+             résumé; Lab, GitHub, LinkedIn and Email; then the tour pill. -->
+        <div class="hero-actions hero-note">
+          <a class="pill-button" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Download résumé <span class="pill-meta">PDF</span> <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
+          <div class="hero-links mono">
+            <a href="#lab">LAB <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
+            <a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">GITHUB <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+            <a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+            <a href="mailto:lucenatrujillo.cesar@gmail.com">EMAIL <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+          </div>
+          <!-- When app.js can replay the build tour (scripts on, motion allowed) it sets data-tour-mode="replay":
+               the pill then shows its length and a play icon (styles.css). Otherwise it opens the recorded run.
+               Hidden while a tour runs. -->
+          <a class="pill-button pill-ghost hero-tour" href="./lab/build-trace.html" data-tour-replay aria-label="Watch it get built: the recorded agent run behind this page">Watch it get built <span class="pill-meta" aria-hidden="true">55 s</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        </div>
       </div>
-      <div class="hero-rule mono"><span>THINK DEEPLY. MAKE SOMETHING.</span><span>SCROLL TO EXPLORE ↓</span></div>
+      <div class="hero-rule mono"><span>AGENTS, EVALS AND MLOPS AT ADP.</span><span>SCROLL TO EXPLORE <span class="icon icon-arrow-s" aria-hidden="true"></span></span></div>
     </section>
 
-    <section id="about" class="about-transition dark-section" aria-labelledby="about-title">
-      <div class="about-flow" aria-hidden="true"><img src="./assets/about-flow.svg" alt="" width="1600" height="1000" loading="lazy"></div>
-      <div class="about-transition-meta mono"><span>01 / A LITTLE CONTEXT</span><span>THE PERSON BEHIND THE PROJECTS</span></div>
-      <div class="about-title-panel">
-        <span class="about-panel-index mono">C / A CLOSER LOOK</span>
-        <h2 id="about-title">ABOUT<br>ME</h2>
-        <a class="about-discover" href="#introduction" aria-label="Meet Cesar"><span aria-hidden="true">↓</span></a>
+    <!-- Wide screens with JS and motion: the scene pins while the page scrolls through the section and the
+         panel opens into a window onto #introduction (about-scenes.css "opening"). Otherwise it reads as is. -->
+    <section id="about" class="about-transition dark-section" data-nav-section="introduction" aria-labelledby="about-title">
+      <div class="about-scene">
+        <div class="about-field">
+          <!-- The flow field (about 311 KB) is fetched by app.js only once the visitor heads
+               for it (scroll, wheel, touch, keys, a deep link, or the build tour about to arrive);
+               without scripts the <noscript> copy loads as usual. -->
+          <div class="about-flow" aria-hidden="true"><img data-src="./assets/about-flow.svg" alt="" width="1600" height="1000" decoding="async"><noscript><img src="./assets/about-flow.svg" alt="" width="1600" height="1000" decoding="async"></noscript></div>
+          <div class="about-transition-meta mono"><span>01 / A LITTLE CONTEXT</span><span>THE PERSON BEHIND THE PROJECTS</span></div>
+        </div>
+        <div class="about-window" aria-hidden="true"></div>
+        <div class="about-title-panel">
+          <span class="about-panel-index mono">C / A CLOSER LOOK</span>
+          <h2 id="about-title">ABOUT <br>ME</h2>
+        </div>
+        <div class="about-transition-foot mono"><span>FROM BCI RESEARCH TO PRODUCTION AGENTS.</span><span>KEEP EXPLORING <span class="icon icon-arrow-s" aria-hidden="true"></span></span></div>
       </div>
-      <div class="about-transition-foot mono"><span>A LITTLE CURIOSITY GOES A LONG WAY.</span><span>KEEP EXPLORING ↓</span></div>
     </section>
 
-    <section id="introduction" class="cinematic dark-section" data-nav-section="about" aria-labelledby="introduction-title">
+    <section id="introduction" class="cinematic dark-section" aria-labelledby="introduction-title">
       <div class="cinematic-stage">
         <div class="cinematic-light" aria-hidden="true"></div>
-        <div class="cinematic-art" aria-hidden="true"><img src="./assets/light-sculpture.svg" alt="" width="600" height="600" loading="lazy"></div>
-        <div class="cinematic-topline mono"><span>TURNING BETTER QUESTIONS<br>INTO USEFUL SOFTWARE.</span><span>CESAR TORTOLERO<br>CODE & CURIOSITY</span></div>
+        <!-- Icarus falls out of the light: legs still toward the bright end of the shaft, wings breaking, loose
+             feathers shed above him. On scroll he falls down the shaft and tumbles while the feathers lag behind
+             (about-scenes.css); without that he rests, centred above the copy. The figure is one swappable image:
+             see docs/assets.md. -->
+        <div class="cinematic-art" aria-hidden="true">
+          <div class="beam-fall">
+            <div class="beam-halo"></div>
+            <img class="beam-figure" src="./assets/icarus-960.webp" srcset="./assets/icarus-560.webp 560w, ./assets/icarus-960.webp 960w" sizes="(max-width: 760px) 205px, (max-width: 1000px) 250px, (max-width: 1499px) 290px, (max-width: 1899px) 345px, 420px" alt="" width="960" height="1130" decoding="async" fetchpriority="low">
+          </div>
+          <div class="beam-feathers"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="cinematic-topline mono"><span>AI AGENTS, LLM EVALUATION <br>AND MLOPS ON AWS.</span><span>CESAR TORTOLERO <br>MACHINE LEARNING ENGINEER</span></div>
         <div class="cinematic-footer">
           <div class="cinematic-copy">
-            <span class="mono">SOFTWARE / APPLIED AI / EXPERIMENTS</span>
-            <h2 id="introduction-title">Good software starts with a better question.</h2>
-            <p>I'm Cesar Tortolero. I like turning messy, everyday problems into software that makes things a little clearer.</p>
-            <p>My projects move between operations, opportunity discovery, and experiments with language. Different problems. The same curiosity.</p>
+            <span class="mono">ML ENGINEERING / LLM SYSTEMS / MLOPS</span>
+            <h2 id="introduction-title">From EEG signals to AI agents in production.</h2>
+            <p>I’m Cesar Tortolero, a Machine Learning Engineer at ADP, based in Morristown, NJ, in the New York City area. I teach developers to build, test and deploy AI agents, and debug their agent integrations when they break in production.</p>
+            <p>Before ADP, I led thoughts-to-text brain-computer interface research at Kennesaw State University. I speak English and Spanish.</p>
+            <p class="currently"><span class="mono">CURRENTLY</span> Pursuing an M.S. in Computer Science (Machine Learning) at Georgia Tech, part-time, while working full-time.</p>
           </div>
           <div class="scene-actions">
-            <a class="scene-pill scene-pill-primary" href="#work">Explore my work <span aria-hidden="true">↗</span></a>
-            <a class="scene-pill" href="#approach">My approach <span aria-hidden="true">↗</span></a>
+            <a class="scene-pill scene-pill-primary" href="#capabilities">What I can do <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+            <a class="scene-pill" href="#experience">Experience <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
           </div>
         </div>
       </div>
-      <div class="cinematic-caption mono"><span>IDEAS ARE A STARTING POINT.</span><span>THE INTERESTING PART IS WHAT HAPPENS NEXT.</span></div>
+      <div class="cinematic-caption mono"><span>KENNESAW STATE · BCI RESEARCH 2021–2023</span><span>ADP · ML ENGINEERING SINCE 2024</span></div>
+    </section>
+
+    <section id="capabilities" class="capabilities dark-section" aria-labelledby="capabilities-title">
+      <div class="section-top mono"><span>02 / WHAT I CAN DO</span><span>SEVEN AREAS</span></div>
+      <div class="capabilities-heading"><h2 id="capabilities-title">WHAT I <br><span>CAN DO.</span></h2><p>The roles and results behind each one are in Experience, below.</p></div>
+      <ul class="capability-list">
+        <li class="capability">
+          <h3>Build and ship AI agents and MCP integrations on AWS</h3>
+          <p class="capability-proof">Debugged production agent integrations (MCP IAM signing, OAuth, secrets) and brought a payroll agent back into service.</p>
+          <ul class="tag-list" aria-label="Tools"><li>Strands Agents</li><li>MCP</li><li>AWS Bedrock AgentCore</li></ul>
+        </li>
+        <li class="capability" data-chart="records">
+          <h3>Trace and evaluate LLM systems</h3>
+          <p class="capability-proof">Scored a skill-extraction model on 2,400+ records: precision, recall and F1, by slice.</p>
+          <ul class="tag-list" aria-label="Tools"><li>Arize AX</li><li>OpenTelemetry</li><li>OpenInference</li></ul>
+        </li>
+        <li class="capability">
+          <h3>Build serverless backends and cloud infrastructure</h3>
+          <p class="capability-proof">A serverless Python API on AWS Lambda and private API Gateway, deployed with Terraform.</p>
+          <ul class="tag-list" aria-label="Tools"><li>Python</li><li>FastAPI</li><li>AWS Lambda</li><li>Private API Gateway</li><li>Terraform</li><li>DynamoDB</li><li>NestJS</li></ul>
+        </li>
+        <li class="capability">
+          <h3>Run MLOps and model deployment</h3>
+          <p class="capability-proof">Supported Unity Catalog and MLflow migrations across a model inventory in the hundreds.</p>
+          <ul class="tag-list" aria-label="Tools"><li>Databricks Unity Catalog</li><li>MLflow</li><li>Spark</li><li>Amazon SageMaker</li></ul>
+        </li>
+        <li class="capability">
+          <h3>Run multi-region releases</h3>
+          <p class="capability-proof">Weekly releases across US and EU regions. In one, for example, every job finished green.</p>
+          <ul class="tag-list" aria-label="Tools"><li>Jenkins</li><li>Terraform</li><li>Artifactory</li></ul>
+        </li>
+        <li class="capability" data-chart="videos">
+          <h3>Teach and unblock developers</h3>
+          <p class="capability-proof">Hands-on workshops, an onboarding guide and 12 demo videos for developers.</p>
+        </li>
+        <li class="capability">
+          <h3>Do applied ML research</h3>
+          <p class="capability-proof">EEG research presented at NCUR, and a chatbot with a sentiment module that won First&nbsp;Place at KSU C-Day, Spring&nbsp;2024.</p>
+          <ul class="tag-list" aria-label="Topics"><li>Python</li><li>EEG</li><li>Autoencoder</li><li>Sentiment analysis</li></ul>
+        </li>
+      </ul>
+    </section>
+
+    <section id="experience" class="experience dark-section" aria-labelledby="experience-title">
+      <div class="section-top mono"><span>03 / EXPERIENCE</span><span>BUILD · TEACH · SHIP · DEBUG</span></div>
+      <div class="experience-heading"><h2 id="experience-title">WORK <br><span>EXPERIENCE.</span></h2><p>Machine learning engineering at ADP since July 2024. Before that, brain-computer interface research at Kennesaw State University.</p></div>
+
+      <!-- Three chapters. On wide screens experience.js pins the stage and the
+           page scroll carries the track sideways; otherwise they stack. -->
+      <div class="xp-travel">
+        <div class="xp-stage">
+          <div class="xp-track">
+            <article class="xp-chapter" id="xp-ml" aria-labelledby="xp-ml-title">
+              <span class="xp-year" aria-hidden="true">2026</span>
+              <header class="xp-head">
+                <p class="xp-org mono">ADP · ROSELAND, NJ</p>
+                <h3 class="xp-title" id="xp-ml-title" data-ghost="Machine Learning Engineer">Machine Learning Engineer</h3>
+                <p class="xp-when mono"><time datetime="2026-08">AUG 2026</time> – PRESENT</p>
+                <p class="xp-note">The 2026 work below began while I was an Associate ML Engineer and continues in this role.</p>
+              </header>
+              <div class="xp-group">
+                <div class="xp-group-head"><span class="mono">2026</span><h4 id="group-agents">AI agent platform &amp; applied AI</h4></div>
+                <ul class="xp-points">
+                  <li>Co-delivered <strong>18+ hands-on workshops</strong> to <strong>~350 developers</strong> across payroll, HR, tax and analytics on building, testing and deploying AI agents. The platform now runs <strong>250+ agents</strong>. Wrote the onboarding guide and 12 demo videos.</li>
+                  <li>Debugged production agent integrations: MCP IAM request signing, OAuth credentials, missing deployment secrets and network rules. Brought a payroll agent and a regional integration back into service.</li>
+                  <li>Set up LLM tracing and evaluation with Arize AX and OpenTelemetry/OpenInference. Evaluated a skill-extraction model on <strong>2,400+ records</strong> with precision, recall, F1 and slice analysis.</li>
+                  <li>Hardened a developer-portal API: transactional versioning, optimistic concurrency, entitlement fixes and audit identity.</li>
+                </ul>
+                <ul class="tag-list" aria-label="Tools">
+                  <li>Strands Agents</li><li>MCP</li><li>AWS Bedrock AgentCore</li><li>Arize AX</li><li>OpenTelemetry</li><li>OpenInference</li><li>NestJS</li><li>TypeScript</li><li>DynamoDB</li>
+                </ul>
+              </div>
+              <div class="xp-group">
+                <div class="xp-group-head"><span class="mono">2026</span><h4 id="group-cloud">Cloud infrastructure &amp; release engineering</h4></div>
+                <ul class="xp-points">
+                  <li>Built a serverless cross-account network-testing API that probes across AWS accounts in parallel with bounded retries.</li>
+                  <li>Built a network-diagnostics app that verifies firewall rules across <strong>many AWS accounts</strong>.</li>
+                  <li>Ran <strong>6+ weekly multi-region releases</strong> of an enterprise AI assistant platform; in one, for example, every US and EU job finished green. Wrote the runbook.</li>
+                </ul>
+                <ul class="tag-list" aria-label="Tools">
+                  <li>FastAPI</li><li>AWS Lambda</li><li>Private API Gateway</li><li>Terraform</li><li>Python</li><li>Flask</li><li>boto3</li><li>SSM Run Command</li><li>Jenkins</li><li>Artifactory</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="xp-chapter" id="xp-associate" aria-labelledby="xp-associate-title">
+              <span class="xp-year" aria-hidden="true">2024</span>
+              <header class="xp-head">
+                <p class="xp-org mono">ADP · ROSELAND, NJ</p>
+                <h3 class="xp-title" id="xp-associate-title" data-ghost="Associate ML Engineer">Associate ML Engineer</h3>
+                <p class="xp-when mono"><time datetime="2024-07">JUL 2024</time> – <time datetime="2026-07">JUL 2026</time></p>
+              </header>
+              <div class="xp-group">
+                <div class="xp-group-head"><span class="mono">2024 – 2025</span><h4 id="group-mlops">MLOps &amp; GenAI</h4></div>
+                <ul class="xp-points">
+                  <li>Supported Databricks Unity Catalog and MLflow model migrations: signatures, aliases and Spark UDF batch inference, across a <strong>model inventory in the hundreds</strong>.</li>
+                  <li>Root-caused SageMaker endpoint deployment failures in Jenkins.</li>
+                  <li>Built GenAI playground features with Streamlit and LangChain.</li>
+                </ul>
+                <ul class="tag-list" aria-label="Tools">
+                  <li>Databricks Unity Catalog</li><li>MLflow</li><li>Spark</li><li>Amazon SageMaker</li><li>Jenkins</li><li>Streamlit</li><li>LangChain</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="xp-chapter" id="xp-ksu" aria-labelledby="xp-ksu-title">
+              <span class="xp-year" aria-hidden="true">2021</span>
+              <header class="xp-head">
+                <p class="xp-org mono">KENNESAW STATE UNIVERSITY</p>
+                <h3 class="xp-title" id="xp-ksu-title" data-ghost="Lead Researcher">Lead Researcher<span class="visually-hidden">,</span> <span class="xp-title-tail">Thoughts-to-Text BCI</span></h3>
+                <p class="xp-when mono"><time datetime="2021-09">SEP 2021</time> – <time datetime="2023-05">MAY 2023</time></p>
+              </header>
+              <div class="xp-group">
+                <div class="xp-group-head"><span class="mono">RESEARCH</span><h4 id="group-bci">Brain-computer interface</h4></div>
+                <ul class="xp-points">
+                  <li>Researched decoding attempted handwriting from EEG, one character at a time, and mapped how characters separate with an autoencoder and t-SNE.</li>
+                  <li>Presented the work at NCUR and received a <strong>$2,000</strong> Research Excellence stipend.</li>
+                </ul>
+                <ul class="tag-list" aria-label="Topics">
+                  <li>EEG</li><li>Autoencoder</li><li>t-SNE</li>
+                </ul>
+              </div>
+              <div class="xp-group">
+                <div class="xp-group-head"><span class="mono">2022 – 2023</span><h4 id="group-mentor">Research Peer Mentor</h4></div>
+                <ul class="xp-points">
+                  <li>Mentored <strong>50+ undergraduate researchers</strong> (2022–2023).</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+
+          <div class="xp-controls" hidden>
+            <span class="xp-progress" aria-hidden="true"></span>
+            <p class="xp-count mono" aria-hidden="true"><span class="xp-count-current">01</span> / 03</p>
+            <nav class="xp-index" aria-label="Experience chapters">
+              <button class="xp-index-button" type="button" data-xp-go="0" aria-controls="xp-ml"><span class="mono">2026</span><span class="xp-index-name">ML Engineer</span></button>
+              <button class="xp-index-button" type="button" data-xp-go="1" aria-controls="xp-associate"><span class="mono">2024</span><span class="xp-index-name">Associate ML Engineer</span></button>
+              <button class="xp-index-button" type="button" data-xp-go="2" aria-controls="xp-ksu"><span class="mono">2021</span><span class="xp-index-name">Lead Researcher</span></button>
+            </nav>
+            <div class="xp-steps">
+              <button class="xp-step" type="button" data-xp-step="-1" aria-label="Previous chapter"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M16 10H4m5-5-5 5 5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button class="xp-step" type="button" data-xp-step="1" aria-label="Next chapter"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M4 10h12m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section id="work" class="work" aria-labelledby="work-title">
-      <div class="section-top mono"><span>02 / SELECTED PROJECTS</span><span>A SMALL COLLECTION OF ONGOING WORK</span></div>
-      <div class="work-heading"><h2 id="work-title">LESS TALK.<br>MORE <span>MAKING.</span></h2><p>Tools for real workflows.<br>Experiments worth following.<br>Each one starts with a question.</p></div>
-      <div class="gallery" aria-roledescription="carousel" aria-label="Selected projects">
-        <div class="gallery-stage" tabindex="0" aria-label="Project gallery. Use left and right arrow keys to browse.">
-          <div class="gallery-track">
-            <article class="project-card" data-project="barking">
-              <a class="project-image-link" href="#project-barking" data-open="project-barking" aria-label="Explore Barking Village"><img src="./assets/barking-village.svg" alt="Original interface illustration for Barking Village, with a green staff sidebar and care planning panels" width="900" height="620" loading="lazy" draggable="false"></a>
-              <div class="project-card-bottom"><div><span class="mono">01 / OPERATIONS SOFTWARE</span><h3>Barking Village</h3></div><a href="#project-barking" class="project-open" data-open="project-barking" aria-label="Read about Barking Village">↗</a></div>
-            </article>
-            <article class="project-card" data-project="work-helper">
-              <a class="project-image-link" href="#project-work-helper" data-open="project-work-helper" aria-label="Explore Work Helper"><img src="./assets/work-helper.svg" alt="Original interface illustration for Work Helper, showing opportunity discovery and three steps for a job search" width="900" height="620" loading="lazy" draggable="false"></a>
-              <div class="project-card-bottom"><div><span class="mono">02 / OPPORTUNITY DISCOVERY</span><h3>Work Helper</h3></div><a href="#project-work-helper" class="project-open" data-open="project-work-helper" aria-label="Read about Work Helper">↗</a></div>
-            </article>
-            <article class="project-card" data-project="voicelab">
-              <a class="project-image-link" href="#project-voicelab" data-open="project-voicelab" aria-label="Explore VoiceLab"><img src="./assets/voicelab.svg" alt="Original interface illustration for VoiceLab, showing writing passages beside a language signal visualization" width="900" height="620" loading="lazy" draggable="false"></a>
-              <div class="project-card-bottom"><div><span class="mono">03 / LANGUAGE EXPERIMENTS</span><h3>VoiceLab</h3></div><a href="#project-voicelab" class="project-open" data-open="project-voicelab" aria-label="Read about VoiceLab">↗</a></div>
-            </article>
+      <div class="section-top mono"><span>04 / SELECTED PROJECTS</span><span>RESEARCH, EXPERIMENTS AND TOOLS</span></div>
+      <div class="work-heading"><h2 id="work-title">PROJECTS.</h2><p>Agent tooling, EEG research and a capstone chatbot, then three smaller side projects.</p></div>
+      <div class="explorer">
+        <div class="explorer-stage" data-explorer-mode="ring">
+          <div class="explorer-hub"><h3 id="explorer-title"><span class="explorer-hub-word">All projects</span> <span class="explorer-hub-count mono"><span class="visually-hidden">: </span>06</span></h3></div>
+          <ol class="explorer-covers" role="list" aria-label="Project case studies">
+            <li class="explorer-item" data-explorer-item="0"><a class="explorer-card" href="./projects/agent-workflow.html" aria-label="Multi-Agent Workflow, agent tooling: implement, review and verify steps with read-only CI and source-control context. Read the case study."><span class="explorer-cover"><img src="./assets/agent-workflow.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Multi-Agent Workflow</span><span class="mono explorer-card-category">01 / AGENT TOOLING</span><span class="explorer-card-lead">A specialist for each step. Context they can read, not change.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="1"><a class="explorer-card" href="./projects/thoughts-to-text.html" aria-label="Thoughts-to-Text BCI, BCI research: noisy EEG channels from attempted handwriting beside a 2D map of letter clusters. Read the case study."><span class="explorer-cover"><img src="./assets/thoughts-to-text.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Thoughts-to-Text BCI</span><span class="mono explorer-card-category">02 / BCI RESEARCH</span><span class="explorer-card-lead">From brain signals to letters.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="2"><a class="explorer-card" href="./projects/companion-chatbot.html" aria-label="Companionship Chatbot, conversational AI: a companion chat beside eight emotion labels. Read the case study."><span class="explorer-cover"><img src="./assets/companion-chatbot.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Companionship Chatbot</span><span class="mono explorer-card-category">03 / CONVERSATIONAL AI</span><span class="explorer-card-lead">Listen for the tone, not just the words.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="3"><a class="explorer-card" href="./projects/voicelab.html" aria-label="VoiceLab, side project: writing passages beside a language signal visualization. Read the case study."><span class="explorer-cover"><img src="./assets/voicelab.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">VoiceLab</span><span class="mono explorer-card-category">04 / SIDE PROJECT · PROTOTYPE</span><span class="explorer-card-lead">A local writing-analysis prototype that keeps text on the device.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="4"><a class="explorer-card" href="./projects/work-helper.html" aria-label="Work Helper, side project: finding opportunities and three steps for a job search. Read the case study."><span class="explorer-cover"><img src="./assets/work-helper.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Work Helper</span><span class="mono explorer-card-category">05 / SIDE PROJECT · IN DEVELOPMENT</span><span class="explorer-card-lead">A tool in development to help people find job opportunities and take the next step.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+            <li class="explorer-item" data-explorer-item="5"><a class="explorer-card" href="./projects/barking-village.html" aria-label="Barking Village, side project: a staff sidebar and care planning panels. Read the case study."><span class="explorer-cover"><img src="./assets/barking-village.svg" alt="" width="900" height="620" loading="lazy" decoding="async" draggable="false"></span><span class="explorer-card-text"><span class="explorer-card-name">Barking Village</span><span class="mono explorer-card-category">06 / SIDE PROJECT · FULL-STACK APP</span><span class="explorer-card-lead">A full-stack app that puts dog-care staff workflows in one place.</span></span><span class="explorer-card-open mono" aria-hidden="true">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></span></a></li>
+          </ol>
+          <div class="explorer-caption" aria-hidden="true">
+            <p class="explorer-caption-title">Multi-Agent Workflow</p>
+            <p class="explorer-caption-meta mono"><span class="explorer-caption-category">AGENT TOOLING</span> <span class="explorer-caption-count">01 / 06</span></p>
+            <p class="explorer-caption-lead">A specialist for each step. Context they can read, not change.</p>
+            <!-- Key facts of each project, as explorer.js would build them from the stories below (readFacts,
+                 buildFacts; tests/portfolio.test.js keeps the two equal). In the page from the start so the
+                 caption, which sets the stage's height on tablets and phones, is as tall before the script as after. -->
+            <div class="explorer-facts">
+              <div class="explorer-facts-panel is-active" role="group" aria-label="Multi-Agent Workflow: key facts"><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Focus</dt><dd>Clear roles and read-only access to delivery tools</dd></div><div class="explorer-fact explorer-fact-stack"><dt class="mono">Stack</dt><dd><ul class="tag-list explorer-tags" role="list"><li>MCP</li><li>Coding subagents</li><li>CI</li><li>Source control</li></ul></dd></div></dl></div>
+              <div class="explorer-facts-panel" role="group" aria-label="Thoughts-to-Text BCI: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Role</dt><dd>Lead researcher, Sep 2021 – May 2023</dd></div><div class="explorer-fact"><dt class="mono">Presented</dt><dd>2 KSU symposium presentations, 2022</dd></div><div class="explorer-fact explorer-fact-stack"><dt class="mono">Stack</dt><dd><ul class="tag-list explorer-tags" role="list"><li>EEG</li><li>Autoencoder</li><li>t-SNE</li></ul></dd></div></dl></div>
+              <div class="explorer-facts-panel" role="group" aria-label="Companionship Chatbot: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Award</dt><dd>First Place, KSU C-Day, Spring 2024</dd></div><div class="explorer-fact"><dt class="mono">Role</dt><dd>Team lead, backend LLM</dd></div><div class="explorer-fact explorer-fact-stack"><dt class="mono">Stack</dt><dd><ul class="tag-list explorer-tags" role="list"><li>DistilGPT-2</li><li>Sentiment analysis</li><li>Python</li><li>React Native</li><li>Firebase</li></ul></dd></div></dl><p class="explorer-facts-more"><a class="explorer-facts-link mono" href="./lab/sentiment-eval.html">How I evaluate a classifier (public data)<span class="visually-hidden">: two sentiment classifiers tested on open review data, not the chatbot’s original model</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></p></div>
+              <div class="explorer-facts-panel" role="group" aria-label="VoiceLab: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Focus</dt><dd>Explainable analysis and thoughtful revision</dd></div><div class="explorer-fact"><dt class="mono">Stage</dt><dd>Local prototype</dd></div></dl></div>
+              <div class="explorer-facts-panel" role="group" aria-label="Work Helper: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Focus</dt><dd>Making opportunity discovery more approachable</dd></div><div class="explorer-fact"><dt class="mono">Stage</dt><dd>In development</dd></div></dl></div>
+              <div class="explorer-facts-panel" role="group" aria-label="Barking Village: key facts" inert><dl class="explorer-facts-list"><div class="explorer-fact"><dt class="mono">Focus</dt><dd>Everyday operational workflows</dd></div><div class="explorer-fact"><dt class="mono">Exploring</dt><dd>Clear interfaces for complex, connected tasks</dd></div></dl></div>
+            </div>
+            <a class="explorer-caption-open mono" href="./projects/agent-workflow.html" tabindex="-1">CASE STUDY <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
           </div>
-          <div class="gallery-ground" aria-hidden="true"></div>
+          <div class="explorer-index">
+            <p class="explorer-index-label mono" id="explorer-index-label">Index <span class="explorer-index-count" aria-hidden="true">01 / 06</span></p>
+            <ol role="list" aria-labelledby="explorer-index-label">
+              <li><button class="explorer-pick" type="button" data-explorer-pick="0"><span class="mono explorer-pick-no">01</span><span class="explorer-pick-name">Multi-Agent Workflow</span></button></li>
+              <li><button class="explorer-pick" type="button" data-explorer-pick="1"><span class="mono explorer-pick-no">02</span><span class="explorer-pick-name">Thoughts-to-Text BCI</span></button></li>
+              <li><button class="explorer-pick" type="button" data-explorer-pick="2"><span class="mono explorer-pick-no">03</span><span class="explorer-pick-name">Companionship Chatbot</span></button></li>
+              <li><button class="explorer-pick" type="button" data-explorer-pick="3"><span class="mono explorer-pick-no">04</span><span class="explorer-pick-name">VoiceLab</span></button></li>
+              <li><button class="explorer-pick" type="button" data-explorer-pick="4"><span class="mono explorer-pick-no">05</span><span class="explorer-pick-name">Work Helper</span></button></li>
+              <li><button class="explorer-pick" type="button" data-explorer-pick="5"><span class="mono explorer-pick-no">06</span><span class="explorer-pick-name">Barking Village</span></button></li>
+            </ol>
+          </div>
+          <p class="explorer-hint mono" aria-hidden="true"><span class="explorer-hint-fine">SCROLL OR DRAG <span class="icon icon-arrow-ns" aria-hidden="true"></span> · ARROW KEYS</span><span class="explorer-hint-touch">SWIPE <span class="icon icon-arrow-ew" aria-hidden="true"></span> OR TAP A PROJECT</span></p>
+          <p class="explorer-live visually-hidden" aria-live="polite" aria-atomic="true"></p>
         </div>
-        <div class="gallery-controls" hidden>
-          <button class="circle-button gallery-prev" aria-label="Previous project">←</button>
-          <span class="gallery-count mono" aria-live="polite" aria-atomic="true">01 / 03 — Barking Village</span>
-          <button class="circle-button gallery-next" aria-label="Next project">→</button>
-        </div>
-        <div class="project-selectors" aria-label="Choose a project" hidden>
-          <button data-select="0" aria-pressed="true">Barking Village</button><button data-select="1" aria-pressed="false">Work Helper</button><button data-select="2" aria-pressed="false">VoiceLab</button>
-        </div>
-        <p class="gallery-instruction mono" hidden>DRAG TO EXPLORE <span aria-hidden="true">↔</span> OR USE THE ARROWS</p>
       </div>
       <div class="project-stories">
-        <section id="project-barking" class="project-story" aria-labelledby="barking-title"><span class="mono story-category">OPERATIONS SOFTWARE</span><h3 id="barking-title">Barking Village</h3><p class="story-lead">Less friction behind the scenes. More room for care.</p><p>A full-stack dog-care operations project bringing staff workflows into one place: care sessions, daily planning, room status, and dog records.</p><dl><div><dt>Focus</dt><dd>Everyday operational workflows</dd></div><div><dt>Exploring</dt><dd>Clear interfaces for complex, connected tasks</dd></div></dl><p class="story-footnote">The project cover is an original illustration. No customer or operational data is shown.</p></section>
-        <section id="project-work-helper" class="project-story" aria-labelledby="work-helper-title"><span class="mono story-category">OPPORTUNITY DISCOVERY</span><h3 id="work-helper-title">Work Helper</h3><p class="story-lead">A more intentional way to approach what's next.</p><p>A project exploring how software can help people discover job opportunities and take the next step. The current work includes a local onboarding prototype.</p><dl><div><dt>Focus</dt><dd>Making opportunity discovery more approachable</dd></div><div><dt>Stage</dt><dd>In development</dd></div></dl><p class="story-footnote">The project cover is an original interface illustration, not a screenshot of a launched service.</p></section>
-        <section id="project-voicelab" class="project-story" aria-labelledby="voicelab-title"><span class="mono story-category">LANGUAGE EXPERIMENTS</span><h3 id="voicelab-title">VoiceLab</h3><p class="story-lead">Understand the signals. Keep the meaning.</p><p>A local prototype for explainable writing-signal analysis and meaning-preserving revision. It explores patterns in language while keeping text on the local device.</p><dl><div><dt>Focus</dt><dd>Explainable analysis and thoughtful revision</dd></div><div><dt>Stage</dt><dd>Local prototype</dd></div></dl><p class="story-footnote">This experiment does not establish authorship. The cover is an original illustration.</p></section>
+        <section id="project-agents" class="project-story" aria-labelledby="agents-title"><span class="mono story-category">AGENT TOOLING</span><h3 id="agents-title">Multi-Agent Workflow</h3><p class="story-lead">A specialist for each step. Context they can read, not change.</p><p>A multi-agent developer workflow. Specialist coding subagents split the work: one implements, one reviews, one verifies. Read-only MCP servers give them CI and source-control context, and a searchable knowledge base is compiled automatically from work sessions.</p><dl><div><dt>Focus</dt><dd>Clear roles and read-only access to delivery tools</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>MCP</li><li>Coding subagents</li><li>CI</li><li>Source control</li></ul></dd></div></dl><p class="story-footnote">No internal code, data or systems are shown. The cover is an original illustration.</p><a class="text-link story-case-link" href="./projects/agent-workflow.html">Read the case study<span class="visually-hidden">: Multi-Agent Workflow</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
+        <section id="project-bci" class="project-story" aria-labelledby="bci-title"><span class="mono story-category">BCI RESEARCH</span><h3 id="bci-title">Thoughts-to-Text BCI</h3><p class="story-lead">From brain signals to letters.</p><p>Kennesaw State University research on a thoughts-to-text brain-computer interface: decoding the EEG signals of attempted handwriting into text, one character at a time. As lead researcher, I presented the work at NCUR, the National Conference on Undergraduate Research, and in two KSU symposium presentations on this work (2022), plus a related motor-imagery talk.</p><dl><div><dt>Role</dt><dd>Lead researcher, Sep 2021 – May 2023</dd></div><div><dt>Presented</dt><dd>2 KSU symposium presentations, 2022</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>EEG</li><li>Autoencoder</li><li>t-SNE</li></ul></dd></div></dl><p class="story-footnote">The cover is an original illustration, not research data.</p><a class="text-link story-case-link" href="./projects/thoughts-to-text.html">Read the case study<span class="visually-hidden">: Thoughts-to-Text BCI</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
+        <section id="project-chatbot" class="project-story" aria-labelledby="chatbot-title"><span class="mono story-category">CONVERSATIONAL AI</span><h3 id="chatbot-title">Companionship Chatbot</h3><p class="story-lead">Listen for the tone, not just the words.</p><p>An LLM companionship chatbot for college students. A sentiment module names the emotion in each message so the reply can comfort or celebrate. I led the four-person capstone team and designed the backend LLM.</p><dl><div><dt>Award</dt><dd>First Place, KSU C-Day, Spring 2024</dd></div><div><dt>Role</dt><dd>Team lead, backend LLM</dd></div><div><dt>Stack</dt><dd><ul class="tag-list"><li>DistilGPT-2</li><li>Sentiment analysis</li><li>Python</li><li>React Native</li><li>Firebase</li></ul></dd></div></dl><p class="story-footnote">The cover is an original illustration. The conversation shown is sample text.</p><a class="text-link story-case-link" href="./projects/companion-chatbot.html">Read the case study<span class="visually-hidden">: Companionship Chatbot</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a><div class="story-lab"><a class="text-link story-lab-link" href="./lab/sentiment-eval.html">How I evaluate a classifier (public data)<span class="visually-hidden">: two sentiment classifiers tested on open review data, not the chatbot’s original model</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></div></section>
+        <section id="project-voicelab" class="project-story" aria-labelledby="voicelab-title"><span class="mono story-category">SIDE PROJECT · PROTOTYPE</span><h3 id="voicelab-title">VoiceLab</h3><p class="story-lead">A local writing-analysis prototype that keeps text on the device.</p><p>A local prototype for explainable writing-signal analysis and meaning-preserving revision. It explores patterns in language while keeping text on the local device.</p><dl><div><dt>Focus</dt><dd>Explainable analysis and thoughtful revision</dd></div><div><dt>Stage</dt><dd>Local prototype</dd></div></dl><p class="story-footnote">This experiment does not establish authorship. The cover is an original illustration.</p><a class="text-link story-case-link" href="./projects/voicelab.html">Read the case study<span class="visually-hidden">: VoiceLab</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
+        <section id="project-work-helper" class="project-story" aria-labelledby="work-helper-title"><span class="mono story-category">SIDE PROJECT · IN DEVELOPMENT</span><h3 id="work-helper-title">Work Helper</h3><p class="story-lead">A tool in development to help people find job opportunities and take the next step.</p><p>A project exploring how software can help people discover job opportunities and take the next step. The current work includes a local onboarding prototype.</p><dl><div><dt>Focus</dt><dd>Making opportunity discovery more approachable</dd></div><div><dt>Stage</dt><dd>In development</dd></div></dl><p class="story-footnote">The project cover is an original interface illustration, not a screenshot of a launched service.</p><a class="text-link story-case-link" href="./projects/work-helper.html">Read the case study<span class="visually-hidden">: Work Helper</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
+        <section id="project-barking" class="project-story" aria-labelledby="barking-title"><span class="mono story-category">SIDE PROJECT · FULL-STACK APP</span><h3 id="barking-title">Barking Village</h3><p class="story-lead">A full-stack app that puts dog-care staff workflows in one place.</p><p>A full-stack dog-care operations project bringing staff workflows into one place: care sessions, daily planning, room status, and dog records.</p><dl><div><dt>Focus</dt><dd>Everyday operational workflows</dd></div><div><dt>Exploring</dt><dd>Clear interfaces for complex, connected tasks</dd></div></dl><p class="story-footnote">The project cover is an original illustration. No customer or operational data is shown.</p><a class="text-link story-case-link" href="./projects/barking-village.html">Read the case study<span class="visually-hidden">: Barking Village</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a></section>
       </div>
-      <div class="work-end mono"><span>SMALL QUESTIONS. REAL PROJECTS.</span><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">MORE ON GITHUB ↗</a></div>
+      <div class="work-end mono"><span>THREE FEATURED PROJECTS, THREE SIDE PROJECTS.</span><span class="work-end-links"><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">MORE ON GITHUB <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></span></div>
     </section>
 
-    <section id="approach" class="approach dark-section" aria-labelledby="approach-title">
-      <div class="section-top mono"><span>03 / THE APPROACH</span><span>HOW I THINK ABOUT BUILDING</span></div>
-      <div class="approach-heading"><h2 id="approach-title">MAKE IT WORK.<br><span>MAKE IT MATTER.</span></h2><p>The interesting part is connecting the idea to the person who will actually use it.</p></div>
+    <!-- Three lab pages to try. Each preview holds a static summary; work-previews.js
+         (loaded by app.js when the section is near) may turn it into a live preview. -->
+    <section id="lab" class="open-work" aria-labelledby="lab-title">
+      <div class="section-top mono"><span>05 / LAB</span><span>PAGES YOU CAN USE</span></div>
+      <div class="open-heading"><h2 id="lab-title">THE <br><span>LAB.</span></h2><p>Three things you can try, not just read.</p></div>
+      <ul class="open-cards" role="list">
+        <li class="open-card">
+          <p class="open-card-index mono">01 / REAL TRACES</p>
+          <h3 id="open-obs-title">Agent observability</h3>
+          <p class="open-card-text">A dashboard of the AI coding agents that built this site: every step, every failure, and automated quality checks on each run.</p>
+          <div class="work-preview" data-preview="obs">
+            <dl class="open-stats"><div><dt>Traces</dt><dd>77</dd></div><div><dt>Tool calls</dt><dd>9,712</dd></div><div><dt>Tool error rate</dt><dd>1.7%</dd></div></dl>
+            <p class="open-note mono">NOV 7–12, 2026 · 13 AUTOMATED CHECKS · NO LLM JUDGE</p>
+          </div>
+          <a class="open-card-link" href="./lab/agent-observability.html">Open the dashboard<span class="visually-hidden">: traces and evaluator results from the agents that built this site</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        </li>
+        <li class="open-card">
+          <p class="open-card-index mono">02 / RECORDED RUN</p>
+          <h3 id="open-trace-title">Replay the redesign</h3>
+          <p class="open-card-text">Two days of redesign (Nov 10–11), step by step: 52 recorded steps, errors and recoveries included.</p>
+          <div class="work-preview" data-preview="trace">
+            <dl class="open-stats"><div><dt>Steps</dt><dd>52</dd></div><div><dt>Errors retried or fixed</dt><dd>6 of 8</dd></div><div><dt>Commits</dt><dd>16</dd></div></dl>
+            <p class="open-note mono">NOV 10–11, 2026</p>
+          </div>
+          <a class="open-card-link" href="./lab/build-trace.html">See the run<span class="visually-hidden">: the recorded agent run behind this site’s redesign</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        </li>
+        <li class="open-card">
+          <p class="open-card-index mono">03 / METHOD</p>
+          <h3 id="open-loop-title">How I evaluate agents</h3>
+          <p class="open-card-text">How I find agent failures and stop them from shipping.</p>
+          <div class="work-preview" data-preview="loop">
+            <ol class="open-loop"><li><span class="mono">TRACE</span> Every run, every span</li><li><span class="mono">CLASSIFY</span> One bucket per failure</li><li><span class="mono">FIXED TEST SET</span> Real failures, expected outcomes</li><li><span class="mono">GATE</span> Block a release while it fails</li></ol>
+          </div>
+          <a class="open-card-link" href="./lab/evaluating-agents.html">Read the method<span class="visually-hidden">: how I evaluate agents</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+        </li>
+      </ul>
+    </section>
+
+    <section id="skills" class="skills dark-section" aria-labelledby="skills-title">
+      <div class="section-top mono"><span>06 / SKILLS &amp; EDUCATION</span><span>WHAT I WORK WITH</span></div>
+      <div class="skills-layout">
+        <h2 id="skills-title">SKILLS &amp; <br><span>EDUCATION.</span></h2>
+        <dl class="skill-list">
+          <div><dt>Languages</dt><dd><ul class="tag-list"><li data-skill-used>Python</li><li>SQL</li><li data-skill-used>TypeScript</li></ul></dd></div>
+          <div><dt>LLMs &amp; agents</dt><dd><ul class="tag-list"><li data-skill-used>MCP</li><li data-skill-used>LangChain</li><li>RAG</li><li>LLM evaluation</li></ul></dd></div>
+          <div><dt>ML &amp; MLOps</dt><dd><ul class="tag-list"><li>scikit-learn</li><li>TensorFlow</li><li data-skill-used>MLflow</li></ul></dd></div>
+          <div><dt>Cloud &amp; infra</dt><dd><ul class="tag-list"><li data-skill-used>AWS Bedrock AgentCore</li><li data-skill-used>Amazon SageMaker</li><li data-skill-used>AWS Lambda</li><li data-skill-used>Terraform</li><li>Docker</li></ul></dd></div>
+          <div><dt>Backend &amp; testing</dt><dd><ul class="tag-list"><li data-skill-used>FastAPI</li><li>pytest</li></ul></dd></div>
+        </dl>
+      </div>
+      <div class="education-layout">
+        <h3>Education</h3>
+        <ul class="education-list">
+          <li><span class="school">Georgia Institute of Technology</span><span class="degree">M.S. Computer Science, Machine Learning specialization</span><span class="mono school-meta">ONLINE, PART-TIME · EXPECTED DEC 2028</span></li>
+          <li><span class="school">Kennesaw State University</span><span class="degree">B.S. Computer Science (Artificial Intelligence), Magna Cum Laude</span><span class="mono school-meta">2021 – 2024</span></li>
+        </ul>
+        <h3>Spoken languages</h3>
+        <p class="spoken-languages">English and Spanish <span class="mono">FLUENT</span></p>
+      </div>
+    </section>
+
+    <section id="approach" class="approach" aria-labelledby="approach-title">
+      <div class="section-top mono"><span>07 / THE APPROACH</span><span>HOW I THINK ABOUT BUILDING</span></div>
+      <div class="approach-heading"><h2 id="approach-title">HOW I <br><span>WORK.</span></h2><p>Start from the person who will use it, then build.</p></div>
       <div class="approach-list">
-        <details open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>Understand the workflow before adding another feature. What's confusing? What's repetitive? What would make someone's day a little easier?</p></details>
-        <details><summary><span class="mono approach-number">02</span><span>Build something tangible.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>A working version makes an idea easier to question. Keep the first step focused, then learn from how it behaves in practice.</p></details>
-        <details><summary><span class="mono approach-number">03</span><span>Stay curious. Keep refining.</span><span class="details-icon" aria-hidden="true">+</span></summary><p>Test assumptions, look closely at the rough edges, and make the next version clearer. The details are part of the work.</p></details>
+        <details name="approach" open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true"></span></summary><p>Watch how the work gets done today before adding a feature. Checking firewall rules across our many AWS accounts took a developer about a day of manual testing, one account at a time. Asking why led to a diagnostics app that runs the same checks from one screen in minutes.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Watch the work today</li><li>Ask why</li><li>One screen</li></ul><a class="approach-link mono" href="#experience">See the experience <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div></details>
+        <details name="approach"><summary><span class="mono approach-number">02</span><span>Build something tangible.</span><span class="details-icon" aria-hidden="true"></span></summary><p>A working version makes an idea easier to question. For my capstone, the companionship chatbot ran as a real app with logins, chat and past conversations, and its sentiment module was tested by feeding it labelled prompts and checking the emotion it named.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>A real app</li><li>Labelled prompts</li><li>The emotion named</li></ul><a class="approach-link mono" href="#work">See the work <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div></details>
+        <details name="approach"><summary><span class="mono approach-number">03</span><span>Stay curious. Keep refining.</span><span class="details-icon" aria-hidden="true"></span></summary><p>The details are part of the work. Each of the 18+ workshops showed where developers got stuck, such as missing secrets, access groups and network rules, and the onboarding guide changed to match. It has been revised more than 40 times.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Missing secrets</li><li>Access groups</li><li>Network rules</li></ul><a class="approach-link mono" href="#contact">Say hello <span class="icon icon-arrow-s" aria-hidden="true"></span></a></div></details>
       </div>
     </section>
 
-    <section id="notes" class="closing-note" aria-label="Personal note"><span class="mono">SOMEWHERE BETWEEN LOGIC & POSSIBILITY</span><p>Still learning.<br>Still <em>making.</em></p><div class="note-orbit" aria-hidden="true"><span>C</span><i></i></div></section>
-
-    <footer id="contact" class="contact dark-section" aria-labelledby="contact-title">
-      <div class="section-top mono"><span>04 / SAY HELLO</span><a href="#home">BACK TO THE TOP ↑</a></div>
-      <p class="contact-intro">Have a question, an idea, or a project in mind?</p>
-      <h2 id="contact-title">LET'S <span>CONNECT.</span></h2>
-      <a class="contact-button" href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">Find me on GitHub <span aria-hidden="true">↗</span></a>
-      <div class="footer-bottom mono"><span>© <span data-year>2026</span> CESAR TORTOLERO</span><span>CODE. CURIOSITY. A LITTLE BIT OF BOTH.</span><span>MADE TO BE EXPLORED.</span></div>
-    </footer>
+    <section id="notes" class="closing-note" aria-label="Personal note"><p>Still learning. <br>Still <em>making.</em></p><div class="note-orbit" aria-hidden="true"><span>C</span><i></i></div></section>
   </main>
-  <dialog class="project-dialog" aria-label="Project details"><button class="dialog-close" autofocus aria-label="Close project details">Close <span aria-hidden="true">×</span></button><div class="dialog-content"></div></dialog>
+
+  <footer id="contact" class="contact dark-section" aria-labelledby="contact-title">
+    <div class="section-top mono"><span>08 / SAY HELLO</span><a href="#home">BACK TO THE TOP <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div>
+    <p class="contact-intro">Email is the fastest way to reach me.</p>
+    <h2 id="contact-title">LET’S <span>CONNECT.</span></h2>
+    <a class="contact-button" href="mailto:lucenatrujillo.cesar@gmail.com"><span class="contact-address">lucenatrujillo.cesar@gmail.com</span><span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+    <ul class="contact-links mono">
+      <li><a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></li>
+      <li><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">GITHUB <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></li>
+      <li><a href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">RÉSUMÉ (PDF) <span class="icon icon-arrow-s" aria-hidden="true"></span></a></li>
+      <li><a href="./now.html">NOW <span class="icon icon-arrow-e" aria-hidden="true"></span></a></li>
+    </ul>
+    <div class="footer-bottom mono"><span>© <span data-year>2026</span> CESAR TORTOLERO</span><span>MACHINE LEARNING ENGINEER · MORRISTOWN, NJ</span><span>BUILT IN PLAIN HTML, CSS AND JS. <a class="footer-trace" href="./lab/build-trace.html">SEE THE AGENT RUN BEHIND IT<span class="icon icon-arrow-e" aria-hidden="true"></span></a> <a class="footer-trace" href="./lab/evaluating-agents.html">HOW I EVALUATE AGENTS<span class="icon icon-arrow-e" aria-hidden="true"></span></a></span></div>
+  </footer>
 </body>
 </html>
