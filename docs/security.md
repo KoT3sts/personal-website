@@ -21,8 +21,12 @@ that serves it. The site covers the first three; the fourth is account hygiene (
   under the policy at 1280 and 390 with no violations.
   - **If you edit the inline script in `index.html`**, its hash changes: the test prints the
     expected policy, so copy the new `'sha256-…'` value into the meta.
-  - Nothing is loaded from another origin: fonts are self-hosted and there is no analytics,
-    CDN or embed. Keep it that way, or add the exact origin to the matching directive.
+  - Nothing is loaded from another origin: fonts are self-hosted and there is no CDN or embed.
+    The one exception is cookieless page counting: `count.js` (served from this site) sends one
+    request per page view to `https://cesartortolero.goatcounter.com`, which is the only remote
+    origin and only in `connect-src`. It sends the path, title, referring site and screen width;
+    it sets no cookies, stores nothing on the device, and counts only on cesartortolero.com and
+    not in automated browsers. Keep any other origin out, or add it to the matching directive.
 - **Referrer policy** `strict-origin-when-cross-origin` on every page.
 - **External links** that open a new tab use `rel="noopener noreferrer"`.
 - **No HTML built from data:** scripts set `innerHTML` only with fixed markup and never use

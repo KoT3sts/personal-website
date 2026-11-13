@@ -149,7 +149,7 @@ test('every project page exists with title, description, canonical, Open Graph a
     assert.ok(ld.image.startsWith(site) && await exists(new URL(ld.image.slice(site.length), web)), `${slug} JSON-LD image exists`);
     assert.equal(html.match(/<h1[\s>]/g)?.length, 1, `${slug} has one h1`);
     // At most one script: the page's own module (case-charts.js or side-demos.js), no inline code.
-    const scripts = [...html.matchAll(/<script(?![^>]*application\/ld\+json)[^>]*>[\s\S]*?<\/script>/g)].map(match => match[0]);
+    const scripts = [...html.matchAll(/<script(?![^>]*application\/ld\+json)(?![^>]*count\.js)[^>]*>[\s\S]*?<\/script>/g)].map(match => match[0]);
     assert.ok(scripts.length <= 1, `${slug}: one module script at most`);
     for (const tag of scripts) assert.match(tag, /^<script type="module" src="\.\/(?:case-charts|side-demos)\.js"><\/script>$/, `${slug}: ${tag}`);
   }

@@ -18,13 +18,14 @@ const pages = files.filter(file => file.endsWith('.html'));
 const read = file => readFileSync(file, 'utf8');
 const rel = file => path.relative(web, file);
 
+const ANALYTICS = 'https://cesartortolero.goatcounter.com';
 const POLICY = [
   "default-src 'self'",
   null, // script-src: 'self' plus a hash for each inline script on that page
   "style-src 'self'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src 'self' ${ANALYTICS}`,
   "manifest-src 'self'",
   "media-src 'none'",
   "object-src 'none'",
@@ -52,7 +53,9 @@ test('every page sets the strict CSP before any script, with a hash for each inl
     const directives = meta[1].split('; ');
     const scriptSrc = ["script-src 'self'", ...inlineScripts(html).map(sha)].join(' ');
     assert.deepEqual(directives, POLICY.map(entry => entry ?? scriptSrc), `${rel(file)} policy`);
-    assert.doesNotMatch(meta[1], /unsafe-|\*|https?:/, `${rel(file)}: no wildcards, unsafe-* or remote origins`);
+    // The one remote origin is the cookieless page counter, and only for connect-src (count.js).
+    assert.doesNotMatch(meta[1].replace(` ${ANALYTICS}`, ''), /unsafe-|\*|https?:/, `${rel(file)}: no wildcards, unsafe-* or other remote origins`);
+    assert.match(html, /<script type="module" src="(?:\.\.?)?\/count\.js"><\/script>\s*<\/head>/, `${rel(file)}: counts page views with count.js`);
     assert.match(html, /<meta name="referrer" content="strict-origin-when-cross-origin">/, `${rel(file)} referrer policy`);
   }
 });
@@ -74,6 +77,14 @@ test('nothing executable, styled or embedded comes from another origin; inline s
   for (const file of files.filter(name => name.endsWith('.css'))) {
     assert.doesNotMatch(read(file), /(?:@import|url\()\s*["']?(?:https?:)?\/\//, `${rel(file)}: no remote CSS resources`);
   }
+});
+
+test('page counts are cookieless, production-only and go to the one allowed origin', () => {
+  const js = read(path.join(web, 'count.js'));
+  assert.match(js, /const ENDPOINT = 'https:\/\/cesartortolero\.goatcounter\.com\/count';/);
+  assert.match(js, /location\.hostname === 'cesartortolero\.com'/, 'previews and local servers are not counted');
+  assert.match(js, /!navigator\.webdriver/, 'automated browsers are not counted');
+  assert.doesNotMatch(js, /document\.cookie|localStorage|sessionStorage|indexedDB/, 'nothing is stored on the device');
 });
 
 test('links that open a new tab cannot reach back into this page', () => {
