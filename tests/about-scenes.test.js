@@ -30,7 +30,7 @@ test('the opening replaces the discover button and keeps the reading order', () 
   assert.match(about, /<div class="about-window" aria-hidden="true"><\/div>/);
   assert.match(about, /<div class="about-flow" aria-hidden="true">/);
   assert.match(about, /aria-labelledby="about-title"/);
-  assert.match(intro, /data-nav-section="about"/);
+  assert.match(about, /data-nav-section="introduction"/, 'the title card marks the About entry, which opens #introduction');
 });
 
 test('the pin only runs on wide, tall screens with motion and JS, behind scroll timelines or motion.js', () => {

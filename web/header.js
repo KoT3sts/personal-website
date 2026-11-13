@@ -13,7 +13,8 @@ export function initHeader(document, window) {
   if (!header) return null;
   const root = document.documentElement;
   const raf = window.requestAnimationFrame?.bind(window);
-  const navLinks = [...document.querySelectorAll('.main-nav a')];
+  const navLinks = [...document.querySelectorAll('.main-nav a, .site-menu a[href^="#"]')];
+  const menu = initMenu(document, window, header);
   const pageSections = [...document.querySelectorAll('main > section[id], footer[id]')];
 
   // The header's vertical slide, so tone sampling uses its resting position
@@ -54,7 +55,8 @@ export function initHeader(document, window) {
   const isPinned = y => !engaged || y <= PINNED_UNTIL
     || root.classList.contains('agentic-running')
     || root.classList.contains('agentic-touring')
-    || hasKeyboardFocus();
+    || hasKeyboardFocus()
+    || Boolean(menu?.isOpen());
 
   let anchorY = Math.max(0, window.scrollY || 0);
   let lastY = anchorY;
@@ -144,5 +146,46 @@ export function initHeader(document, window) {
   paintHeaderState();
   paintHeaderTone();
   paintNav();
-  return { paintHeaderTone, paintHeaderState, paintNav };
+  return { paintHeaderTone, paintHeaderState, paintNav, menu };
+}
+
+// The menu below 900px (styles.css): a disclosure button in the nav pill that
+// opens a panel with every section and the résumé. Escape, a click outside,
+// following a link or Tab leaving the panel closes it; Escape returns focus
+// to the button. The button stays hidden (and Contact stays in the pill)
+// until this runs, so without scripts the header is as before.
+export function initMenu(document, window, header) {
+  const button = header.querySelector('.nav-menu-button');
+  const panel = document.getElementById(button?.getAttribute('aria-controls') || '');
+  if (!button || !panel || !header.contains(panel)) return null;
+  const isOpen = () => button.getAttribute('aria-expanded') === 'true';
+  function setOpen(open, { focusButton = false } = {}) {
+    button.setAttribute('aria-expanded', String(open));
+    panel.hidden = !open;
+    header.classList.toggle('menu-open', open);
+    if (open) header.classList.remove('is-hidden');
+    if (focusButton) button.focus();
+  }
+  button.hidden = false;
+  header.classList.add('has-menu');
+  button.addEventListener('click', () => setOpen(!isOpen()));
+  // Following a link closes the menu (the page then scrolls to the section).
+  panel.addEventListener('click', event => { if (event.target.closest?.('a')) setOpen(false); });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !isOpen()) return;
+    event.preventDefault();
+    setOpen(false, { focusButton: true });
+  });
+  document.addEventListener('click', event => {
+    if (isOpen() && !panel.contains(event.target) && !button.contains(event.target)) setOpen(false);
+  });
+  // Tab leaving the button and the panel closes it.
+  header.addEventListener('focusout', event => {
+    const next = event.relatedTarget;
+    if (isOpen() && next && !panel.contains(next) && next !== button) setOpen(false);
+  });
+  // Wider than the menu's breakpoint every link is in the pill again.
+  const wide = window.matchMedia?.('(min-width: 901px)');
+  wide?.addEventListener?.('change', () => { if (wide.matches && isOpen()) setOpen(false); });
+  return { button, panel, isOpen, open: () => setOpen(true), close: options => setOpen(false, options) };
 }

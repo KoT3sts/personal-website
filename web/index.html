@@ -12,17 +12,17 @@
   <meta property="og:description" content="Machine Learning Engineer in the NYC area. I build AI agents, MCP integrations and LLM evaluation on AWS Bedrock AgentCore, plus serverless Python and MLOps.">
   <meta property="og:type" content="profile">
   <meta property="og:url" content="https://cesar-tortolero.cesartortolero.chatgpt.site/">
-  <meta property="og:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-card.jpg">
+  <meta property="og:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-home.jpg">
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer. AI agents and LLM evaluation on AWS.">
+  <meta property="og:image:alt" content="Cesar Tortolero, Machine Learning Engineer, open to AI/ML engineer roles in the NYC area. About 350 developers helped to train in AI agent workshops.">
   <meta property="profile:first_name" content="Cesar">
   <meta property="profile:last_name" content="Tortolero">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Cesar Tortolero — Machine Learning Engineer · AI Agents &amp; LLM Evaluation">
   <meta name="twitter:description" content="Machine Learning Engineer in the NYC area. I build AI agents, MCP integrations and LLM evaluation on AWS Bedrock AgentCore, plus serverless Python and MLOps.">
-  <meta name="twitter:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-card.jpg">
+  <meta name="twitter:image" content="https://cesar-tortolero.cesartortolero.chatgpt.site/assets/og-home.jpg">
   <title>Cesar Tortolero — Machine Learning Engineer · AI Agents &amp; LLM Evaluation</title>
   <link rel="canonical" href="https://cesar-tortolero.cesartortolero.chatgpt.site/">
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
@@ -38,7 +38,7 @@
     "url": "https://cesar-tortolero.cesartortolero.chatgpt.site/",
     "image": "https://cesar-tortolero.cesartortolero.chatgpt.site/assets/cesar-portrait-1040.webp",
     "address": { "@type": "PostalAddress", "addressLocality": "Morristown", "addressRegion": "NJ", "addressCountry": "US" },
-    "email": "mailto:Lucenatrujillo.cesar@gmail.com",
+    "email": "mailto:lucenatrujillo.cesar@gmail.com",
     "knowsLanguage": ["en", "es"],
     "knowsAbout": ["Machine learning", "Large language models", "AI agents", "Model Context Protocol (MCP)", "LLM evaluation", "LLM tracing", "AWS Bedrock AgentCore", "Strands Agents", "Arize AX", "OpenTelemetry", "Python", "AWS Lambda", "Terraform", "MLflow", "Amazon SageMaker", "MLOps"],
     "alumniOf": { "@type": "CollegeOrUniversity", "name": "Kennesaw State University" },
@@ -104,13 +104,27 @@
   <header class="site-header">
     <a class="wordmark" href="#home" aria-label="Cesar Tortolero home"><span class="wordmark-first">CESAR<span class="brand-dot"></span></span> <span class="wordmark-last">TORTOLERO</span></a>
     <nav class="main-nav" aria-label="Main navigation">
-      <a href="#about" class="nav-optional">About</a>
+      <a href="#introduction" class="nav-optional">About</a>
       <a href="#experience">Experience</a>
       <a href="#work">Work</a>
       <a href="#lab">Lab</a>
       <a href="#skills" class="nav-optional">Skills</a>
-      <a href="#contact">Contact</a>
+      <a href="#contact" class="nav-menu-swap">Contact</a>
+      <!-- Below 900px About and Skills (and, once the menu is wired, Contact) step out of the pill;
+           header.js shows this button, which opens every section and the résumé. Hidden without scripts. -->
+      <button class="nav-menu-button" type="button" aria-expanded="false" aria-controls="site-menu" hidden><span class="nav-menu-icon" aria-hidden="true"></span>Menu</button>
     </nav>
+    <div class="site-menu" id="site-menu" hidden>
+      <ul class="site-menu-list" aria-label="All sections">
+        <li><a href="#introduction">About</a></li>
+        <li><a href="#experience">Experience</a></li>
+        <li><a href="#work">Work</a></li>
+        <li><a href="#lab">Lab</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a class="site-menu-resume mono" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Résumé (PDF) <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
+    </div>
     <a class="header-contact" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Résumé (PDF) <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
   </header>
 
@@ -167,21 +181,23 @@
         <ul class="hero-proof" aria-label="Highlights">
           <li><a href="#experience"><span class="proof-figure"><span aria-hidden="true">~</span><span class="visually-hidden">About </span>350</span> <span class="proof-label mono">Developers I helped train <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
           <li><a href="#experience"><span class="proof-figure">250+</span> <span class="proof-label mono">Agents running on the platform I teach <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
-          <li><a href="#approach"><span class="proof-figure">Day <span class="icon icon-arrow-e" aria-hidden="true"></span><span class="visually-hidden">to </span>minutes</span> <span class="proof-label mono">Firewall checks across 24 AWS accounts <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
+          <li><a href="#approach"><span class="proof-figure">Day <span class="icon icon-arrow-e" aria-hidden="true"></span><span class="visually-hidden">to </span>minutes</span> <span class="proof-label mono">Firewall checks across many AWS accounts <span class="icon icon-arrow-s" aria-hidden="true"></span></span></a></li>
         </ul>
         <a class="scroll-cue" href="#about" aria-label="Skip to the about section"><span class="icon icon-arrow-se" aria-hidden="true"></span></a>
         <!-- One column, the same order on screen and in the tab order at every width:
-             résumé, LinkedIn and Email, then the tour pill. -->
+             résumé; Lab, GitHub, LinkedIn and Email; then the tour pill. -->
         <div class="hero-actions hero-note">
           <a class="pill-button" href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">Download résumé <span class="pill-meta">PDF</span> <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
           <div class="hero-links mono">
+            <a href="#lab">LAB <span class="icon icon-arrow-s" aria-hidden="true"></span></a>
+            <a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">GITHUB <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
             <a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
-            <a href="mailto:Lucenatrujillo.cesar@gmail.com">EMAIL <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+            <a href="mailto:lucenatrujillo.cesar@gmail.com">EMAIL <span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
           </div>
           <!-- When app.js can replay the build tour (scripts on, motion allowed) it sets data-tour-mode="replay":
                the pill then shows its length and a play icon (styles.css). Otherwise it opens the recorded run.
                Hidden while a tour runs. -->
-          <a class="pill-button pill-ghost hero-tour" href="./lab/build-trace.html" data-tour-replay aria-label="Watch it get built: the recorded agent run behind this page">Watch it get built <span class="pill-meta" aria-hidden="true">55 S</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
+          <a class="pill-button pill-ghost hero-tour" href="./lab/build-trace.html" data-tour-replay aria-label="Watch it get built: the recorded agent run behind this page">Watch it get built <span class="pill-meta" aria-hidden="true">55 s</span> <span class="icon icon-arrow-e" aria-hidden="true"></span></a>
         </div>
       </div>
       <div class="hero-rule mono"><span>AGENTS, EVALS AND MLOPS AT ADP.</span><span>SCROLL TO EXPLORE <span class="icon icon-arrow-s" aria-hidden="true"></span></span></div>
@@ -189,7 +205,7 @@
 
     <!-- Wide screens with JS and motion: the scene pins while the page scrolls through the section and the
          panel opens into a window onto #introduction (about-scenes.css "opening"). Otherwise it reads as is. -->
-    <section id="about" class="about-transition dark-section" aria-labelledby="about-title">
+    <section id="about" class="about-transition dark-section" data-nav-section="introduction" aria-labelledby="about-title">
       <div class="about-scene">
         <div class="about-field">
           <!-- The flow field (about 311 KB) is fetched by app.js only once the visitor heads
@@ -207,7 +223,7 @@
       </div>
     </section>
 
-    <section id="introduction" class="cinematic dark-section" data-nav-section="about" aria-labelledby="introduction-title">
+    <section id="introduction" class="cinematic dark-section" aria-labelledby="introduction-title">
       <div class="cinematic-stage">
         <div class="cinematic-light" aria-hidden="true"></div>
         <!-- Icarus falls out of the light: legs still toward the bright end of the shaft, wings breaking, loose
@@ -256,16 +272,16 @@
         <li class="capability">
           <h3>Build serverless backends and cloud infrastructure</h3>
           <p class="capability-proof">A serverless Python API on AWS Lambda and private API Gateway, deployed with Terraform.</p>
-          <ul class="tag-list" aria-label="Tools"><li>FastAPI</li><li>AWS Lambda</li><li>Private API Gateway</li><li>Terraform</li><li>DynamoDB</li><li>NestJS</li></ul>
+          <ul class="tag-list" aria-label="Tools"><li>Python</li><li>FastAPI</li><li>AWS Lambda</li><li>Private API Gateway</li><li>Terraform</li><li>DynamoDB</li><li>NestJS</li></ul>
         </li>
-        <li class="capability" data-chart="inventory">
+        <li class="capability">
           <h3>Run MLOps and model deployment</h3>
-          <p class="capability-proof">Supported Unity Catalog and MLflow migrations and tracked a 296-model inventory.</p>
+          <p class="capability-proof">Supported Unity Catalog and MLflow migrations across a model inventory in the hundreds.</p>
           <ul class="tag-list" aria-label="Tools"><li>Databricks Unity Catalog</li><li>MLflow</li><li>Spark</li><li>Amazon SageMaker</li></ul>
         </li>
-        <li class="capability" data-chart="jobs">
+        <li class="capability">
           <h3>Run multi-region releases</h3>
-          <p class="capability-proof">One weekly release: 58/58 US and 21/21 EU jobs green.</p>
+          <p class="capability-proof">Weekly releases across US and EU regions. In one, for example, every job finished green.</p>
           <ul class="tag-list" aria-label="Tools"><li>Jenkins</li><li>Terraform</li><li>Artifactory</li></ul>
         </li>
         <li class="capability" data-chart="videos">
@@ -275,7 +291,7 @@
         <li class="capability">
           <h3>Do applied ML research</h3>
           <p class="capability-proof">EEG research presented at NCUR, and a chatbot with a sentiment module that won First&nbsp;Place at KSU C-Day, Spring&nbsp;2024.</p>
-          <ul class="tag-list" aria-label="Topics"><li>EEG</li><li>Autoencoder</li><li>Sentiment analysis</li></ul>
+          <ul class="tag-list" aria-label="Topics"><li>Python</li><li>EEG</li><li>Autoencoder</li><li>Sentiment analysis</li></ul>
         </li>
       </ul>
     </section>
@@ -313,8 +329,8 @@
                 <div class="xp-group-head"><span class="mono">2026</span><h4 id="group-cloud">Cloud infrastructure &amp; release engineering</h4></div>
                 <ul class="xp-points">
                   <li>Built a serverless cross-account network-testing API that probes across AWS accounts in parallel with bounded retries.</li>
-                  <li>Built a network-diagnostics app that verifies firewall rules across a <strong>24-account AWS environment</strong>.</li>
-                  <li>Ran <strong>6+ weekly multi-region releases</strong> of an enterprise AI assistant platform, for example 58/58 US and 21/21 EU jobs green. Wrote the runbook.</li>
+                  <li>Built a network-diagnostics app that verifies firewall rules across <strong>many AWS accounts</strong>.</li>
+                  <li>Ran <strong>6+ weekly multi-region releases</strong> of an enterprise AI assistant platform; in one, for example, every US and EU job finished green. Wrote the runbook.</li>
                 </ul>
                 <ul class="tag-list" aria-label="Tools">
                   <li>FastAPI</li><li>AWS Lambda</li><li>Private API Gateway</li><li>Terraform</li><li>Python</li><li>Flask</li><li>boto3</li><li>SSM Run Command</li><li>Jenkins</li><li>Artifactory</li>
@@ -332,7 +348,7 @@
               <div class="xp-group">
                 <div class="xp-group-head"><span class="mono">2024 – 2025</span><h4 id="group-mlops">MLOps &amp; GenAI</h4></div>
                 <ul class="xp-points">
-                  <li>Supported Databricks Unity Catalog and MLflow model migrations: signatures, aliases and Spark UDF batch inference, across a <strong>296-model inventory</strong>.</li>
+                  <li>Supported Databricks Unity Catalog and MLflow model migrations: signatures, aliases and Spark UDF batch inference, across a <strong>model inventory in the hundreds</strong>.</li>
                   <li>Root-caused SageMaker endpoint deployment failures in Jenkins.</li>
                   <li>Built GenAI playground features with Streamlit and LangChain.</li>
                 </ul>
@@ -445,8 +461,8 @@
     <!-- Three lab pages to try. Each preview holds a static summary; work-previews.js
          (loaded by app.js when the section is near) may turn it into a live preview. -->
     <section id="lab" class="open-work" aria-labelledby="lab-title">
-      <div class="section-top mono"><span>05 / INTERACTIVE DEMOS</span><span>PAGES YOU CAN USE</span></div>
-      <div class="open-heading"><h2 id="lab-title">TRY THE <br><span>WORK.</span></h2><p>Three things you can try, not just read.</p></div>
+      <div class="section-top mono"><span>05 / LAB</span><span>PAGES YOU CAN USE</span></div>
+      <div class="open-heading"><h2 id="lab-title">THE <br><span>LAB.</span></h2><p>Three things you can try, not just read.</p></div>
       <ul class="open-cards" role="list">
         <li class="open-card">
           <p class="open-card-index mono">01 / REAL TRACES</p>
@@ -507,7 +523,7 @@
       <div class="section-top mono"><span>07 / THE APPROACH</span><span>HOW I THINK ABOUT BUILDING</span></div>
       <div class="approach-heading"><h2 id="approach-title">HOW I <br><span>WORK.</span></h2><p>Start from the person who will use it, then build.</p></div>
       <div class="approach-list">
-        <details name="approach" open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true"></span></summary><p>Watch how the work gets done today before adding a feature. Checking firewall rules across our 24 AWS accounts took a developer about a day of manual testing, one account at a time. Asking why led to a diagnostics app that runs the same checks from one screen in minutes.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Watch the work today</li><li>Ask why</li><li>One screen</li></ul><a class="approach-link mono" href="#experience">See the experience <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div></details>
+        <details name="approach" open><summary><span class="mono approach-number">01</span><span>Start with the question.</span><span class="details-icon" aria-hidden="true"></span></summary><p>Watch how the work gets done today before adding a feature. Checking firewall rules across our many AWS accounts took a developer about a day of manual testing, one account at a time. Asking why led to a diagnostics app that runs the same checks from one screen in minutes.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Watch the work today</li><li>Ask why</li><li>One screen</li></ul><a class="approach-link mono" href="#experience">See the experience <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div></details>
         <details name="approach"><summary><span class="mono approach-number">02</span><span>Build something tangible.</span><span class="details-icon" aria-hidden="true"></span></summary><p>A working version makes an idea easier to question. For my capstone, the companionship chatbot ran as a real app with logins, chat and past conversations, and its sentiment module was tested by feeding it labelled prompts and checking the emotion it named.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>A real app</li><li>Labelled prompts</li><li>The emotion named</li></ul><a class="approach-link mono" href="#work">See the work <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div></details>
         <details name="approach"><summary><span class="mono approach-number">03</span><span>Stay curious. Keep refining.</span><span class="details-icon" aria-hidden="true"></span></summary><p>The details are part of the work. Each of the 18+ workshops showed where developers got stuck, such as missing secrets, access groups and network rules, and the onboarding guide changed to match. It has been revised more than 40 times.</p><div class="approach-row-foot"><ul class="approach-focus mono" aria-label="In practice"><li>Missing secrets</li><li>Access groups</li><li>Network rules</li></ul><a class="approach-link mono" href="#contact">Say hello <span class="icon icon-arrow-s" aria-hidden="true"></span></a></div></details>
       </div>
@@ -520,11 +536,12 @@
     <div class="section-top mono"><span>08 / SAY HELLO</span><a href="#home">BACK TO THE TOP <span class="icon icon-arrow-n" aria-hidden="true"></span></a></div>
     <p class="contact-intro">Email is the fastest way to reach me.</p>
     <h2 id="contact-title">LET’S <span>CONNECT.</span></h2>
-    <a class="contact-button" href="mailto:Lucenatrujillo.cesar@gmail.com"><span class="contact-address">Lucenatrujillo.cesar@gmail.com</span><span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
+    <a class="contact-button" href="mailto:lucenatrujillo.cesar@gmail.com"><span class="contact-address">lucenatrujillo.cesar@gmail.com</span><span class="icon icon-arrow-ne" aria-hidden="true"></span></a>
     <ul class="contact-links mono">
       <li><a href="https://www.linkedin.com/in/cesar-tortolero" target="_blank" rel="noopener noreferrer">LINKEDIN <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></li>
       <li><a href="https://github.com/KoT3sts" target="_blank" rel="noopener noreferrer">GITHUB <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></li>
       <li><a href="./assets/Cesar_Tortolero_Resume.pdf" download type="application/pdf">RÉSUMÉ (PDF) <span class="icon icon-arrow-s" aria-hidden="true"></span></a></li>
+      <li><a href="./now.html">NOW <span class="icon icon-arrow-e" aria-hidden="true"></span></a></li>
     </ul>
     <div class="footer-bottom mono"><span>© <span data-year>2026</span> CESAR TORTOLERO</span><span>MACHINE LEARNING ENGINEER · MORRISTOWN, NJ</span><span>BUILT IN PLAIN HTML, CSS AND JS. <a class="footer-trace" href="./lab/build-trace.html">SEE THE AGENT RUN BEHIND IT<span class="icon icon-arrow-e" aria-hidden="true"></span></a> <a class="footer-trace" href="./lab/evaluating-agents.html">HOW I EVALUATE AGENTS<span class="icon icon-arrow-e" aria-hidden="true"></span></a></span></div>
   </footer>

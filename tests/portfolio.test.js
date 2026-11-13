@@ -29,12 +29,12 @@ test('About navigation covers both scenes while header colors follow the actual 
   assert.equal(nav(), undefined, 'the hero has no nav entry');
   assert.equal(header.classList.contains('is-dark'), false, 'light hero behind the header');
   layout({ home: { top: -600, bottom: 200 }, about: { top: 200, bottom: 1100 } });
-  assert.equal(nav(), '#about');
+  assert.equal(nav(), '#introduction', 'the About entry lands on the About content (#introduction) and marks the title card too');
   assert.equal(header.classList.contains('is-dark'), false, 'the nav line alone never changes the header tone');
   layout({ about: { top: -200, bottom: 700 } });
   assert.ok(header.classList.contains('is-dark'));
   layout({ about: { top: -900, bottom: -10 }, introduction: { top: -10, bottom: 900 } });
-  assert.equal(nav(), '#about', 'cinematic introduction belongs to About');
+  assert.equal(nav(), '#introduction', 'cinematic introduction is About');
   assert.ok(header.classList.contains('is-dark'));
   layout({ work: { top: -300, bottom: 600 } });
   assert.equal(nav(), '#work');
@@ -180,17 +180,23 @@ test('explorer keys open the ring and step through, the index selects and is ann
     element.dispatchEvent(event);
     return event;
   };
-  assert.equal(key(covers[0], 'ArrowDown').defaultPrevented, true, 'the first arrow opens the stack');
+  assert.equal(key(covers[0], 'ArrowDown').defaultPrevented, true, 'the first arrow opens the stack and moves');
   assert.equal(explorer.state.mode, 'stack');
-  assert.equal(explorer.state.index, 0);
-  assert.equal(key(covers[0], 'ArrowDown').defaultPrevented, true);
   assert.equal(explorer.state.index, 1);
   assert.equal(document.activeElement, covers[1], 'focus follows the selection');
   assert.equal(covers[1].getAttribute('aria-current'), 'true');
   assert.deepEqual(covers.map(link => link.tabIndex), [-1, 0, -1, -1, -1, -1]);
   key(covers[1], 'End');
   assert.equal(explorer.state.index, 5);
-  assert.equal(key(covers[5], 'ArrowDown').defaultPrevented, false, 'past the last project the page scrolls');
+  assert.equal(key(covers[5], 'ArrowDown').defaultPrevented, true, 'past the last project the arrow stays with the explorer, not the page');
+  assert.equal(explorer.state.index, 5);
+  assert.equal(key(covers[5], 'ArrowLeft').defaultPrevented, true);
+  assert.equal(explorer.state.index, 4);
+  assert.equal(key(covers[4], 'PageDown').defaultPrevented, false, 'page keys still scroll the page');
+  const pickAt = n => document.querySelector(`[data-explorer-pick="${n}"]`);
+  key(pickAt(1), 'ArrowDown');
+  assert.equal(explorer.state.index, 2, 'on the index the step counts from the focused entry');
+  assert.equal(document.activeElement, pickAt(2));
   document.querySelector('[data-explorer-pick="4"]').click();
   assert.equal(explorer.state.index, 4);
   assert.equal(document.querySelector('.explorer-caption-title').textContent, 'Work Helper');
@@ -260,7 +266,7 @@ test('every internal navigation target, local image, and local download points t
 test('contact paths cover email, LinkedIn, GitHub, and the résumé without publishing a phone number', () => {
   const { document } = new JSDOM(html).window;
   const hrefs = [...document.querySelectorAll('#contact a')].map(link => link.getAttribute('href'));
-  assert.ok(hrefs.includes('mailto:Lucenatrujillo.cesar@gmail.com'));
+  assert.ok(hrefs.includes('mailto:lucenatrujillo.cesar@gmail.com'));
   assert.ok(hrefs.includes('https://www.linkedin.com/in/cesar-tortolero'));
   assert.ok(hrefs.includes('https://github.com/KoT3sts'));
   assert.ok(hrefs.includes('./assets/Cesar_Tortolero_Resume.pdf'));
@@ -280,7 +286,7 @@ test('the first heading states the role and the page keeps one h1 with ordered s
   assert.match(document.querySelector('h1').textContent, /Cesar Tortolero, Machine Learning Engineer/);
   assert.match(document.title, /Machine Learning Engineer/);
   assert.match(document.querySelector('meta[name="description"]').content, /Machine Learning Engineer/);
-  for (const id of ['about', 'experience', 'work', 'lab', 'skills', 'contact']) assert.ok(document.querySelector(`.main-nav a[href="#${id}"]`), `nav link for ${id}`);
+  for (const id of ['introduction', 'experience', 'work', 'lab', 'skills', 'contact']) assert.ok(document.querySelector(`.main-nav a[href="#${id}"]`), `nav link for ${id}`);
   let previous = 1;
   for (const heading of document.querySelectorAll('main h1, main h2, main h3, main h4')) {
     const level = Number(heading.tagName[1]);
@@ -294,7 +300,7 @@ test('About scenes lead into capabilities, then experience, work, skills and app
   const order = [...document.querySelectorAll('main > section[id]')].map(section => section.id);
   assert.deepEqual(order, ['home', 'about', 'introduction', 'capabilities', 'experience', 'work', 'lab', 'skills', 'approach', 'notes']);
   assert.ok(document.querySelector('footer#contact'));
-  assert.equal(document.querySelector('#introduction').dataset.navSection, 'about');
+  assert.equal(document.querySelector('#about').dataset.navSection, 'introduction', 'the title card counts as About, whose nav entry opens #introduction');
   const sceneLinks = [...document.querySelectorAll('#introduction .scene-pill')].map(link => link.getAttribute('href'));
   assert.deepEqual(sceneLinks, ['#capabilities', '#experience']);
   assert.ok(document.querySelector('#introduction .scene-pill-primary[href="#capabilities"]'));
@@ -330,8 +336,8 @@ test('Open the work: three large cards between Work and Skills, each with a sent
   assert.equal(lab.nextElementSibling.id, 'skills');
   assert.equal(lab.classList.contains('dark-section'), false, 'light, between the light Work and the dark Skills');
   assert.equal(lab.getAttribute('aria-labelledby'), 'lab-title');
-  assert.match(lab.querySelector('.section-top').textContent, /^05 \/ INTERACTIVE DEMOS/);
-  assert.equal(lab.querySelector('#lab-title').textContent.replace(/\s+/g, ' ').trim(), 'TRY THE WORK.');
+  assert.match(lab.querySelector('.section-top').textContent, /^05 \/ LAB/);
+  assert.equal(lab.querySelector('#lab-title').textContent.replace(/\s+/g, ' ').trim(), 'THE LAB.');
   assert.equal(lab.querySelector('.open-heading > p').textContent, 'Three things you can try, not just read.');
   const cards = [...lab.querySelectorAll('.open-cards > .open-card')];
   assert.deepEqual(cards.map(card => [card.querySelector('h3').textContent, card.querySelector('.open-card-text').textContent, card.querySelector('.work-preview').dataset.preview, card.querySelector('a.open-card-link').getAttribute('href')]), [
@@ -363,7 +369,7 @@ test('Open the work: three large cards between Work and Skills, each with a sent
   assert.doesNotMatch(html, /<(?:script|link)[^>]*work-previews\.js/);
   // In the main nav, shown on phones in place of About (the section right under the hero).
   assert.ok(document.querySelector('.main-nav a[href="#lab"]:not(.nav-optional)'));
-  assert.ok(document.querySelector('.main-nav a[href="#about"].nav-optional'));
+  assert.ok(document.querySelector('.main-nav a[href="#introduction"].nav-optional'), 'About lands on the content, not the title card');
 });
 
 test('the live previews are optional: a missing or failing module keeps the summaries, never throws, and settles', async () => {
@@ -422,7 +428,7 @@ test('the live previews are optional: a missing or failing module keeps the summ
   assert.equal(loads, 1, 'once');
 });
 
-test('home charts: the proof figures keep their final text, four capability cards get a chart drawn from their own sentence', () => {
+test('home charts: the proof figures keep their final text, two capability cards get a chart drawn from their own sentence', () => {
   const { window } = new JSDOM(html, { url: 'https://portfolio.test/' });
   const { document } = window;
   window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
@@ -438,27 +444,25 @@ test('home charts: the proof figures keep their final text, four capability card
   }
   assert.deepEqual([...document.querySelectorAll('.proof-count-final')].map(final => final.textContent), ['350', '250+']);
   const charts = [...document.querySelectorAll('.capability .cap-chart')];
-  assert.deepEqual(charts.map(chart => chart.closest('.capability').dataset.chart), ['records', 'inventory', 'jobs', 'videos']);
+  assert.deepEqual(charts.map(chart => chart.closest('.capability').dataset.chart), ['records', 'videos']);
   charts.forEach(chart => {
     assert.equal(chart.getAttribute('aria-hidden'), 'true');
     assert.equal(chart.previousElementSibling.className, 'capability-proof', 'right under the proof line');
     assert.equal(chart.classList.contains('is-armed'), false, 'drawn in full, no animation');
   });
-  const [records, inventory, jobs, videos] = charts;
+  const [records, videos] = charts;
   assert.equal(records.querySelector('.cap-band-label').textContent, '2,400+ RECORDS');
   assert.deepEqual([...records.querySelectorAll('.cap-tick')].map(tick => tick.textContent), ['PRECISION', 'RECALL', 'F1']);
   assert.doesNotMatch(records.textContent, /0\.\d/, 'metric names only, no values');
-  assert.equal(inventory.querySelectorAll('rect').length, 296);
-  assert.deepEqual([...jobs.querySelectorAll('.cap-row')].map(row => [row.querySelector('.cap-row-label').textContent, row.querySelectorAll('rect.cap-on').length, row.querySelector('.cap-row-value').textContent]), [['US', 58, '58/58'], ['EU', 21, '21/21']]);
   assert.equal(videos.querySelectorAll('.cap-dot').length, 12);
   // No chart where the card states no number.
-  for (const title of ['Build and ship AI agents and MCP integrations on AWS', 'Build serverless backends and cloud infrastructure', 'Do applied ML research']) {
+  for (const title of ['Build and ship AI agents and MCP integrations on AWS', 'Build serverless backends and cloud infrastructure', 'Run MLOps and model deployment', 'Run multi-region releases', 'Do applied ML research']) {
     const card = [...document.querySelectorAll('.capability')].find(item => item.querySelector('h3').textContent === title);
     assert.equal(card.querySelector('.cap-chart'), null, title);
   }
   // Running it twice draws nothing twice.
   initHomeCharts(document, window);
-  assert.equal(document.querySelectorAll('.cap-chart').length, 4);
+  assert.equal(document.querySelectorAll('.cap-chart').length, 2);
   assert.equal(document.querySelectorAll('.proof-count').length, 2);
   window.close();
 });

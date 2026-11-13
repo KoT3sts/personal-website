@@ -75,6 +75,11 @@
   .site-header::before { content: ""; position: absolute; z-index: -1; top: calc(-1 * var(--header-top)); bottom: calc(-1 * var(--header-bar-pad)); left: calc(-1 * var(--gutter)); right: calc(-1 * var(--gutter)); background: rgb(238 237 232 / .985); border-bottom: 1px solid rgb(23 23 22 / .09); opacity: 0; pointer-events: none; }
   .site-header.is-solid::before { opacity: 1; pointer-events: auto; }
   .site-header.is-dark::before { background: rgb(16 17 20 / .985); border-bottom-color: rgb(238 237 232 / .08); }
+  /* The canvas (html) takes the header's tone; body keeps the page's paper. While the build tour
+     scrolls the page every frame, a frame can be composed a few pixels behind, and the canvas then
+     shows above the fixed header: it must match the dark bar, not paint a light strip over it. */
+  html { background-color: var(--paper); }
+  html:has(.site-header.is-dark) { background-color: var(--night); }
   /* Hidden while reading downward; header.js never hides it at the top, with focus inside, or during the build tour. */
   .site-header.is-hidden { transform: translate3d(0, calc(-100% - var(--header-top) - var(--header-bar-pad) - 2px), 0); }
   .site-header:has(:focus-visible) { transform: none; }
@@ -93,6 +98,25 @@
   .site-header.is-dark .main-nav a[aria-current] { color: var(--paper); background: rgb(238 237 232 / .14); box-shadow: 0 0 0 1px rgb(238 237 232 / .12); }
   .site-header.is-dark .main-nav a:hover { color: var(--paper); }
   .header-contact { display: flex; flex: none; align-items: center; gap: 8px; font-size: 11px; padding: 12px 0; white-space: nowrap; }
+  /* Menu (header.js, below 900px): a button in the pill and a panel under the header with every
+     section and the résumé. It follows the header's tone. Without scripts it stays hidden. */
+  .nav-menu-button { position: relative; display: none; align-items: center; gap: 7px; padding: 9px 14px 9px 12px; border: 0; border-radius: 40px; background: none; color: var(--ink); font: inherit; font-size: var(--text-pill); text-transform: uppercase; letter-spacing: .035em; cursor: pointer; }
+  .nav-menu-button::before { content: ""; position: absolute; inset: calc(50% - 22px) 0; }
+  .nav-menu-button[aria-expanded="true"] { background: #f8f7f1; box-shadow: 0 0 0 1px #cacbc34d; }
+  .nav-menu-icon { position: relative; width: 12px; height: 8px; border-block: 1.5px solid currentColor; transition: height .2s ease; }
+  .nav-menu-button[aria-expanded="true"] .nav-menu-icon { height: 1.5px; border-bottom: 0; }
+  .site-header.is-dark .nav-menu-button { color: var(--paper); }
+  .site-header.is-dark .nav-menu-button[aria-expanded="true"] { background: rgb(238 237 232 / .14); box-shadow: 0 0 0 1px rgb(238 237 232 / .12); }
+  .site-menu { position: absolute; top: calc(100% + var(--header-bar-pad) + 8px); right: 0; width: min(320px, 100%); padding: 10px 10px 14px; border: 1px solid #b9b9b166; border-radius: 22px; background: #f8f7f1; box-shadow: 0 18px 40px -18px rgb(23 23 22 / .35), 0 2px 6px rgb(23 23 22 / .06); color: var(--ink); }
+  .site-menu[hidden] { display: none; }
+  .site-menu-list { list-style: none; margin: 0; padding: 0; display: grid; }
+  .site-menu-list a { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 12px; border-radius: 14px; font-size: 26px; font-weight: var(--display-weight); font-stretch: var(--display-stretch); letter-spacing: -.03em; line-height: 1; }
+  .site-menu-list a:hover, .site-menu-list a[aria-current] { background: #ebeae3; }
+  .site-menu-list a[aria-current]::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .site-menu-resume { display: flex; align-items: center; gap: 8px; min-height: 44px; margin: 8px 12px 0; padding-top: 10px; border-top: 1px solid var(--line); }
+  .site-header.is-dark .site-menu { border-color: rgb(238 237 232 / .14); background: #18191c; color: var(--paper); box-shadow: 0 18px 40px -18px rgb(0 0 0 / .7); }
+  .site-header.is-dark .site-menu-list a:hover, .site-header.is-dark .site-menu-list a[aria-current] { background: rgb(238 237 232 / .08); }
+  .site-header.is-dark .site-menu-resume { border-top-color: var(--night-line); }
   .header-contact .icon { width: 1.2em; height: 1.2em; }
   .site-header.is-dark .wordmark, .site-header.is-dark .header-contact { color: var(--paper); }
   .hero { position: relative; min-height: 720px; height: 100svh; max-height: 1150px; padding: 146px var(--gutter) 0; isolation: isolate; overflow: clip; }
@@ -133,7 +157,7 @@
   .hero-tour[data-tour-mode="replay"] .icon { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 3.2v9.6L12.6 8z'/%3E%3C/svg%3E"); }
   /* No second start while a tour is running (the dock's Skip and Replay take over). */
   :root.agentic-touring .hero-tour { visibility: hidden; }
-  .hero-links { display: flex; gap: 22px; font-size: var(--text-label); }
+  .hero-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 15px; font-size: var(--text-label); }
   .hero-links a { padding: 8px 0; border-bottom: 1px solid #b3b6a8; }
   .hero-links a:hover { border-bottom-color: var(--ink); }
   /* Proof strip: three facts stated further down the page, each a link to where it is
@@ -309,14 +333,14 @@
   }
   /* Small tablets: six nav links and the résumé link do not fit beside the wordmark;
      About and Skills step out (as on phones), Lab stays. */
-  @media (max-width: 900px) { .nav-optional { display: none; } }
+  @media (max-width: 900px) { .nav-optional { display: none; } .has-menu .nav-menu-button { display: inline-flex; } .has-menu .nav-menu-swap { display: none; } }
   @media (max-width: 760px) {
     :root { --header-top: 16px; --header-bar-pad: 10px; --header-clear: 62px; }.site-header { gap: 12px; }.wordmark { font-size: 20px; }.main-nav a { padding: 9px 10px; }.main-nav { padding: 4px; }.header-contact, .nav-optional { display: none; }
     .hero { padding-top: 80px; }.hero-kicker { gap: 7px; }.hero h1 { font-size: 15.4vw; margin-top: 16px; line-height: .86; }.hero-line > span { display: block; }
     /* Phone hero: one column below the portrait (portrait.css sizes and tucks it under ENGINEER).
        Tighter gaps keep the proof strip, résumé button and links in the first 390x844 screen;
        the tour pill follows them (DOM order). */
-    .hero-bottom { grid-template-columns: 1fr; gap: 16px; }.hero-intro p:first-of-type { font-size: 24px; margin-top: 8px; }.hero-intro .hero-scope { margin-top: 8px; }.hero-actions { justify-self: start; justify-items: start; gap: 10px; }.hero-links a { padding: 6px 0; }.hero-rule { margin-top: 46px; padding-top: 12px; }
+    .hero-bottom { grid-template-columns: 1fr; gap: 12px; }.hero-intro p:first-of-type { font-size: 24px; margin-top: 8px; }.hero-intro .hero-scope { margin-top: 8px; }.hero-actions { justify-self: start; justify-items: start; gap: 10px; }.hero-links a { padding: 6px 0; }.hero-rule { margin-top: 46px; padding-top: 12px; }
     .hero-proof { column-gap: 10px; padding-top: 12px; }.proof-label { letter-spacing: .01em; }
     .section-top { gap: 24px; padding: 25px 0; }.section-top > :last-child { text-align: right; max-width: 46%; }
     .open-heading, .work-heading, .experience-heading, .capabilities-heading { display: block; padding-top: 55px; }.open-heading h2, .work-heading h2, .experience-heading h2, .capabilities-heading h2 { font-size: 12.4vw; }.open-heading > p, .work-heading > p, .experience-heading > p, .capabilities-heading > p { margin-top: 25px; }

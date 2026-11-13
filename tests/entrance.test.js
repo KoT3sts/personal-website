@@ -1785,7 +1785,7 @@ test('a working label is only shown while its work is on screen', t => {
 test('typos are rare, deterministic and only in plain lowercase words', () => {
   const sentence = 'Email is the fastest way to reach me.';
   assert.deepEqual(typoFor(sentence), typoFor(sentence));
-  for (const text of ['Georgia Institute of Technology', 'SEP 2021 – MAY 2023', 'Lucenatrujillo.cesar@gmail.com', 'Trace and evaluate LLM systems', 'Run MLOps and model deployment', 'ADP · ROSELAND, NJ', '18+ hands-on workshops']) {
+  for (const text of ['Georgia Institute of Technology', 'SEP 2021 – MAY 2023', 'lucenatrujillo.cesar@gmail.com', 'Trace and evaluate LLM systems', 'Run MLOps and model deployment', 'ADP · ROSELAND, NJ', '18+ hands-on workshops']) {
     assert.equal(typoFor(text), null, text);
   }
   assert.equal(typoFor('the quick brown fox jumps over the lazy dog', { transform: 'uppercase' }), null);
