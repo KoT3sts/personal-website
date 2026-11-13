@@ -431,22 +431,26 @@ export function initExplorer(document, window) {
   });
 
   // ---- Keys: arrows move, Home/End jump, Escape returns to the ring. ----
+  // On a cover or an index entry the arrow keys belong to the explorer (the
+  // roving-tabindex pattern: one cover in the tab order, arrows move between
+  // projects), so they never scroll the page, not even at either end. From the
+  // ring the first key opens the stack and moves at once. On an index entry
+  // the step counts from the entry that has focus.
   stage.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'Escape') {
       if (state.mode === 'stack' && state.geometry.ring) { event.preventDefault(); setMode('ring'); }
       return;
     }
-    const target = keyTarget(event.key, state.index, count);
-    if (target === null) return;
     const onCover = event.target.closest?.('.explorer-card');
     const onPick = event.target.closest?.('[data-explorer-pick]');
     if (!onCover && !onPick) return;
-    if (state.mode === 'ring') { event.preventDefault(); setMode('stack'); return; }
-    // At either end the key does what it would anywhere else (scrolls the page).
-    if (target === state.index) return;
+    const from = onPick ? Number(onPick.dataset.explorerPick) : state.index;
+    const target = keyTarget(event.key, Number.isInteger(from) ? from : state.index, count);
+    if (target === null) return;
     event.preventDefault();
-    select(target, { quiet: Boolean(onCover) });
+    if (state.mode === 'ring') setMode('stack');
+    if (target !== state.index) select(target, { quiet: Boolean(onCover) });
     (onCover ? links[target] : picks[target])?.focus({ preventScroll: true });
   });
 
