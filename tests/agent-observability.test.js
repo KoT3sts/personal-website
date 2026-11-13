@@ -118,6 +118,9 @@ test('filters list every day and root agent in the data; the notes repeat the ex
   // The session pills are built from the data (D.sessionsOf), after a static "All".
   assert.match(page, /<div class="obs-pill-row" data-obs="session-pills">\s*<input type="radio" name="session" id="obs-session-all" value="all" checked><label for="obs-session-all">All<\/label>\s*<\/div>/);
   assert.match(scripts['lab/observability.js'], /for \(const s of D\.sessionsOf\(data\.traces\)\) \{/);
+  // Choosing a session in the Sessions table filters a list further up the page: a link leads back to it, as for failure classes.
+  assert.match(page, /<p class="obs-hint" data-obs="sessions-jump" hidden><a class="lab-link" href="#obs-traces-title">See the filtered trace list<\/a><\/p>/);
+  assert.match(scripts['lab/obs-views.js'], /q\('sessions-jump'\)\.hidden = !id \|\| id === 'all';/);
   assert.deepEqual(D.sessionsOf(data.traces), Object.keys(data.rollups.sessions));
   const select = page.match(/<select id="obs-errclass" name="errorClass">([\s\S]*?)<\/select>/)[1];
   assert.deepEqual([...select.matchAll(/<option value="([a-z_]+)">/g)].map(m => m[1]), ['all', ...data.meta.errorClasses]);

@@ -236,6 +236,7 @@ export function initViews({ data, setFilter, open }) {
       b.setAttribute('aria-label', `Session ${tr.dataset.session}, ${b.lastChild.textContent}: ${on ? 'show all sessions' : 'show only its traces'}`);
     });
     const id = view.filters.session;
+    q('sessions-jump').hidden = !id || id === 'all';
     q('sessions-note').textContent = id && id !== 'all'
       ? `The trace list shows ${listWords('session')} from session ${id}.`
       : 'Choose a session to filter the trace list to it.';
