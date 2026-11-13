@@ -1,8 +1,15 @@
 # Personal Website handoff
 
-Updated: November 13, 2026 (America/New_York), review round (28 fixes) after round 14 (labels note, reload fix) after round 13 (evaluators + Arize-style dashboard) after round 12: hover lag, recruiter copy, first-visit tour + hero pill, chart palette, CSS bundles and zero layout shift. Commits a7ad5b1..e81851a, not pushed.
+Updated: November 13, 2026 (America/New_York), deployed to Railway at cesartortolero.up.railway.app after the review round (28 fixes)
 
 ## Confirmed state
+
+- November 13, Railway deploy (official link): **https://cesartortolero.up.railway.app**.
+  - Railway workspace `noclark's Projects`, project `barking-village`, isolated environment `personal-website-production`, service `cesar-tortolero` (the same layout as LollaPlanner; the `production` and `lollaplanner-production` environments were not touched).
+  - Source: GitHub `KoT3sts/personal-website`, branch `feat/reference-portfolio`, auto-deploys on push. Root `Dockerfile` builds `dist/` (Node 22) and serves it with Caddy (`Caddyfile`: Railway `PORT`, own 404, nosniff, HSTS, `X-Frame-Options: DENY`, referrer and permissions policies; pages `no-cache`, other files 1 h). No `railway.json`: Config as Code is deprecated after 2026-12-01 and migrating would switch the whole shared project to IaC.
+  - Canonical, OG, JSON-LD, sitemap, robots and security.txt point at the Railway domain (PR #4, merge `4d0f498`).
+  - Verified: first deploy from `deploy/railway` and the GitHub deploy of `4d0f498` both SUCCESS; all 13 pages 200, unknown paths 404 with the site's page, correct content types (JS `text/javascript`, manifest, PDF, JSON), security headers present; in a real browser the tour plays with 0 console errors and no CSP violations.
+  - The older ChatGPT Sites preview still serves `2b1dc83`; treat Railway as the official link. A custom domain can be added later with `railway domain <name>` plus DNS records.
 
 - November 13, review round (branch `review/transfer-3`, not pushed): a browser walkthrough, a content/data audit and portfolio research produced 28 items; Cesar approved all of them. Fixed in parallel branches (`fix/lab-obs`, `fix/home`, `fix/pages`, `fix/docs`, `fix/resume`) and merged.
   - **Observability lab:** first-screen "What this shows" with a static kappa chart and bootstrap intervals (`scripts/telemetry/kappa-intervals.mjs` → `web/lab/data/agent-traces-kappa.json`, seed 20261112); models line; waterfall gaps and 390 px overflow fixed; failure-class jump link; span wording (822 single + 193 summaries); traces run in Arize Phoenix 20.16.0 (77 traces, 1,015 spans, snippet unchanged) with a screenshot `web/lab/phoenix-traces.webp`. JS budget 104,000 → 104,100 (stated in the test).

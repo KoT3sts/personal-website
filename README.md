@@ -4,7 +4,7 @@ Cesar Tortolero's personal website: Machine Learning Engineer (Morristown, NJ, N
 
 Full name: Cesar Alejandro Tortolero Trujillo. Preferred short/display name: Cesar Tortolero.
 
-Status: first working version deployed privately and checked.
+Status: live at https://cesartortolero.up.railway.app (Railway, auto-deploys from `feat/reference-portfolio`).
 
 The first-visit agentic entrance now has a working implementation: role-labelled cursors and selection frames assemble the hero, then briefly trace sections as you scroll. It includes immediate Skip, a footer Replay intro control, returning-visit persistence, reduced motion, and keyboard/deep-link fallbacks. This is a first pass for visual review, not a claim of complete reference parity.
 
@@ -35,7 +35,7 @@ npm run check
 npm run build
 ```
 
-Open the printed local URL. Source lives in `web/`; the build copies it into `dist/`. Sites hosting configuration is in `.openai/hosting.json`.
+Open the printed local URL. Source lives in `web/`; the build copies it into `dist/`. Production runs on Railway from the root `Dockerfile` and `Caddyfile`; the older ChatGPT Sites preview configuration is in `.openai/hosting.json`.
 
 ### Build output and asset optimization
 
