@@ -32,7 +32,9 @@ const readingLabel = main.match(/<dd class="mono" data-reading-time>([^<]+)<\/dd
 const mainText = plain(main);
 // The reading floor counts the prose; figures (captions, tables, labels) are read as needed.
 const words = plain(main.replace(/<figure\b[\s\S]*?<\/figure>/g, ' ')).split(' ').filter(Boolean).length;
-const figures = [...main.matchAll(/<figure\b([^>]*)>([\s\S]*?)<\/figure>/g)].map(match => ({ attrs: match[1], html: match[2] }));
+// The numbered figures; the first-screen summary (.lab-first) is checked on its own below.
+const figures = [...main.matchAll(/<figure\b([^>]*data-ea-fig[^>]*)>([\s\S]*?)<\/figure>/g)].map(match => ({ attrs: match[1], html: match[2] }));
+const lead = main.match(/<figure class="lab-first ea-lead"[^>]*>([\s\S]*?)<\/figure>/)?.[1];
 const meta = key => page.match(new RegExp(`<meta (?:name|property)="${key}" content="([^"]*)"`))?.[1];
 
 test('the same strict CSP and referrer policy as the evaluation lab, and one same-origin module', () => {
@@ -61,9 +63,10 @@ test('title, one h1, the four sections, and og/twitter meta that match the canon
   assert.ok(items >= 6 && items <= 8, `checklist has 6–8 items, got ${items}`);
 });
 
-test('links: both lab pages, back to Work, and both lab pages and the sitemap link here', () => {
-  assert.match(page, /<a class="cs-back" href="\.\.\/#work"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"><\/span> All projects<\/a>/);
-  for (const href of ['./sentiment-eval.html', './build-trace.html', '../#work']) assert.ok(page.includes(`href="${href}"`), href);
+test('links: both lab pages, back to the Lab, and both lab pages and the sitemap link here', () => {
+  assert.match(page, /<a class="cs-back" href="\.\.\/#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"><\/span> Back to the Lab<\/a>/);
+  assert.doesNotMatch(page, /href="\.\.\/#work"/, 'a lab page goes back to the Lab, not to the projects');
+  for (const href of ['./sentiment-eval.html', './build-trace.html', '../#lab']) assert.ok(page.includes(`href="${href}"`), href);
   for (const [, ref] of page.matchAll(/\s(?:href|src)="(\.{1,2}\/[^"#]*)/g)) {
     const target = new URL(ref, new URL('lab/evaluating-agents.html', web));
     assert.ok(statSync(target.pathname.endsWith('/') ? new URL('index.html', target) : target), `${ref} exists`);
@@ -152,7 +155,9 @@ const telemetryNumbers = [T.calls, T.errors, T.rate, T.p50, T.p90, T.llm.n, T.pe
   T.info.spans, T.evaluators, figures.length, ...figures.map((_, i) => i + 1),
   ...T.tools.flatMap(([, tool]) => [tool.errors, tool.n, share(tool.errors, tool.n)]), ...Object.values(T.buckets),
   ...T.groups.flatMap(group => Object.values(group)), ...Object.values(T.classes),
-  ...T.evals.flatMap(row => [row.pass, row.fail, row.none, row.scored, row.top[1], row.median, row.min, row.max])].join(' ');
+  ...T.evals.flatMap(row => [row.pass, row.fail, row.none, row.scored, row.top[1], row.median, row.min, row.max]),
+  // Delegations by subagent type and their total (the review and verification sentence under Figure 5).
+  ...Object.values(telemetry.rollups.delegations), total(Object.values(telemetry.rollups.delegations))].join(' ');
 
 test('every number on the page is already published on the homepage, the evaluation lab, the build trace or the telemetry', () => {
   const summary = summarize(traceData);
@@ -467,4 +472,29 @@ test('figure 4 and the badges use the shared status tokens from lab.css; fail is
   assert.match(css, /\.ea-cell\.is-fail \{ background: repeating-linear-gradient\(135deg, var\(--status-fail\) 0 3px, #[0-9a-f]{6} 3px 5px\); \}/);
   assert.match(css, /\.ea-cell\.is-none \{ background: none; box-shadow: inset 0 0 0 1px var\(--status-na\); \}/);
   assert.doesNotMatch(css, /#b4692c|#dfae84/, 'no orange fail left');
+});
+
+test('the first screen shows data: every pass/fail check across all traces, with bars drawn to the counts', () => {
+  assert.ok(lead, 'a first-screen figure in the intro');
+  assert.ok(page.indexOf('class="lab-first ea-lead"') < page.indexOf('<div class="cs-body">'), 'inside the intro, before the essay');
+  assert.match(page, /<article class="lab-compact"/, 'the shorter intro');
+  const rows = [...lead.match(/<tbody>([\s\S]*?)<\/tbody>/)[1].matchAll(/<tr><th scope="row">([^<]+)<\/th><td class="ea-glance-plot">([\s\S]*?)<\/td><td>(\d+)<\/td><td>(\d+)<\/td><\/tr>/g)];
+  const passFail = T.evals.filter(row => row.output === 'pass/fail');
+  assert.deepEqual(rows.map(row => [row[1], Number(row[3]), Number(row[4])]), passFail.map(row => [row.name, row.pass, row.fail]));
+  const n = T.traces.length;
+  for (const [, name, svg, pass, fail] of rows) {
+    const widths = [...svg.matchAll(/width="([\d.]+)%"/g)].map(match => Number(match[1]));
+    assert.deepEqual(widths.map(w => Math.round((w * n) / 100)), [Number(pass), Number(fail), n - Number(pass) - Number(fail)], name);
+  }
+  assert.match(lead, new RegExp(`<figcaption id="ea-lead-cap">Each bar is the ${n} traces`));
+  assert.match(lead, /href="#fig-evaluators"/);
+});
+
+test('figure 2 calls the dashboard gate what it is: offline, not enforced; figure 5 says review was selective', () => {
+  assert.doesNotMatch(mainText, /no release gate/);
+  assert.match(figures[1].html, /release gate re-scores the traces offline and blocks nothing/);
+  const d = telemetry.rollups.delegations;
+  const all = total(Object.values(d));
+  const review = T.evals.find(row => row.id === 'review_before_commit');
+  assert.ok(figures[4].html.includes(`a verifier ran in ${d['verification-runner']} of ${all} delegations and a reviewer in ${d['quality-reviewer']}, and “Review before commit” passed in only ${review.pass} of ${review.scored} scored traces`));
 });

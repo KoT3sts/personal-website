@@ -59,16 +59,40 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="cs-top">
     <a class="cs-wordmark" href="../"><span class="cs-wordmark-first">CESAR<span class="cs-dot" aria-hidden="true"></span></span> <span class="cs-wordmark-last">TORTOLERO</span></a>
-    <a class="cs-back" href="../#work"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> All projects</a>
+    <a class="cs-back" href="../#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Back to the Lab</a>
   </header>
   <main id="main">
-    <article aria-labelledby="ea-title">
+    <article class="lab-compact" aria-labelledby="ea-title">
       <header class="cs-intro">
         <p class="mono lab-kicker">Notes · method</p>
         <h1 id="ea-title" class="lab-title">How I evaluate agents</h1>
         <div class="cs-grid cs-summary">
           <div class="cs-main">
             <p class="cs-lead lab-lead">How I evaluate agents, shown on public evidence only: the agents that built this site and an open-data lab. No employer systems or data appear here.</p>
+            <figure class="lab-first ea-lead" aria-labelledby="ea-lead-cap">
+              <svg class="lab-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><pattern id="ea-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="lab-hatch-bg" width="5" height="5"></rect><rect class="lab-hatch-fg" width="2" height="5"></rect></pattern></defs></svg>
+              <table class="ea-glance">
+                <caption class="visually-hidden">Pass and fail for each code check across the 77 traces</caption>
+                <thead><tr><th scope="col">Check</th><th scope="col"><span class="visually-hidden">Share of the </span>77 traces</th><th scope="col">Pass</th><th scope="col">Fail</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Tool error rate</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="84.42%" height="100%"></rect><rect class="is-fail" x="84.42%" y="0" width="3.9%" height="100%"></rect><rect class="is-none" x="88.31%" y="0" width="11.69%" height="100%"></rect></svg></td><td>65</td><td>3</td></tr>
+                  <tr><th scope="row">Recovered after error</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="31.17%" height="100%"></rect><rect class="is-fail" x="31.17%" y="0" width="11.69%" height="100%"></rect><rect class="is-none" x="42.86%" y="0" width="57.14%" height="100%"></rect></svg></td><td>24</td><td>9</td></tr>
+                  <tr><th scope="row">Delegation on large tasks</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="36.36%" height="100%"></rect><rect class="is-fail" x="36.36%" y="0" width="6.49%" height="100%"></rect><rect class="is-none" x="42.86%" y="0" width="57.14%" height="100%"></rect></svg></td><td>28</td><td>5</td></tr>
+                  <tr><th scope="row">Review before commit</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="15.58%" height="100%"></rect><rect class="is-fail" x="15.58%" y="0" width="25.97%" height="100%"></rect><rect class="is-none" x="41.56%" y="0" width="58.44%" height="100%"></rect></svg></td><td>12</td><td>20</td></tr>
+                  <tr><th scope="row">Tests before commit</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="40.26%" height="100%"></rect><rect class="is-fail" x="40.26%" y="0" width="1.3%" height="100%"></rect><rect class="is-none" x="41.56%" y="0" width="58.44%" height="100%"></rect></svg></td><td>31</td><td>1</td></tr>
+                  <tr><th scope="row">Checked after the last edit</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="27.27%" height="100%"></rect><rect class="is-fail" x="27.27%" y="0" width="5.19%" height="100%"></rect><rect class="is-none" x="32.47%" y="0" width="67.53%" height="100%"></rect></svg></td><td>21</td><td>4</td></tr>
+                  <tr><th scope="row">No stuck loop</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="88.31%" height="100%"></rect><rect class="is-fail" x="88.31%" y="0" width="0%" height="100%"></rect><rect class="is-none" x="88.31%" y="0" width="11.69%" height="100%"></rect></svg></td><td>68</td><td>0</td></tr>
+                  <tr><th scope="row">Changes after review</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="3.9%" height="100%"></rect><rect class="is-fail" x="3.9%" y="0" width="11.69%" height="100%"></rect><rect class="is-none" x="15.58%" y="0" width="84.42%" height="100%"></rect></svg></td><td>3</td><td>9</td></tr>
+                  <tr><th scope="row">Model latency budget</th><td class="ea-glance-plot"><svg class="lab-first-bar" aria-hidden="true" focusable="false"><rect class="is-pass" x="0" y="0" width="88.31%" height="100%"></rect><rect class="is-fail" x="88.31%" y="0" width="11.69%" height="100%"></rect><rect class="is-none" x="100%" y="0" width="0%" height="100%"></rect></svg></td><td>68</td><td>9</td></tr>
+                </tbody>
+              </table>
+              <ul class="ea-key" aria-hidden="true">
+                <li><span class="ea-cell is-pass"></span>Pass</li>
+                <li><span class="ea-cell is-fail"></span>Fail</li>
+                <li><span class="ea-cell is-none"></span>Not scored</li>
+              </ul>
+              <figcaption id="ea-lead-cap">Each bar is the 77 traces of the agent sessions that built this site, scored by one deterministic code check; not scored means the check did not apply. <a class="lab-link" href="#fig-evaluators">Figure 4</a> opens every trace.</figcaption>
+            </figure>
             <p class="lab-disclaimer">The facts and numbers come from this site: my homepage, the <a class="lab-link" href="./sentiment-eval.html">evaluation lab</a>, <a class="lab-link" href="./build-trace.html">the recorded agent run</a> that built the site and, for the figures, the exported telemetry of the agent sessions behind it.</p>
           </div>
           <dl class="cs-rail cs-meta">
@@ -145,7 +169,7 @@
               </details>
             </figure>
             <p>A threshold is a decision, not a default. Raising it trades recall for precision, and the right point depends on what a false positive costs. The lab’s slider shows the trade on the test set, but a threshold you deploy should come from validation data. For an agent, the same choice decides when it acts on its own and when it stops and asks.</p>
-            <p>And a small gap is often noise. In the lab, B leads A by 0.008 F1 on 596 test sentences. Across 1,000 bootstrap resamples of the test set, the interval for that gap runs from −0.021 to +0.038, and B comes out ahead in 70% of them. The interval crosses zero, so a 0.008 F1 gap is not a win, and I would not switch models on it. A hand-built agent test set with fewer cases gives a wider interval, so it needs one even more.</p>
+            <p>A small gap is often noise. In the lab, B leads A by 0.008 F1 on 596 test sentences. Across 1,000 bootstrap resamples of the test set, the interval for that gap runs from −0.021 to +0.038, and B comes out ahead in 70% of them. The interval crosses zero, so a 0.008 F1 gap is not a win, and I would not switch models on it. A hand-built agent test set with fewer cases gives a wider interval, so it needs one even more.</p>
           </div>
         </section>
 
@@ -163,7 +187,7 @@
                 <li><span class="mono ea-flow-label">Fixed test set</span><span class="ea-flow-text">Real failures, expected outcomes</span><span class="ea-flow-data">Not in the telemetry yet</span></li>
                 <li><span class="mono ea-flow-label">Gate</span><span class="ea-flow-text">Block a release while it fails</span><span class="ea-flow-data">Here: <span data-ea-m="evaluators">13</span> code evaluators per trace, Figure 4</span></li>
               </ol>
-              <figcaption id="fig-loop-cap">The loop I would set up: a failure found in a trace becomes a test case, and the test set decides whether a change ships. Illustration: the moving highlight is a diagram; the counts under the steps come from the telemetry, which has no fixed test set and no release gate yet.</figcaption>
+              <figcaption id="fig-loop-cap">The loop I would set up: a failure found in a trace becomes a test case, and the test set decides whether a change ships. Illustration: the moving highlight is a diagram; the counts under the steps come from the telemetry, which has no fixed test set yet. The dashboard’s release gate re-scores the traces offline and blocks nothing.</figcaption>
             </figure>
             <p>Traces come first. I set up LLM tracing and evaluation with Arize AX and OpenTelemetry/OpenInference. In OpenTelemetry terms a run is a trace and each step inside it is a span; OpenInference adds conventions for LLM steps such as model calls, retrievals and tool calls. When spans record inputs, outputs, timing and errors, a failed run shows which step went wrong instead of leaving you guessing from the final answer.</p>
             <p>Then put each failure in one bucket:</p>
@@ -332,7 +356,7 @@
                   </div>
                 </details>
               </div>
-              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 68 of the 77, placed by how many calls it made (log scale). A trace counts as delegated when it has at least one subagent run. The <em>Delegation on large tasks</em> check in Figure 4 is narrower: it scores only the 33 large traces, and passes the 28 where subagents made at least half of the tool calls. Point at a dot, or use the slider, to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and day all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out.</figcaption>
+              <figcaption id="fig-delegation-cap">Each dot is a trace with tool calls, 68 of the 77, placed by how many calls it made (log scale). A trace counts as delegated when it has at least one subagent run. The <em>Delegation on large tasks</em> check in Figure 4 is narrower: it scores only the 33 large traces, and passes the 28 where subagents made at least half of the tool calls. Point at a dot, or use the slider, to read it. The traces that delegated were also the long ones: a median of 247 tool calls against 3. Their size, task and day all differ, and no task was run both ways, so this is not a controlled comparison and cannot show that delegation lowered errors or cost. Tokens are output plus reasoning; cache reads are left out. In the 77 traces of this site’s build, review and verification were selective: a verifier ran in 2 of 108 delegations and a reviewer in 14, and “Review before commit” passed in only 12 of 32 scored traces.</figcaption>
               <details class="ea-data" open>
                 <summary>Data table</summary>
                 <div class="lab-table-wrap">
@@ -389,7 +413,7 @@
               <li><a class="cs-text-link" href="./sentiment-eval.html">Evaluation lab <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
               <li><a class="cs-text-link" href="./build-trace.html">The agent run behind this site <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
               <li><a class="cs-text-link" href="./agent-observability.html">Agent observability dashboard <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
-              <li><a class="cs-text-link" href="../#work">Back to Work <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
+              <li><a class="cs-text-link" href="../#lab">Back to the Lab <span class="cs-arrow icon icon-arrow-e" aria-hidden="true"></span></a></li>
             </ul>
           </div>
         </section>
@@ -408,7 +432,7 @@
         <a class="cs-pill" href="../assets/Cesar_Tortolero_Resume.pdf">Résumé <span class="mono">PDF</span></a>
       </div>
     </div>
-    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#work">Back to all projects</a></div>
+    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#lab">Back to the Lab</a></div>
   </footer>
 </body>
 </html>

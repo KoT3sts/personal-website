@@ -211,3 +211,18 @@
   .ea-checklist li { break-inside: avoid; }
   .ea-live, .ea-play, .ea-progress { display: none; }
 }
+
+/* First screen: the code checks across all 77 traces, as a compact table with bars
+   (the same counts as Figure 4's data table). */
+.ea-glance { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.ea-glance th, .ea-glance td { padding: 4px 0; font-weight: 400; text-align: left; vertical-align: middle; }
+.ea-glance thead th { padding-bottom: 8px; color: var(--label); font-family: var(--font-mono); font-size: 11px; letter-spacing: .035em; text-transform: uppercase; }
+.ea-glance tbody th { padding-right: 16px; white-space: nowrap; }
+.ea-glance-plot { width: 100%; }
+.ea-glance td:nth-child(n+3), .ea-glance thead th:nth-child(n+3) { width: 3.4em; padding-left: 8px; text-align: right; }
+.ea-lead .ea-key { font-size: 12px; }
+@media (max-width: 560px) {
+  .ea-glance { font-size: 12px; }
+  .ea-glance tbody th { padding-right: 10px; white-space: normal; min-width: 8.5em; }
+  .ea-glance td:nth-child(n+3), .ea-glance thead th:nth-child(n+3) { width: 2.6em; padding-left: 4px; }
+}
