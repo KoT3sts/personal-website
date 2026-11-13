@@ -4,6 +4,10 @@
 }
 
 :{$PORT:8080} {
+	# One address: www and the Railway address send visitors to cesartortolero.com.
+	@other host www.cesartortolero.com cesartortolero.up.railway.app
+	redir @other https://cesartortolero.com{uri} permanent
+
 	root * /srv
 	encode zstd gzip
 
