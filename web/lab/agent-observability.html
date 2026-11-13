@@ -672,8 +672,8 @@ import pandas as pd
 df = pd.read_json("agent-traces.openinference.jsonl", lines=True)
 df = df.join(pd.json_normalize(df.pop("attributes").tolist()))</code></pre>
             <figure class="obs-shot">
-              <img src="./phoenix-traces.webp" width="1178" height="900" loading="lazy" decoding="async" alt="Arize Phoenix showing the agent-traces project: a trace latency chart by day above a list of root agent spans named build and plan, with input and output empty because they are never published.">
-              <figcaption>The published spans in Phoenix’s trace view. Where Phoenix shows a Total Cost column, that is its own estimate from model names and token counts, not a real cost: the work ran on a flat-rate subscription.</figcaption>
+              <img src="./phoenix-traces.webp" width="1178" height="900" loading="lazy" decoding="async" alt="Arize Phoenix showing the agent-traces project over the last 10 days: trace volume per day with errors in red, latency percentiles per day, and a list of root agent spans named build and plan, with input and output empty because they are never published.">
+              <figcaption>The published spans in Phoenix’s trace view. Phoenix can also estimate a cost from model names and token counts; that is its own estimate, not a real cost: the work ran on a flat-rate subscription.</figcaption>
             </figure>
             <p class="obs-download-note">Phoenix docs: <a class="lab-link" href="https://arize.com/docs/phoenix/tracing/concepts-tracing/otel-openinference/exporter">Exporter and OTLP</a> (Phoenix takes OTLP/HTTP on port 6006, at <code>/v1/traces</code>).</p>
           </div>
