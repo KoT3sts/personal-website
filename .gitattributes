@@ -1,0 +1,12 @@
+# Keep LF everywhere: tests match exact text, byte budgets and CSP hashes.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
