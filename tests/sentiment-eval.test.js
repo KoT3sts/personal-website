@@ -123,7 +123,7 @@ test('the page has the strict CSP, the referrer policy and loads only its own mo
   assert.equal(csp(page), csp(chatbot));
   assert.match(page, /<meta name="referrer" content="strict-origin-when-cross-origin">/);
   assert.match(page, /<script type="module" src="\.\/lab\.js"><\/script>/);
-  assert.equal([...page.matchAll(/<script(?![^>]*application\/ld\+json)[^>]*>/g)].length, 1, 'one script, the module');
+  assert.equal([...page.matchAll(/<script(?![^>]*application\/ld\+json)(?![^>]*count\.js)[^>]*>/g)].length, 1, 'one script, the module (the page counter is checked in security.test.js)');
   assert.doesNotMatch(page, /\sstyle="/);
   const lab = read('lab/lab.js');
   assert.match(lab, /from '\.\/metrics\.js'/);

@@ -31,7 +31,8 @@ test('the same strict CSP and referrer policy as the other lab pages; one module
   assert.equal(csp(page), csp(lab), 'CSP copied exactly from sentiment-eval.html');
   assert.match(page, /<meta name="referrer" content="strict-origin-when-cross-origin">/);
   assert.ok(page.indexOf('Content-Security-Policy') < page.indexOf('<link'), 'the policy comes before any resource');
-  assert.deepEqual([...page.matchAll(/<script\b[^>]*>/g)].map(m => m[0]), ['<script type="module" src="./observability.js">']);
+  // The page counter (../count.js) is on every page and checked in security.test.js.
+  assert.deepEqual([...page.matchAll(/<script\b(?![^>]*count\.js)[^>]*>/g)].map(m => m[0]), ['<script type="module" src="./observability.js">']);
   assert.doesNotMatch(page, /\sstyle="|\son[a-z]+="|javascript:/i);
   for (const sheet of ['../project.css', './lab.css', './observability.css']) assert.ok(page.includes(`<link rel="stylesheet" href="${sheet}">`), sheet);
 });

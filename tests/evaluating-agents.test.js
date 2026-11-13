@@ -41,7 +41,8 @@ test('the same strict CSP and referrer policy as the evaluation lab, and one sam
   const csp = tag => tag.match(/<meta http-equiv="Content-Security-Policy" content="[^"]+">/)[0];
   assert.equal(csp(page), csp(lab), 'CSP copied exactly from sentiment-eval.html');
   assert.match(page, /<meta name="referrer" content="strict-origin-when-cross-origin">/);
-  const scripts = [...page.matchAll(/<script\b[^>]*>/g)].map(match => match[0]);
+  // The page counter (../count.js) is on every page and checked in security.test.js.
+  const scripts = [...page.matchAll(/<script\b(?![^>]*count\.js)[^>]*>/g)].map(match => match[0]);
   assert.deepEqual(scripts, ['<script type="application/ld+json">', '<script type="module" src="./evaluating-agents.js">'], 'structured data and the figures module only');
   assert.match(page, /<script type="module" src="\.\/evaluating-agents\.js"><\/script>/, 'no inline code');
   assert.doesNotMatch(page, /\sstyle="|\son[a-z]+="/);

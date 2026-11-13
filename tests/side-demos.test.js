@@ -160,7 +160,7 @@ test('one module script, the strict CSP, labelled controls and polite live regio
     assert.match(csp, /connect-src 'self'/);
     assert.ok(page.indexOf('Content-Security-Policy') < page.indexOf('<script'), `${slug}: CSP before scripts`);
     const scriptTags = [...page.matchAll(/<script\b[^>]*>/g)].map(match => match[0]).filter(tag => !tag.includes('application/ld+json'));
-    assert.deepEqual(scriptTags, ['<script type="module" src="./side-demos.js">'], `${slug}: one external module`);
+    assert.deepEqual(scriptTags, ['<script type="module" src="./side-demos.js">', '<script type="module" src="../count.js">'], `${slug}: its own module and the page counter`);
     assert.match(page, /<link rel="stylesheet" href="\.\/side-demos\.css">/);
     assert.doesNotMatch(page, /\sstyle="|\son[a-z]+="/, `${slug}: no style attributes or inline handlers`);
     assert.match(page, /aria-live="polite"|data-wh-ui|data-bv-controls/, `${slug}: results are announced`);
