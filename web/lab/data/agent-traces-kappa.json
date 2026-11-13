@@ -1,0 +1,35 @@
+{
+  "method": "Percentile bootstrap: traces resampled with replacement, kappa recomputed each time, 2.5th and 97.5th percentiles (nearest rank).",
+  "seed": 20261112,
+  "resamples": 5000,
+  "dataset": "451379e2607c",
+  "rows": [
+    {
+      "id": "all",
+      "name": "All required checks pass",
+      "n": 77,
+      "kappa": 0.16,
+      "lo": -0.04,
+      "hi": 0.35,
+      "undefinedKappa": 0
+    },
+    {
+      "id": "size",
+      "name": "Under 40 tool calls",
+      "n": 77,
+      "kappa": 0.5,
+      "lo": 0.3,
+      "hi": 0.68,
+      "undefinedKappa": 0
+    },
+    {
+      "id": "recovery_long",
+      "name": "Recovered after error, runs of 40+ calls",
+      "n": 27,
+      "kappa": 0.35,
+      "lo": 0.14,
+      "hi": 0.62,
+      "undefinedKappa": 0
+    }
+  ]
+}

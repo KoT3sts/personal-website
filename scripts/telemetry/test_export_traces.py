@@ -140,7 +140,7 @@ def write_roots(path, windows=None):
     windows = windows or [{"from": (T0 - timedelta(minutes=10)).isoformat(),
                            "to": (T0 + timedelta(minutes=30)).isoformat()}]
     Path(path).write_text(json.dumps({"roots": [{"slug": "root-one", "created": "2030-01-01",
-                                                 "windows": windows}]}))
+                                                 "windows": windows}]}), encoding="utf-8")
 
 
 class ExporterTest(unittest.TestCase):
@@ -240,11 +240,11 @@ class ExporterTest(unittest.TestCase):
 
     def test_export_writes_the_full_file_the_summary_and_the_openinference_lines(self):
         out, summary_path, jsonl_path = self.export()
-        full = json.loads(out.read_text())
-        summary = json.loads(summary_path.read_text())
+        full = json.loads(out.read_text(encoding="utf-8"))
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
         self.assertEqual(full["meta"]["traces"], 1)
         for path in (out, summary_path, jsonl_path):
-            text = path.read_text()
+            text = path.read_text(encoding="utf-8")
             self.assertNotIn('"cost"', text)
             for leak in ("secret", "someone", "corp", "plan.txt", "File not found", "private"):
                 self.assertNotIn(leak, text, f"{leak} in {path.name}")
@@ -267,7 +267,7 @@ class ExporterTest(unittest.TestCase):
 
     def test_error_class_session_and_agent_path_are_published_without_text(self):
         out, _, jsonl_path = self.export()
-        full = json.loads(out.read_text())
+        full = json.loads(out.read_text(encoding="utf-8"))
         trace = full["traces"][0]
         self.assertEqual(trace["session"], "S1")
         self.assertEqual(trace["agentPath"], ["build", "implementation-worker"])
@@ -291,7 +291,7 @@ class ExporterTest(unittest.TestCase):
                 self.assertIsInstance(e["score"], (int, float), e["evaluator"])
                 self.assertEqual(E.label_for(e["evaluator"], e["score"]), e["label"], e["evaluator"])
         # one OpenInference line per published span, consistent with the JSON
-        lines = [json.loads(line) for line in jsonl_path.read_text().splitlines()]
+        lines = [json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines()]
         self.assertEqual(len(lines), full["meta"]["publishedSpans"])
         by_id = {f"{trace['id']}.{s['id']}": s for s in trace["spans"]}
         for row in lines:

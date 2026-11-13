@@ -240,6 +240,10 @@ dropped before counting, so they are in neither). There is no `input.value` or
 `00:00:00.000Z` on its real calendar day, and spans keep their real offsets from
 that start, so the date is real and the time of day is not.
 
+## Kappa intervals
+
+`node scripts/telemetry/kappa-intervals.mjs --write` reads `agent-traces.json` and `human-labels.json`, recomputes the three kappas the dashboard quotes (all required checks, the under-40-calls size rule, and "Recovered after error" on long runs) with the page's own code (`web/lab/obs-eval.js`), and writes percentile-bootstrap 95% intervals (5,000 resamples of the traces, fixed seed) to `web/lab/data/agent-traces-kappa.json`. It needs no session store, so it can run after any export. `tests/agent-observability.test.js` recomputes the file and checks the numbers written into the page.
+
 ## Rollups
 
 `byDay`, `byRound`, `byAgent` (runs, steps, tool calls, errors, tokens),

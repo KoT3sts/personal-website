@@ -51,11 +51,12 @@ test('title, one h1, the point of the page, and the honest scope', () => {
   assert.equal(new URL(page.match(/<link rel="canonical" href="([^"]+)">/)[1]).pathname, '/lab/agent-observability.html');
 });
 
-test('links: back to Work, both agent pages, the raw data; every relative link resolves', () => {
-  assert.match(page, /<a class="cs-back" href="\.\.\/#work">/);
-  for (const href of ['../#work', './evaluating-agents.html', './build-trace.html', './data/agent-traces.json', './data/agent-traces.openinference.jsonl']) assert.ok(page.includes(`href="${href}"`), href);
+test('links: back to the Lab, both agent pages, the raw data; every relative link resolves', () => {
+  assert.match(page, /<a class="cs-back" href="\.\.\/#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"><\/span> Back to the Lab<\/a>/);
+  assert.doesNotMatch(page, /href="\.\.\/#work"/);
+  for (const href of ['../#lab', './evaluating-agents.html', './build-trace.html', './data/agent-traces.json', './data/agent-traces.openinference.jsonl']) assert.ok(page.includes(`href="${href}"`), href);
   assert.match(page, /<nav class="cs-pager"[\s\S]*How I evaluate agents[\s\S]*The agent run behind this site[\s\S]*<\/nav>/);
-  assert.match(page, /<a href="\.\.\/#work">Back to Work<\/a>/);
+  assert.match(page, /<a href="\.\.\/#lab">Back to the Lab<\/a>/);
   for (const [, ref] of page.matchAll(/\s(?:href|src)="(\.{1,2}\/[^"#]*)/g)) {
     const target = new URL(ref, new URL('lab/agent-observability.html', web));
     assert.ok(statSync(target.pathname.endsWith('/') ? new URL('index.html', target) : target), `${ref} exists`);
@@ -68,6 +69,8 @@ test('the KPI numbers written into the page equal the values computed from the J
   assert.equal(kpi('traces'), D.formatInt(k.traces));
   assert.equal(kpi('published'), D.formatInt(k.published));
   assert.equal(kpi('spans'), D.formatInt(k.spans));
+  const chains = data.traces.flatMap(t => t.spans).filter(s => s.kind === 'CHAIN').length;
+  assert.equal(kpi('summaries'), D.formatInt(chains), 'the published count names how many are summary spans');
   assert.equal(kpi('llmSteps'), D.formatInt(k.llmSteps));
   assert.equal(kpi('toolCalls'), D.formatInt(k.toolCalls));
   assert.equal(kpi('subagentRuns'), D.formatInt(k.subagentRuns));
@@ -99,7 +102,13 @@ test('filters list every day and root agent in the data; the notes repeat the ex
   const agents = [...page.matchAll(/name="agent" id="[^"]+" value="([a-z-]+)"/g)].map(m => m[1]).filter(a => a !== 'all');
   assert.deepEqual(agents.sort(), [...new Set(data.traces.map(t => t.rootAgent))].sort());
   const text = plain(page);
-  assert.ok(text.includes(`${D.formatInt(data.meta.publishedSpans)} of ${D.formatInt(data.meta.spans)} spans are published`));
+  // Merged spans: individual + merged = recorded; individual + summaries = published.
+  const chains = data.traces.flatMap(t => t.spans).filter(s => s.kind === 'CHAIN').length;
+  const single = data.meta.publishedSpans - chains;
+  assert.equal(single + data.meta.mergedSpans, data.meta.spans);
+  assert.ok(text.includes(`Of the ${D.formatInt(data.meta.spans)} recorded spans, ${D.formatInt(single)} are published one by one. The other ${D.formatInt(data.meta.mergedSpans)}, runs of ordinary steps, are merged into ${D.formatInt(chains)} summary spans`));
+  assert.ok(text.includes(`so the file has ${D.formatInt(data.meta.publishedSpans)} spans`));
+  assert.doesNotMatch(text, /spans are published one by one;/, 'the old wording counted summary spans as published one by one');
   const requests = data.traces.filter(t => t.rootAgent !== 'compaction');
   const compactions = data.traces.filter(t => t.rootAgent === 'compaction');
   const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
@@ -192,7 +201,8 @@ test('scripts fetch only the same-origin JSON and never build HTML from strings'
 
 test('JavaScript stays inside the budget; the filter count and the loading status are the only live regions', () => {
   const bytes = Object.values(scripts).reduce((n, source) => n + Buffer.byteLength(source), 0);
-  assert.ok(bytes <= 104_000, `${bytes} bytes of JavaScript (about 48 KB before the gate, review, graph, failure, monitor, session and compare views)`);
+  // 104,000 until the failure analysis gained its link back to the filtered trace list (+100).
+  assert.ok(bytes <= 104_100, `${bytes} bytes of JavaScript (about 48 KB before the gate, review, graph, failure, monitor, session and compare views)`);
   // Loaded at first: the explorer and what it imports statically. The gate and review
   // (obs-review.js) and the analysis views (obs-views.js, with obs-eval.js) come by import().
   const eager = new Set();
@@ -618,4 +628,56 @@ test('status colours: the console retunes lab.css\'s tokens for the night, and e
   assert.match(css, /\.obs-cell\.is-fail, \.obs-cell-key\.is-fail \{ background: var\(--status-fail\); \}/);
   assert.match(css, /\.obs-cell\.is-fail::before, \.obs-cell\.is-fail::after/, 'a fail also carries a cross');
   assert.match(css, /@media print \{[\s\S]*--status-pass: #3f5a22; --status-fail: #c0362c;/, 'paper values when printed');
+});
+
+// ---- the first screen, models, and the fixes of 2026-11-13 ---------------------------
+
+test('"What this shows": the finding and its chart under the title match the bootstrap file and the data', async () => {
+  const K = await import('../scripts/telemetry/kappa-intervals.mjs');
+  const labels = JSON.parse(read('lab/data/human-labels.json')).labels;
+  const file = JSON.parse(read('lab/data/agent-traces-kappa.json'));
+  // the file is what the script computes now, with its fixed seed
+  assert.deepEqual(file, K.intervals(data, labels));
+  assert.equal(file.dataset, data.meta.dataset, 'computed on this export');
+  assert.equal(file.resamples, 5000);
+  const block = page.match(/<section class="obs-shows"[\s\S]*?<\/section>/)[0];
+  assert.ok(page.indexOf('<section class="obs-shows"') > page.indexOf('<h1') && page.indexOf('<section class="obs-shows"') < page.indexOf('cs-lead'), 'directly under the title');
+  const two = v => v.toFixed(2).replace('-', '−');
+  const row = id => file.rows.find(r => r.id === id);
+  assert.equal(block.match(/data-shows="all">([^<]+)</)[1], two(row('all').kappa));
+  assert.equal(block.match(/data-shows="size">([^<]+)</)[1], two(row('size').kappa));
+  assert.ok(plain(block).includes(`over ${data.traces.length} real runs`));
+  const x = k => Math.round((k + 0.2) * 100);
+  for (const r of file.rows) {
+    const li = block.slice(block.indexOf(`<li data-k="${r.id}"`)).split('</li>')[0];
+    assert.ok(li.includes(`<span class="mono obs-k-val">${two(r.kappa)} <span class="obs-k-ci-text">[${two(r.lo)}, ${two(r.hi)}]</span></span>`), `${r.id} label`);
+    assert.ok(li.includes(`<line class="obs-k-ci" x1="${x(r.lo)}" x2="${x(r.hi)}" y1="6" y2="6"/>`), `${r.id} whisker`);
+    assert.ok(li.includes(`<line class="obs-k-dot" x1="${x(r.kappa)}" x2="${x(r.kappa)}.01" y1="6" y2="6"/>`), `${r.id} dot`);
+  }
+  const rec = row('recovery_long');
+  assert.ok(plain(block).includes(`the ${rec.n} runs with 40 or more tool calls and an error`));
+  assert.ok(plain(block).includes(`Intervals from ${D.formatInt(file.resamples)} resamples`));
+  // the agreement note quotes the same intervals and the caveat about the labeller
+  const note = plain(page.match(/<div class="obs-finding"[\s\S]*?<\/div>/)[0]);
+  assert.ok(note.includes(`kappa of ${two(row('all').kappa)} (bootstrap interval ${two(row('all').lo)} to ${two(row('all').hi)})`));
+  assert.ok(note.includes(`(kappa ${two(row('size').kappa)}, interval ${two(row('size').lo)} to ${two(row('size').hi)})`));
+  assert.ok(note.includes(`(kappa ${two(rec.kappa)}, interval ${two(rec.lo)} to ${two(rec.hi)}, on ${rec.n} runs)`));
+  assert.match(note, /I labelled runs I had built the checks for, and the labelling view showed each run’s size/);
+});
+
+test('the Models line names the models behind the traces, with their step counts', () => {
+  const byModel = data.rollups.byModel;
+  const models = [...page.matchAll(/<span data-model="([^"]+)">[^<]*<span data-steps>([^<]+)<\/span> steps<\/span>/g)].map(m => [m[1], m[2]]);
+  assert.deepEqual(models.map(m => m[0]).sort(), Object.keys(byModel).sort());
+  for (const [id, steps] of models) assert.equal(steps, D.formatInt(byModel[id].llmSteps), id);
+  assert.equal(D.sum(Object.values(byModel).map(m => m.llmSteps)), D.kpis(data).llmSteps);
+  assert.match(page, /Claude Opus 5\.5 · <span data-steps>/);
+  assert.match(page, /GPT-6\.1-sol · <span data-steps>/);
+});
+
+test('layout fixes: the waterfall packs to the top, long attribute names wrap, a class filter links back to the list', () => {
+  assert.match(css, /\.obs-wf \{ display: grid; align-content: start;/, 'no free space spread between the axis and the rows');
+  assert.match(css, /\.obs-attrs code, \.obs-download-note code \{ overflow-wrap: anywhere; \}/);
+  assert.match(page, /<p class="obs-hint" data-obs="fail-jump" hidden><a class="lab-link" href="#obs-traces-title">See the filtered trace list<\/a><\/p>/);
+  assert.match(scripts['lab/obs-views.js'], /q\('fail-jump'\)\.hidden = !on;/);
 });

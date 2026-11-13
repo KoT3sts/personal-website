@@ -146,8 +146,9 @@ export function initViews({ data, setFilter, open }) {
   function syncFailures() {
     if (!built.failures) return;
     q('fail-list').querySelectorAll('button[data-cls]').forEach(b => b.setAttribute('aria-pressed', String(view.filters.errorClass === b.dataset.cls)));
-    const cls = view.filters.errorClass;
-    q('fail-note').textContent = cls && cls !== 'all'
+    const cls = view.filters.errorClass, on = cls !== 'all';
+    q('fail-jump').hidden = !on;
+    q('fail-note').textContent = on
       ? `The trace list shows ${listWords('errorClass')} with a ${cls.replace('_', ' ')} failure; open one and its matching spans are marked in the waterfall.`
       : 'Choose a class to filter the trace list to the traces that hit it.';
   }
