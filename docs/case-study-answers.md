@@ -116,8 +116,8 @@ Answers given one by one in chat. Each one is the source for the matching questi
   illustrations and in-browser demos of what each project explores (sample data only, no
   claimed results); their remaining questions stay open in `docs/case-study-questions.md`.
   Every case study gets real charts/diagrams built from its sourced facts.
-- **Final confirmations (November 11, 2026):** "24 AWS accounts" and "about a day → minutes"
-  confirmed from the wiki (24-account platform; Cesar's own wording on Nov 3 and Nov 9).
+- **Final confirmations (November 11, 2026):** "many AWS accounts" and "about a day → minutes"
+  confirmed from the wiki (multi-account platform; Cesar's own wording on Nov 3 and Nov 9).
   "Revised more than 40 times" is good. Experience dates stay as they are. Cesar has the rights
   to the Icarus image. "Why I work this way" and the "How I evaluate agents" essay are approved.
   Résumé to be updated to match the site (no +15%, 95% or 20%).
