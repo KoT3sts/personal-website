@@ -266,7 +266,7 @@ test('every internal navigation target, local image, and local download points t
 test('contact paths cover email, LinkedIn, GitHub, and the résumé without publishing a phone number', () => {
   const { document } = new JSDOM(html).window;
   const hrefs = [...document.querySelectorAll('#contact a')].map(link => link.getAttribute('href'));
-  assert.ok(hrefs.includes('mailto:Lucenatrujillo.cesar@gmail.com'));
+  assert.ok(hrefs.includes('mailto:lucenatrujillo.cesar@gmail.com'));
   assert.ok(hrefs.includes('https://www.linkedin.com/in/cesar-tortolero'));
   assert.ok(hrefs.includes('https://github.com/KoT3sts'));
   assert.ok(hrefs.includes('./assets/Cesar_Tortolero_Resume.pdf'));
@@ -336,8 +336,8 @@ test('Open the work: three large cards between Work and Skills, each with a sent
   assert.equal(lab.nextElementSibling.id, 'skills');
   assert.equal(lab.classList.contains('dark-section'), false, 'light, between the light Work and the dark Skills');
   assert.equal(lab.getAttribute('aria-labelledby'), 'lab-title');
-  assert.match(lab.querySelector('.section-top').textContent, /^05 \/ INTERACTIVE DEMOS/);
-  assert.equal(lab.querySelector('#lab-title').textContent.replace(/\s+/g, ' ').trim(), 'TRY THE WORK.');
+  assert.match(lab.querySelector('.section-top').textContent, /^05 \/ LAB/);
+  assert.equal(lab.querySelector('#lab-title').textContent.replace(/\s+/g, ' ').trim(), 'THE LAB.');
   assert.equal(lab.querySelector('.open-heading > p').textContent, 'Three things you can try, not just read.');
   const cards = [...lab.querySelectorAll('.open-cards > .open-card')];
   assert.deepEqual(cards.map(card => [card.querySelector('h3').textContent, card.querySelector('.open-card-text').textContent, card.querySelector('.work-preview').dataset.preview, card.querySelector('a.open-card-link').getAttribute('href')]), [

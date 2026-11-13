@@ -333,8 +333,8 @@ test('"Watch it get built": an outline pill after the résumé and the links, in
   assert.match(tour, /^<a class="pill-button pill-ghost hero-tour" href="\.\/lab\/build-trace\.html" data-tour-replay /, 'a real link: works without scripts');
   assert.equal(attr(tour, 'aria-label'), 'Watch it get built: the recorded agent run behind this page');
   // No "~" the accessible name would not say; the length itself is decoration (the label says it in words).
-  assert.equal(plainText(tour), 'Watch it get built 55 S');
-  assert.match(tour, /<span class="pill-meta" aria-hidden="true">55 S<\/span> <span class="icon icon-arrow-e" aria-hidden="true"><\/span><\/a>$/);
+  assert.equal(plainText(tour), 'Watch it get built 55 s');
+  assert.match(tour, /<span class="pill-meta" aria-hidden="true">55 s<\/span> <span class="icon icon-arrow-e" aria-hidden="true"><\/span><\/a>$/);
   assert.doesNotMatch(tour, /target=|download/);
   const styles = await read('../web/styles.css');
   // Same height as the résumé pill: 1px border in place of 1px of padding; both stretch to the column.
@@ -362,6 +362,6 @@ test('"Watch it get built": an outline pill after the résumé and the links, in
   assert.match(app, /bindTourButton\(tourButton, \{[\s\S]*?replay: \(\) => lazy\.handle\.replay\(\),/);
   assert.match(app, /button\.dataset\.tourMode = mode;/);
   // The visible length and the spoken one agree (measured tours: 54.6 s at 1280, 51.9 s at 390).
-  const seconds = tour.match(/>(\d+) S</)[1];
+  const seconds = tour.match(/>(\d+) s</)[1];
   assert.match(app, new RegExp(`a ${seconds}-second replay`));
 });
