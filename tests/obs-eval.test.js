@@ -375,7 +375,7 @@ test('download: both files linked with their sizes, the attributes they use, and
     const size = page.match(new RegExp(`data-size="${file.replace(/\./g, '\\.')}">([^<]+)<`))[1];
     assert.equal(size, `${Math.round(statSync(new URL(`lab/data/${file}`, web)).size / 1000)} KB`, file);
   }
-  const listed = [...page.match(/<ul class="obs-attrs"[\s\S]*?<\/ul>/)[0].matchAll(/<code>([^<]+)<\/code>/g)].map(m => m[1]);
+  const listed = [...page.match(/<ul class="obs-attrs"[\s\S]*?<\/ul>/)[0].matchAll(/<code>(.+?)<\/code>/g)].map(m => m[1].replace(/<wbr>/g, ''));
   // error.class.<class> stands for one attribute per class (error.class.not_found, …).
   const used = new Set(read('lab/data/agent-traces.openinference.jsonl').trimEnd().split('\n').flatMap(line => Object.keys(JSON.parse(line).attributes))
     .map(key => (/^error\.class\.[a-z_]+$/.test(key) ? 'error.class.&lt;class&gt;' : key)));
@@ -384,7 +384,19 @@ test('download: both files linked with their sizes, the attributes they use, and
   assert.match(code, /OTLPSpanExporter\(endpoint="http:\/\/localhost:6006\/v1\/traces"\)/);
   assert.match(code, /pd\.read_json\("agent-traces\.openinference\.jsonl", lines=True\)/);
   assert.doesNotMatch(code, /[<>&]/, 'no characters that need escaping inside the code block');
-  assert.match(page, /<strong>Not run here\.<\/strong> Phoenix could not be installed/);
+  // Run unchanged against Phoenix 20.16.0 on 2026-11-13: it showed every trace and every published span.
+  assert.match(page, /<strong>Tested November 13, 2026\.<\/strong> This snippet ran unchanged against a local Arize Phoenix 20\.16\.0/);
+  assert.equal(page.match(/<span data-phoenix-traces>([^<]+)<\/span>/)[1], D.formatInt(data.traces.length));
+  assert.equal(page.match(/<span data-phoenix-spans>([^<]+)<\/span>/)[1], D.formatInt(read('lab/data/agent-traces.openinference.jsonl').trimEnd().split('\n').length));
+  assert.doesNotMatch(page, /Not run here/);
+  const shot = page.match(/<figure class="obs-shot">\s*<img ([^>]+)>\s*<figcaption>([^<]+)<\/figcaption>/);
+  assert.ok(shot, 'the Phoenix screenshot sits next to the snippet, with a caption');
+  assert.match(shot[1], /^src="\.\/phoenix-traces\.webp" width="1178" height="900" loading="lazy" decoding="async" alt="Arize Phoenix [^"]{40,}"$/);
+  const webp = readFileSync(new URL('lab/phoenix-traces.webp', web));
+  assert.equal(webp.toString('ascii', 0, 4), 'RIFF');
+  assert.equal(webp.toString('ascii', 8, 12), 'WEBP');
+  assert.ok(webp.length <= 60_000, `${webp.length} bytes`);
+  assert.match(shot[2], /Total Cost column, that is its own estimate from model names and token counts, not a real cost: the work ran on a flat-rate subscription/);
   assert.match(page, /the spans get new trace and span ids/);
   // The docs link is Phoenix's OTLP exporter page, not the import-existing-traces page.
   assert.match(page, /Phoenix docs: <a class="lab-link" href="https:\/\/arize\.com\/docs\/phoenix\/tracing\/concepts-tracing\/otel-openinference\/exporter">Exporter and OTLP<\/a>/);
@@ -409,9 +421,14 @@ test('the "What my labels showed" note matches Cesar’s labels and the data', (
   const rows = E.agreementRows(data.evaluators, scoring, labels);
   const k = id => rows.find(r => r.id === id).kappa.toFixed(2);
   assert.match(note, new RegExp(`reaches a kappa of ${k('all')}`));
-  assert.ok(rows.find(r => r.id === 'review_before_commit').kappa < 0 && rows.find(r => r.id === 'review_addressed').kappa < 0, 'both review checks point the other way');
+  // Every check below zero is counted, not just the two review checks, and those two are the lowest.
+  const checkRows = rows.filter(r => r.id !== 'all');
+  const negative = checkRows.filter(r => r.kappa !== null && r.kappa < 0);
+  const words = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  assert.match(note, new RegExp(`and ${words[negative.length]} of the ${words[checkRows.length]} pass/fail checks fall below zero, most of all the two review checks`));
+  assert.deepEqual(negative.sort((a, b) => a.kappa - b.kappa).slice(0, 2).map(r => r.id).sort(), ['review_addressed', 'review_before_commit']);
   const small = E.agreement(E.confusion(traces.map(t => [labels[t.id] === 'good', t.toolCalls < 40])));
-  assert.match(note, new RegExp(`${Math.round(small.agree * 100)}% of the time \\(kappa ${small.kappa.toFixed(2)}\\)`));
+  assert.match(note, new RegExp(`${Math.round(small.agree * 100)}% of the time \\(kappa ${small.kappa.toFixed(2)}, interval`));
   assert.ok(rows.filter(r => r.kappa !== null).every(r => r.kappa < small.kappa), 'size beats every check');
   const large = traces.filter(t => t.toolCalls >= 40);
   const bad = list => list.filter(t => labels[t.id] === 'bad').length;
@@ -426,7 +443,7 @@ test('the "What my labels showed" note matches Cesar’s labels and the data', (
   const largeLabels = Object.fromEntries(large.map(t => [t.id, labels[t.id]]));
   const rec = E.agreementRows(data.evaluators, scoring, largeLabels).find(r => r.id === 'recovered_after_error');
   assert.equal(rec.m.gf, 0, 'every long run that failed recovery is labelled bad');
-  assert.match(note, new RegExp(`all ${rec.m.bf} runs that failed “Recovered after error” are runs I marked bad \\(kappa ${rec.kappa.toFixed(2)}\\)`));
+  assert.match(note, new RegExp(`all ${rec.m.bf} runs that failed “Recovered after error” are runs I marked bad \\(kappa ${rec.kappa.toFixed(2)}, interval [^,]+, on ${rec.n} runs\\)`));
   const longRows = E.agreementRows(data.evaluators, scoring, largeLabels).filter(r => r.id !== 'recovered_after_error' && r.kappa !== null);
   const others = Math.max(...longRows.map(r => r.kappa));
   assert.ok(rec.kappa > 0.3 && others <= 0.075, 'only recovery agrees meaningfully on the long runs');

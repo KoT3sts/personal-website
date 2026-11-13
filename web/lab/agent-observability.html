@@ -35,13 +35,32 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="cs-top">
     <a class="cs-wordmark" href="../"><span class="cs-wordmark-first">CESAR<span class="cs-dot" aria-hidden="true"></span></span> <span class="cs-wordmark-last">TORTOLERO</span></a>
-    <a class="cs-back" href="../#work"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> All projects</a>
+    <a class="cs-back" href="../#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Back to the Lab</a>
   </header>
   <main id="main">
     <article aria-labelledby="obs-title">
       <header class="cs-intro obs-intro">
         <p class="mono lab-kicker">Lab · agent observability</p>
         <h1 id="obs-title" class="lab-title">Watch the agents work.</h1>
+        <section class="obs-shows" aria-labelledby="obs-shows-title">
+          <div class="obs-shows-text">
+            <h2 id="obs-shows-title">What this shows</h2>
+            <p>I ran 13 code checks over 77 real runs of the AI agents that built this site, then labelled every run Good or Bad myself. The checks barely agree with me: “all required checks pass” reaches a kappa of <span data-shows="all">0.16</span>, close to chance. A plain size rule, under 40 tool calls, agrees far better at <span data-shows="size">0.50</span>.</p>
+          </div>
+          <figure class="obs-kfig">
+            <figcaption id="obs-kfig-cap">Agreement with my 77 labels: Cohen’s kappa, with its bootstrap interval (2.5th to 97.5th percentile)</figcaption>
+            <ul class="obs-kchart" aria-labelledby="obs-kfig-cap">
+              <li data-k="all"><span class="obs-k-name">All required checks pass</span><span class="mono obs-k-val">0.16 <span class="obs-k-ci-text">[−0.04, 0.35]</span></span>
+                <svg class="obs-k-track" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true" focusable="false"><line class="obs-k-grid is-zero" x1="20" x2="20" y1="0" y2="12"/><line class="obs-k-grid" x1="70" x2="70" y1="0" y2="12"/><line class="obs-k-ci" x1="16" x2="55" y1="6" y2="6"/><line class="obs-k-dot" x1="36" x2="36.01" y1="6" y2="6"/></svg></li>
+              <li data-k="recovery_long"><span class="obs-k-name">Recovered after error, long runs</span><span class="mono obs-k-val">0.35 <span class="obs-k-ci-text">[0.14, 0.62]</span></span>
+                <svg class="obs-k-track" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true" focusable="false"><line class="obs-k-grid is-zero" x1="20" x2="20" y1="0" y2="12"/><line class="obs-k-grid" x1="70" x2="70" y1="0" y2="12"/><line class="obs-k-ci" x1="34" x2="82" y1="6" y2="6"/><line class="obs-k-dot" x1="55" x2="55.01" y1="6" y2="6"/></svg></li>
+              <li data-k="size" class="is-best"><span class="obs-k-name">Run size: under 40 tool calls</span><span class="mono obs-k-val">0.50 <span class="obs-k-ci-text">[0.30, 0.68]</span></span>
+                <svg class="obs-k-track" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true" focusable="false"><line class="obs-k-grid is-zero" x1="20" x2="20" y1="0" y2="12"/><line class="obs-k-grid" x1="70" x2="70" y1="0" y2="12"/><line class="obs-k-ci" x1="50" x2="88" y1="6" y2="6"/><line class="obs-k-dot" x1="70" x2="70.01" y1="6" y2="6"/></svg></li>
+            </ul>
+            <p class="mono obs-k-axis" aria-hidden="true"><span class="is-zero">0 chance</span><span class="is-half">0.5</span><span class="is-one">1 perfect</span></p>
+            <p class="obs-k-note">Long runs: the 27 runs with 40 or more tool calls and an error. Intervals from 5,000 resamples of the runs, fixed seed (<a class="lab-link" href="./data/agent-traces-kappa.json">agent-traces-kappa.json</a>).</p>
+          </figure>
+        </section>
         <div class="cs-grid cs-summary">
           <div class="cs-main">
             <p class="cs-lead lab-lead obs-lead">Real traces from the AI agents that built this site: every model call, allowlisted tool call and handoff, with code evaluators on top.</p>
@@ -51,6 +70,7 @@
             <div><dt class="mono">Data</dt><dd class="mono"><a class="lab-link" href="./data/agent-traces.json">agent-traces.json</a></dd></div>
             <div><dt class="mono">Window</dt><dd class="mono">Nov 7–12, 2026</dd></div>
             <div><dt class="mono">Checks</dt><dd class="mono">13 code evaluators</dd></div>
+            <div><dt class="mono">Models</dt><dd class="mono" data-models><span data-model="claude-opus-5.5">Claude Opus 5.5 · <span data-steps>7,339</span> steps</span><br><span data-model="gpt-6.1-sol">GPT-6.1-sol · <span data-steps>176</span> steps</span></dd></div>
             <div><dt class="mono">Related</dt><dd class="mono"><a class="lab-link" href="./evaluating-agents.html">How I evaluate agents <span class="icon icon-arrow-e" aria-hidden="true"></span></a></dd></div>
           </dl>
         </div>
@@ -62,7 +82,7 @@
           <p class="mono obs-scope">All 77 traces · every span</p>
           <dl class="obs-kpis">
             <div><dt class="mono">Traces</dt><dd><span class="obs-kpi-num" data-kpi="traces" data-count="77">77</span><span class="obs-unit"><span data-kpi="requests">76</span> requests, <span data-kpi="compactions">1</span> compaction</span></dd></div>
-            <div><dt class="mono">Spans</dt><dd><span class="obs-kpi-num" data-kpi="published" data-count="1015">1,015</span><span class="obs-unit">published · <span data-kpi="spans">17,412</span> recorded</span></dd></div>
+            <div><dt class="mono">Spans</dt><dd><span class="obs-kpi-num" data-kpi="published" data-count="1015">1,015</span><span class="obs-unit">published, <span data-kpi="summaries">193</span> of them summaries · <span data-kpi="spans">17,412</span> recorded</span></dd></div>
             <div><dt class="mono">LLM steps</dt><dd><span class="obs-kpi-num" data-kpi="llmSteps" data-count="7515">7,515</span><span class="obs-unit">model calls</span></dd></div>
             <div><dt class="mono">Tool calls</dt><dd><span class="obs-kpi-num" data-kpi="toolCalls" data-count="9712">9,712</span><span class="obs-unit">bash, browser, edits, reads</span></dd></div>
             <div><dt class="mono">Subagent runs</dt><dd><span class="obs-kpi-num" data-kpi="subagentRuns" data-count="108">108</span><span class="obs-unit">handoffs to specialists</span></dd></div>
@@ -281,9 +301,9 @@
             <div class="obs-confusion" data-obs="confusion"></div>
             <div class="obs-finding" data-obs="label-finding">
               <h3 id="obs-finding-title">What my labels showed</h3>
-              <p>I labelled all 77 runs myself: 56 good, 21 bad. At the published thresholds the checks barely agree with me. “All required checks pass” reaches a kappa of 0.16, and the two review checks point the other way.</p>
-              <p>Run size explains my labels better than any check. Calling every run under 40 tool calls Good agrees with me 77% of the time (kappa 0.50). The 40-call line is the size rule the delegation check already used before I labelled anything, not one picked to fit the labels. Of the 33 runs with 40 calls or more I marked 18 bad; of the 44 smaller ones, 3. The bad long runs took a median of 77 minutes and 355 tool calls, the good ones 32 minutes and 150.</p>
-              <p>On the long runs alone, only one check agrees with me in a meaningful way: all 8 runs that failed “Recovered after error” are runs I marked bad (kappa 0.35); every other check stays at 0.07 or below. Their error rates differ too, a median of 1.9% against 0.5%, but the 10% threshold never fires on a long run.</p>
+              <p>I labelled all 77 runs myself: 56 good, 21 bad. At the published thresholds the checks barely agree with me. “All required checks pass” reaches a kappa of 0.16 (bootstrap interval −0.04 to 0.35), and <span data-negative>five</span> of the nine pass/fail checks fall below zero, most of all the two review checks.</p>
+              <p>Run size explains my labels better than any check. Calling every run under 40 tool calls Good agrees with me 77% of the time (kappa 0.50, interval 0.30 to 0.68). The 40-call line is the size rule the delegation check already used before I labelled anything, not one picked to fit the labels. Of the 33 runs with 40 calls or more I marked 18 bad; of the 44 smaller ones, 3. The bad long runs took a median of 77 minutes and 355 tool calls, the good ones 32 minutes and 150. One caveat: I labelled runs I had built the checks for, and the labelling view showed each run’s size, so part of this agreement may come from what I could see rather than from the runs alone.</p>
+              <p>On the long runs alone, only one check agrees with me in a meaningful way: all 8 runs that failed “Recovered after error” are runs I marked bad (kappa 0.35, interval 0.14 to 0.62, on 27 runs); every other check stays at 0.07 or below. Their error rates differ too, a median of 1.9% against 0.5%, but the 10% threshold never fires on a long run.</p>
               <p>Next: a run-length budget and a lower error threshold, tested on runs I label after this export rather than on these 77, so the checks are not fitted to the labels they are scored against. A Good or Bad click also doesn’t record why, so new labels will carry a reason.</p>
             </div>
             <details class="obs-numbers obs-formula">
@@ -324,6 +344,7 @@
             </div>
             <ul class="obs-fail-list" data-obs="fail-list"></ul>
             <p class="obs-hint" data-obs="fail-note"></p>
+            <p class="obs-hint" data-obs="fail-jump" hidden><a class="lab-link" href="#obs-traces-title">See the filtered trace list</a></p>
             <p class="obs-caption">The classes come from regular-expression rules the exporter applies to each error message on my machine, first match wins (timeout, permission, not found, bad arguments, test failure, network, other). A JavaScript error from a script the agent ran counts as other, and an HTTP status counts only when the message calls it a status or code. The message itself is private and never published; only its class is.</p>
           </section>
 
@@ -608,16 +629,16 @@
               <li><code>llm.token_count.prompt</code></li>
               <li><code>llm.token_count.completion</code></li>
               <li><code>llm.token_count.total</code></li>
-              <li><code>llm.token_count.prompt_details.cache_read</code></li>
-              <li><code>llm.token_count.prompt_details.cache_write</code></li>
-              <li><code>llm.token_count.completion_details.reasoning</code></li>
+              <li><code>llm.token_count.<wbr>prompt_details.cache_read</code></li>
+              <li><code>llm.token_count.<wbr>prompt_details.cache_write</code></li>
+              <li><code>llm.token_count.<wbr>completion_details.reasoning</code></li>
               <li><code>error.class</code> (custom)</li>
               <li><code>error.count</code> (custom)</li>
               <li><code>error.class.&lt;class&gt;</code> (custom)</li>
             </ul>
             <p class="obs-download-note">A failed tool call carries <code>error.class</code>. A merged-steps row whose calls include failures carries <code>error.count</code> and one <code>error.class.&lt;class&gt;</code> count per class, and its status is ERROR, so the file counts every failed call the dashboard counts. There is no <code>input.value</code> or <code>output.value</code>. Times use a synthetic clock: each trace starts at midnight UTC on its real calendar day and its spans keep their real offsets.</p>
             <h3>Load it into Arize Phoenix</h3>
-            <p class="obs-download-note"><strong>Not run here.</strong> Phoenix could not be installed on the machine that built this page, so this snippet follows the Phoenix and OpenTelemetry docs but has not been tested. It replays each span to a local Phoenix over OTLP (<code>http://localhost:6006/v1/traces</code>); the spans get new trace and span ids.</p>
+            <p class="obs-download-note"><strong>Tested November 13, 2026.</strong> This snippet ran unchanged against a local Arize Phoenix 20.16.0, and Phoenix showed <span data-phoenix-traces>77</span> traces and <span data-phoenix-spans>1,015</span> spans in the project <code>agent-traces</code>. It replays each span to Phoenix over OTLP (<code>http://localhost:6006/v1/traces</code>); the spans get new trace and span ids.</p>
             <pre class="lab-code" tabindex="0" role="region" aria-label="Python: replay the spans to Phoenix, or read them with pandas"><code># pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http pandas
 import json
 from datetime import datetime
@@ -650,6 +671,10 @@ provider.shutdown()  # flushes the batch
 import pandas as pd
 df = pd.read_json("agent-traces.openinference.jsonl", lines=True)
 df = df.join(pd.json_normalize(df.pop("attributes").tolist()))</code></pre>
+            <figure class="obs-shot">
+              <img src="./phoenix-traces.webp" width="1178" height="900" loading="lazy" decoding="async" alt="Arize Phoenix showing the agent-traces project: a trace latency chart by day above a list of root agent spans named build and plan, with input and output empty because they are never published.">
+              <figcaption>The published spans in Phoenix’s trace view. Where Phoenix shows a Total Cost column, that is its own estimate from model names and token counts, not a real cost: the work ran on a flat-rate subscription.</figcaption>
+            </figure>
             <p class="obs-download-note">Phoenix docs: <a class="lab-link" href="https://arize.com/docs/phoenix/tracing/concepts-tracing/otel-openinference/exporter">Exporter and OTLP</a> (Phoenix takes OTLP/HTTP on port 6006, at <code>/v1/traces</code>).</p>
           </div>
         </section>
@@ -663,7 +688,7 @@ df = df.join(pd.json_normalize(df.pop("attributes").tolist()))</code></pre>
             <li><strong>What it covers.</strong> The website work from November 7 to 12, 2026: <span data-requests>76</span> requests and one automatic context compaction in six sessions, with 81 subagent sessions nested under the calls that started them. Some sessions ran more than once, so the dashboard counts 108 subagent runs. Unrelated work in the same sessions is left out.</li>
             <li><strong>What is never published.</strong> Prompts, responses, reasoning, tool inputs and outputs, error messages, file names and contents, and commands. A shell call carries only a category (test, build, commit and so on) and a failed call only an error class. Calls to tools outside an allowlist are dropped: <span data-dropped>25</span> of them.</li>
             <li><strong>What is estimated.</strong> Model latency, from message timings. Tool and agent times come straight from recorded timestamps.</li>
-            <li><strong>Merged spans.</strong> 1,015 of 17,412 spans are published one by one; runs of ordinary steps become summary spans that keep their step, tool-call, error and token counts. Every total, percentile and evaluator result is computed from all spans before merging.</li>
+            <li><strong>Merged spans.</strong> Of the <span data-spans>17,412</span> recorded spans, <span data-single>822</span> are published one by one. The other <span data-merged>16,590</span>, runs of ordinary steps, are merged into <span data-summaries>193</span> summary spans that keep their step, tool-call, error and token counts, so the file has <span data-published>1,015</span> spans. Every total, percentile and evaluator result is computed from all spans before merging.</li>
             <li><strong>No judge model.</strong> The thirteen evaluators are code. Nothing here is graded by an LLM, and the checks describe the process, not the quality of the result; human labels are the way to test them. There is no cost figure: the runs used a flat-rate subscription.</li>
           </ul>
         </section>
@@ -682,7 +707,7 @@ df = df.join(pd.json_normalize(df.pop("attributes").tolist()))</code></pre>
         <a class="cs-pill" href="../assets/Cesar_Tortolero_Resume.pdf">Résumé <span class="mono">PDF</span></a>
       </div>
     </div>
-    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#work">Back to Work</a></div>
+    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#lab">Back to the Lab</a></div>
   </footer>
 </body>
 </html>
