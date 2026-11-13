@@ -106,13 +106,16 @@
             </dl>
             <figcaption>From the team’s final report, April 2024.</figcaption>
           </figure>
+          <p class="cs-repro"><span class="mono cs-repro-label">Check the source</span> <a class="cs-repro-link" href="https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf"><span class="mono">Final report · PDF</span> <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></p>
         </section>
         <section class="cs-grid cs-section" aria-labelledby="flow-title">
           <h2 class="cs-rail" id="flow-title">How it works</h2>
           <div class="cs-main">
             <div class="cs-prose">
-              <p>The app is React Native, with login, chat and past conversations. Each message goes to a Python server, where a sentiment module names the emotion in it and a DistilGPT-2 model, using the QuAC dataset, writes the reply. Firebase Realtime Database handles logins and user information.</p>
+              <p>The app is React Native, with login, chat and past conversations. Each message goes to a Python server, where a sentiment module names the emotion in it and a DistilGPT-2 model, using the QuAC dataset, writes the reply. Firebase Realtime Database handles logins and user information. The report also notes that storing chat history as context for the model was withheld from the final product.</p>
               <p>The module names one of eight emotions: joy, sadness, anger, fear, surprise, disgust, trust or anticipation. Knowing the emotion lets the reply console or celebrate.</p>
+              <p>The module sits in the LLM pipeline on the Python server: it reads textual cues in each message to name the emotion, and the model adjusts its reply to fit; the public report does not name the classifier behind it.</p>
+              <p class="cs-repro"><span class="mono cs-repro-label">Check the source</span> <a class="cs-repro-link" href="https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf"><span class="mono">Final report · PDF</span> <span class="icon icon-arrow-ne" aria-hidden="true"></span></a> <a class="cs-repro-link" href="https://github.com/NoahDClark/VirtualCompanionChatbot"><span class="mono">Code · GitHub</span> <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></p>
             </div>
             <figure class="cc-figure" data-chart="graph" data-grid="4x1" data-grid-narrow="1x4" data-narrow-below="640" data-node-scale-narrow="0.8" data-route="app db app mood model app">
               <div class="cc-canvas"></div>
@@ -187,6 +190,7 @@
               </div>
               <figcaption>The report’s two plans. Two servers: $5,070.56 a month ($4,870.56 for the servers and $200 for the databases) for about 2,400 requests a minute, or about 22,000 users. One server: about half the cost, for 1,200 requests a minute and 10,000 users. The report gives no exact one-server cost, so that grey bar is drawn at half.</figcaption>
             </figure>
+            <p class="cs-repro"><span class="mono cs-repro-label">Check the source</span> <a class="cs-repro-link" href="https://virtualcompanionchatbot.wordpress.com/wp-content/uploads/2024/04/ind13-virtualcompanionshipchatbot-finalreport.pdf"><span class="mono">Server architecture · PDF</span> <span class="icon icon-arrow-ne" aria-hidden="true"></span></a></p>
           </div>
         </section>
         <section class="cs-grid cs-section" aria-labelledby="links-title">

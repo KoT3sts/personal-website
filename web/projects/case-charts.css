@@ -199,3 +199,20 @@ html:not(.cc-js) .cc-canvas { display: none; }
   .cc-n.is-dark .cc-node, .cc-sq rect, .cc-bar, .cc-col, .cc-linkcard-icon { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .cc-dot, .cc-ring { display: none; }
 }
+
+/* "Reproduce this" / "Check the source": a quiet row under a claim that links to the
+   public evidence for it (a lab page, a published data file or a public record). The
+   label and the link names are mono labels, not new claims. Targets stay 44px tall. */
+.cs-repro { display: flex; flex-wrap: wrap; align-items: center; gap: 0 20px; max-width: 72ch; margin: 0; padding-top: 2px; border-top: 1px dashed var(--line); }
+.cs-repro-label { color: var(--label); }
+.cs-repro-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ink); text-decoration: underline; text-decoration-color: #a9ab9f; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.cs-repro-link:hover { text-decoration-color: currentColor; }
+.cs-repro-link .icon { flex: none; }
+.cc-band .cs-repro { margin-top: 18px; border-top-color: #50564a; }
+.cc-band .cs-repro-label { color: #a4a59f; }
+.cc-band .cs-repro-link { color: var(--paper); text-decoration-color: #7d8173; }
+/* A claim the public record does not show yet, marked where it is made. */
+.cs-flag { display: inline-block; margin-left: 6px; padding: 1px 7px 2px; border: 1px solid currentColor; border-radius: 4px; color: #7a4b00; font-size: 11px; line-height: 1.4; letter-spacing: .035em; text-transform: uppercase; vertical-align: 2px; white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .cs-repro-link { transition: text-decoration-color .2s ease; }
+}

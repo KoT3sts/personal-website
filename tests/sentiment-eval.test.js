@@ -217,8 +217,8 @@ test('the page is honest about what it is: public data, cited, and no claim of t
 test('the page links home and to the case study, and the case study, homepage and sitemap link to it', () => {
   assert.match(page, /<a class="cs-wordmark" href="\.\.\/">/);
   assert.match(page, /href="\.\.\/projects\/companion-chatbot\.html"/);
-  assert.match(page, /<a class="cs-back" href="\.\.\/#work">/, 'the header pill goes back to all projects, wherever the visitor came from');
-  assert.match(page, /href="\.\.\/#work"/);
+  assert.match(page, /<a class="cs-back" href="\.\.\/#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"><\/span> Back to the Lab<\/a>/, 'the header pill goes back to the Lab, wherever the visitor came from');
+  assert.doesNotMatch(page, /href="\.\.\/#work"/, 'a lab page goes back to the Lab, not to the projects');
   assert.match(page, /<link rel="canonical" href="https:\/\/[^"]+\/lab\/sentiment-eval\.html">/);
   for (const ref of [...page.matchAll(/\s(?:href|src)="([^"]+)"/g)].map(match => match[1]).filter(ref => !/^(?:https?:|mailto:|#)/.test(ref))) {
     const target = new URL(ref.split('#')[0], new URL('lab/sentiment-eval.html', web));
@@ -252,4 +252,37 @@ test('dev server serves the lab page, scripts and JSON with the right types', as
   } finally {
     server.kill();
   }
+});
+
+test('the first screen shows a chart: F1 with its bootstrap interval for each model and for the gap, from the JSON', () => {
+  const fig = page.match(/<figure class="lab-first lab-ci" aria-labelledby="ci-cap">([\s\S]*?)<\/figure>/)?.[1];
+  assert.ok(fig, 'a first-screen chart in the intro');
+  assert.ok(page.indexOf('class="lab-first lab-ci"') < page.indexOf('<section class="lab-strip-band"'), 'before the strip');
+  const sign = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(3)}`;
+  const boot = data.bootstrap_f1;
+  const f1 = { A: data.reference.A.f1, B: data.reference.B.f1 };
+  const rows = [...fig.matchAll(/<tr[^>]*><th scope="row">([^<]+)<\/th><td class="lab-ci-num"><span class="lab-ci-value">([^<]+)<\/span> <span class="lab-ci-range">([^<]+)<\/span><\/td><td class="lab-ci-plot">([\s\S]*?)<\/td><\/tr>/g)];
+  assert.deepEqual(rows.map(row => [row[1], row[2], row[3]]), [
+    ['A · Naive Bayes', f1.A.toFixed(3), `${boot.A[0].toFixed(3)} to ${boot.A[1].toFixed(3)}`],
+    ['B · Logistic', f1.B.toFixed(3), `${boot.B[0].toFixed(3)} to ${boot.B[1].toFixed(3)}`],
+    ['B minus A', sign(f1.B - f1.A), `${sign(boot.B_minus_A[0])} to ${sign(boot.B_minus_A[1])}`],
+  ]);
+  // Marks sit where the numbers say: F1 on 0.74–0.86, the gap on −0.06–+0.06.
+  const at = (v, lo, hi) => ((v - lo) / (hi - lo)) * 100;
+  const close = (a, b, label) => assert.ok(Math.abs(a - b) < 0.02, `${label}: ${a} vs ${b}`);
+  const marks = svg => ({ x1: Number(svg.match(/class="lab-ci-band" x1="([\d.]+)%"/)[1]), x2: Number(svg.match(/class="lab-ci-band" x1="[\d.]+%" x2="([\d.]+)%"/)[1]), cx: Number(svg.match(/cx="([\d.]+)%"/)[1]) });
+  for (const [i, [lo, hi, point, a, b]] of [[...boot.A, f1.A, 0.74, 0.86], [...boot.B, f1.B, 0.74, 0.86], [...boot.B_minus_A, f1.B - f1.A, -0.06, 0.06]].entries()) {
+    const m = marks(rows[i][4]);
+    close(m.x1, at(lo, a, b), `row ${i} low`); close(m.x2, at(hi, a, b), `row ${i} high`); close(m.cx, at(point, a, b), `row ${i} point`);
+  }
+  assert.match(rows[2][4], /class="lab-ci-zero" x1="50%"/, 'the gap row marks zero');
+  assert.ok(boot.B_minus_A[0] < 0 && boot.B_minus_A[1] > 0, 'the caption is true: the gap interval crosses zero');
+  assert.match(fig, /the interval for the gap crosses zero/);
+});
+
+test('limits say that validation reads higher than test, with the numbers from the JSON', () => {
+  const b = data.models.find(model => model.id === 'B');
+  const picked = b.tuning.find(row => Math.abs(row.lambda - b.hyperparameters.lambda) < 1e-12);
+  assert.ok(picked.val_f1 > data.reference.B.f1);
+  assert.ok(page.includes(`model B scored F1 ${picked.val_f1.toFixed(3)} on the ${data.dataset.counts.validation.total} validation sentences and ${data.reference.B.f1.toFixed(3)} on the test set`));
 });

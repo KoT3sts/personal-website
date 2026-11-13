@@ -45,6 +45,27 @@ code { font-family: var(--font-mono); font-size: .88em; padding: 1px 5px; border
 .lab-eval .lab-strip > div { padding: clamp(18px, 1.9vw, 26px); }
 .lab-eval .lab-scorecard { padding-top: 22px; }
 .lab-scorecard { scroll-margin-top: 12px; }
+
+/* The essay and the build trace open on their evidence too: the same shorter intro,
+   scoped to the pages that opt in, so a chart, table or trace shares the first screen
+   at 1440 x 900 and 390 x 844. */
+.lab-compact .cs-intro { padding-top: clamp(18px, 4vh, 40px); padding-bottom: clamp(22px, 2.6vw, 34px); }
+.lab-compact .lab-kicker { margin-bottom: 12px; }
+.lab-compact .lab-title { font-size: clamp(32px, 6vw, 80px); }
+.lab-compact .cs-summary { margin-top: clamp(16px, 2.2vw, 28px); }
+.lab-compact .lab-lead { max-width: 44ch; font-size: clamp(20px, 1.8vw, 25px); }
+.lab-compact .lab-disclaimer { margin-top: 14px; }
+
+/* First-screen figure: real data under the lead, with a short caption. */
+.lab-first { display: grid; gap: 12px; min-width: 0; margin: clamp(18px, 2vw, 24px) 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.lab-first figcaption { max-width: 62ch; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.lab-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.lab-first-bar { display: block; width: 100%; height: 14px; overflow: visible; }
+.lab-first-bar .is-pass { fill: var(--status-pass); }
+.lab-first-bar .is-fail { fill: url(#ea-hatch); }
+.lab-first-bar .is-none { fill: none; stroke: var(--status-na); stroke-width: 1; }
+.lab-hatch-bg { fill: #ecbcb6; }
+.lab-hatch-fg { fill: var(--status-fail); }
 .lab-cue { display: inline-flex; align-items: center; gap: 8px; justify-self: start; margin-bottom: 6px; padding: 5px 12px 5px 10px; border-radius: 50px; background: #e1e7d3; color: #34401f; }
 
 /* Section rails with a short note under the heading. */
@@ -167,4 +188,32 @@ code { font-family: var(--font-mono); font-size: .88em; padding: 1px 5px; border
 @media print {
   .lab-controls, .lab-chart { display: none; }
   .lab-strip { background: none; color: var(--ink); }
+}
+
+/* First screen of the sentiment lab: F1 with its bootstrap interval for each model, and
+   the interval for the gap against zero. Positions are SVG percentages, so the plot
+   stretches with the column while dots and text keep their size. */
+.lab-ci-table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.lab-ci-table th, .lab-ci-table td { padding: 5px 0; font-weight: 400; text-align: left; vertical-align: middle; }
+.lab-ci-table tbody th { padding-right: 16px; white-space: nowrap; }
+.lab-ci-num { padding-right: 18px; white-space: nowrap; }
+.lab-ci-value { font-weight: 700; }
+.lab-ci-range { margin-left: 6px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.lab-ci-plot { width: 100%; }
+.lab-ci-gap tr:first-child > * { padding-top: 14px; border-top: 1px solid var(--line); }
+.lab-ci-axis td { padding: 0 0 2px; color: var(--label); font-size: 11px; letter-spacing: .035em; text-transform: uppercase; }
+.lab-ci-svg { display: block; width: 100%; height: 20px; overflow: visible; }
+.lab-ci-ticks { height: 14px; }
+.lab-ci-ticks text { fill: #646a5a; font-family: var(--font-mono); font-size: 11px; text-anchor: middle; }
+.lab-ci-band { stroke-width: 6; stroke-linecap: round; }
+.lab-ci-a .lab-ci-band { stroke: #d9b893; }
+.lab-ci-a .lab-ci-point { fill: #a0672e; }
+.lab-ci-b .lab-ci-band, .lab-ci-gap .lab-ci-band { stroke: #b9bab0; }
+.lab-ci-b .lab-ci-point, .lab-ci-gap .lab-ci-point { fill: var(--ink); }
+.lab-ci-zero { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+@media (max-width: 560px) {
+  .lab-ci-table { font-size: 13px; }
+  .lab-ci-table tbody th { padding-right: 10px; }
+  .lab-ci-num { padding-right: 12px; }
+  .lab-ci-range { display: block; margin: 2px 0 0; font-size: 11px; }
 }
