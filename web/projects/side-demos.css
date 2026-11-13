@@ -33,7 +33,9 @@
 .sd-avg-label { position: absolute; right: 0; bottom: 3px; padding: 0 4px; background: #f6f5ee; color: var(--label); }
 .sd-lengths { color: var(--ink); }
 
-.sd-signals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 1px; border: 1px solid var(--line); background: var(--line); }
+/* Four signals in a 2 x 2 grid (then the wide "Most repeated" row), one column on phones:
+   an auto-fit grid left a grey hole beside the fourth signal at three columns. */
+.sd-signals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--line); background: var(--line); }
 .sd-signal { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 16px 18px 18px; background: #fbfaf5; }
 .sd-signal-wide { grid-column: 1 / -1; }
 .sd-signal dt { color: var(--label); }
@@ -217,6 +219,7 @@
   .sd-swipe { display: block; }
 }
 @media (max-width: 560px) {
+  .sd-signals { grid-template-columns: minmax(0, 1fr); }
   .sd-flow .cs-flow-steps.sd-flow-4 { grid-template-columns: minmax(0, 1fr); }
   .sd-flow .cs-flow-steps.sd-flow-4 li:nth-child(3)::before { display: block; }
 }
