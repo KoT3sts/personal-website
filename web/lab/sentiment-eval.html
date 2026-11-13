@@ -66,7 +66,7 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="cs-top">
     <a class="cs-wordmark" href="../"><span class="cs-wordmark-first">CESAR<span class="cs-dot" aria-hidden="true"></span></span> <span class="cs-wordmark-last">TORTOLERO</span></a>
-    <a class="cs-back" href="../#work"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> All projects</a>
+    <a class="cs-back" href="../#lab"><span class="cs-arrow icon icon-arrow-w" aria-hidden="true"></span> Back to the Lab</a>
   </header>
   <main id="main">
     <article class="lab-eval" aria-labelledby="lab-title">
@@ -76,6 +76,22 @@
         <div class="cs-grid cs-summary">
           <div class="cs-main">
             <p class="cs-lead lab-lead">Two sentiment models on 3,000 public review sentences: where each one fails, and what a threshold costs.</p>
+            <figure class="lab-first lab-ci" aria-labelledby="ci-cap">
+              <table class="lab-ci-table">
+                <caption class="visually-hidden">Test-set F1 at threshold 0.50 with bootstrap intervals, and the gap between the models</caption>
+                <thead class="visually-hidden"><tr><th scope="col">Model</th><th scope="col">F1 and bootstrap interval</th><th scope="col">Plot</th></tr></thead>
+                <tbody>
+                    <tr class="lab-ci-a"><th scope="row">A · Naive Bayes</th><td class="lab-ci-num"><span class="lab-ci-value">0.795</span> <span class="lab-ci-range">0.757 to 0.828</span></td><td class="lab-ci-plot"><svg class="lab-ci-svg" aria-hidden="true" focusable="false"><line class="lab-ci-band" x1="14.17%" x2="73.17%" y1="50%" y2="50%"></line><circle class="lab-ci-point" cx="46.09%" cy="50%" r="5"></circle></svg></td></tr>
+                    <tr class="lab-ci-b"><th scope="row">B · Logistic</th><td class="lab-ci-num"><span class="lab-ci-value">0.803</span> <span class="lab-ci-range">0.764 to 0.835</span></td><td class="lab-ci-plot"><svg class="lab-ci-svg" aria-hidden="true" focusable="false"><line class="lab-ci-band" x1="20.42%" x2="79.33%" y1="50%" y2="50%"></line><circle class="lab-ci-point" cx="52.8%" cy="50%" r="5"></circle></svg></td></tr>
+                  <tr class="lab-ci-axis" aria-hidden="true"><td></td><td class="mono">F1</td><td class="lab-ci-plot"><svg class="lab-ci-svg lab-ci-ticks" aria-hidden="true" focusable="false"><text x="8.33%" y="11">0.75</text><text x="50%" y="11">0.80</text><text x="91.67%" y="11">0.85</text></svg></td></tr>
+                </tbody>
+                <tbody class="lab-ci-gap">
+                  <tr><th scope="row">B minus A</th><td class="lab-ci-num"><span class="lab-ci-value">+0.008</span> <span class="lab-ci-range">−0.021 to +0.038</span></td><td class="lab-ci-plot"><svg class="lab-ci-svg" aria-hidden="true" focusable="false"><line class="lab-ci-zero" x1="50%" x2="50%" y1="0" y2="100%"></line><line class="lab-ci-band" x1="32.25%" x2="81.75%" y1="50%" y2="50%"></line><circle class="lab-ci-point" cx="56.72%" cy="50%" r="5"></circle></svg></td></tr>
+                  <tr class="lab-ci-axis" aria-hidden="true"><td></td><td class="mono">Gap</td><td class="lab-ci-plot"><svg class="lab-ci-svg lab-ci-ticks" aria-hidden="true" focusable="false"><text x="8.33%" y="11">−0.05</text><text x="50%" y="11">0</text><text x="91.67%" y="11">+0.05</text></svg></td></tr>
+                </tbody>
+              </table>
+              <figcaption id="ci-cap">Test-set F1 at the default threshold, each with its bootstrap interval: the 2.5th to 97.5th percentile of 1,000 resamples. The two intervals overlap almost entirely, and the interval for the gap crosses zero.</figcaption>
+            </figure>
             <p class="lab-disclaimer">This is a public reproduction on open data, built to show how I evaluate a classifier. It is not the <a class="lab-link" href="../projects/companion-chatbot.html">Companionship Chatbot</a>’s model, data or reported result.</p>
           </div>
           <dl class="cs-rail cs-meta">
@@ -330,6 +346,7 @@
               <li><strong>Easier than real use.</strong> The dataset’s authors kept sentences with a clear polarity and no neutral ones. Chat messages, sarcasm and mixed feelings are harder, and these models have never seen them.</li>
               <li><strong>Domain shift is not tested.</strong> Training and test sentences come from the same three sites. Training on two sources and testing on the third would be the next experiment.</li>
               <li><strong>Examples are quoted, not written.</strong> The failure examples are verbatim test sentences from the public dataset, reviews posted on Amazon, Yelp and IMDb; any names in them come from that text.</li>
+              <li><strong>Validation reads higher than test.</strong> At the L2 strength it picked, model B scored F1 0.852 on the 299 validation sentences and 0.803 on the test set. That setting was chosen on the validation set, so its score there is optimistic; the test number is the one to quote.</li>
               <li><strong>Scores are not calibrated.</strong> Neither model’s P(positive) was checked against observed frequencies. Naive Bayes pushes more of its scores to the extremes, so the same slider move changes fewer of its calls.</li>
             </ul>
           </div>
@@ -362,7 +379,7 @@
         <a class="cs-pill" href="../assets/Cesar_Tortolero_Resume.pdf">Résumé <span class="mono">PDF</span></a>
       </div>
     </div>
-    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#work">Back to all projects</a></div>
+    <div class="cs-bottom mono"><span>Cesar Tortolero · Machine Learning Engineer</span><a href="../#lab">Back to the Lab</a></div>
   </footer>
 </body>
 </html>
