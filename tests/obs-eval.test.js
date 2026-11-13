@@ -396,7 +396,7 @@ test('download: both files linked with their sizes, the attributes they use, and
   assert.equal(webp.toString('ascii', 0, 4), 'RIFF');
   assert.equal(webp.toString('ascii', 8, 12), 'WEBP');
   assert.ok(webp.length <= 60_000, `${webp.length} bytes`);
-  assert.match(shot[2], /Total Cost column, that is its own estimate from model names and token counts, not a real cost: the work ran on a flat-rate subscription/);
+  assert.match(shot[2], /Phoenix can also estimate a cost from model names and token counts; that is its own estimate, not a real cost: the work ran on a flat-rate subscription/);
   assert.match(page, /the spans get new trace and span ids/);
   // The docs link is Phoenix's OTLP exporter page, not the import-existing-traces page.
   assert.match(page, /Phoenix docs: <a class="lab-link" href="https:\/\/arize\.com\/docs\/phoenix\/tracing\/concepts-tracing\/otel-openinference\/exporter">Exporter and OTLP<\/a>/);
