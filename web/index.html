@@ -104,7 +104,7 @@
   <header class="site-header">
     <a class="wordmark" href="#home" aria-label="Cesar Tortolero home"><span class="wordmark-first">CESAR<span class="brand-dot"></span></span> <span class="wordmark-last">TORTOLERO</span></a>
     <nav class="main-nav" aria-label="Main navigation">
-      <a href="#about" class="nav-optional">About</a>
+      <a href="#introduction" class="nav-optional">About</a>
       <a href="#experience">Experience</a>
       <a href="#work">Work</a>
       <a href="#lab">Lab</a>
@@ -189,7 +189,7 @@
 
     <!-- Wide screens with JS and motion: the scene pins while the page scrolls through the section and the
          panel opens into a window onto #introduction (about-scenes.css "opening"). Otherwise it reads as is. -->
-    <section id="about" class="about-transition dark-section" aria-labelledby="about-title">
+    <section id="about" class="about-transition dark-section" data-nav-section="introduction" aria-labelledby="about-title">
       <div class="about-scene">
         <div class="about-field">
           <!-- The flow field (about 311 KB) is fetched by app.js only once the visitor heads
@@ -207,7 +207,7 @@
       </div>
     </section>
 
-    <section id="introduction" class="cinematic dark-section" data-nav-section="about" aria-labelledby="introduction-title">
+    <section id="introduction" class="cinematic dark-section" aria-labelledby="introduction-title">
       <div class="cinematic-stage">
         <div class="cinematic-light" aria-hidden="true"></div>
         <!-- Icarus falls out of the light: legs still toward the bright end of the shaft, wings breaking, loose

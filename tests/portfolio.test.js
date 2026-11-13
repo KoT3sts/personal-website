@@ -29,12 +29,12 @@ test('About navigation covers both scenes while header colors follow the actual 
   assert.equal(nav(), undefined, 'the hero has no nav entry');
   assert.equal(header.classList.contains('is-dark'), false, 'light hero behind the header');
   layout({ home: { top: -600, bottom: 200 }, about: { top: 200, bottom: 1100 } });
-  assert.equal(nav(), '#about');
+  assert.equal(nav(), '#introduction', 'the About entry lands on the About content (#introduction) and marks the title card too');
   assert.equal(header.classList.contains('is-dark'), false, 'the nav line alone never changes the header tone');
   layout({ about: { top: -200, bottom: 700 } });
   assert.ok(header.classList.contains('is-dark'));
   layout({ about: { top: -900, bottom: -10 }, introduction: { top: -10, bottom: 900 } });
-  assert.equal(nav(), '#about', 'cinematic introduction belongs to About');
+  assert.equal(nav(), '#introduction', 'cinematic introduction is About');
   assert.ok(header.classList.contains('is-dark'));
   layout({ work: { top: -300, bottom: 600 } });
   assert.equal(nav(), '#work');
@@ -286,7 +286,7 @@ test('the first heading states the role and the page keeps one h1 with ordered s
   assert.match(document.querySelector('h1').textContent, /Cesar Tortolero, Machine Learning Engineer/);
   assert.match(document.title, /Machine Learning Engineer/);
   assert.match(document.querySelector('meta[name="description"]').content, /Machine Learning Engineer/);
-  for (const id of ['about', 'experience', 'work', 'lab', 'skills', 'contact']) assert.ok(document.querySelector(`.main-nav a[href="#${id}"]`), `nav link for ${id}`);
+  for (const id of ['introduction', 'experience', 'work', 'lab', 'skills', 'contact']) assert.ok(document.querySelector(`.main-nav a[href="#${id}"]`), `nav link for ${id}`);
   let previous = 1;
   for (const heading of document.querySelectorAll('main h1, main h2, main h3, main h4')) {
     const level = Number(heading.tagName[1]);
@@ -300,7 +300,7 @@ test('About scenes lead into capabilities, then experience, work, skills and app
   const order = [...document.querySelectorAll('main > section[id]')].map(section => section.id);
   assert.deepEqual(order, ['home', 'about', 'introduction', 'capabilities', 'experience', 'work', 'lab', 'skills', 'approach', 'notes']);
   assert.ok(document.querySelector('footer#contact'));
-  assert.equal(document.querySelector('#introduction').dataset.navSection, 'about');
+  assert.equal(document.querySelector('#about').dataset.navSection, 'introduction', 'the title card counts as About, whose nav entry opens #introduction');
   const sceneLinks = [...document.querySelectorAll('#introduction .scene-pill')].map(link => link.getAttribute('href'));
   assert.deepEqual(sceneLinks, ['#capabilities', '#experience']);
   assert.ok(document.querySelector('#introduction .scene-pill-primary[href="#capabilities"]'));
@@ -369,7 +369,7 @@ test('Open the work: three large cards between Work and Skills, each with a sent
   assert.doesNotMatch(html, /<(?:script|link)[^>]*work-previews\.js/);
   // In the main nav, shown on phones in place of About (the section right under the hero).
   assert.ok(document.querySelector('.main-nav a[href="#lab"]:not(.nav-optional)'));
-  assert.ok(document.querySelector('.main-nav a[href="#about"].nav-optional'));
+  assert.ok(document.querySelector('.main-nav a[href="#introduction"].nav-optional'), 'About lands on the content, not the title card');
 });
 
 test('the live previews are optional: a missing or failing module keeps the summaries, never throws, and settles', async () => {
