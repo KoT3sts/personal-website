@@ -108,7 +108,7 @@
 .obs-facts > div { display: grid; align-content: start; gap: 4px; padding: 10px 0; }
 .obs-facts dd { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
 .obs-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); gap: 0 28px; }
-.obs-wf { display: grid; gap: 10px; min-width: 0; }
+.obs-wf { display: grid; align-content: start; gap: 10px; min-width: 0; }
 .obs-wf-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; }
 .obs-wf-tools { display: flex; gap: 6px; }
 .obs-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; list-style: none; color: var(--dim); font-size: 12px; }
@@ -460,6 +460,8 @@
 .obs-file-what { flex-basis: 100%; color: var(--muted); font-size: 15px; line-height: 1.5; }
 .obs-download-main h3 { margin: 30px 0 12px; font-size: 19px; line-height: 1.2; font-weight: 800; font-stretch: var(--display-stretch); letter-spacing: -.02em; }
 .obs-attrs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 15px; }
+.obs-attrs li { min-width: 0; max-width: 100%; }
+.obs-attrs code, .obs-download-note code { overflow-wrap: anywhere; }
 .obs-download-note { max-width: 66ch; margin: 14px 0; font-size: 15px; line-height: 1.55; }
 .obs-download .lab-code { margin: 14px 0; overflow-x: auto; font-size: 13px; white-space: pre; overflow-wrap: normal; scrollbar-color: #50564a var(--night); }
 .obs-download .lab-code:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
