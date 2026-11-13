@@ -35,7 +35,7 @@ function manualFrames(window) {
   };
 }
 
-function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = false, observeSections = false, width, height, frames = false, media, navigationType, layout = false, fetch, config: extra = {} } = {}) {
+function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = false, observeSections = false, width, height, frames = false, media, navigationType, layout = false, fetch, everyVisit = false, config: extra = {} } = {}) {
   const { window } = new JSDOM(html, { url: `https://portfolio.test/${hash}` });
   // `fetch`: a stand-in for window.fetch (the trace request). Without one the
   // tests run with no trace (choreography labels) unless `config.trace` is given.
@@ -46,6 +46,7 @@ function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = f
   window.matchMedia = media || (() => ({ matches: reduced }));
   if (width) Object.defineProperty(window, 'innerWidth', { value: width, configurable: true });
   if (navigationType) window.performance.getEntriesByType = () => [{ type: navigationType }];
+  if (everyVisit) window.history.scrollRestoration = 'auto';
   const style = window.document.createElement('style');
   style.textContent = entranceCSS;
   window.document.head.append(style);
@@ -62,7 +63,7 @@ function setup(t, { seen = false, reduced = false, hash = '', storageBlocked = f
   if (storageBlocked) Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage denied'); } });
   const clock = frames ? manualFrames(window) : null;
   // Manual frames use the real production timing; real frames use tiny durations.
-  const config = { ...(fetch ? {} : { trace: false }), ...(clock ? { now: clock.now, pillDuration: 600000 } : { ...fast }), ...extra };
+  const config = { ...(fetch ? {} : { trace: false }), ...(clock ? { now: clock.now, pillDuration: 600000 } : { ...fast }), everyVisit, ...extra };
   const controller = initAgenticEntrance(window.document, window, config);
   t.after(() => window.close());
   // Like a real observer entry: an intersecting section is on screen.
@@ -156,6 +157,26 @@ test('the first visit tours every section in order, then hands off and collapses
   // Nothing restarts on its own.
   clock.step(5000);
   assert.equal(controller.touring, false);
+});
+
+test('completion restores scroll restoration and moves focus from the hidden Skip button', t => {
+  const { document, window, controller, clock } = setup(t, { width: 1280, frames: true, everyVisit: true });
+  const skip = document.querySelector('[data-agentic-skip]');
+  skip.focus();
+  assert.equal(document.activeElement, skip);
+  assert.equal(window.history.scrollRestoration, 'manual');
+  stepTo(controller, clock, 99, 0, 32);
+  assert.equal(controller.touring, false);
+  assert.equal(window.history.scrollRestoration, 'auto');
+  assert.equal(document.activeElement, document.querySelector('[data-agentic-dock-replay]'));
+});
+
+test('leaving the page during a tour restores the prior history scroll setting', t => {
+  const { window, controller } = setup(t, { frames: true, everyVisit: true });
+  assert.equal(window.history.scrollRestoration, 'manual');
+  window.dispatchEvent(new window.Event('pagehide'));
+  assert.equal(controller.touring, false);
+  assert.equal(window.history.scrollRestoration, 'auto');
 });
 
 test('the dock count is the number of agents at work and changes between sections', t => {
@@ -1129,7 +1150,8 @@ test('the hero opens on a black screen: the veil is opaque and no hero content s
   const veil = document.querySelector('.agentic-veil');
   assert.ok(veil, 'the veil is up');
   const style = window.getComputedStyle(veil);
-  assert.equal(style.opacity, '1');
+  // JSDOM leaves the initial CSS opacity unset. Browsers compute it as 1.
+  assert.equal(style.opacity || '1', '1');
   assert.equal(style.backgroundColor, 'rgb(16, 17, 20)');
   assert.ok(!veil.style.clipPath || veil.style.clipPath === 'none', `veil clip ${veil.style.clipPath}`);
   if (measurable(document)) {

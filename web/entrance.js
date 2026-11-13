@@ -951,13 +951,23 @@ export function initAgenticEntrance(document, window, config = {}) {
     catch { sectionsEligible = false; observer?.disconnect(); }
   }
 
+  let previousScrollRestoration;
+
+  function restoreScrollRestoration() {
+    if (previousScrollRestoration === undefined) return;
+    try { window.history.scrollRestoration = previousScrollRestoration; } catch { /* not available */ }
+    previousScrollRestoration = undefined;
+  }
+
   function flushTourEnd() {
+    restoreScrollRestoration();
     root.classList.remove('agentic-touring');
     tourEndCallbacks.splice(0).forEach(callback => { try { callback(); } catch { /* motion settles itself */ } });
   }
 
   // Skip, Escape, Tab, navigation, errors: settle everything, no more passes.
   function stop(save = true, keepDock = save) {
+    restoreScrollRestoration();
     const focusInDock = Boolean(dock?.root.contains(document.activeElement));
     const focusInStage = Boolean(run?.stage.contains(document.activeElement));
     const wasTouring = Boolean(tour);
@@ -4536,6 +4546,7 @@ export function initAgenticEntrance(document, window, config = {}) {
   // trace in, the cursors are a visualization of its four role types, so the
   // pill only claims the replay's own time.
   function finishTour() {
+    const focusOnTourControl = dock && (document.activeElement === dock.skip || document.activeElement === dock.speed);
     const agents = tour.workers.size || builtCount;
     const seconds = Math.max(1, Math.round((clock() - tour.realStart - tour.hiddenMs) / 1000));
     tour = null;
@@ -4547,6 +4558,7 @@ export function initAgenticEntrance(document, window, config = {}) {
     if (trace) collapseDock(`Recorded replay finished in ${seconds} seconds. The Trace button lists every recorded step.`, `Replayed in ${seconds} s`);
     else collapseDock(`Build tour finished after ${seconds} seconds.`, `Built by ${agents} agents in ${seconds} s`);
     flushTourEnd();
+    restoreFocus(focusOnTourControl);
   }
 
   function startHero() {
@@ -4994,7 +5006,12 @@ export function initAgenticEntrance(document, window, config = {}) {
   const eligible = shouldPlayEntrance({ seen: everyVisit ? false : seen, reducedMotion: Boolean(media?.matches), storageAvailable: Boolean(storage), hash: window.location.hash, navigationType });
   if (eligible && everyVisit) {
     // A reload would restore the old scroll position; start from the top instead.
-    try { if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'; } catch { /* not available */ }
+    try {
+      if ('scrollRestoration' in window.history) {
+        previousScrollRestoration = window.history.scrollRestoration;
+        window.history.scrollRestoration = 'manual';
+      }
+    } catch { /* not available */ }
     if (readScrollY() > 0) scrollToY(0);
   }
   try { if (eligible) startTour(); else replayButton.hidden = false; }
